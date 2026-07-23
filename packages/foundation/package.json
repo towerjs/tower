@@ -6,8 +6,9 @@
   "files": ["dist"],
   "scripts": { "build": "tsc -b" },
   "dependencies": {
-    "@towerjs/blueprint": "workspace:*",
-    "@towerjs/gatehouse": "workspace:*",
-    "@towerjs/vault": "workspace:*"
+    "@towerjs/blueprint": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20"
   }
 }
