@@ -7,7 +7,7 @@
     "clean": "rm -rf packages/*/dist examples/next-app/.next examples/next-app/dist"
   },
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^7.0"
   },
-  "packageManager": "pnpm@9.6.0"
+  "packageManager": "pnpm@11.17.0"
 }

@@ -5,6 +5,7 @@
     { "path": "./packages/vault" },
     { "path": "./packages/gatehouse" },
     { "path": "./packages/foundation" },
+    { "path": "./packages/towerjs" },
     { "path": "./packages/scribe" },
     { "path": "./examples/next-app" }
   ]

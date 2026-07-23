@@ -5,8 +5,8 @@
       "ES2022",
       "DOM"
     ],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "strict": true,
     "declaration": true,
     "declarationMap": true,
@@ -16,21 +16,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "baseUrl": ".",
     "paths": {
-      "@towerjs/blueprint": [
-        "packages/blueprint/src/index.ts"
-      ],
-      "@towerjs/foundation": [
-        "packages/foundation/src/index.ts"
-      ],
-      "@towerjs/gatehouse": [
-        "packages/gatehouse/src/index.ts"
-      ],
-      "@towerjs/vault": [
-        "packages/vault/src/index.ts"
-      ]
-    },
-    "ignoreDeprecations": "6.0"
+      "@towerjs/*": ["./packages/*/src/index.ts"]
+    }
   }
 }
