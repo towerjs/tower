@@ -1,0 +1,14 @@
+{
+  "name": "@towerjs/scribe",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "create-tower": "./dist/index.js" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -b" },
+  "dependencies": {
+    "@towerjs/blueprint": "workspace:*",
+    "@towerjs/foundation": "workspace:*"
+  },
+  "devDependencies": { "@types/node": "^20.14.10" }
+}

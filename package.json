@@ -1,0 +1,13 @@
+{
+  "name": "tower",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf packages/*/dist examples/next-app/.next examples/next-app/dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
+  "packageManager": "pnpm@9.6.0"
+}

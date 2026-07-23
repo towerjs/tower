@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/blueprint" },
+    { "path": "./packages/vault" },
+    { "path": "./packages/gatehouse" },
+    { "path": "./packages/foundation" },
+    { "path": "./packages/scribe" },
+    { "path": "./examples/next-app" }
+  ]
+}

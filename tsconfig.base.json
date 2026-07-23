@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@towerjs/blueprint": [
+        "packages/blueprint/src/index.ts"
+      ],
+      "@towerjs/foundation": [
+        "packages/foundation/src/index.ts"
+      ],
+      "@towerjs/gatehouse": [
+        "packages/gatehouse/src/index.ts"
+      ],
+      "@towerjs/vault": [
+        "packages/vault/src/index.ts"
+      ]
+    },
+    "ignoreDeprecations": "6.0"
+  }
+}
