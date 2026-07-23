@@ -1,5 +1,6 @@
 import { Kysely, PostgresDialect } from "kysely";
 import type { TowerModule, TowerInitContext } from "@towerjs/blueprint";
+import { registerModule } from "@towerjs/blueprint";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 
 export type VaultDb = Kysely<any>;
@@ -14,10 +15,7 @@ export type VaultModule = {
   transaction<T>(fn: (trx: VaultDb) => Promise<T>): Promise<T>;
 };
 
-async function createDb(
-  connectionString: string,
-  provider: "neon" | "pg",
-): Promise<VaultDb> {
+async function createDb(connectionString: string, provider: "neon" | "pg"): Promise<VaultDb> {
   let pool: any;
 
   if (provider === "pg") {
@@ -37,25 +35,17 @@ export function vault(options?: VaultConfig): TowerModule {
   return {
     name: "vault",
     async init(ctx: TowerInitContext) {
-      const connectionString =
-        options?.connectionString ?? process.env.DATABASE_URL ?? "";
+      const connectionString = options?.connectionString ?? process.env.DATABASE_URL ?? "";
 
       if (!connectionString) {
         ctx.container.register("vault", {
-          db: new Proxy(
-            {} as VaultDb,
-            {
-              get() {
-                throw new Error(
-                  "Vault database not configured. Set DATABASE_URL or pass connectionString to vault().",
-                );
-              },
+          db: new Proxy({} as VaultDb, {
+            get() {
+              throw new Error("Vault database not configured. Set DATABASE_URL or pass connectionString to vault().");
             },
-          ),
+          }),
           transaction<T>() {
-            throw new Error(
-              "Vault database not configured. Set DATABASE_URL or pass connectionString to vault().",
-            );
+            throw new Error("Vault database not configured. Set DATABASE_URL or pass connectionString to vault().");
           },
         } satisfies VaultModule);
         return;
@@ -73,3 +63,5 @@ export function vault(options?: VaultConfig): TowerModule {
     },
   };
 }
+
+registerModule("vault", (config) => vault(config as VaultConfig));

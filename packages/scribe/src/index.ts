@@ -5,15 +5,15 @@ import { join } from "node:path";
 const files = new Map<string, string>([
   [
     "tower.config.ts",
-    `import { defineTower, vault, gatehouse } from "towerjs";\n\nexport default defineTower({\n  framework: "next",\n  modules: [\n    vault({ provider: "neon" }),\n    gatehouse(),\n  ],\n});\n`,
+    `import { defineTower } from "@towerjs/blueprint";\n\nexport default defineTower({\n  framework: "next",\n  modules: {\n    vault: { provider: "neon" },\n    gatehouse: {},\n  },\n});\n`,
   ],
   [
     "src/tower.ts",
-    `import { createTowerApp } from "towerjs";\nimport type { VaultModule, GatehouseModule } from "towerjs";\nimport config from "../tower.config";\n\nconst app = await createTowerApp(config);\n\nexport const tower = {\n  vault: app.container.get<VaultModule>("vault"),\n  gatehouse: app.container.get<GatehouseModule>("gatehouse"),\n};\n`,
+    `import { createTowerApp } from "@towerjs/foundation";\nimport type { VaultModule } from "@towerjs/vault";\nimport type { GatehouseModule } from "@towerjs/gatehouse";\nimport config from "../tower.config";\n\nconst app = await createTowerApp(config);\n\nexport const tower = {\n  vault: app.container.get<VaultModule>("vault"),\n  gatehouse: app.container.get<GatehouseModule>("gatehouse"),\n};\n`,
   ],
   [
     "package.json",
-    `{"private":true,"type":"module","scripts":{"dev":"next dev","build":"next build","start":"next start"},"dependencies":{"towerjs":"latest","next":"latest","react":"latest","react-dom":"latest"},"devDependencies":{"typescript":"latest"}}\n`,
+    `{"private":true,"type":"module","scripts":{"dev":"next dev","build":"next build","start":"next start"},"dependencies":{"@towerjs/blueprint":"latest","@towerjs/foundation":"latest","@towerjs/vault":"latest","@towerjs/gatehouse":"latest","next":"latest","react":"latest","react-dom":"latest"},"devDependencies":{"typescript":"latest"}}\n`,
   ],
   [".env.example", `DATABASE_URL="postgres://user:password@localhost:5432/tower"\n`],
 ]);

@@ -1,10 +1,18 @@
-import { createTowerApp } from "towerjs";
-import type { VaultModule, GatehouseModule } from "towerjs";
+import { createTowerApp, type TowerRuntime } from "@towerjs/foundation";
+import type { VaultModule } from "@towerjs/vault";
+import type { GatehouseModule } from "@towerjs/gatehouse";
 import config from "../tower.config";
 
 const app = await createTowerApp(config);
 
-export const tower = {
-  vault: app.container.get<VaultModule>("vault"),
-  gatehouse: app.container.get<GatehouseModule>("gatehouse"),
+export type TowerApp = {
+  vault: VaultModule;
+  gatehouse: GatehouseModule;
+  runtime: TowerRuntime;
+};
+
+export const tower: TowerApp = {
+  vault: app.container.get("vault"),
+  gatehouse: app.container.get("gatehouse"),
+  runtime: app.runtime,
 };

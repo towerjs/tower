@@ -8,6 +8,8 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../blueprint" }
+    { "path": "../blueprint" },
+    { "path": "../vault" },
+    { "path": "../gatehouse" }
   ]
 }

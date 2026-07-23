@@ -1,9 +1,9 @@
-import { defineTower, vault, gatehouse } from "towerjs";
+import { defineTower } from "@towerjs/blueprint";
 
 export default defineTower({
   framework: "next",
-  modules: [
-    vault({ provider: "neon" }),
-    gatehouse(),
-  ],
+  modules: {
+    vault: { provider: "neon" },
+    gatehouse: {},
+  },
 });

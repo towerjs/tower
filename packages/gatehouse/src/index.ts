@@ -1,4 +1,5 @@
 import type { TowerModule, TowerInitContext } from "@towerjs/blueprint";
+import { registerModule } from "@towerjs/blueprint";
 
 export type TowerUser = {
   id: string;
@@ -6,13 +7,15 @@ export type TowerUser = {
   email: string;
 };
 
+export type GatehouseConfig = Record<string, never>;
+
 export type GatehouseModule = {
   users: {
     list(): Promise<TowerUser[]>;
   };
 };
 
-export function gatehouse(): TowerModule {
+export function gatehouse(_options?: GatehouseConfig): TowerModule {
   return {
     name: "gatehouse",
     async init(ctx: TowerInitContext) {
@@ -30,3 +33,5 @@ export function gatehouse(): TowerModule {
     },
   };
 }
+
+registerModule("gatehouse", (config) => gatehouse(config as GatehouseConfig));
