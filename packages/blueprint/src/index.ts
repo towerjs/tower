@@ -1,33 +1,27 @@
-export type TowerFramework = "next";
-export type DatabaseProvider = "postgres";
-export type AuthProvider = "better-auth";
-export type RealtimeProvider = "ably";
-export type StorageProvider = "s3";
+export interface ServiceRegistry {
+  register<T>(name: string, instance: T): void;
+  registerFactory<T>(name: string, factory: () => T): void;
+  get<T>(name: string): T;
+  has(name: string): boolean;
+}
 
-export type TowerApplicationConfig = {
-  framework: TowerFramework;
-  database: {
-    provider: DatabaseProvider;
-  };
-  auth: {
-    provider: AuthProvider;
-  };
-  realtime?: {
-    provider: RealtimeProvider;
-  };
-  storage?: {
-    provider: StorageProvider;
-  };
+export interface TowerInitContext {
+  container: ServiceRegistry;
+  config: { framework: string };
+  runtime: { name: string; isServerless: boolean };
+}
+
+export interface TowerModule {
+  name: string;
+  init?(ctx: TowerInitContext): Promise<void>;
+  shutdown?(): Promise<void>;
+}
+
+export type TowerBlueprint = {
+  framework: string;
+  modules: TowerModule[];
 };
 
-/**
- * Defines the capabilities required by a Tower application.
- *
- * This function intentionally performs no validation. It preserves the typed
- * configuration so Foundation can construct an application kernel from it.
- */
-export function defineApplication<const Config extends TowerApplicationConfig>(
-  config: Config,
-): Config {
+export function defineTower(config: TowerBlueprint): TowerBlueprint {
   return config;
 }
