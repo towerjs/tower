@@ -1,17 +1,9 @@
-import { defineApplication } from "@towerjs/blueprint";
+import { defineTower, vault, gatehouse } from "towerjs";
 
-export default defineApplication({
+export default defineTower({
   framework: "next",
-  database: {
-    provider: "postgres",
-  },
-  auth: {
-    provider: "better-auth",
-  },
-  realtime: {
-    provider: "ably",
-  },
-  storage: {
-    provider: "s3",
-  },
+  modules: [
+    vault({ provider: "neon" }),
+    gatehouse(),
+  ],
 });
