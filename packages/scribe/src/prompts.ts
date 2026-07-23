@@ -1,0 +1,139 @@
+import { input, select, checkbox } from "@inquirer/prompts";
+import type { Framework, ProjectState, ProviderMap } from "./state.js";
+
+const MODULE_CHOICES = [
+  { name: "Vault", value: "vault" },
+  { name: "Gatehouse", value: "gatehouse" },
+  { name: "Archive", value: "archive" },
+  { name: "Beacon", value: "beacon" },
+  { name: "Crane", value: "crane" },
+  { name: "Messenger", value: "messenger" },
+  { name: "Treasury", value: "treasury" },
+  { name: "Observatory", value: "observatory" },
+];
+
+const VAULT_PROVIDER_CHOICES = [
+  { name: "Neon PostgreSQL", value: "neon" as const },
+  { name: "PostgreSQL", value: "postgres" as const },
+];
+
+const GATEHOUSE_PROVIDER_CHOICES = [
+  { name: "Better Auth", value: "better-auth" as const },
+  { name: "Clerk", value: "clerk" as const },
+];
+
+const BEACON_PROVIDER_CHOICES = [
+  { name: "Ably", value: "ably" as const },
+  { name: "Pusher", value: "pusher" as const },
+];
+
+const FRAMEWORK_CHOICES: { name: string; value: Framework }[] = [
+  { name: "Next.js", value: "next" },
+  { name: "React Router", value: "react-router" },
+  { name: "Vite React", value: "vite" },
+  { name: "SvelteKit", value: "sveltekit" },
+  { name: "SolidStart", value: "solid" },
+];
+
+const DEPLOYMENT_CHOICES = [
+  { name: "Vercel", value: "vercel" as const },
+  { name: "Fly.io", value: "fly" as const },
+  { name: "AWS", value: "aws" as const },
+];
+
+async function promptProjectName(): Promise<string> {
+  return input({
+    message: "Project name",
+    default: "my-app",
+    validate(value) {
+      if (!value) return "Project name is required";
+      if (!/^[a-z0-9-]+$/.test(value))
+        return "Use lowercase letters, numbers, and hyphens";
+      return true;
+    },
+  });
+}
+
+async function promptFramework(): Promise<Framework> {
+  return select({
+    message: "Select framework",
+    choices: FRAMEWORK_CHOICES,
+  });
+}
+
+async function promptModules(): Promise<string[]> {
+  return checkbox({
+    message: "Which Tower modules do you want?",
+    choices: MODULE_CHOICES,
+  });
+}
+
+async function promptVaultProvider(): Promise<"neon" | "postgres"> {
+  return select({
+    message: "Database provider",
+    choices: VAULT_PROVIDER_CHOICES,
+  });
+}
+
+async function promptGatehouseProvider(): Promise<"better-auth" | "clerk"> {
+  return select({
+    message: "Authentication provider",
+    choices: GATEHOUSE_PROVIDER_CHOICES,
+  });
+}
+
+async function promptBeaconProvider(): Promise<"ably" | "pusher"> {
+  return select({
+    message: "Realtime provider",
+    choices: BEACON_PROVIDER_CHOICES,
+  });
+}
+
+async function promptDeployment(): Promise<"vercel" | "fly" | "aws" | undefined> {
+  return select({
+    message: "Deployment platform",
+    choices: DEPLOYMENT_CHOICES,
+  });
+}
+
+async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
+  const modules: ProviderMap = {};
+
+  for (const name of enabled) {
+    switch (name) {
+      case "vault":
+        modules.vault = { provider: await promptVaultProvider() };
+        break;
+      case "gatehouse":
+        modules.gatehouse = { provider: await promptGatehouseProvider() };
+        break;
+      case "beacon":
+        modules.beacon = { provider: await promptBeaconProvider() };
+        break;
+      default:
+        modules[name] = {};
+    }
+  }
+
+  return modules;
+}
+
+export async function collectProjectState(): Promise<ProjectState> {
+  console.log("\n  Tower — Create application\n");
+
+  const projectName = await promptProjectName();
+  const framework = await promptFramework();
+  const selected = await promptModules();
+  const modules = selected.length > 0 ? await promptModuleProviders(selected) : {};
+  const deployment = await promptDeployment();
+
+  console.log("");
+
+  return {
+    projectName,
+    framework,
+    modules,
+    deployment,
+    frameworkAnswers: {},
+  };
+}

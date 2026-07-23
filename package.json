@@ -1,0 +1,16 @@
+{
+  "name": "tower",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf packages/*/dist examples/next-app/.next examples/next-app/dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^7.0",
+    "vitest": "^4.1.10"
+  },
+  "packageManager": "pnpm@11.17.0"
+}

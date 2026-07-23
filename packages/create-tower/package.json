@@ -1,0 +1,11 @@
+{
+  "name": "create-tower",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "create-tower": "./dist/index.js" },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -b" },
+  "dependencies": {
+    "@towerjs/scribe": "workspace:*"
+  }
+}
