@@ -2,7 +2,22 @@
   "name": "@towerjs/vault",
   "version": "0.0.0",
   "type": "module",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b" }
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@towerjs/blueprint": "workspace:*",
+    "kysely": "^0.29.4",
+    "pg": "^8.22.0"
+  }
 }
