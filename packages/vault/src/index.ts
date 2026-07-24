@@ -4,9 +4,13 @@ import { Kysely, PostgresDialect } from "kysely";
 import type { Migrator } from "kysely/migration";
 import type { VaultConfig, VaultDb, VaultModule } from "./types.js";
 import { createMigrator, migrateToLatest } from "./migrate.js";
+import { runSeeds } from "./seed.js";
 
-export type { VaultConfig, VaultDb, VaultModule } from "./types.js";
+export type { VaultConfig, VaultDb, VaultModule, VaultSeedConfig } from "./types.js";
 export { createMigrator, migrateToLatest } from "./migrate.js";
+export { runSeeds } from "./seed.js";
+
+let _vault: VaultModule | undefined;
 
 function resolveConnectionString(config?: VaultConfig): string {
   return config?.connectionString ?? process.env.DATABASE_URL ?? "";
@@ -17,6 +21,20 @@ function resolveProvider(config?: VaultConfig): "neon" | "pg" {
   if (config?.provider) return config.provider;
   if (url.includes(".neon.tech")) return "neon";
   return "pg";
+}
+
+function resolveSsl(
+  poolConfig: VaultConfig["pool"],
+  connectionString: string,
+): boolean | { rejectUnauthorized?: boolean } | undefined {
+  if (poolConfig?.ssl !== undefined) return poolConfig.ssl;
+  if (connectionString.includes("sslmode=require") || connectionString.includes("sslmode=no-verify")) {
+    return connectionString.includes("sslmode=no-verify")
+      ? { rejectUnauthorized: false }
+      : true;
+  }
+  if (process.env.NODE_ENV === "production") return true;
+  return undefined;
 }
 
 async function createPool(
@@ -31,71 +49,128 @@ async function createPool(
   if (poolConfig?.idleTimeoutMillis) config.idleTimeoutMillis = poolConfig.idleTimeoutMillis;
   if (poolConfig?.connectionTimeoutMillis) config.connectionTimeoutMillis = poolConfig.connectionTimeoutMillis;
 
+  const ssl = resolveSsl(poolConfig, connectionString);
+
   if (provider === "neon") {
     const { Pool, neonConfig } = await import("@neondatabase/serverless");
     neonConfig.fetchConnectionCache = true;
-    return new Pool(config);
+    const neonPool = ssl !== undefined ? new Pool({ ...config, ssl }) : new Pool(config);
+    neonPool.on("error", (err: Error) => {
+      console.error("[vault] Unexpected Neon database pool error:", err.message);
+    });
+    return neonPool;
   }
 
   const { Pool: PgPool } = await import("pg");
-  return new PgPool(config);
+  const pool = new PgPool(ssl !== undefined ? { ...config, ssl } : config);
+
+  pool.on("error", (err: Error) => {
+    console.error("[vault] Unexpected database pool error:", err.message);
+  });
+
+  return pool;
 }
 
-export function vault(options?: VaultConfig): TowerModule {
-  let db: VaultDb;
-  let migrator: Migrator;
+async function validateConnection(pool: any, provider: "neon" | "pg"): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query("SELECT 1");
+  } finally {
+    client.release();
+  }
+}
 
+export const vault: VaultModule = new Proxy({} as VaultModule, {
+  get(_, prop) {
+    if (!_vault) throw new Error("Vault not initialized. Tower must be started first.");
+    const value = (_vault as any)[prop];
+    return typeof value === "function"
+      ? (...args: any[]) => (value as Function)(...args)
+      : value;
+  },
+});
+
+function buildProxyUnconfigured(): VaultModule {
+  return new Proxy({} as VaultModule, {
+    get(_, prop) {
+      if (prop === "migrate" || prop === "migrator") {
+        throw new Error("Vault not configured. Set DATABASE_URL or pass connectionString to vault().");
+      }
+      return () => { throw new Error("Vault not configured. Set DATABASE_URL or pass connectionString to vault().") };
+    },
+  });
+}
+
+function buildProxyConfigured(
+  db: VaultDb,
+  pool: { end(): Promise<void> },
+  migrationFolder: string,
+  seedFolder: string,
+  _migrator: Migrator,
+): VaultModule {
+  return new Proxy(db as unknown as VaultModule, {
+    get(target, prop) {
+      if (prop === "db") return db;
+      if (prop === "migrator") return _migrator;
+      if (prop === "migrate") {
+        return () => migrateToLatest(db, { folder: migrationFolder });
+      }
+      if (prop === "seed") {
+        return (name?: string) => runSeeds(db, { folder: seedFolder }, name);
+      }
+      if (prop === "close") {
+        return () => pool.end();
+      }
+      if (prop === "transaction") {
+        return <T>(fn: (trx: VaultDb) => Promise<T>) =>
+          db.transaction().execute(fn);
+      }
+      return (target as any)[prop];
+    },
+  });
+}
+
+export function createVaultModule(options?: VaultConfig): TowerModule {
   return {
     name: "vault",
 
     async init(ctx: TowerInitContext) {
+      if (_vault) {
+        await _vault.close().catch(() => {});
+        _vault = undefined;
+      }
+
       const connectionString = resolveConnectionString(options);
 
       if (!connectionString) {
-        db = new Proxy({} as VaultDb, {
-          get() {
-            throw new Error("Vault not configured. Set DATABASE_URL or pass connectionString to vault().");
-          },
-        });
-        migrator = null as unknown as Migrator;
-        ctx.container.register("vault", {
-          db,
-          transaction<T>() {
-            throw new Error("Vault not configured. Set DATABASE_URL or pass connectionString to vault().");
-          },
-          async migrate() {
-            throw new Error("Vault not configured. Set DATABASE_URL or pass connectionString to vault().");
-          },
-          migrator,
-        } satisfies VaultModule);
+        _vault = buildProxyUnconfigured();
+        ctx.container.register("vault", _vault);
         return;
       }
 
       const provider = resolveProvider(options);
       const pool = await createPool(connectionString, provider, options?.pool);
-      db = new Kysely<any>({ dialect: new PostgresDialect({ pool }) });
+
+      try {
+        await validateConnection(pool, provider);
+      } catch (err) {
+        await pool.end().catch(() => {});
+        throw new Error(
+          `Could not connect to database at ${connectionString.replace(/\/\/.*@/, "//***@")}: ${(err as Error).message}`,
+        );
+      }
+
+      const db: VaultDb = new Kysely({ dialect: new PostgresDialect({ pool }) });
 
       const migrationFolder = options?.migrations?.folder ?? "./src/vault/migrations";
-      migrator = createMigrator(db, { folder: migrationFolder });
+      const seedFolder = options?.seeds?.folder ?? "./src/vault/seeds";
+      const migrator = createMigrator(db, { folder: migrationFolder });
 
-      ctx.container.register("vault", {
-        db,
-        async transaction<T>(fn: (trx: VaultDb) => Promise<T>): Promise<T> {
-          return db.transaction().execute(fn);
-        },
-        async migrate(): Promise<void> {
-          await migrateToLatest(db, { folder: migrationFolder });
-        },
-        migrator,
-      } satisfies VaultModule);
+      _vault = buildProxyConfigured(db, pool, migrationFolder, seedFolder, migrator);
+      ctx.container.register("vault", _vault);
     },
   };
 }
 
-registerModule("vault", (config) => vault(config as VaultConfig));
+registerModule("vault", (config) => createVaultModule(config as VaultConfig));
 
-declare module "@towerjs/foundation" {
-  interface TowerModules {
-    vault: VaultModule
-  }
-}

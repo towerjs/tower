@@ -9,6 +9,7 @@ export type VaultPoolConfig = {
   max?: number
   idleTimeoutMillis?: number
   connectionTimeoutMillis?: number
+  ssl?: boolean | { rejectUnauthorized?: boolean }
 }
 
 export type VaultMigrationConfig = {
@@ -20,11 +21,18 @@ export type VaultConfig = {
   connectionString?: string
   pool?: VaultPoolConfig
   migrations?: VaultMigrationConfig
+  seeds?: VaultSeedConfig
 }
 
-export interface VaultModule {
-  db: VaultDb
-  transaction<T>(fn: (trx: VaultDb) => Promise<T>): Promise<T>
+export type VaultSeedConfig = {
+  folder: string
+}
+
+export interface VaultModule<TSchema = any> extends Omit<Kysely<TSchema>, "transaction"> {
+  readonly db: VaultDb<TSchema>
+  transaction<T>(fn: (trx: VaultDb<TSchema>) => Promise<T>): Promise<T>
   migrate(): Promise<void>
+  seed(name?: string): Promise<void>
+  close(): Promise<void>
   migrator: Migrator
 }
