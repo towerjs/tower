@@ -21,14 +21,30 @@ switch (command) {
 }
 
 async function migrate() {
-  console.log("Running Tower migration...");
   try {
     const configPath = findConfig();
     const jiti = createJiti(import.meta.url, { interopDefault: true });
     const config = (await jiti.import(configPath)) as any;
     const app = await createTowerApp(config);
-    const gatehouse = app.container.get<any>("module.gatehouse");
-    await gatehouse.migrate();
+
+    const vault = app.container.has("vault")
+      ? app.container.get<any>("vault")
+      : app.container.get<any>("module.vault");
+
+    if (vault?.migrate) {
+      console.log("Running vault migrations...");
+      await vault.migrate();
+    }
+
+    const gatehouse = app.container.has("gatehouse")
+      ? app.container.get<any>("gatehouse")
+      : app.container.get<any>("module.gatehouse");
+
+    if (gatehouse?.migrate) {
+      console.log("Running auth migrations...");
+      await gatehouse.migrate();
+    }
+
     console.log("Migration complete.");
     process.exit(0);
   } catch (err) {
@@ -57,7 +73,7 @@ function help() {
 Usage: tower <command>
 
 Commands:
-  migrate   Create auth database tables (idempotent)
+  migrate   Run database and auth migrations
   help      Show this message
 `);
 }

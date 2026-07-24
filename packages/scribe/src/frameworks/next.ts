@@ -71,18 +71,24 @@ export const nextAdapter: FrameworkAdapter = {
     // Layer Tower-specific files
     await writeFile(join(projectDir, "tower.config.ts"), towerConfig(state));
     await writeFile(join(projectDir, ".env.example"), envExample(state));
-    if (state.modules.gatehouse) {
-      const secret = randomBytes(32).toString("base64");
-      const envContent = [
-        `# Authentication — auto-generated during setup`,
-        `BETTER_AUTH_SECRET="${secret}"`,
-        `BETTER_AUTH_URL="http://localhost:3000"`,
-        ``,
-        `# Database`,
-        `DATABASE_URL="postgres://user:password@localhost:5432/tower"`,
-        ``,
-      ].join("\n");
-      await writeFile(join(projectDir, ".env"), envContent);
+    if (state.modules.gatehouse || state.modules.vault) {
+      const envLines: string[] = [];
+      if (state.modules.gatehouse) {
+        envLines.push(
+          `# Authentication — auto-generated during setup`,
+          `BETTER_AUTH_SECRET="${randomBytes(32).toString("base64")}"`,
+          `BETTER_AUTH_URL="http://localhost:3000"`,
+        );
+      }
+      if (state.modules.vault) {
+        if (envLines.length > 0) envLines.push(``);
+        envLines.push(
+          ...vaultEnvHints(state.modules.vault?.brand as string | undefined),
+          `DATABASE_URL="postgres://user:password@localhost:5432/tower"`,
+        );
+      }
+      envLines.push(``);
+      await writeFile(join(projectDir, ".env"), envLines.join("\n"));
     }
 
     // Auth route + proxy (only when gatehouse is enabled)
@@ -99,11 +105,14 @@ export const nextAdapter: FrameworkAdapter = {
   },
 };
 
+/** Keys that are used by the CLI only and should not appear in tower.config.ts */
+const CLI_ONLY_KEYS = new Set(["brand"]);
+
 export function towerConfig(state: ProjectState): string {
   const modules = Object.entries(state.modules)
     .map(([name, cfg]) => {
       const entries = Object.entries(cfg ?? {})
-        .filter(([, v]) => v !== undefined)
+        .filter(([k, v]) => !CLI_ONLY_KEYS.has(k) && v !== undefined)
         .map(([k, v]) => `    ${k}: ${JSON.stringify(v)},`);
       if (entries.length === 0) return `    ${name}: {},`;
       return `    ${name}: {\n${entries.join("\n")}\n  },`;
@@ -146,13 +155,38 @@ export { config };
 `;
 }
 
+function vaultEnvHints(brand?: string): string[] {
+  switch (brand) {
+    case "neon":
+      return [
+        "# Database — Neon",
+        "# Find your DATABASE_URL in the Neon Console → Connection Details",
+      ];
+    case "supabase":
+      return [
+        "# Database — Supabase",
+        "# Find your DATABASE_URL at: Supabase Dashboard → Project Settings → Database",
+        "# Use the transaction pooler (port 6543) for serverless deployments",
+      ];
+    case "railway":
+      return [
+        "# Database — Railway",
+        "# Find your DATABASE_URL in the Railway Dashboard → your project → PostgreSQL plugin → Connect",
+      ];
+    default:
+      return [
+        "# Database",
+      ];
+  }
+}
+
 export function envExample(state: ProjectState): string {
   const vars: string[] = [];
 
-  for (const [name, _cfg] of Object.entries(state.modules)) {
+  for (const [name, cfg] of Object.entries(state.modules)) {
     if (name === "vault") {
       if (vars.length > 0) vars.push("");
-      vars.push("# Database");
+      vars.push(...vaultEnvHints(cfg?.brand as string | undefined));
       vars.push('DATABASE_URL="postgres://user:password@localhost:5432/tower"');
     }
     if (name === "gatehouse") {

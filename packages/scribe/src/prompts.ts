@@ -12,9 +12,11 @@ const MODULE_CHOICES = [
   { name: "Observatory", value: "observatory" },
 ];
 
-const VAULT_PROVIDER_CHOICES = [
-  { name: "Neon PostgreSQL", value: "neon" as const },
-  { name: "PostgreSQL", value: "postgres" as const },
+const VAULT_BRAND_CHOICES = [
+  { name: "Neon", value: "neon" as const },
+  { name: "Supabase", value: "supabase" as const },
+  { name: "Railway", value: "railway" as const },
+  { name: "Other PostgreSQL provider", value: "other" as const },
 ];
 
 const GATEHOUSE_PROVIDER_CHOICES = [
@@ -40,6 +42,11 @@ const DEPLOYMENT_CHOICES = [
   { name: "Fly.io", value: "fly" as const },
   { name: "AWS", value: "aws" as const },
 ];
+
+function resolveVaultProvider(brand: string): { provider: "neon" | "pg"; brand: string } {
+  if (brand === "neon") return { provider: "neon", brand: "neon" };
+  return { provider: "pg", brand };
+}
 
 async function promptProjectName(): Promise<string> {
   return input({
@@ -68,11 +75,12 @@ async function promptModules(): Promise<string[]> {
   });
 }
 
-async function promptVaultProvider(): Promise<"neon" | "postgres"> {
-  return select({
-    message: "Database provider",
-    choices: VAULT_PROVIDER_CHOICES,
+async function promptVaultProvider(): Promise<{ provider: "neon" | "pg"; brand: string }> {
+  const brand = await select({
+    message: "PostgreSQL provider",
+    choices: VAULT_BRAND_CHOICES,
   });
+  return resolveVaultProvider(brand);
 }
 
 async function promptGatehouseProvider(): Promise<"better-auth" | "clerk"> {
@@ -90,12 +98,21 @@ async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
       { name: "Social login (Google, GitHub, etc.)", value: "social" },
       { name: "Magic link (passwordless email)", value: "magicLinks" },
       { name: "Email OTP", value: "emailOtp" },
+      { name: "Two-factor authentication (TOTP + backup codes)", value: "twoFactor" },
+      { name: "Organizations (teams, invitations, roles)", value: "organization" },
+      { name: "Passkeys (biometric/hardware key login)", value: "passkeys" },
+      { name: "Phone number authentication", value: "phoneNumber" },
+      { name: "Admin panel (user management)", value: "admin" },
+      { name: "API key authentication", value: "apiKey" },
     ],
   });
   const cfg: Record<string, unknown> = {};
   for (const f of features) {
     if (f === "credentials") cfg[f] = true;
     else if (f === "social") cfg[f] = { google: {}, github: {} };
+    else if (f === "phoneNumber") cfg[f] = true;
+    else if (f === "admin") cfg[f] = true;
+    else if (f === "apiKey") cfg[f] = true;
     else cfg[f] = true;
   }
   return cfg;
@@ -120,9 +137,11 @@ async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
 
   for (const name of enabled) {
     switch (name) {
-      case "vault":
-        modules.vault = { provider: await promptVaultProvider() };
+      case "vault": {
+        const { provider, brand } = await promptVaultProvider();
+        modules.vault = { provider, brand };
         break;
+      }
       case "gatehouse": {
         const features = await promptGatehouseFeatures();
         modules.gatehouse = { provider: await promptGatehouseProvider(), ...features };

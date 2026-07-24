@@ -28,12 +28,13 @@ describe("towerConfig", () => {
   it("generates config with vault module", () => {
     const state: ProjectState = {
       ...baseState,
-      modules: { vault: { provider: "neon" } },
+      modules: { vault: { provider: "neon", brand: "neon" } },
     };
     const result = towerConfig(state);
 
     expect(result).toContain("vault: {");
     expect(result).toContain('provider: "neon"');
+    expect(result).not.toContain("brand");
   });
 
   it("generates config with gatehouse module", () => {
@@ -50,7 +51,7 @@ describe("towerConfig", () => {
     const state: ProjectState = {
       ...baseState,
       modules: {
-        vault: { provider: "neon" },
+        vault: { provider: "neon", brand: "neon" },
         gatehouse: { provider: "better-auth" },
       },
     };
@@ -60,6 +61,7 @@ describe("towerConfig", () => {
     expect(result).toContain("gatehouse:");
     expect(result).toContain('provider: "neon"');
     expect(result).toContain('provider: "better-auth"');
+    expect(result).not.toContain("brand");
   });
 
   it("generates config with Tower-shaped gatehouse features", () => {
@@ -84,10 +86,56 @@ describe("envExample", () => {
   it("includes DATABASE_URL when vault is enabled", () => {
     const state: ProjectState = {
       ...baseState,
-      modules: { vault: { provider: "neon" } },
+      modules: { vault: { provider: "neon", brand: "neon" } },
     };
     const result = envExample(state);
 
     expect(result).toContain("DATABASE_URL");
+    expect(result).toContain("Neon Console → Connection Details");
+  });
+
+  it("shows Supabase-specific hints", () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { vault: { provider: "pg", brand: "supabase" } },
+    };
+    const result = envExample(state);
+
+    expect(result).toContain("DATABASE_URL");
+    expect(result).toContain("Supabase Dashboard → Project Settings → Database");
+    expect(result).toContain("port 6543");
+  });
+
+  it("shows Railway-specific hints", () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { vault: { provider: "pg", brand: "railway" } },
+    };
+    const result = envExample(state);
+
+    expect(result).toContain("Railway Dashboard");
+    expect(result).toContain("PostgreSQL plugin");
+  });
+
+  it("shows generic hints for other providers", () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { vault: { provider: "pg", brand: "other" } },
+    };
+    const result = envExample(state);
+
+    expect(result).toContain("DATABASE_URL");
+    expect(result).not.toContain("Dashboard");
+  });
+
+  it("includes gatehouse env vars", () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { gatehouse: { provider: "better-auth" } },
+    };
+    const result = envExample(state);
+
+    expect(result).toContain("BETTER_AUTH_SECRET");
+    expect(result).toContain("BETTER_AUTH_URL");
   });
 });
