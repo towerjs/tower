@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { towerConfig, towerRuntime, envExample, capitalize } from "./next.js";
+import { towerConfig, envExample, capitalize } from "./next.js";
 import type { ProjectState } from "../state.js";
 
 const baseState: ProjectState = {
@@ -22,7 +22,6 @@ describe("towerConfig", () => {
     const result = towerConfig(baseState);
 
     expect(result).toContain('import { defineTower } from "@towerjs/blueprint"');
-    expect(result).toContain('framework: "next"');
     expect(result).toContain("modules:");
   });
 
@@ -62,28 +61,18 @@ describe("towerConfig", () => {
     expect(result).toContain('provider: "neon"');
     expect(result).toContain('provider: "better-auth"');
   });
-});
 
-describe("towerRuntime", () => {
-  it("generates runtime with no modules", () => {
-    const result = towerRuntime(baseState);
-
-    expect(result).toContain('import { createTowerApp } from "@towerjs/foundation"');
-    expect(result).toContain("createTowerApp(config)");
-    expect(result).toContain("export const tower = {");
-  });
-
-  it("generates typed getters for each module", () => {
+  it("generates config with Tower-shaped gatehouse features", () => {
     const state: ProjectState = {
       ...baseState,
-      modules: { vault: { provider: "neon" }, gatehouse: {} },
+      modules: {
+        gatehouse: { provider: "better-auth", credentials: true, social: { google: {} } },
+      },
     };
-    const result = towerRuntime(state);
+    const result = towerConfig(state);
 
-    expect(result).toContain('import type { VaultModule } from "@towerjs/vault"');
-    expect(result).toContain('import type { GatehouseModule } from "@towerjs/gatehouse"');
-    expect(result).toContain('app.container.get<VaultModule>("vault")');
-    expect(result).toContain('app.container.get<GatehouseModule>("gatehouse")');
+    expect(result).toContain("credentials: true");
+    expect(result).toContain("google");
   });
 });
 
