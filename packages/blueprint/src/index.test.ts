@@ -4,19 +4,16 @@ import { defineTower, registerModule, getModuleFactory } from "./index";
 describe("defineTower", () => {
   it("returns the config as-is", () => {
     const config = defineTower({
-      framework: "next",
       modules: { vault: { provider: "neon" } },
     });
 
     expect(config).toEqual({
-      framework: "next",
       modules: { vault: { provider: "neon" } },
     });
   });
 
   it("accepts an empty modules object", () => {
     const config = defineTower({
-      framework: "next",
       modules: {},
     });
 

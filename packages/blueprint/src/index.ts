@@ -7,7 +7,7 @@ export interface ServiceRegistry {
 
 export interface TowerInitContext {
   container: ServiceRegistry;
-  config: { framework: string };
+  config: TowerBlueprint;
   runtime: { name: string; isServerless: boolean };
 }
 
@@ -20,7 +20,6 @@ export interface TowerModule {
 export type ModuleFactory = (config: Record<string, unknown>) => TowerModule;
 
 export type TowerBlueprint = {
-  framework: string;
   modules: Record<string, Record<string, unknown>>;
 };
 

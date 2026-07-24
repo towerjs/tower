@@ -14,7 +14,6 @@ beforeAll(() => {
 describe("createTowerApp", () => {
   it("initializes configured modules", async () => {
     const app = await createTowerApp({
-      framework: "next",
       modules: { mock: {} },
     });
 
@@ -23,12 +22,10 @@ describe("createTowerApp", () => {
 
   it("exposes the config on the app", async () => {
     const app = await createTowerApp({
-      framework: "test",
       modules: { mock: {} },
     });
 
     expect(app.config).toEqual({
-      framework: "test",
       modules: { mock: {} },
     });
   });
@@ -51,7 +48,6 @@ describe("createTowerApp", () => {
     }));
 
     const app = await createTowerApp({
-      framework: "next",
       modules: { alpha: {}, beta: {}, mock: {} },
     });
 
@@ -63,7 +59,6 @@ describe("createTowerApp", () => {
   it("throws for an unknown module", async () => {
     await expect(
       createTowerApp({
-        framework: "next",
         modules: { nonexistent: {} },
       }),
     ).rejects.toThrow("Unknown module \"nonexistent\"");
@@ -71,7 +66,6 @@ describe("createTowerApp", () => {
 
   it("detects and exposes the runtime", async () => {
     const app = await createTowerApp({
-      framework: "next",
       modules: { mock: {} },
     });
 
