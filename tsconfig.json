@@ -7,7 +7,6 @@
     { "path": "./packages/foundation" },
     { "path": "./packages/towerjs" },
     { "path": "./packages/scribe" },
-    { "path": "./packages/create-tower" },
-    { "path": "./examples/next-app" }
+    { "path": "./packages/create-tower" }
   ]
 }

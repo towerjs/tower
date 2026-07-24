@@ -5,3 +5,9 @@ dist
 *.tsbuildinfo
 .env
 package-lock.json
+
+# Build artifacts in source directories
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
