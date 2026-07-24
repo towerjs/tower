@@ -15,6 +15,9 @@
   "bin": { "tower": "./dist/cli.js" },
   "files": ["dist"],
   "scripts": { "build": "tsc -b" },
+  "devDependencies": {
+    "@types/node": "^26.1.1"
+  },
   "dependencies": {
     "@towerjs/foundation": "workspace:*",
     "@towerjs/vault": "workspace:*",

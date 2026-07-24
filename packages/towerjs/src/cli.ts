@@ -3,58 +3,109 @@ import { createTowerApp } from "@towerjs/foundation";
 import path from "node:path";
 import fs from "node:fs";
 
-const [command] = process.argv.slice(2);
-
-switch (command) {
-  case "migrate":
-    await migrate();
-    break;
-  case "help":
-  case "--help":
-  case "-h":
-    help();
-    break;
-  default:
-    if (command) console.error(`Unknown command: ${command}`);
-    help();
-    process.exit(1);
+export interface CliResult {
+  stdout: string[]
+  stderr: string[]
+  exitCode: number
 }
 
-async function migrate() {
-  try {
-    const configPath = findConfig();
-    const jiti = createJiti(import.meta.url, { interopDefault: true });
-    const config = (await jiti.import(configPath)) as any;
-    const app = await createTowerApp(config);
+function ok(lines: string[]): CliResult {
+  return { stdout: lines, stderr: [], exitCode: 0 }
+}
 
-    const vault = app.container.has("vault")
-      ? app.container.get<any>("vault")
-      : app.container.get<any>("module.vault");
+function fail(msg: string): CliResult {
+  return { stdout: [], stderr: [msg], exitCode: 1 }
+}
 
-    if (vault?.migrate) {
-      console.log("Running vault migrations...");
-      await vault.migrate();
-    }
+export async function run(command: string | undefined, flags: string[], configPath?: string): Promise<CliResult> {
+  const runSeed = flags.includes("--seed") || flags.includes("-s");
+  const skipMigrate = flags.includes("--skip-migrate");
 
-    const gatehouse = app.container.has("gatehouse")
-      ? app.container.get<any>("gatehouse")
-      : app.container.get<any>("module.gatehouse");
-
-    if (gatehouse?.migrate) {
-      console.log("Running auth migrations...");
-      await gatehouse.migrate();
-    }
-
-    console.log("Migration complete.");
-    process.exit(0);
-  } catch (err) {
-    console.error("Migration failed:", (err as Error).message);
-    process.exit(1);
+  switch (command) {
+    case "migrate":
+      return runMigrate(runSeed, configPath);
+    case "seed":
+      return runSeedCmd(skipMigrate, configPath);
+    case undefined:
+    case "help":
+    case "--help":
+    case "-h":
+      return ok(helpText());
+    default:
+      return fail(`Unknown command: ${command}`);
   }
 }
 
-function findConfig(): string {
-  let dir = process.cwd();
+async function runMigrate(runSeed: boolean, configPath?: string): Promise<CliResult> {
+  const lines: string[] = [];
+  const app = await loadApp(configPath);
+
+  const vault = getModule(app, "vault");
+  if (vault?.migrate) {
+    lines.push("Running vault migrations...");
+    await vault.migrate();
+  }
+
+  const gatehouse = getModule(app, "gatehouse");
+  if (gatehouse?.migrate) {
+    lines.push("Running auth migrations...");
+    await gatehouse.migrate();
+  }
+
+  if (runSeed && vault?.seed) {
+    lines.push("Running seeds...");
+    await vault.seed();
+  }
+
+  await closeModules(app);
+  lines.push("Done.");
+  return ok(lines);
+}
+
+async function runSeedCmd(skipMigrate: boolean, configPath?: string): Promise<CliResult> {
+  const lines: string[] = [];
+  const app = await loadApp(configPath);
+
+  const vault = getModule(app, "vault");
+  if (!vault?.seed) {
+    return fail("Vault not configured or seeds not available.");
+  }
+
+  if (!skipMigrate && vault.migrate) {
+    lines.push("Running vault migrations...");
+    await vault.migrate();
+  }
+
+  lines.push("Running seeds...");
+  await vault.seed();
+
+  await closeModules(app);
+  lines.push("Done.");
+  return ok(lines);
+}
+
+export function getModule(app: any, name: string): any {
+  return app.container.has(name)
+    ? app.container.get(name)
+    : app.container.get(`module.${name}`);
+}
+
+export async function loadApp(configPath?: string) {
+  if (!configPath) configPath = findConfig();
+  const jiti = createJiti(import.meta.url, { interopDefault: true });
+  const config = (await jiti.import(configPath)) as any;
+  return createTowerApp(config);
+}
+
+export async function closeModules(app: any) {
+  const vault = getModule(app, "vault");
+  if (vault?.close) {
+    await vault.close();
+  }
+}
+
+export function findConfig(cwd?: string): string {
+  let dir = cwd ?? process.cwd();
   for (let i = 0; i < 20; i++) {
     for (const name of ["tower.config.ts", "tower.config.mjs", "tower.config.js"]) {
       const fullPath = path.join(dir, name);
@@ -64,16 +115,34 @@ function findConfig(): string {
     if (parent === dir) break;
     dir = parent;
   }
-  console.error("Could not find tower.config.ts in this or any parent directory.");
-  process.exit(1);
+  throw new Error("Could not find tower.config.ts in this or any parent directory.");
 }
 
-function help() {
-  console.log(`
-Usage: tower <command>
 
-Commands:
-  migrate   Run database and auth migrations
-  help      Show this message
-`);
+
+export function helpText(): string[] {
+  return [
+    "",
+    "Usage: tower <command>",
+    "",
+    "Commands:",
+    "  migrate          Run database and auth migrations",
+    "  migrate --seed   Run migrations, then seeds",
+    "  seed             Run seeds (runs migrations first unless --skip-migrate)",
+    "  seed --skip-migrate  Run seeds without running migrations first",
+    "  help             Show this message",
+    "",
+  ];
+}
+
+// ─── CLI entry point ───────────────────────────────────────────────
+// Only runs when invoked directly, not when imported by tests.
+
+const entryUrl = process.argv[1];
+if (entryUrl && (entryUrl.endsWith("/cli.ts") || entryUrl.endsWith("/cli.js") || entryUrl.endsWith("\\cli.js"))) {
+  const [command, ...flags] = process.argv.slice(2);
+  const result = await run(command, flags);
+  for (const line of result.stdout) process.stdout.write(line + "\n");
+  for (const line of result.stderr) process.stderr.write(line + "\n");
+  process.exit(result.exitCode);
 }
