@@ -10,5 +10,8 @@
     }
   },
   "files": ["dist"],
-  "scripts": { "build": "tsc -b" }
+  "scripts": { "build": "tsc -b" },
+  "devDependencies": {
+    "@types/node": "^26.1.1"
+  }
 }

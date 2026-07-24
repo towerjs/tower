@@ -1,3 +1,24 @@
+import { AsyncLocalStorage } from "async_hooks"
+
+export interface TowerContextProvider {
+  run<T>(data: Record<string, unknown>, handler: () => Promise<T>): Promise<T>
+  get<T = unknown>(key: string): T | undefined
+}
+
+class NodeTowerContextProvider implements TowerContextProvider {
+  private storage = new AsyncLocalStorage<Record<string, unknown>>()
+
+  run<T>(data: Record<string, unknown>, handler: () => Promise<T>): Promise<T> {
+    return this.storage.run(data, handler)
+  }
+
+  get<T = unknown>(key: string): T | undefined {
+    return this.storage.getStore()?.[key] as T | undefined
+  }
+}
+
+export const towerContext: TowerContextProvider = new NodeTowerContextProvider()
+
 export interface ServiceRegistry {
   register<T>(name: string, instance: T): void;
   registerFactory<T>(name: string, factory: () => T): void;
