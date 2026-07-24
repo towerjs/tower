@@ -82,6 +82,25 @@ async function promptGatehouseProvider(): Promise<"better-auth" | "clerk"> {
   });
 }
 
+async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
+  const features = await checkbox({
+    message: "Auth features to enable",
+    choices: [
+      { name: "Email/password", value: "credentials", checked: true },
+      { name: "Social login (Google, GitHub, etc.)", value: "social" },
+      { name: "Magic link (passwordless email)", value: "magicLinks" },
+      { name: "Email OTP", value: "emailOtp" },
+    ],
+  });
+  const cfg: Record<string, unknown> = {};
+  for (const f of features) {
+    if (f === "credentials") cfg[f] = true;
+    else if (f === "social") cfg[f] = { google: {}, github: {} };
+    else cfg[f] = true;
+  }
+  return cfg;
+}
+
 async function promptBeaconProvider(): Promise<"ably" | "pusher"> {
   return select({
     message: "Realtime provider",
@@ -104,9 +123,11 @@ async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
       case "vault":
         modules.vault = { provider: await promptVaultProvider() };
         break;
-      case "gatehouse":
-        modules.gatehouse = { provider: await promptGatehouseProvider() };
+      case "gatehouse": {
+        const features = await promptGatehouseFeatures();
+        modules.gatehouse = { provider: await promptGatehouseProvider(), ...features };
         break;
+      }
       case "beacon":
         modules.beacon = { provider: await promptBeaconProvider() };
         break;

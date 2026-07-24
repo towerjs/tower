@@ -1,6 +1,6 @@
 export type Framework = "next" | "react-router" | "vite" | "sveltekit" | "solid";
 
-export type ProviderMap = Record<string, { provider?: string }>;
+export type ProviderMap = Record<string, Record<string, unknown>>;
 
 export type ProjectState = {
   projectName: string;

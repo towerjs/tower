@@ -65,3 +65,9 @@ export function vault(options?: VaultConfig): TowerModule {
 }
 
 registerModule("vault", (config) => vault(config as VaultConfig));
+
+declare module "@towerjs/foundation" {
+  interface TowerModules {
+    vault: VaultModule
+  }
+}
