@@ -251,47 +251,6 @@ export class AuthorizationError extends Error {
   }
 }
 
-export type AuthMethod =
-  | { method: "credentials"; email: string; password: string }
-  | { method: "google" }
-  | { method: "github" }
-  | { method: "discord" }
-  | { method: "social"; provider: string }
-  | { method: "magic-link"; email: string; name?: string; callbackURL?: string }
-  | { method: "email-otp"; email: string; type?: "sign-in" | "email-verification" | "forget-password" | "change-email" }
-
-export interface SignUpParams {
-  name: string
-  email: string
-  password: string
-}
-
-export interface PasswordForgotParams {
-  email: string
-}
-
-export interface PasswordResetConfirmParams {
-  token: string
-  newPassword: string
-}
-
-export interface PasswordChangeParams {
-  currentPassword: string
-  newPassword: string
-}
-
-export interface PasswordConfirmParams {
-  password: string
-}
-
-export interface EmailVerifySendParams {
-  email: string
-}
-
-export interface EmailVerifyConfirmParams {
-  token: string
-}
-
 export interface EmailOtpSendParams {
   email: string
   type?: "sign-in" | "email-verification" | "forget-password" | "change-email"
@@ -355,20 +314,62 @@ import type {
   OrganizationOptions,
   AdminOptions,
 } from "better-auth/plugins"
-import type { SocialProviders } from "better-auth/types"
 import type { PasskeyOptions } from "@better-auth/passkey"
 import type { ApiKeyOptions } from "@better-auth/api-key"
 
+type SocialProviderEntry = {
+  clientId?: string | string[]
+  clientSecret?: string
+  scope?: string[]
+  redirectURI?: string
+  disableSignUp?: boolean
+  disableIdTokenSignIn?: boolean
+  disableImplicitSignUp?: boolean
+  disableDefaultScope?: boolean
+  overrideUserInfoOnSignIn?: boolean
+  prompt?: string
+  responseMode?: string
+  clientKey?: string
+  [key: string]: unknown
+}
+
+export type GatehouseSocialConfig = string[] | Record<string, SocialProviderEntry | true>
+
+type BetterAuthGenerateIdFn = (options: {
+  model: string
+  size?: number | undefined
+}) => string | false
+
 export interface GatehouseConfig {
   provider: "better-auth"
+
   credentials?: boolean | {
     enabled?: boolean
     disableSignUp?: boolean
     requireEmailVerification?: boolean
     minPasswordLength?: number
     maxPasswordLength?: number
+    autoSignIn?: boolean
+    revokeSessionsOnPasswordReset?: boolean
+    resetPasswordTokenExpiresIn?: number
+    sendResetPassword?: (data: { user: { id: string; email: string; name: string }; url: string; token: string }, request?: Request) => void | Promise<void>
+    onPasswordReset?: (data: { user: { id: string; email: string; name: string } }) => void | Promise<void>
+    onExistingUserSignUp?: (data: { user: { id: string; email: string; name: string } }) => void | Promise<void>
+    customSyntheticUser?: (data: { coreFields: Record<string, unknown>; additionalFields: Record<string, unknown>; id: string }) => Record<string, unknown>
+    password?: {
+      hash?: (password: string) => Promise<string>
+      verify?: (data: { hash: string; password: string }) => Promise<boolean>
+    }
   }
-  social?: SocialProviders
+
+  emailVerification?: {
+    sendVerificationEmail: (data: { user: { id: string; email: string; name: string }; url: string; token: string }, request?: Request) => void | Promise<void>
+    sendOnSignUp?: boolean
+    autoSignInAfterVerification?: boolean
+    expiresIn?: number
+  }
+
+  social?: GatehouseSocialConfig
   passkeys?: boolean | PasskeyOptions
   magicLinks?: boolean | Partial<MagicLinkOptions>
   emailOtp?: boolean | Partial<EmailOTPOptions>
@@ -377,14 +378,78 @@ export interface GatehouseConfig {
   organization?: boolean | OrganizationOptions
   admin?: boolean | AdminOptions
   apiKey?: boolean | ApiKeyOptions
-  baseURL?: string
+
+  baseURL?: string | {
+    allowedHosts: string[]
+    protocol?: "http" | "https" | "auto"
+    fallback?: string
+  }
+
   appName?: string
+  trustedOrigins?: string[]
   plugins?: import("better-auth").BetterAuthPlugin[]
+
+  user?: {
+    modelName?: string
+    fields?: Record<string, string>
+    additionalFields?: Record<string, { type: string; required?: boolean; defaultValue?: unknown; input?: boolean }>
+    changeEmail?: {
+      enabled: boolean
+      sendChangeEmailConfirmation?: (data: { user: { id: string; email: string; name: string }; newEmail: string; url: string; token: string }) => void | Promise<void>
+      updateEmailWithoutVerification?: boolean
+    }
+    deleteUser?: {
+      enabled: boolean
+      sendDeleteAccountVerification?: (data: { user: { id: string; email: string; name: string }; url: string; token: string }) => void | Promise<void>
+      beforeDelete?: (user: { id: string; email: string; name: string }) => void | Promise<void>
+      afterDelete?: (user: { id: string; email: string; name: string }) => void | Promise<void>
+    }
+  }
+
+  session?: {
+    modelName?: string
+    fields?: Record<string, string>
+    expiresIn?: number
+    updateAge?: number
+    disableSessionRefresh?: boolean
+    deferSessionRefresh?: boolean
+    additionalFields?: Record<string, { type: string; required?: boolean; defaultValue?: unknown }>
+    storeSessionInDatabase?: boolean
+    preserveSessionInDatabase?: boolean
+    cookieCache?: {
+      enabled: boolean
+      maxAge?: number
+      strategy?: "compact" | "jwt" | "jwe"
+    }
+  }
+
+  account?: {
+    modelName?: string
+    fields?: Record<string, string>
+    encryptOAuthTokens?: boolean
+    updateAccountOnSignIn?: boolean
+    storeStateStrategy?: "cookie" | "database"
+    storeAccountCookie?: boolean
+    accountLinking?: {
+      enabled?: boolean
+      trustedProviders?: string[] | ((request: Request) => string[] | Promise<string[]>)
+      allowDifferentEmails?: boolean
+      disableImplicitLinking?: boolean
+      allowUnlinkingAll?: boolean
+      updateUserInfoOnLink?: boolean
+    }
+  }
+
   advanced?: {
     useSecureCookies?: boolean
     disableCSRFCheck?: boolean
     cookiePrefix?: string
+    database?: {
+      generateId?: BetterAuthGenerateIdFn | false | "serial" | "uuid"
+      defaultFindManyLimit?: number
+    }
   }
+
   passThrough?: Record<string, unknown>
 }
 
@@ -400,31 +465,49 @@ export interface ProxyResult {
   config: { matcher: string[] }
 }
 
-export interface GatehouseModule {
-  provider: any
+export interface GatehouseInstance {
+  session(): Promise<Session | null>
+  user(): Promise<GatehouseUser | null>
+  readonly headers: Headers
+  readonly provider: any
 
-  routes: {
-    GET: (req: Request) => Promise<Response>
-    POST: (req: Request) => Promise<Response>
+  requireUser(): Promise<Session>
+
+  signIn: {
+    email(params: { email: string; password: string }): Promise<Session>
+    emailOtp(params: { email: string; code: string; type?: string }): Promise<Session>
+    phone(params: { phoneNumber: string; code: string }): Promise<Session>
+    social(params: { provider: string; callbackURL?: string; disableRedirect?: boolean }): Promise<Session>
   }
 
-  from(request: Request | { headers: Headers }): Promise<GatehouseContext>
+  signUp: {
+    email(params: { name: string; email: string; password: string }): Promise<Session>
+  }
 
-  proxy(options?: ProxyOptions): ProxyResult
+  sessions: {
+    list(): Promise<GatehouseSession[]>
+    revoke(token: string): Promise<void>
+    revokeOther(): Promise<void>
+    signOut(): Promise<void>
+  }
 
-  signIn(params: AuthMethod): Promise<Session>
-  signUp(params: SignUpParams): Promise<Session>
+  account: {
+    update(data: UpdateUserData): Promise<GatehouseUser>
+    delete(): Promise<void>
+    setPassword(newPassword: string): Promise<void>
+    changeEmail(email: string): Promise<void>
+  }
 
   password: {
-    forgot(params: PasswordForgotParams): Promise<void>
-    reset(params: PasswordResetConfirmParams): Promise<void>
+    forgot(params: { email: string }): Promise<void>
+    reset(params: { newPassword: string; token: string }): Promise<void>
+    change(params: { currentPassword: string; newPassword: string }): Promise<void>
+    confirm(params: { password: string }): Promise<boolean>
   }
 
   email: {
-    verify: {
-      send(params: EmailVerifySendParams): Promise<void>
-      confirm(params: EmailVerifyConfirmParams): Promise<void>
-    }
+    sendVerification(params: { email: string }): Promise<void>
+    verify(params: { token: string }): Promise<void>
     otp: {
       send(params: EmailOtpSendParams): Promise<void>
       confirm(params: EmailOtpConfirmParams): Promise<Session>
@@ -443,56 +526,9 @@ export interface GatehouseModule {
     findByEmail(email: string): Promise<GatehouseUser | null>
   }
 
-  can(params: { user: GatehouseUser; permission: string | string[]; organizationId?: string }): Promise<boolean>
   roles: {
     assign(userId: string, role: string): Promise<void>
     remove(userId: string): Promise<void>
-  }
-
-  migrate(): Promise<void>
-}
-
-export interface GatehouseContext {
-  readonly session: Session | null
-  readonly user: GatehouseUser | null
-  readonly headers: Headers
-  readonly provider: any
-
-  signOut(): Promise<void>
-
-  sessions: {
-    list(): Promise<GatehouseSession[]>
-    revoke(token: string): Promise<void>
-    revokeOther(): Promise<void>
-  }
-
-  account: {
-    update(data: UpdateUserData): Promise<GatehouseUser>
-    delete(): Promise<void>
-    setPassword(newPassword: string): Promise<void>
-    changeEmail(email: string): Promise<void>
-  }
-
-  password: {
-    change(params: PasswordChangeParams): Promise<void>
-    confirm(params: PasswordConfirmParams): Promise<boolean>
-  }
-
-  email: {
-    verify: {
-      confirm(params: EmailVerifyConfirmParams): Promise<void>
-    }
-    otp: {
-      send(params: EmailOtpSendParams): Promise<void>
-      confirm(params: EmailOtpConfirmParams): Promise<Session>
-    }
-  }
-
-  phone: {
-    otp: {
-      send(params: PhoneOtpSendParams): Promise<void>
-      confirm(params: PhoneOtpConfirmParams): Promise<Session>
-    }
   }
 
   passkeys: {
@@ -585,4 +621,19 @@ export interface GatehouseContext {
   }
 
   can(params: { user: GatehouseUser; permission: string | string[]; organizationId?: string }): Promise<boolean>
+}
+
+export interface GatehouseModule {
+  provider: any
+
+  routes: {
+    GET: (req: Request) => Promise<Response>
+    POST: (req: Request) => Promise<Response>
+  }
+
+  from(request: Request | { headers: Headers }): Promise<GatehouseInstance>
+
+  proxy(options?: ProxyOptions): ProxyResult
+
+  migrate(): Promise<void>
 }
