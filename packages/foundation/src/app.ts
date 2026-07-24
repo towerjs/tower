@@ -1,7 +1,11 @@
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { TowerBlueprint, TowerModule, TowerInitContext } from "@towerjs/blueprint";
 import { getModuleFactory } from "@towerjs/blueprint";
 import { ServiceContainer } from "./container";
 import { detectRuntime } from "./runtime";
+import type { TowerRuntime } from "./types";
 
 import "@towerjs/vault";
 import "@towerjs/gatehouse";
@@ -9,8 +13,29 @@ import "@towerjs/gatehouse";
 export interface TowerApp {
   config: TowerBlueprint;
   container: ServiceContainer;
-  runtime: ReturnType<typeof detectRuntime>;
+  runtime: TowerRuntime;
   shutdown(): Promise<void>;
+}
+
+/**
+ * Type registry augmented by each module package via declaration merging.
+ *
+ * @example
+ * ```ts
+ * // In @towerjs/gatehouse:
+ * declare module "@towerjs/foundation" {
+ *   interface TowerModules {
+ *     gatehouse: GatehouseModule
+ *   }
+ * }
+ * ```
+ */
+export interface TowerModules {}
+
+export type TowerInstance = {
+  [K in keyof TowerModules]: TowerModules[K]
+} & {
+  runtime: TowerRuntime
 }
 
 export async function createTowerApp(config: TowerBlueprint): Promise<TowerApp> {
@@ -48,4 +73,61 @@ export async function createTowerApp(config: TowerBlueprint): Promise<TowerApp> 
       }
     },
   };
+}
+
+/**
+ * Create a fully typed Tower instance.
+ *
+ * When called without arguments, automatically discovers `tower.config.ts`
+ * by searching up from the working directory.
+ *
+ * @example
+ * ```ts
+ * // auto-discover config
+ * import { createTower } from "@towerjs/foundation"
+ * export const tower = await createTower()
+ *
+ * // Tests / scripts — explicit config
+ * const testTower = await createTower({ modules: { vault: ... } })
+ * ```
+ */
+export async function createTower(config?: TowerBlueprint): Promise<TowerInstance> {
+  if (!config) {
+    config = await discoverConfig()
+  }
+
+  const app = await createTowerApp(config)
+
+  const modules: Record<string, unknown> = {}
+  for (const [name] of Object.entries(config.modules)) {
+    modules[name] = app.container.has(name)
+      ? app.container.get(name)
+      : app.container.get(`module.${name}`)
+  }
+
+  return {
+    ...modules,
+    runtime: app.runtime,
+  } as unknown as TowerInstance
+}
+
+async function discoverConfig(): Promise<TowerBlueprint> {
+  let dir = process.cwd()
+  for (let i = 0; i < 20; i++) {
+    for (const name of ["tower.config.ts", "tower.config.js", "tower.config.mjs"]) {
+      const fullPath = path.join(dir, name)
+      if (fs.existsSync(fullPath)) {
+        const mod = await import(pathToFileURL(fullPath).href)
+        return mod.default ?? mod
+      }
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  throw new Error(
+    "Could not find tower.config.ts.\n" +
+    "Ensure the file exists in your project root, " +
+    "or pass an explicit config to createTower(config)."
+  )
 }
