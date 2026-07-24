@@ -130,28 +130,27 @@ ${modules}
 }
 
 function authRoute(): string {
-  return `import { tower } from "towerjs";
-
-export const GET = tower.gatehouse.routes.GET;
-export const POST = tower.gatehouse.routes.POST;
+  return `export { GET, POST } from "@towerjs/gatehouse/next-js";
 `;
 }
 
 function proxyFile(): string {
-  return `import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { tower } from "towerjs";
+  return `import { gatehouse } from "@towerjs/gatehouse";
 
-const { handler, config } = tower.gatehouse.proxy({
-  public: ["/", "/sign-in", "/sign-up", "/api/auth/:path*"],
+const { handler } = gatehouse.proxy({
+  public: ["/", "/sign-in", "/sign-up"],
+  redirectIfAuthenticated: ["/sign-in", "/sign-up"],
   redirectTo: "/sign-in",
+  redirectAfterSignIn: "/dashboard",
 });
 
-export async function middleware(request: NextRequest) {
-  return handler(request) ?? NextResponse.next();
+export function proxy(request: Request) {
+  return handler(request);
 }
 
-export { config };
+export const config = {
+  matcher: ["/((?!_next/static|favicon.ico|api/auth).*)"],
+};
 `;
 }
 
