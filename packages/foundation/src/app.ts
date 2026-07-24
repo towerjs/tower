@@ -3,12 +3,11 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { TowerBlueprint, TowerModule, TowerInitContext } from "@towerjs/blueprint";
 import { getModuleFactory } from "@towerjs/blueprint";
+import type { VaultModule } from "@towerjs/vault";
+import type { GatehouseModule } from "@towerjs/gatehouse";
 import { ServiceContainer } from "./container";
 import { detectRuntime } from "./runtime";
 import type { TowerRuntime } from "./types";
-
-import "@towerjs/vault";
-import "@towerjs/gatehouse";
 
 export interface TowerApp {
   config: TowerBlueprint;
@@ -18,19 +17,14 @@ export interface TowerApp {
 }
 
 /**
- * Type registry augmented by each module package via declaration merging.
- *
- * @example
- * ```ts
- * // In @towerjs/gatehouse:
- * declare module "@towerjs/foundation" {
- *   interface TowerModules {
- *     gatehouse: GatehouseModule
- *   }
- * }
- * ```
+ * Module type registry — each known module is listed here.
+ * Module packages previously used `declare module "@towerjs/foundation"`
+ * to augment this interface; now types are imported directly.
  */
-export interface TowerModules {}
+export interface TowerModules {
+  vault: VaultModule;
+  gatehouse: GatehouseModule;
+}
 
 export type TowerInstance = {
   [K in keyof TowerModules]: TowerModules[K]
