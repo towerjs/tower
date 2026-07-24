@@ -4,7 +4,9 @@ import { toNextJsHandler } from "better-auth/next-js";
 import type { Kysely } from "kysely";
 
 const _require = createRequire(import.meta.url);
-import { magicLink, emailOTP, twoFactor, organization } from "better-auth/plugins";
+import { magicLink, emailOTP, twoFactor, organization, admin, phoneNumber } from "better-auth/plugins";
+import { passkey } from "@better-auth/passkey";
+import { apiKey } from "@better-auth/api-key";
 import type {
   AuthMethod,
   GatehouseConfig,
@@ -29,26 +31,47 @@ import type {
   OrganizationUpdateParams,
   OrganizationInviteParams,
   Organization,
+  OrganizationFull,
   OrganizationMember,
   OrganizationInvitation,
+  OrganizationRole,
+  OrganizationRoleCreateParams,
+  OrganizationRoleUpdateParams,
   AccessToken,
   ProxyOptions,
   ProxyResult,
+  PhoneOtpSendParams,
+  PhoneOtpConfirmParams,
+  PasskeyInfo,
+  PasskeyCreateParams,
+  PasskeyUpdateParams,
+  AdminUserCreateParams,
+  AdminUpdateUserParams,
+  AdminUserBanParams,
+  AdminSetRoleParams,
+  AdminListUsersOptions,
+  AdminImpersonationResult,
+  AdminUserSession,
+  AdminCheckPermissionParams,
+  ApiKeyInfo,
+  ApiKeyCreateParams,
+  ApiKeyUpdateParams,
+  ApiKeyListOptions,
+  ApiKeyVerifyParams,
+  TwoFactorOtpSendParams,
+  TwoFactorOtpVerifyParams,
 } from "../types.js";
 import { AuthenticationError } from "../types.js";
-
-interface SocialProviderConfig {
-  clientId?: string
-  clientSecret?: string
-}
 
 export class BetterAuthAdapter {
   private auth: any;
   private api: any;
   private db: Kysely<unknown>;
+  private config: GatehouseConfig;
 
   constructor(config: GatehouseConfig, db: Kysely<unknown>) {
     this.db = db;
+    this.config = config;
 
     const baseURL = config.baseURL || process.env.BETTER_AUTH_URL;
 
@@ -59,45 +82,55 @@ export class BetterAuthAdapter {
           ? { enabled: true, ...config.credentials }
           : undefined;
 
-    const providers: Record<string, SocialProviderConfig> = {};
-    if (config.social) {
-      for (const [name, cfg] of Object.entries(config.social)) {
-        const key = name.toUpperCase();
-        providers[name] = {
-          clientId: cfg.clientId || process.env[`AUTH_${key}_CLIENT_ID`] || "",
-          clientSecret: cfg.clientSecret || process.env[`AUTH_${key}_CLIENT_SECRET`] || "",
-        };
-      }
-    }
-
     const allPlugins = [...(config.plugins || [])];
 
     if (config.magicLinks) {
-      allPlugins.push(
-        magicLink({
-          sendMagicLink: async ({ email, url }) => {
+      const sendMagicLink = typeof config.magicLinks === "object" && config.magicLinks.sendMagicLink
+        ? config.magicLinks.sendMagicLink
+        : async ({ email, url }: { email: string; url: string }) => {
             throw new Error(
-              `sendMagicLink not implemented — configure it via the "plugins" option: magicLink({ sendMagicLink: ... })`,
+              `sendMagicLink not implemented — provide a sendMagicLink callback in the magicLinks config`,
             );
-          },
-        }),
-      );
+          };
+      allPlugins.push(magicLink({ sendMagicLink }));
     }
     if (config.emailOtp) {
-      allPlugins.push(
-        emailOTP({
-          sendVerificationOTP: async ({ email, otp, type }) => {
+      const sendVerificationOTP = typeof config.emailOtp === "object" && config.emailOtp.sendVerificationOTP
+        ? config.emailOtp.sendVerificationOTP
+        : async ({ email, otp, type }: { email: string; otp: string; type: string }) => {
             throw new Error(
-              `sendVerificationOTP not implemented — configure it via the "plugins" option: emailOTP({ sendVerificationOTP: ... })`,
+              `sendVerificationOTP not implemented — provide a sendVerificationOTP callback in the emailOtp config`,
             );
-          },
-        }),
-      );
+          };
+      allPlugins.push(emailOTP({ sendVerificationOTP }));
     }
-    if (config.passThrough?.twoFactor === true || config.passThrough?.twoFactor !== false) {
+    if (config.phoneNumber) {
+      const sendOTP = typeof config.phoneNumber === "object" && config.phoneNumber.sendOTP
+        ? config.phoneNumber.sendOTP
+        : async ({ phoneNumber: _phone, code }: { phoneNumber: string; code: string }) => {
+            throw new Error(
+              `sendOTP not implemented — provide a sendOTP callback in the phoneNumber config`,
+            );
+          };
+      allPlugins.push(phoneNumber({ sendOTP }));
+    }
+    if (config.passkeys) {
+      allPlugins.push(passkey(
+        typeof config.passkeys === "object" ? config.passkeys : undefined
+      ));
+    }
+    if (config.apiKey) {
+      allPlugins.push(apiKey(
+        typeof config.apiKey === "object" ? config.apiKey : undefined
+      ));
+    }
+    if (config.admin) {
+      allPlugins.push(admin());
+    }
+    if (config.twoFactor) {
       allPlugins.push(twoFactor());
     }
-    if (config.passThrough?.organization !== false) {
+    if (config.organization) {
       allPlugins.push(organization());
     }
 
@@ -108,7 +141,7 @@ export class BetterAuthAdapter {
       basePath: config.passThrough?.basePath,
       appName: config.appName,
       emailAndPassword: creds,
-      socialProviders: Object.keys(providers).length > 0 ? providers : undefined,
+      socialProviders: config.social,
       advanced: config.advanced,
       plugins: allPlugins,
     };
@@ -136,8 +169,6 @@ export class BetterAuthAdapter {
   }
 
   // ─── From ─────────────────────────────────────────────────────────
-  // Create an authenticated context — pass `request` once, get all
-  // auth-aware operations without ever passing `request` again.
 
   async from(request: { headers: Headers } | Request): Promise<GatehouseContext> {
     const headers = request instanceof Request ? request.headers : request.headers;
@@ -173,6 +204,52 @@ export class BetterAuthAdapter {
         verify: {
           confirm: (params) => this.verifyEmail({ headers }, params),
         },
+        otp: {
+          send: (params) => this.sendEmailOTP({ headers }, params),
+          confirm: (params) => this.verifyEmailOTP({ headers }, params),
+        },
+      },
+
+      phone: {
+        otp: {
+          send: (params) => this.sendPhoneOTP({ headers }, params),
+          confirm: (params) => this.verifyPhoneOTP({ headers }, params),
+        },
+      },
+
+      passkeys: {
+        add: (params) => this.addPasskey({ headers }, params),
+        list: () => this.listPasskeys({ headers }),
+        update: (id, params) => this.updatePasskey({ headers }, id, params),
+        remove: (id) => this.removePasskey({ headers }, id),
+      },
+
+      admin: {
+        createUser: (params) => this.createUserByAdmin({ headers }, params),
+        updateUser: (userId, params) => this.updateUserByAdmin({ headers }, userId, params),
+        getUser: (userId) => this.getUserByAdmin({ headers }, userId),
+        listUsers: (options) => this.listUsersByAdmin({ headers }, options),
+        removeUser: (userId) => this.removeUserByAdmin({ headers }, userId),
+        setUserPassword: (userId, newPassword) => this.setUserPasswordByAdmin({ headers }, userId, newPassword),
+        setRole: (params) => this.setRoleByAdmin({ headers }, params),
+        banUser: (userId, params) => this.banUserByAdmin({ headers }, userId, params),
+        unbanUser: (userId) => this.unbanUserByAdmin({ headers }, userId),
+        impersonateUser: (userId) => this.impersonateUserByAdmin({ headers }, userId),
+        stopImpersonating: () => this.stopImpersonatingByAdmin({ headers }),
+        listUserSessions: (userId) => this.listUserSessionsByAdmin({ headers }, userId),
+        revokeUserSession: (userId, sessionToken) => this.revokeUserSessionByAdmin({ headers }, userId, sessionToken),
+        revokeUserSessions: (userId) => this.revokeUserSessionsByAdmin({ headers }, userId),
+        hasPermission: (params) => this.userHasPermissionByAdmin({ headers }, params),
+      },
+
+      apiKeys: {
+        create: (params) => this.createApiKey({ headers }, params),
+        list: (userId, options) => this.listApiKeys({ headers }, userId, options),
+        get: (keyId) => this.getApiKey({ headers }, keyId),
+        update: (id, params) => this.updateApiKey({ headers }, id, params),
+        delete: (id) => this.deleteApiKey({ headers }, id),
+        verify: (params) => this.verifyApiKey({ headers }, params),
+        deleteAllExpired: () => this.deleteAllExpiredApiKeys({ headers }),
       },
 
       identities: {
@@ -189,10 +266,14 @@ export class BetterAuthAdapter {
       },
 
       totp: {
-        enable: (password) => this.enableTwoFactor({ headers }, password),
+        enable: (password, issuer) => this.enableTwoFactor({ headers }, password, issuer),
         disable: (password) => this.disableTwoFactor({ headers }, password),
         verify: (code, trustDevice) => this.verifyTwoFactorTotp({ headers }, code, trustDevice),
         uri: (password) => this.getTotpUri({ headers }, password),
+        otp: {
+          send: (params) => this.sendTwoFactorOTP({ headers }, params),
+          verify: (params) => this.verifyTwoFactorOTP({ headers }, params),
+        },
       },
 
       backupCodes: {
@@ -204,6 +285,8 @@ export class BetterAuthAdapter {
         create: (params) => this.createOrganization({ headers }, params),
         list: () => this.listOrganizations({ headers }),
         get: (id) => this.getOrganization({ headers }, id),
+        getFull: (id) => this.getOrganizationFull({ headers }, id),
+        setActive: (orgId) => this.setActiveOrganization({ headers }, orgId),
         update: (id, params) => this.updateOrganization({ headers }, id, params),
         delete: (id) => this.deleteOrganization({ headers }, id),
         members: {
@@ -215,9 +298,17 @@ export class BetterAuthAdapter {
         invitations: {
           create: (orgId, params) => this.createOrganizationInvitation({ headers }, orgId, params),
           list: (orgId) => this.listOrganizationInvitations({ headers }, orgId),
+          get: (invId) => this.getOrganizationInvitation({ headers }, invId),
           accept: (invId) => this.acceptInvitation({ headers }, invId),
           reject: (invId) => this.rejectInvitation({ headers }, invId),
           cancel: (invId) => this.cancelInvitation({ headers }, invId),
+        },
+        roles: {
+          create: (params) => this.createOrganizationRole({ headers }, params),
+          list: (orgId) => this.listOrganizationRoles({ headers }, orgId),
+          get: (orgId, roleName) => this.getOrganizationRole({ headers }, orgId, roleName),
+          update: (orgId, roleName, params) => this.updateOrganizationRole({ headers }, orgId, roleName, params),
+          delete: (orgId, roleName) => this.deleteOrganizationRole({ headers }, orgId, roleName),
         },
       },
 
@@ -226,9 +317,6 @@ export class BetterAuthAdapter {
   }
 
   // ─── Proxy ────────────────────────────────────────────────────────
-  // Request-level auth guard for use in middleware/proxy.ts.
-  // Returns a redirect Response for unauthenticated requests to
-  // protected routes, or `undefined` to continue.
 
   createProxy(options?: ProxyOptions): ProxyResult {
     const publicPaths = options?.public ?? []
@@ -246,8 +334,8 @@ export class BetterAuthAdapter {
       const path = url.pathname
 
       try {
-        const ctx = await this.from(request)
-        if (ctx.user) {
+        const auth = await this.from(request)
+        if (auth.user) {
           if (authPaths.some(p => matchPath(path, p))) {
             return Response.redirect(new URL(redirectAfterSignIn, url))
           }
@@ -265,7 +353,7 @@ export class BetterAuthAdapter {
     return { handler, config: { matcher } }
   }
 
-  // ─── Auth ────────────────────────────────────────────────────────
+  // ─── Auth ─────────────────────────────────────────────────────────
 
   async signIn(params: AuthMethod): Promise<Session> {
     if (params.method === "credentials") {
@@ -302,7 +390,7 @@ export class BetterAuthAdapter {
         email: params.email,
         type: params.type || "sign-in",
       });
-      throw new Error("OTP sent — verify with gatehouse.email.otp.confirm()");
+      throw new Error("OTP sent — verify via gatehouse.email.otp.confirm()");
     }
     throw new Error("Sign in method not supported");
   }
@@ -539,7 +627,7 @@ export class BetterAuthAdapter {
     return body.valid === true;
   }
 
-  // ─── Verification ────────────────────────────────────────────────
+  // ─── Verification ─────────────────────────────────────────────────
 
   async sendVerification(params: EmailVerifySendParams): Promise<void> {
     const res = await this.auth.handler(
@@ -572,12 +660,325 @@ export class BetterAuthAdapter {
     }
   }
 
-  // ─── Two-Factor ──────────────────────────────────────────────────
+  // ─── Email OTP ────────────────────────────────────────────────────
 
-  async enableTwoFactor(request: { headers: Headers }, password: string): Promise<TwoFactorInfo> {
+  async sendEmailOTP(request: { headers: Headers }, params: EmailOtpSendParams): Promise<void> {
+    await this.api.sendVerificationOTP({
+      headers: request.headers,
+      body: { email: params.email, type: params.type || "sign-in" },
+    });
+  }
+
+  async verifyEmailOTP(request: { headers: Headers }, params: EmailOtpConfirmParams): Promise<Session> {
+    const result = await this.api.verifyVerificationOTP({
+      headers: request.headers,
+      body: { email: params.email, code: params.code, type: params.type || "sign-in" },
+    });
+    return {
+      user: mapUser(result.user),
+      session: mapSession(result.session),
+    };
+  }
+
+  // ─── Phone OTP ────────────────────────────────────────────────────
+
+  async sendPhoneOTP(request: { headers: Headers }, params: PhoneOtpSendParams): Promise<void> {
+    await this.api.sendPhoneNumberOTP({
+      headers: request.headers,
+      body: { phoneNumber: params.phoneNumber },
+    });
+  }
+
+  async verifyPhoneOTP(request: { headers: Headers }, params: PhoneOtpConfirmParams): Promise<Session> {
+    const result = await this.api.verifyPhoneNumberOTP({
+      headers: request.headers,
+      body: { phoneNumber: params.phoneNumber, code: params.code },
+    });
+    return {
+      user: mapUser(result.user),
+      session: mapSession(result.session),
+    };
+  }
+
+  // ─── Passkeys ─────────────────────────────────────────────────────
+
+  async addPasskey(request: { headers: Headers }, params?: PasskeyCreateParams): Promise<PasskeyInfo> {
+    const result = await this.api.addPasskey({
+      headers: request.headers,
+      body: { name: params?.name, domain: params?.domain },
+    });
+    return {
+      id: result.id,
+      name: result.name,
+      createdAt: result.createdAt,
+    };
+  }
+
+  async listPasskeys(request: { headers: Headers }): Promise<PasskeyInfo[]> {
+    const result = await this.api.listPasskeys({
+      headers: request.headers,
+    });
+    return (result.passkeys || result || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      createdAt: p.createdAt,
+    }));
+  }
+
+  async updatePasskey(request: { headers: Headers }, id: string, params: PasskeyUpdateParams): Promise<PasskeyInfo> {
+    const result = await this.api.updatePasskey({
+      headers: request.headers,
+      body: { id, name: params.name },
+    });
+    return {
+      id: result.id,
+      name: result.name,
+      createdAt: result.createdAt,
+    };
+  }
+
+  async removePasskey(request: { headers: Headers }, id: string): Promise<void> {
+    await this.api.removePasskey({
+      headers: request.headers,
+      body: { id },
+    });
+  }
+
+  // ─── Admin ────────────────────────────────────────────────────────
+
+  async createUserByAdmin(request: { headers: Headers }, params: AdminUserCreateParams): Promise<GatehouseUser> {
+    const result = await this.api.createUser({
+      headers: request.headers,
+      body: {
+        name: params.name,
+        email: params.email,
+        password: params.password,
+        role: params.role,
+        data: params.data,
+      },
+    });
+    return mapUser(result.user || result);
+  }
+
+  async updateUserByAdmin(request: { headers: Headers }, userId: string, params: AdminUpdateUserParams): Promise<GatehouseUser> {
+    const result = await this.api.adminUpdateUser?.({
+      headers: request.headers,
+      body: { userId, ...params },
+    }) ?? await this.api.updateUser?.({
+      headers: request.headers,
+      body: { userId, ...params },
+    });
+    return mapUser(result.user || result);
+  }
+
+  async getUserByAdmin(request: { headers: Headers }, userId: string): Promise<GatehouseUser | null> {
+    const result = await this.api.getUser?.({
+      headers: request.headers,
+      query: { userId },
+    }) ?? await (this.db as any)
+      .selectFrom("user")
+      .where("id", "=", userId)
+      .selectAll()
+      .executeTakeFirst();
+    if (!result) return null;
+    return mapUser(result);
+  }
+
+  async listUsersByAdmin(request: { headers: Headers }, options?: AdminListUsersOptions): Promise<{ users: GatehouseUser[]; total?: number }> {
+    const result = await this.api.listUsers({
+      headers: request.headers,
+      query: options as any,
+    });
+    return {
+      users: (result.users || result || []).map(mapUser),
+      total: result.total,
+    };
+  }
+
+  async removeUserByAdmin(request: { headers: Headers }, userId: string): Promise<void> {
+    await this.api.removeUser?.({
+      headers: request.headers,
+      body: { userId },
+    }) ?? await this.api.deleteUser?.({
+      headers: request.headers,
+      body: { userId },
+    });
+  }
+
+  async setUserPasswordByAdmin(request: { headers: Headers }, userId: string, newPassword: string): Promise<void> {
+    await this.api.setUserPassword?.({
+      headers: request.headers,
+      body: { userId, newPassword },
+    });
+  }
+
+  async setRoleByAdmin(request: { headers: Headers }, params: AdminSetRoleParams): Promise<void> {
+    await this.api.setRole?.({
+      headers: request.headers,
+      body: { userId: params.userId, role: params.role },
+    });
+  }
+
+  async banUserByAdmin(request: { headers: Headers }, userId: string, params?: AdminUserBanParams): Promise<void> {
+    await this.api.banUser({
+      headers: request.headers,
+      body: { userId, banReason: params?.banReason, banExpiresIn: params?.banExpiresIn },
+    });
+  }
+
+  async unbanUserByAdmin(request: { headers: Headers }, userId: string): Promise<void> {
+    await this.api.unbanUser({
+      headers: request.headers,
+      body: { userId },
+    });
+  }
+
+  async impersonateUserByAdmin(request: { headers: Headers }, userId: string): Promise<AdminImpersonationResult> {
+    const result = await this.api.impersonateUser({
+      headers: request.headers,
+      body: { userId },
+    });
+    return {
+      token: result.token,
+      user: mapUser(result.user),
+    };
+  }
+
+  async stopImpersonatingByAdmin(request: { headers: Headers }): Promise<void> {
+    await this.api.stopImpersonating({
+      headers: request.headers,
+    });
+  }
+
+  async listUserSessionsByAdmin(request: { headers: Headers }, userId: string): Promise<AdminUserSession[]> {
+    const result = await this.api.listUserSessions({
+      headers: request.headers,
+      query: { userId },
+    });
+    return (result.sessions || result || []).map((s: any) => ({
+      id: s.id,
+      userId: s.userId,
+      expiresAt: s.expiresAt,
+      token: s.token,
+      ipAddress: s.ipAddress,
+      userAgent: s.userAgent,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+    }));
+  }
+
+  async revokeUserSessionByAdmin(request: { headers: Headers }, userId: string, sessionToken: string): Promise<void> {
+    await this.api.revokeUserSession({
+      headers: request.headers,
+      body: { userId, sessionToken },
+    });
+  }
+
+  async revokeUserSessionsByAdmin(request: { headers: Headers }, userId: string): Promise<void> {
+    await this.api.revokeUserSessions({
+      headers: request.headers,
+      body: { userId },
+    });
+  }
+
+  async userHasPermissionByAdmin(request: { headers: Headers }, params: AdminCheckPermissionParams): Promise<boolean> {
+    const result = await this.api.userHasPermission({
+      headers: request.headers,
+      body: {
+        userId: params.userId,
+        role: params.role,
+        permissions: params.permissions,
+      },
+    });
+    return result === true;
+  }
+
+  // ─── API Keys ─────────────────────────────────────────────────────
+
+  async createApiKey(request: { headers: Headers }, params: ApiKeyCreateParams): Promise<ApiKeyInfo> {
+    const result = await this.api.createApiKey({
+      headers: request.headers,
+      body: {
+        name: params.name,
+        userId: params.userId,
+        expiresIn: params.expiresIn,
+        prefix: params.prefix,
+        permissions: params.permissions,
+        configId: params.configId,
+        metadata: params.metadata,
+      },
+    });
+    return mapApiKey(result);
+  }
+
+  async listApiKeys(request: { headers: Headers }, userId: string, options?: ApiKeyListOptions): Promise<{ keys: ApiKeyInfo[]; total?: number }> {
+    const body: Record<string, unknown> = { userId };
+    if (options?.limit) body.limit = options.limit;
+    if (options?.offset) body.offset = options.offset;
+    if (options?.sortBy) body.sortBy = options.sortBy;
+    if (options?.sortDirection) body.sortDirection = options.sortDirection;
+    if (options?.organizationId) body.organizationId = options.organizationId;
+    if (options?.configId) body.configId = options.configId;
+    const result = await this.api.listApiKeys({
+      headers: request.headers,
+      body: body as any,
+    });
+    return {
+      keys: (result.apiKeys || result?.data || result || []).map(mapApiKey),
+      total: result.total,
+    };
+  }
+
+  async getApiKey(request: { headers: Headers }, keyId: string): Promise<ApiKeyInfo | null> {
+    const result = await this.api.getApiKey?.({
+      headers: request.headers,
+      query: { keyId },
+    });
+    if (!result) return null;
+    return mapApiKey(result);
+  }
+
+  async updateApiKey(request: { headers: Headers }, id: string, params: ApiKeyUpdateParams): Promise<ApiKeyInfo> {
+    const result = await this.api.updateApiKey({
+      headers: request.headers,
+      body: { keyId: id, name: params.name, expiresIn: params.expiresIn, permissions: params.permissions },
+    });
+    return mapApiKey(result);
+  }
+
+  async deleteApiKey(request: { headers: Headers }, id: string): Promise<void> {
+    await this.api.deleteApiKey({
+      headers: request.headers,
+      body: { keyId: id },
+    });
+  }
+
+  async verifyApiKey(request: { headers: Headers }, params: ApiKeyVerifyParams): Promise<ApiKeyInfo | null> {
+    try {
+      const result = await this.api.verifyApiKey?.({
+        headers: request.headers,
+        body: { key: params.key },
+      });
+      if (!result) return null;
+      return mapApiKey(result);
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteAllExpiredApiKeys(request: { headers: Headers }): Promise<number> {
+    const result = await this.api.deleteAllExpiredApiKeys?.({
+      headers: request.headers,
+    });
+    return result?.count ?? 0;
+  }
+
+  // ─── Two-Factor ───────────────────────────────────────────────────
+
+  async enableTwoFactor(request: { headers: Headers }, password: string, issuer?: string): Promise<TwoFactorInfo> {
     const result = await this.api.enableTwoFactor({
       headers: request.headers,
-      body: { password },
+      body: { password, ...(issuer ? { issuer } : {}) },
     });
     return {
       totpURI: result.totpURI,
@@ -628,6 +1029,24 @@ export class BetterAuthAdapter {
       body: { password },
     });
     return result.totpURI;
+  }
+
+  async sendTwoFactorOTP(request: { headers: Headers }, params?: TwoFactorOtpSendParams): Promise<void> {
+    await this.api.sendTwoFactorOTP?.({
+      headers: request.headers,
+      body: { trustDevice: params?.trustDevice },
+    });
+  }
+
+  async verifyTwoFactorOTP(request: { headers: Headers }, params: TwoFactorOtpVerifyParams): Promise<TwoFactorVerifyResult> {
+    const result = await this.api.verifyTwoFactorOTP?.({
+      headers: request.headers,
+      body: { code: params.code, trustDevice: params?.trustDevice },
+    });
+    return {
+      token: result?.token,
+      user: mapUser(result?.user || result),
+    };
   }
 
   // ─── Organizations ──────────────────────────────────────────────
@@ -747,14 +1166,112 @@ export class BetterAuthAdapter {
     });
   }
 
+  // ─── Organization Extras ─────────────────────────────────────────
+
+  async getOrganizationFull(request: { headers: Headers }, id: string): Promise<OrganizationFull | null> {
+    const result = await this.api.getFullOrganization?.({
+      headers: request.headers,
+      query: { organizationId: id },
+    });
+    if (!result) return null;
+    return {
+      ...mapOrganization(result),
+      members: (result.members || []).map(mapOrganizationMember),
+      invitations: (result.invitations || []).map(mapInvitation),
+    };
+  }
+
+  async setActiveOrganization(request: { headers: Headers }, organizationId: string): Promise<void> {
+    await this.api.setActiveOrganization({
+      headers: request.headers,
+      body: { organizationId },
+    });
+  }
+
+  async getOrganizationInvitation(request: { headers: Headers }, invitationId: string): Promise<OrganizationInvitation | null> {
+    const result = await this.api.getInvitation({
+      headers: request.headers,
+      query: { invitationId },
+    });
+    if (!result) return null;
+    return mapInvitation(result);
+  }
+
+  // ─── Organization Roles ──────────────────────────────────────────
+
+  async createOrganizationRole(request: { headers: Headers }, params: OrganizationRoleCreateParams): Promise<OrganizationRole> {
+    const result = await this.api.createOrgRole?.({
+      headers: request.headers,
+      body: {
+        organizationId: params.organizationId,
+        role: params.role,
+        permission: params.permission,
+      },
+    });
+    return mapOrganizationRole(result);
+  }
+
+  async listOrganizationRoles(request: { headers: Headers }, organizationId?: string): Promise<OrganizationRole[]> {
+    const result = await this.api.listOrgRoles?.({
+      headers: request.headers,
+      query: { organizationId },
+    });
+    return (result.roles || result || []).map(mapOrganizationRole);
+  }
+
+  async getOrganizationRole(request: { headers: Headers }, organizationId: string, roleName: string): Promise<OrganizationRole | null> {
+    const result = await this.api.getOrgRole?.({
+      headers: request.headers,
+      query: { organizationId, roleName },
+    });
+    if (!result) return null;
+    return mapOrganizationRole(result);
+  }
+
+  async updateOrganizationRole(request: { headers: Headers }, organizationId: string, roleName: string, params: OrganizationRoleUpdateParams): Promise<OrganizationRole> {
+    const result = await this.api.updateOrgRole?.({
+      headers: request.headers,
+      body: {
+        organizationId,
+        roleName,
+        data: {
+          permission: params.permission,
+          roleName: params.roleName,
+        },
+      },
+    });
+    return mapOrganizationRole(result);
+  }
+
+  async deleteOrganizationRole(request: { headers: Headers }, organizationId: string, roleName: string): Promise<void> {
+    await this.api.deleteOrgRole?.({
+      headers: request.headers,
+      body: { organizationId, roleName },
+    });
+  }
+
   // ─── Authorization ───────────────────────────────────────────────
 
-  async checkPermission(_params: {
+  async checkPermission(params: {
     user: GatehouseUser;
-    action: string;
-    resource: unknown;
+    permission: string | string[];
+    organizationId?: string;
   }): Promise<boolean> {
-    return true;
+    try {
+      if (params.organizationId && this.api.hasPermission) {
+        const result = await this.api.hasPermission({
+          body: {
+            userId: params.user.id,
+            organizationId: params.organizationId,
+            permission: Array.isArray(params.permission) ? params.permission : [params.permission],
+          },
+        });
+        return result.hasPermission === true;
+      }
+      return true;
+    } catch {
+      return true;
+    }
   }
 
   async assignRole(userId: string, role: string): Promise<void> {
@@ -773,7 +1290,7 @@ export class BetterAuthAdapter {
       .execute();
   }
 
-  // ─── Email OTP (used by auth.signIn with email-otp method) ─────
+  // -- OTP passthrough (used by module-level OTP methods) -----------
 
   async sendOTP(params: { email: string; type?: string }): Promise<void> {
     await this.api.sendVerificationOTP({
@@ -782,11 +1299,28 @@ export class BetterAuthAdapter {
     });
   }
 
-  async verifyOTP(params: EmailOtpConfirmParams): Promise<Session> {
+  async verifyOTP(params: { email: string; code: string; type?: string }): Promise<Session> {
     const result = await this.api.verifyVerificationOTP({
       email: params.email,
       code: params.code,
       type: params.type || "sign-in",
+    });
+    return {
+      user: mapUser(result.user),
+      session: mapSession(result.session),
+    };
+  }
+
+  async sendPhoneOTPModule(params: PhoneOtpSendParams): Promise<void> {
+    await this.api.sendPhoneNumberOTP({
+      phoneNumber: params.phoneNumber,
+    });
+  }
+
+  async verifyPhoneOTPModule(params: PhoneOtpConfirmParams): Promise<Session> {
+    const result = await this.api.verifyPhoneNumberOTP({
+      phoneNumber: params.phoneNumber,
+      code: params.code,
     });
     return {
       user: mapUser(result.user),
@@ -805,6 +1339,9 @@ function mapUser(user: Record<string, unknown>): GatehouseUser {
     createdAt: user.createdAt as Date,
     updatedAt: user.updatedAt as Date,
     twoFactorEnabled: user.twoFactorEnabled as boolean | undefined,
+    banned: user.banned as boolean | undefined,
+    banReason: user.banReason as string | null | undefined,
+    role: user.role as string | undefined,
   };
 }
 
@@ -852,6 +1389,33 @@ function mapInvitation(inv: Record<string, unknown>): OrganizationInvitation {
     inviterId: inv.inviterId as string,
     expiresAt: inv.expiresAt as Date,
     createdAt: inv.createdAt as Date,
+  };
+}
+
+function mapOrganizationRole(role: Record<string, unknown>): OrganizationRole {
+  return {
+    id: role.id as string,
+    name: role.name as string,
+    organizationId: role.organizationId as string,
+    permission: role.permission as Record<string, string[]>,
+    createdAt: role.createdAt as Date,
+    updatedAt: role.updatedAt as Date,
+  };
+}
+
+function mapApiKey(k: Record<string, unknown>): ApiKeyInfo {
+  return {
+    id: k.id as string,
+    name: k.name as string,
+    key: k.key as string,
+    prefix: k.prefix as string,
+    expiresAt: k.expiresAt ? new Date(k.expiresAt as string) : undefined,
+    createdAt: k.createdAt as Date,
+    updatedAt: k.updatedAt as Date,
+    permissions: k.permissions as Record<string, string[]> | undefined,
+    configId: k.configId as string | undefined,
+    metadata: k.metadata as Record<string, unknown> | undefined,
+    organizationId: k.organizationId as string | null | undefined,
   };
 }
 

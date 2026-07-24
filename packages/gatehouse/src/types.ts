@@ -7,6 +7,10 @@ export interface GatehouseUser {
   createdAt: Date
   updatedAt: Date
   twoFactorEnabled?: boolean
+  banned?: boolean
+  banReason?: string | null
+  banExpiresAt?: Date | null
+  role?: string
 }
 
 export interface GatehouseSession {
@@ -46,6 +50,11 @@ export interface Organization {
   metadata?: Record<string, unknown>
 }
 
+export interface OrganizationFull extends Organization {
+  members: OrganizationMember[]
+  invitations: OrganizationInvitation[]
+}
+
 export interface OrganizationMember {
   id: string
   organizationId: string
@@ -66,6 +75,27 @@ export interface OrganizationInvitation {
   createdAt: Date
 }
 
+export interface OrganizationRole {
+  id: string
+  name: string
+  organizationId: string
+  permission: Record<string, string[]>
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface OrganizationRoleCreateParams {
+  organizationId?: string
+  role: string
+  permission: Record<string, string[]>
+}
+
+export interface OrganizationRoleUpdateParams {
+  organizationId?: string
+  permission?: Record<string, string[]>
+  roleName?: string
+}
+
 export interface TwoFactorInfo {
   totpURI: string
   backupCodes: string[]
@@ -80,6 +110,131 @@ export interface AccessToken {
   token: string
   provider: string
   expiresAt?: Date
+}
+
+export interface PhoneOtpSendParams {
+  phoneNumber: string
+}
+
+export interface PhoneOtpConfirmParams {
+  phoneNumber: string
+  code: string
+}
+
+export interface PasskeyInfo {
+  id: string
+  name: string
+  createdAt: Date
+}
+
+export interface PasskeyCreateParams {
+  name?: string
+  domain?: string
+}
+
+export interface PasskeyUpdateParams {
+  name?: string
+}
+
+export interface AdminUserCreateParams {
+  name: string
+  email: string
+  password: string
+  role?: string
+  data?: Record<string, unknown>
+  keepCurrentActiveOrganization?: boolean
+}
+
+export interface AdminUserBanParams {
+  banReason?: string
+  banExpiresIn?: number
+}
+
+export interface AdminCheckPermissionParams {
+  userId?: string
+  role?: string
+  permissions: Record<string, string[]>
+}
+
+export interface AdminUpdateUserParams {
+  name?: string
+  email?: string
+  role?: string
+  data?: Record<string, unknown>
+}
+
+export interface AdminListUsersOptions {
+  searchField?: string
+  searchOperator?: "eq" | "ne" | "starts_with" | "ends_with" | "contains"
+  searchValue?: string
+  limit?: number
+  offset?: number
+  sortBy?: string
+  sortOrder?: "asc" | "desc"
+}
+
+export interface AdminImpersonationResult {
+  token: string
+  user: GatehouseUser
+}
+
+export interface AdminSetRoleParams {
+  userId: string
+  role: string
+}
+
+export interface AdminUserSession {
+  id: string
+  userId: string
+  expiresAt: Date
+  token: string
+  ipAddress?: string | null
+  userAgent?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface ApiKeyInfo {
+  id: string
+  name: string
+  key: string
+  prefix: string
+  expiresAt?: Date
+  createdAt: Date
+  updatedAt: Date
+  permissions?: Record<string, string[]>
+  configId?: string
+  metadata?: Record<string, unknown>
+  organizationId?: string | null
+}
+
+export interface ApiKeyCreateParams {
+  name: string
+  userId: string
+  expiresIn?: number
+  prefix?: string
+  permissions?: Record<string, string[]>
+  configId?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface ApiKeyUpdateParams {
+  name?: string
+  expiresIn?: number
+  permissions?: Record<string, string[]>
+}
+
+export interface ApiKeyListOptions {
+  limit?: number
+  offset?: number
+  sortBy?: string
+  sortDirection?: "asc" | "desc"
+  organizationId?: string
+  configId?: string
+}
+
+export interface ApiKeyVerifyParams {
+  key: string
 }
 
 export class AuthenticationError extends Error {
@@ -150,6 +305,7 @@ export interface EmailOtpConfirmParams {
 
 export interface TwoFactorEnableParams {
   password: string
+  issuer?: string
 }
 
 export interface TwoFactorVerifyTotpParams {
@@ -161,11 +317,22 @@ export interface TwoFactorVerifyBackupCodeParams {
   code: string
 }
 
+export interface TwoFactorOtpSendParams {
+  trustDevice?: boolean
+}
+
+export interface TwoFactorOtpVerifyParams {
+  code: string
+  trustDevice?: boolean
+}
+
 export interface OrganizationCreateParams {
   name: string
   slug: string
   logo?: string
   metadata?: Record<string, unknown>
+  userId?: string
+  keepCurrentActiveOrganization?: boolean
 }
 
 export interface OrganizationUpdateParams {
@@ -180,10 +347,17 @@ export interface OrganizationInviteParams {
   role: string
 }
 
-export interface SocialProviderConfig {
-  clientId?: string
-  clientSecret?: string
-}
+import type {
+  MagicLinkOptions,
+  EmailOTPOptions,
+  PhoneNumberOptions,
+  TwoFactorOptions,
+  OrganizationOptions,
+  AdminOptions,
+} from "better-auth/plugins"
+import type { SocialProviders } from "better-auth/types"
+import type { PasskeyOptions } from "@better-auth/passkey"
+import type { ApiKeyOptions } from "@better-auth/api-key"
 
 export interface GatehouseConfig {
   provider: "better-auth"
@@ -194,10 +368,15 @@ export interface GatehouseConfig {
     minPasswordLength?: number
     maxPasswordLength?: number
   }
-  social?: Record<string, SocialProviderConfig>
-  passkeys?: boolean
-  magicLinks?: boolean
-  emailOtp?: boolean
+  social?: SocialProviders
+  passkeys?: boolean | PasskeyOptions
+  magicLinks?: boolean | Partial<MagicLinkOptions>
+  emailOtp?: boolean | Partial<EmailOTPOptions>
+  phoneNumber?: boolean | Partial<PhoneNumberOptions>
+  twoFactor?: boolean | TwoFactorOptions
+  organization?: boolean | OrganizationOptions
+  admin?: boolean | AdminOptions
+  apiKey?: boolean | ApiKeyOptions
   baseURL?: string
   appName?: string
   plugins?: import("better-auth").BetterAuthPlugin[]
@@ -210,33 +389,18 @@ export interface GatehouseConfig {
 }
 
 export interface ProxyOptions {
-  /** Path patterns that don't require authentication */
   public?: string[]
-  /** Path patterns that redirect to `redirectAfterSignIn` when already authenticated (e.g. login page) */
   redirectIfAuthenticated?: string[]
-  /** Where unauthenticated users are sent (default: /sign-in) */
   redirectTo?: string
-  /** Where already-authenticated users are sent when visiting a guest page (default: /) */
   redirectAfterSignIn?: string
 }
 
 export interface ProxyResult {
-  /**
-   * Call this from your framework's middleware/proxy.
-   * Returns a redirect Response if the request should be redirected,
-   * or `undefined` to continue.
-   */
   handler: (request: Request) => Promise<Response | undefined>
-  /** Next.js matcher config — computed from the path patterns */
   config: { matcher: string[] }
 }
 
 export interface GatehouseModule {
-  /**
-   * Escape hatch to the underlying auth provider.
-   * Use this when Gatehouse's curated API doesn't cover your use case.
-   * `any` by design — you're past the guard rails.
-   */
   provider: any
 
   routes: {
@@ -244,33 +408,8 @@ export interface GatehouseModule {
     POST: (req: Request) => Promise<Response>
   }
 
-  /**
-   * Create an authenticated context from a request.
-   * Call this once at the top of your route handler, then use the returned
-   * context for all auth-aware operations — never pass `request` again.
-   */
   from(request: Request | { headers: Headers }): Promise<GatehouseContext>
 
-  /**
-   * Create a proxy/middleware handler for request authentication.
-   * Use in Next.js 16 proxy.ts or middleware.ts.
-   *
-   * @example
-   * ```ts
-   * // proxy.ts
-   * import { NextResponse } from "next/server"
-   * import { tower } from "towerjs"
-   *
-   * export const { handler, config } = tower.gatehouse.proxy({
-   *   public: ["/", "/sign-in", "/api/auth/:path*"],
-   *   redirectTo: "/sign-in",
-   * })
-   *
-   * export async function middleware(request: NextRequest) {
-   *   return handler(request) ?? NextResponse.next()
-   * }
-   * ```
-   */
   proxy(options?: ProxyOptions): ProxyResult
 
   signIn(params: AuthMethod): Promise<Session>
@@ -292,27 +431,24 @@ export interface GatehouseModule {
     }
   }
 
+  phone: {
+    otp: {
+      send(params: PhoneOtpSendParams): Promise<void>
+      confirm(params: PhoneOtpConfirmParams): Promise<Session>
+    }
+  }
+
   users: {
     get(id: string): Promise<GatehouseUser | null>
     findByEmail(email: string): Promise<GatehouseUser | null>
   }
 
-  can(params: { user: GatehouseUser; action: string; resource: unknown }): Promise<boolean>
+  can(params: { user: GatehouseUser; permission: string | string[]; organizationId?: string }): Promise<boolean>
   roles: {
     assign(userId: string, role: string): Promise<void>
-    remove(userId: string, role: string): Promise<void>
+    remove(userId: string): Promise<void>
   }
 
-  /**
-   * Create the auth database tables.
-   * Uses Better Auth's migration internally. Idempotent — safe to
-   * call on every deploy.
-   *
-   * @example
-   * ```ts
-   * await tower.gatehouse.migrate()
-   * ```
-   */
   migrate(): Promise<void>
 }
 
@@ -320,11 +456,6 @@ export interface GatehouseContext {
   readonly session: Session | null
   readonly user: GatehouseUser | null
   readonly headers: Headers
-  /**
-   * Escape hatch to the underlying auth provider.
-   * Same as `tower.gatehouse.provider`, but accessible from context
-   * alongside `ctx.headers`.
-   */
   readonly provider: any
 
   signOut(): Promise<void>
@@ -351,6 +482,52 @@ export interface GatehouseContext {
     verify: {
       confirm(params: EmailVerifyConfirmParams): Promise<void>
     }
+    otp: {
+      send(params: EmailOtpSendParams): Promise<void>
+      confirm(params: EmailOtpConfirmParams): Promise<Session>
+    }
+  }
+
+  phone: {
+    otp: {
+      send(params: PhoneOtpSendParams): Promise<void>
+      confirm(params: PhoneOtpConfirmParams): Promise<Session>
+    }
+  }
+
+  passkeys: {
+    add(params?: PasskeyCreateParams): Promise<PasskeyInfo>
+    list(): Promise<PasskeyInfo[]>
+    update(id: string, params: PasskeyUpdateParams): Promise<PasskeyInfo>
+    remove(id: string): Promise<void>
+  }
+
+  admin: {
+    createUser(params: AdminUserCreateParams): Promise<GatehouseUser>
+    updateUser(userId: string, params: AdminUpdateUserParams): Promise<GatehouseUser>
+    getUser(userId: string): Promise<GatehouseUser | null>
+    listUsers(options?: AdminListUsersOptions): Promise<{ users: GatehouseUser[]; total?: number }>
+    removeUser(userId: string): Promise<void>
+    setUserPassword(userId: string, newPassword: string): Promise<void>
+    setRole(params: AdminSetRoleParams): Promise<void>
+    banUser(userId: string, params?: AdminUserBanParams): Promise<void>
+    unbanUser(userId: string): Promise<void>
+    impersonateUser(userId: string): Promise<AdminImpersonationResult>
+    stopImpersonating(): Promise<void>
+    listUserSessions(userId: string): Promise<AdminUserSession[]>
+    revokeUserSession(userId: string, sessionToken: string): Promise<void>
+    revokeUserSessions(userId: string): Promise<void>
+    hasPermission(params: AdminCheckPermissionParams): Promise<boolean>
+  }
+
+  apiKeys: {
+    create(params: ApiKeyCreateParams): Promise<ApiKeyInfo>
+    list(userId: string, options?: ApiKeyListOptions): Promise<{ keys: ApiKeyInfo[]; total?: number }>
+    get(keyId: string): Promise<ApiKeyInfo | null>
+    update(id: string, params: ApiKeyUpdateParams): Promise<ApiKeyInfo>
+    delete(id: string): Promise<void>
+    verify(params: ApiKeyVerifyParams): Promise<ApiKeyInfo | null>
+    deleteAllExpired(): Promise<number>
   }
 
   identities: {
@@ -361,10 +538,14 @@ export interface GatehouseContext {
   }
 
   totp: {
-    enable(password: string): Promise<TwoFactorInfo>
+    enable(password: string, issuer?: string): Promise<TwoFactorInfo>
     disable(password: string): Promise<void>
     verify(code: string, trustDevice?: boolean): Promise<TwoFactorVerifyResult>
     uri(password: string): Promise<string>
+    otp: {
+      send(params?: TwoFactorOtpSendParams): Promise<void>
+      verify(params: TwoFactorOtpVerifyParams): Promise<TwoFactorVerifyResult>
+    }
   }
 
   backupCodes: {
@@ -376,6 +557,8 @@ export interface GatehouseContext {
     create(params: OrganizationCreateParams): Promise<Organization>
     list(): Promise<Organization[]>
     get(id: string): Promise<Organization | null>
+    getFull(id: string): Promise<OrganizationFull | null>
+    setActive(organizationId: string): Promise<void>
     update(id: string, params: OrganizationUpdateParams): Promise<Organization>
     delete(id: string): Promise<void>
     members: {
@@ -387,11 +570,19 @@ export interface GatehouseContext {
     invitations: {
       create(organizationId: string, params: OrganizationInviteParams): Promise<OrganizationInvitation>
       list(organizationId: string): Promise<OrganizationInvitation[]>
+      get(invitationId: string): Promise<OrganizationInvitation | null>
       accept(invitationId: string): Promise<void>
       reject(invitationId: string): Promise<void>
       cancel(invitationId: string): Promise<void>
     }
+    roles: {
+      create(params: OrganizationRoleCreateParams): Promise<OrganizationRole>
+      list(organizationId?: string): Promise<OrganizationRole[]>
+      get(organizationId: string, roleName: string): Promise<OrganizationRole | null>
+      update(organizationId: string, roleName: string, params: OrganizationRoleUpdateParams): Promise<OrganizationRole>
+      delete(organizationId: string, roleName: string): Promise<void>
+    }
   }
 
-  can(params: { user: GatehouseUser; action: string; resource: unknown }): Promise<boolean>
+  can(params: { user: GatehouseUser; permission: string | string[]; organizationId?: string }): Promise<boolean>
 }

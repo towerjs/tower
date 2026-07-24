@@ -15,6 +15,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@better-auth/api-key": "^1.6.25",
+    "@better-auth/passkey": "^1.6.25",
     "@towerjs/blueprint": "workspace:*",
     "better-auth": "^1.6.25",
     "kysely": "^0.29.4"
