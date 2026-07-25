@@ -1,6 +1,6 @@
 # Tower
 
-[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE)
+[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Status](https://img.shields.io/badge/status-alpha-yellow?style=for-the-badge&labelColor=000)](#status)
 
 Tower is the composable monolithic stack for JavaScript applications. It gives you a consistent architecture across routing, databases, authentication, realtime, jobs, storage, billing, search, and observability — choose the modules you need, and the providers behind them.
 
@@ -18,29 +18,29 @@ Currently supports **Next.js** with more frameworks coming.
 
 ## Modules
 
-| Module | Description |
-|--------|-------------|
-| [Foundation](/packages/foundation) | Core runtime, application lifecycle, dependency injection, config discovery, runtime detection |
-| [Blueprint](/packages/blueprint) | Application definition, module registration, service containers, context providers |
-| [Vault](/packages/vault) | Database ORM with Kysely, migrations, seeds, auto-provisioning for PostgreSQL (Neon, pg) |
-| [Gatehouse](/packages/gatehouse) | Full authentication via better-auth — email/password, social, magic links, OTP, passkeys, 2FA, organizations, API keys |
-| [Courier](/packages/courier) | Multi-channel communication — email (Resend, SES, SMTP), SMS (Twilio), push (Web Push) |
-| [Scribe](/packages/scribe) | CLI for scaffolding and managing Tower applications |
-| [create-tower](/packages/create-tower) | Quick-start project scaffolding (`pnpm create tower`) |
-| [towerjs](/packages/towerjs) | Meta-package that bundles all Tower modules |
+| Module | Description | Providers |
+|--------|-------------|-----------|
+| [Foundation](/packages/foundation) | Core runtime, lifecycle, DI, config discovery, runtime detection | — |
+| [Blueprint](/packages/blueprint) | Application definition, module registration, context | — |
+| [Vault](/packages/vault) | Database ORM with Kysely, migrations, seeds | Neon, pg |
+| [Gatehouse](/packages/gatehouse) | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth |
+| [Courier](/packages/courier) | Multi-channel communication — email, SMS, push | Resend, SES, SMTP, Twilio, Web Push |
+| [Scribe](/packages/scribe) | CLI for scaffolding and managing Tower applications | — |
+| [create-tower](/packages/create-tower) | Quick-start project scaffolding | — |
+| [towerjs](/packages/towerjs) | Meta-package that bundles all Tower modules | — |
 
 ### On the roadmap
 
-| Module | Description |
-|--------|-------------|
-| Beacon | Realtime channels, subscriptions, broadcasts, and application events |
-| Crane | Background jobs, queues, workers, and scheduled tasks |
-| Keep | File storage for uploads, media, assets, and object storage providers |
-| Treasury | Billing and payments — subscriptions, invoices, checkout flows |
-| Observatory | Search indexing and querying across application data |
-| Watchtower | Logs, metrics, tracing, error tracking, and health checks |
-| Atlas | File-based routing for frameworks that don't provide it natively |
-| Forge | Build and deployment for environments and infrastructure |
+| Module | Description | Providers |
+|--------|-------------|-----------|
+| Beacon | Realtime channels and events | Ably, Pusher |
+| Crane | Background jobs and queues | Inngest, Trigger.dev |
+| Keep | File storage and assets | S3, Cloudflare R2 |
+| Treasury | Billing and payments | Stripe |
+| Observatory | Search and indexing | Meilisearch, Algolia |
+| Watchtower | Logs, metrics, tracing, error tracking, health checks | — |
+| Atlas | File-based routing for frameworks that don't provide it | — |
+| Forge | Build and deployment for environments and infrastructure | — |
 
 ## Why Tower?
 

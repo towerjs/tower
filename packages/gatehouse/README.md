@@ -1,6 +1,6 @@
 # `@towerjs/gatehouse`
 
-[![npm version](https://img.shields.io/npm/v/@towerjs/gatehouse.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/gatehouse)
+[![npm version](https://img.shields.io/npm/v/@towerjs/gatehouse?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/gatehouse)
 
 Authentication and authorization for Tower. Powered by [better-auth](https://better-auth.com) with support for email/password, social login, magic links, OTP, passkeys, two-factor authentication, organizations, and API keys.
 

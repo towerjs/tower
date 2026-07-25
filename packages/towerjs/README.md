@@ -1,6 +1,6 @@
 # `towerjs`
 
-[![npm version](https://img.shields.io/npm/v/towerjs.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/towerjs)
+[![npm version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/towerjs)
 
 Meta-package that bundles all Tower modules. Import `towerjs` to get a fully initialized Tower application with auto-discovered configuration.
 

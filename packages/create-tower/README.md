@@ -1,6 +1,6 @@
 # `create-tower`
 
-[![npm version](https://img.shields.io/npm/v/create-tower.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/create-tower)
+[![npm version](https://img.shields.io/npm/v/create-tower?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/create-tower)
 
 Quick-start scaffolding for new Tower applications.
 

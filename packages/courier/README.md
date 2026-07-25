@@ -1,6 +1,6 @@
 # `@towerjs/courier`
 
-[![npm version](https://img.shields.io/npm/v/@towerjs/courier.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/courier)
+[![npm version](https://img.shields.io/npm/v/@towerjs/courier?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/courier)
 
 Multi-channel communication layer for Tower. Send emails (Resend, SES, SMTP), SMS (Twilio), and push notifications (Web Push) through a unified API.
 

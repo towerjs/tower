@@ -1,6 +1,6 @@
 # `@towerjs/vault`
 
-[![npm version](https://img.shields.io/npm/v/@towerjs/vault.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/vault)
+[![npm version](https://img.shields.io/npm/v/@towerjs/vault?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/vault)
 
 Database and ORM layer for Tower. Built on [Kysely](https://kysely.dev) with support for PostgreSQL providers including Neon, Supabase, and Railway. Provides migrations, seeds, and connection management.
 

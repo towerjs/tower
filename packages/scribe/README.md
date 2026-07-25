@@ -1,6 +1,6 @@
 # `@towerjs/scribe`
 
-[![npm version](https://img.shields.io/npm/v/@towerjs/scribe.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/scribe)
+[![npm version](https://img.shields.io/npm/v/@towerjs/scribe?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/scribe)
 
 CLI for scaffolding and managing Tower applications. Powers the `tower` command and the `create-tower` package.
 

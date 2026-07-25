@@ -1,6 +1,6 @@
 # `@towerjs/blueprint`
 
-[![npm version](https://img.shields.io/npm/v/@towerjs/blueprint.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/blueprint)
+[![npm version](https://img.shields.io/npm/v/@towerjs/blueprint?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/blueprint)
 
 Application definition layer for Tower. Provides module registration, type definitions, per-request context, and the `defineTower` configuration function.
 
