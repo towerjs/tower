@@ -19,9 +19,8 @@ export async function resolveEmailContent(params: EmailSendParams): Promise<{ ht
   }
 
   if (!html && !text && !params.react) {
-    throw new Error("[messenger.email] Missing body. Provide html, text, or react template.")
+    throw new Error("[courier.email] Missing body. Provide html, text, or react template.")
   }
 
   return { html, text }
 }
-

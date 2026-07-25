@@ -1,7 +1,7 @@
 import { gatehouse } from "@towerjs/gatehouse";
 
 const { handler } = gatehouse.proxy({
-  public: ["/", "/sign-in", "/sign-up", "/api/messenger"],
+  public: ["/", "/sign-in", "/sign-up", "/api/courier"],
   redirectIfAuthenticated: ["/sign-in", "/sign-up"],
   redirectTo: "/sign-in",
   redirectAfterSignIn: "/dashboard",

@@ -7,9 +7,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "Missing required field: to" }, { status: 400 })
   }
 
-  const result = await tower.messenger.sms.send({
+  const result = await tower.courier.sms.send({
     to: body.to,
-    body: body.body ?? "Tower Messenger test SMS.",
+    body: body.body ?? "Tower Courier test SMS.",
   })
 
   return Response.json({ ok: true, provider: result.provider, id: result.id ?? null, status: result.status ?? null })

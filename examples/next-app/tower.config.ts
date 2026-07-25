@@ -1,6 +1,6 @@
 import { defineTower } from "@towerjs/blueprint";
 
-const emailProvider = (process.env.MESSENGER_EMAIL_PROVIDER ?? "resend") as
+const emailProvider = (process.env.COURIER_EMAIL_PROVIDER ?? "resend") as
   | "resend"
   | "smtp"
   | "ses";
@@ -16,10 +16,10 @@ const webPushEnabled = Boolean(
 export default defineTower({
   modules: {
     vault: { provider: "neon" },
-    messenger: {
+    courier: {
       email: {
         provider: emailProvider,
-        from: process.env.MESSENGER_EMAIL_FROM ?? "Tower <no-reply@example.com>",
+        from: process.env.COURIER_EMAIL_FROM ?? "Tower <no-reply@example.com>",
       },
       sms: smsEnabled ? { provider: "twilio" } : undefined,
       push: webPushEnabled ? { provider: "web-push" } : undefined,

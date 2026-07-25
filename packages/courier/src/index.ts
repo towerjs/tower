@@ -6,10 +6,10 @@ import { SesEmailProvider } from "./providers/ses.js"
 import { TwilioSmsProvider } from "./providers/twilio.js"
 import { WebPushProvider } from "./providers/web-push.js"
 import type {
+  CourierConfig,
+  CourierModule,
   EmailConfig,
   EmailService,
-  MessengerConfig,
-  MessengerModule,
   PushConfig,
   PushService,
   SmsConfig,
@@ -17,6 +17,8 @@ import type {
 } from "./types.js"
 
 export type {
+  CourierConfig,
+  CourierModule,
   EmailAddress,
   EmailAttachment,
   EmailConfig,
@@ -24,8 +26,6 @@ export type {
   EmailSendParams,
   EmailSendResult,
   EmailService,
-  MessengerConfig,
-  MessengerModule,
   PushConfig,
   PushProviderName,
   PushSendParams,
@@ -45,44 +45,44 @@ export type {
   WebPushConfig,
 } from "./types.js"
 
-let _messenger: MessengerModule | undefined
+let _courier: CourierModule | undefined
 
-export const messenger: MessengerModule = new Proxy({} as MessengerModule, {
+export const courier: CourierModule = new Proxy({} as CourierModule, {
   get(_, prop) {
-    if (!_messenger) {
-      throw new Error("Messenger not initialized. Tower must be started first.")
+    if (!_courier) {
+      throw new Error("Courier not initialized. Tower must be started first.")
     }
-    const value = (_messenger as any)[prop]
+    const value = (_courier as any)[prop]
     return typeof value === "function"
       ? (...args: any[]) => (value as Function)(...args)
       : value
   },
 })
 
-export function defineMessenger(config: MessengerConfig): TowerModule & MessengerModule {
+export function defineCourier(config: CourierConfig): TowerModule & CourierModule {
   return {
-    name: "messenger",
+    name: "courier",
 
     async init(ctx: TowerInitContext) {
-      _messenger = createMessenger(config)
-      ctx.container.register("messenger", _messenger)
+      _courier = createCourier(config)
+      ctx.container.register("courier", _courier)
     },
 
     get email() {
-      return requireMessenger().email
+      return requireCourier().email
     },
 
     get sms() {
-      return requireMessenger().sms
+      return requireCourier().sms
     },
 
     get push() {
-      return requireMessenger().push
+      return requireCourier().push
     },
-  } satisfies TowerModule & MessengerModule
+  } satisfies TowerModule & CourierModule
 }
 
-function createMessenger(config: MessengerConfig): MessengerModule {
+function createCourier(config: CourierConfig): CourierModule {
   const emailProvider = config.email ? createEmailService(config.email) : undefined
   const smsProvider = config.sms ? createSmsService(config.sms) : undefined
   const pushProvider = config.push ? createPushService(config.push) : undefined
@@ -94,9 +94,9 @@ function createMessenger(config: MessengerConfig): MessengerModule {
   }
 }
 
-function requireMessenger(): MessengerModule {
-  if (!_messenger) throw new Error("Messenger not initialized.")
-  return _messenger
+function requireCourier(): CourierModule {
+  if (!_courier) throw new Error("Courier not initialized.")
+  return _courier
 }
 
 function createEmailService(config: EmailConfig): EmailService {
@@ -108,19 +108,19 @@ function createEmailService(config: EmailConfig): EmailService {
     case "ses":
       return new SesEmailProvider(config)
   }
-  throw new Error("Unsupported messenger email provider.")
+  throw new Error("Unsupported courier email provider.")
 }
 
 function createSmsService(config: SmsConfig): SmsService {
   if (config.provider !== "twilio") {
-    throw new Error(`Unsupported messenger sms provider: ${String(config.provider)}`)
+    throw new Error(`Unsupported courier sms provider: ${String(config.provider)}`)
   }
   return new TwilioSmsProvider(config)
 }
 
 function createPushService(config: PushConfig): PushService {
   if (config.provider !== "web-push") {
-    throw new Error(`Unsupported messenger push provider: ${String(config.provider)}`)
+    throw new Error(`Unsupported courier push provider: ${String(config.provider)}`)
   }
   return new WebPushProvider(config)
 }
@@ -128,9 +128,9 @@ function createPushService(config: PushConfig): PushService {
 function unconfiguredChannel(name: "email" | "sms" | "push") {
   return {
     async send() {
-      throw new Error(`[messenger.${name}] Not configured. Add modules.messenger.${name} to tower.config.ts.`)
+      throw new Error(`[courier.${name}] Not configured. Add modules.courier.${name} to tower.config.ts.`)
     },
   }
 }
 
-registerModule("messenger", (config) => defineMessenger(config as MessengerConfig))
+registerModule("courier", (config) => defineCourier(config as CourierConfig))

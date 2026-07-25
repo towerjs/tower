@@ -117,7 +117,7 @@ export { AuthenticationError, AuthorizationError, ContextRequiredError };
 
 let _adapter: BetterAuthAdapter | undefined;
 
-type MessengerLike = {
+type CourierLike = {
   email: {
     send(params: {
       to: string
@@ -211,10 +211,10 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
         console.warn("[gatehouse] Re-initializing — previous adapter state discarded");
       }
       const vault = ctx.container.get<{ db: Kysely<unknown> }>("vault");
-      const messenger = ctx.container.has("messenger")
-        ? ctx.container.get<MessengerLike>("messenger")
+      const courier = ctx.container.has("courier")
+        ? ctx.container.get<CourierLike>("courier")
         : undefined;
-      _adapter = new BetterAuthAdapter(withMessengerTransport(config, messenger), vault.db);
+      _adapter = new BetterAuthAdapter(withCourierTransport(config, courier), vault.db);
     },
 
     get provider() {
@@ -241,8 +241,8 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
 
 registerModule("gatehouse", (config) => defineGatehouse(config as unknown as GatehouseConfig));
 
-function withMessengerTransport(config: GatehouseConfig, messenger?: MessengerLike): GatehouseConfig {
-  if (!messenger) return config
+function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
+  if (!courier) return config
 
   const appName = config.appName ?? "Tower"
   const next: any = { ...config }
@@ -254,7 +254,7 @@ function withMessengerTransport(config: GatehouseConfig, messenger?: MessengerLi
 
     if (!credentials.sendResetPassword) {
       credentials.sendResetPassword = async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
-        await messenger.email.send(buildAuthEmail({
+        await courier.email.send(buildAuthEmail({
           to: user.email,
           subject: `${appName} password reset`,
           heading: "Reset your password",
@@ -272,7 +272,7 @@ function withMessengerTransport(config: GatehouseConfig, messenger?: MessengerLi
     const emailVerification = { ...config.emailVerification }
     if (!emailVerification.sendVerificationEmail) {
       emailVerification.sendVerificationEmail = async ({ user, url }) => {
-        await messenger.email.send(buildAuthEmail({
+        await courier.email.send(buildAuthEmail({
           to: user.email,
           subject: `${appName} email confirmation`,
           heading: "Confirm your email",
@@ -291,7 +291,7 @@ function withMessengerTransport(config: GatehouseConfig, messenger?: MessengerLi
       : { ...config.magicLinks }
     if (!(magicLinks as any).sendMagicLink) {
       ;(magicLinks as any).sendMagicLink = async ({ email, url }: { email: string; url: string }) => {
-        await messenger.email.send(buildAuthEmail({
+        await courier.email.send(buildAuthEmail({
           to: email,
           subject: `${appName} sign-in link`,
           heading: "Your sign-in link",
@@ -321,7 +321,7 @@ function withMessengerTransport(config: GatehouseConfig, messenger?: MessengerLi
         const subject = type === "forget-password"
           ? `${appName} password reset code`
           : `${appName} verification code`
-        await messenger.email.send({
+        await courier.email.send({
           to: email,
           subject,
           text: `${appName} verification code: ${otp}`,
@@ -338,7 +338,7 @@ function withMessengerTransport(config: GatehouseConfig, messenger?: MessengerLi
       : { ...config.phoneNumber }
     if (!(phoneNumber as any).sendOTP) {
       ;(phoneNumber as any).sendOTP = async ({ phoneNumber, code }: { phoneNumber: string; code: string }) => {
-        await messenger.sms.send({
+        await courier.sms.send({
           to: phoneNumber,
           body: `${appName} verification code: ${code}`,
         })

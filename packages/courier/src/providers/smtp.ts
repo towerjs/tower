@@ -9,7 +9,7 @@ export class SmtpEmailProvider {
   constructor(config: SmtpEmailConfig) {
     const host = config.host ?? process.env.SMTP_HOST
     if (!host) {
-      throw new Error("[messenger.email] Missing SMTP host. Set modules.messenger.email.host or SMTP_HOST.")
+      throw new Error("[courier.email] Missing SMTP host. Set modules.courier.email.host or SMTP_HOST.")
     }
 
     const port = config.port ?? Number(process.env.SMTP_PORT ?? 587)
@@ -23,13 +23,13 @@ export class SmtpEmailProvider {
       ignoreTLS: config.ignoreTLS,
       auth: user ? { user, pass: password } : undefined,
     })
-    this.from = config.from ?? process.env.MESSENGER_EMAIL_FROM
+    this.from = config.from ?? process.env.COURIER_EMAIL_FROM
   }
 
   async send(params: EmailSendParams): Promise<EmailSendResult> {
     const from = params.from ?? this.from
     if (!from) {
-      throw new Error("[messenger.email] Missing from address. Set modules.messenger.email.from or params.from.")
+      throw new Error("[courier.email] Missing from address. Set modules.courier.email.from or params.from.")
     }
 
     const { html, text } = await resolveEmailContent(params)
@@ -57,4 +57,3 @@ export class SmtpEmailProvider {
     }
   }
 }
-

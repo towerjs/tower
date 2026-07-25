@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { defineMessenger, messenger } from "./index.js"
+import { defineCourier, courier } from "./index.js"
 
 function mockCtx() {
   return {
@@ -14,22 +14,21 @@ function mockCtx() {
   }
 }
 
-describe("messenger", () => {
+describe("courier", () => {
   it("throws if used before init", () => {
-    expect(() => messenger.email).toThrow("Messenger not initialized")
+    expect(() => courier.email).toThrow("Courier not initialized")
   })
 
   it("registers and exposes unconfigured channel errors", async () => {
-    const mod = defineMessenger({})
+    const mod = defineCourier({})
     const ctx = mockCtx()
     await mod.init?.(ctx as any)
 
-    expect(ctx.container.register).toHaveBeenCalledWith("messenger", expect.any(Object))
-    await expect(messenger.email.send({
+    expect(ctx.container.register).toHaveBeenCalledWith("courier", expect.any(Object))
+    await expect(courier.email.send({
       to: "person@example.com",
       subject: "hello",
       text: "world",
-    })).rejects.toThrow("[messenger.email] Not configured")
+    })).rejects.toThrow("[courier.email] Not configured")
   })
 })
-

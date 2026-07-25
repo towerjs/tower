@@ -15,9 +15,9 @@ export async function POST(request: Request) {
     )
   }
 
-  const result = await tower.messenger.sms.send({
+  const result = await tower.courier.sms.send({
     to: body.to,
-    body: body.body ?? "Tower Messenger test SMS.",
+    body: body.body ?? "Tower Courier test SMS.",
   })
 
   return Response.json({

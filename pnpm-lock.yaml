@@ -101,57 +101,7 @@ importers:
         specifier: ^26.1.1
         version: 26.1.1
 
-  packages/create-tower:
-    dependencies:
-      '@towerjs/scribe':
-        specifier: workspace:*
-        version: link:../scribe
-
-  packages/foundation:
-    dependencies:
-      '@towerjs/blueprint':
-        specifier: workspace:*
-        version: link:../blueprint
-      '@towerjs/gatehouse':
-        specifier: workspace:*
-        version: link:../gatehouse
-      '@towerjs/messenger':
-        specifier: workspace:*
-        version: link:../messenger
-      '@towerjs/vault':
-        specifier: workspace:*
-        version: link:../vault
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.43
-
-  packages/gatehouse:
-    dependencies:
-      '@better-auth/api-key':
-        specifier: ^1.6.25
-        version: 1.6.25(@better-auth/core@1.6.25(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.4.3))(jose@6.2.4)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.4.2)(better-auth@1.6.25(next@16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0))))(better-call@1.3.7(zod@4.4.3))
-      '@better-auth/passkey':
-        specifier: ^1.6.25
-        version: 1.6.25(@better-auth/core@1.6.25(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.4.3))(jose@6.2.4)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.25(next@16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0))))(better-call@1.3.7(zod@4.4.3))(nanostores@1.4.1)
-      '@towerjs/blueprint':
-        specifier: workspace:*
-        version: link:../blueprint
-      better-auth:
-        specifier: ^1.6.25
-        version: 1.6.25(next@16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0)))
-      kysely:
-        specifier: ^0.29.4
-        version: 0.29.4
-    devDependencies:
-      '@types/node':
-        specifier: ^26.1.1
-        version: 26.1.1
-      next:
-        specifier: '16'
-        version: 16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-
-  packages/messenger:
+  packages/courier:
     dependencies:
       '@aws-sdk/client-sesv2':
         specifier: ^3.888.0
@@ -191,6 +141,56 @@ importers:
         specifier: ^3.6.4
         version: 3.6.4
 
+  packages/create-tower:
+    dependencies:
+      '@towerjs/scribe':
+        specifier: workspace:*
+        version: link:../scribe
+
+  packages/foundation:
+    dependencies:
+      '@towerjs/blueprint':
+        specifier: workspace:*
+        version: link:../blueprint
+      '@towerjs/courier':
+        specifier: workspace:*
+        version: link:../courier
+      '@towerjs/gatehouse':
+        specifier: workspace:*
+        version: link:../gatehouse
+      '@towerjs/vault':
+        specifier: workspace:*
+        version: link:../vault
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+
+  packages/gatehouse:
+    dependencies:
+      '@better-auth/api-key':
+        specifier: ^1.6.25
+        version: 1.6.25(@better-auth/core@1.6.25(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.4.3))(jose@6.2.4)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.4.2)(better-auth@1.6.25(next@16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0))))(better-call@1.3.7(zod@4.4.3))
+      '@better-auth/passkey':
+        specifier: ^1.6.25
+        version: 1.6.25(@better-auth/core@1.6.25(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.4.3))(jose@6.2.4)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.25(next@16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0))))(better-call@1.3.7(zod@4.4.3))(nanostores@1.4.1)
+      '@towerjs/blueprint':
+        specifier: workspace:*
+        version: link:../blueprint
+      better-auth:
+        specifier: ^1.6.25
+        version: 1.6.25(next@16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0)))
+      kysely:
+        specifier: ^0.29.4
+        version: 0.29.4
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      next:
+        specifier: '16'
+        version: 16.2.11(@babel/core@7.29.7(supports-color@7.2.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+
   packages/scribe:
     dependencies:
       '@inquirer/prompts':
@@ -209,15 +209,15 @@ importers:
       '@towerjs/blueprint':
         specifier: workspace:*
         version: link:../blueprint
+      '@towerjs/courier':
+        specifier: workspace:*
+        version: link:../courier
       '@towerjs/foundation':
         specifier: workspace:*
         version: link:../foundation
       '@towerjs/gatehouse':
         specifier: workspace:*
         version: link:../gatehouse
-      '@towerjs/messenger':
-        specifier: workspace:*
-        version: link:../messenger
       '@towerjs/vault':
         specifier: workspace:*
         version: link:../vault
@@ -267,6 +267,7 @@ packages:
   '@aws-sdk/core@3.977.0':
     resolution: {integrity: sha512-w+iANjPGOj4fHxWeyjfRt+xeRX8BIOVStqdTcMebfeIJicTiBTMAbQurQuVfAxHpUfsoV+fWaEQvGpO6IWifLQ==}
     engines: {node: '>=20.0.0'}
+    deprecated: Deprecated due to a bug in JSON exponent notation (e.g. ECS timestamps). Upgrade to @aws-sdk/core@3.977.1. https://github.com/aws/aws-sdk-js-v3/issues/8224
 
   '@aws-sdk/credential-provider-env@3.972.61':
     resolution: {integrity: sha512-qihs2ekMb89Nxd2JenCgVFhjbkb3EIo7HEBCBzyZACKVJdrLUZBLOmAE3xr0Sayml8n/jZSzwO/IufIiIzO7PQ==}

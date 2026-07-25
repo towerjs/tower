@@ -10,7 +10,7 @@ export class SesEmailProvider {
   constructor(config: SesEmailConfig) {
     const region = config.region ?? process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
     if (!region) {
-      throw new Error("[messenger.email] Missing AWS region. Set modules.messenger.email.region or AWS_REGION.")
+      throw new Error("[courier.email] Missing AWS region. Set modules.courier.email.region or AWS_REGION.")
     }
 
     this.client = new SESv2Client({
@@ -23,18 +23,18 @@ export class SesEmailProvider {
           }
         : undefined,
     })
-    this.from = config.from ?? process.env.MESSENGER_EMAIL_FROM
+    this.from = config.from ?? process.env.COURIER_EMAIL_FROM
     this.configurationSetName = config.configurationSetName
   }
 
   async send(params: EmailSendParams): Promise<EmailSendResult> {
     if (params.attachments?.length) {
-      throw new Error("[messenger.email] SES adapter does not support attachments in this version.")
+      throw new Error("[courier.email] SES adapter does not support attachments in this version.")
     }
 
     const from = params.from ?? this.from
     if (!from) {
-      throw new Error("[messenger.email] Missing from address. Set modules.messenger.email.from or params.from.")
+      throw new Error("[courier.email] Missing from address. Set modules.courier.email.from or params.from.")
     }
 
     const { html, text } = await resolveEmailContent(params)
@@ -67,4 +67,3 @@ export class SesEmailProvider {
     }
   }
 }
-

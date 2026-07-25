@@ -11,7 +11,7 @@
     { "path": "../foundation" },
     { "path": "../vault" },
     { "path": "../gatehouse" },
-    { "path": "../messenger" },
+    { "path": "../courier" },
     { "path": "../blueprint" }
   ]
 }

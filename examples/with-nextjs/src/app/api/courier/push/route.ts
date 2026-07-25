@@ -15,9 +15,9 @@ export async function POST(request: Request) {
     )
   }
 
-  const result = await tower.messenger.push.send({
+  const result = await tower.courier.push.send({
     subscription: body.subscription,
-    title: body.title ?? "Tower Messenger test push",
+    title: body.title ?? "Tower Courier test push",
     body: body.body ?? "Push channel is active.",
     data: body.data ?? { source: "with-nextjs-example" },
   })

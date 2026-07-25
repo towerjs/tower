@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const ip = body.ipAddress ?? "unknown"
   const userAgent = body.userAgent ?? "unknown"
 
-  const result = await tower.messenger.email.send({
+  const result = await tower.courier.email.send({
     to: body.to,
     subject: "New login to your account",
     react: (

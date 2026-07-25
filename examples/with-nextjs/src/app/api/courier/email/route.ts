@@ -7,10 +7,10 @@ export async function POST(request: Request) {
     return Response.json({ error: "Missing required field: to" }, { status: 400 })
   }
 
-  const result = await tower.messenger.email.send({
+  const result = await tower.courier.email.send({
     to: body.to,
-    subject: body.subject ?? "Tower Messenger test email",
-    text: body.text ?? "This email was sent through the provider-agnostic Tower Messenger API.",
+    subject: body.subject ?? "Tower Courier test email",
+    text: body.text ?? "This email was sent through the provider-agnostic Tower Courier API.",
     html: body.html,
   })
 

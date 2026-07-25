@@ -19,15 +19,15 @@ export async function POST(request: Request) {
     )
   }
 
-  const result = await tower.messenger.email.send({
+  const result = await tower.courier.email.send({
     to: body.to,
-    subject: "Tower Messenger test email",
+    subject: "Tower Courier test email",
     react: (
       <AuthEmailTemplate
-        heading={body.heading ?? "Tower Messenger is live"}
+        heading={body.heading ?? "Tower Courier is live"}
         intro={
           body.intro ??
-          "This email was sent through the provider-agnostic Tower Messenger API."
+          "This email was sent through the provider-agnostic Tower Courier API."
         }
         actionLabel={body.actionLabel ?? "Open dashboard"}
         actionUrl={body.actionUrl ?? "https://example.com/dashboard"}

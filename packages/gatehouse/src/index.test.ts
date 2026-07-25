@@ -511,7 +511,7 @@ describe("defineGatehouse", () => {
     expect(mocks.mockBetterAuth).toHaveBeenCalled()
   })
 
-  it("auto-wires auth messaging through messenger when callbacks are omitted", async () => {
+  it("auto-wires auth messaging through courier when callbacks are omitted", async () => {
     const { defineGatehouse } = await import("./index.js")
     const emailSend = vi.fn().mockResolvedValue(undefined)
     const smsSend = vi.fn().mockResolvedValue(undefined)
@@ -519,10 +519,10 @@ describe("defineGatehouse", () => {
       container: {
         register: vi.fn(),
         registerFactory: vi.fn(),
-        has: vi.fn((name: string) => name === "messenger"),
+        has: vi.fn((name: string) => name === "courier"),
         get: vi.fn((name: string) => {
           if (name === "vault") return { db: { selectFrom: vi.fn() } }
-          if (name === "messenger") return { email: { send: emailSend }, sms: { send: smsSend } }
+          if (name === "courier") return { email: { send: emailSend }, sms: { send: smsSend } }
           return undefined
         }),
       },
@@ -573,10 +573,10 @@ describe("defineGatehouse", () => {
       container: {
         register: vi.fn(),
         registerFactory: vi.fn(),
-        has: vi.fn((name: string) => name === "messenger"),
+        has: vi.fn((name: string) => name === "courier"),
         get: vi.fn((name: string) => {
           if (name === "vault") return { db: { selectFrom: vi.fn() } }
-          if (name === "messenger") return { email: { send: vi.fn() }, sms: { send: vi.fn() } }
+          if (name === "courier") return { email: { send: vi.fn() }, sms: { send: vi.fn() } }
           return undefined
         }),
       },

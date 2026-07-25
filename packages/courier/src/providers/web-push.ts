@@ -9,7 +9,7 @@ export class WebPushProvider {
 
     if (!subject || !publicKey || !privateKey) {
       throw new Error(
-        "[messenger.push] Missing VAPID config. Set modules.messenger.push.vapid.{subject,publicKey,privateKey}.",
+        "[courier.push] Missing VAPID config. Set modules.courier.push.vapid.{subject,publicKey,privateKey}.",
       )
     }
 
@@ -36,7 +36,7 @@ function buildPayload(params: PushSendParams): string {
   if (params.payload) return JSON.stringify(params.payload)
 
   if (!params.title && !params.body && !params.data) {
-    throw new Error("[messenger.push] Missing payload. Provide payload or title/body/data fields.")
+    throw new Error("[courier.push] Missing payload. Provide payload or title/body/data fields.")
   }
 
   return JSON.stringify({
@@ -45,4 +45,3 @@ function buildPayload(params: PushSendParams): string {
     data: params.data,
   })
 }
-

@@ -15,7 +15,7 @@ export const signIn = action(async (formData: FormData) => {
   if (result?.user?.email) {
     const h = await headers();
     try {
-      await tower.messenger.email.send({
+      await tower.courier.email.send({
         to: result.user.email,
         subject: "New sign-in to your account",
         text: `You signed in to Tower Example.\nIP: ${h.get("x-forwarded-for") ?? "unknown"}\nDevice: ${h.get("user-agent") ?? "unknown"}`,

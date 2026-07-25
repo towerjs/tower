@@ -7,7 +7,7 @@ const MODULE_CHOICES = [
   { name: "Archive", value: "archive" },
   { name: "Beacon", value: "beacon" },
   { name: "Crane", value: "crane" },
-  { name: "Messenger", value: "messenger" },
+  { name: "Courier", value: "courier" },
   { name: "Treasury", value: "treasury" },
   { name: "Observatory", value: "observatory" },
 ];

@@ -9,16 +9,16 @@ export class ResendEmailProvider {
   constructor(config: ResendEmailConfig) {
     const apiKey = config.apiKey ?? process.env.RESEND_API_KEY
     if (!apiKey) {
-      throw new Error("[messenger.email] Missing RESEND_API_KEY for resend provider.")
+      throw new Error("[courier.email] Missing RESEND_API_KEY for resend provider.")
     }
     this.client = new Resend(apiKey)
-    this.from = config.from ?? process.env.MESSENGER_EMAIL_FROM
+    this.from = config.from ?? process.env.COURIER_EMAIL_FROM
   }
 
   async send(params: EmailSendParams): Promise<EmailSendResult> {
     const from = params.from ?? this.from
     if (!from) {
-      throw new Error("[messenger.email] Missing from address. Set modules.messenger.email.from or params.from.")
+      throw new Error("[courier.email] Missing from address. Set modules.courier.email.from or params.from.")
     }
 
     const payload: Record<string, unknown> = {
@@ -37,7 +37,7 @@ export class ResendEmailProvider {
 
     const result = await this.client.emails.send(payload as any)
     if (result.error) {
-      throw new Error(`[messenger.email] ${result.error.message}`)
+      throw new Error(`[courier.email] ${result.error.message}`)
     }
 
     return {
@@ -46,4 +46,3 @@ export class ResendEmailProvider {
     }
   }
 }
-

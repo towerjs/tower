@@ -31,15 +31,15 @@ export default async function DashboardPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Messenger</h2>
+        <h2 className="text-xl font-semibold">Courier</h2>
         <p className="text-sm text-neutral-600">
-          A login alert email was sent when you signed in. Try the Messenger API routes:
+          A login alert email was sent when you signed in. Try the Courier API routes:
         </p>
-        <pre className="rounded bg-neutral-100 p-4 text-xs overflow-x-auto">{`curl -X POST http://localhost:3000/api/messenger/email \\
+        <pre className="rounded bg-neutral-100 p-4 text-xs overflow-x-auto">{`curl -X POST http://localhost:3000/api/courier/email \\
   -H "content-type: application/json" \\
   -d '{"to":"${user.email}"}'
 
-curl -X POST http://localhost:3000/api/messenger/login-alert \\
+curl -X POST http://localhost:3000/api/courier/login-alert \\
   -H "content-type: application/json" \\
   -d '{"to":"${user.email}","ipAddress":"203.0.113.10"}'`}</pre>
       </section>

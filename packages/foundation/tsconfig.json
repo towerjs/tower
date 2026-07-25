@@ -11,6 +11,6 @@
     { "path": "../blueprint" },
     { "path": "../vault" },
     { "path": "../gatehouse" },
-    { "path": "../messenger" }
+    { "path": "../courier" }
   ]
 }

@@ -1,6 +1,6 @@
 import "@towerjs/vault";
 import "@towerjs/gatehouse";
-import "@towerjs/messenger";
+import "@towerjs/courier";
 import { createTower } from "@towerjs/foundation";
 import type { TowerInstance } from "@towerjs/foundation";
 

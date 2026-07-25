@@ -129,7 +129,7 @@ export interface WebPushConfig extends PushConfigBase {
 
 export type PushConfig = WebPushConfig
 
-export interface MessengerConfig {
+export interface CourierConfig {
   email?: EmailConfig
   sms?: SmsConfig
   push?: PushConfig
@@ -147,9 +147,8 @@ export interface PushService {
   send(params: PushSendParams): Promise<PushSendResult>
 }
 
-export interface MessengerModule {
+export interface CourierModule {
   email: EmailService
   sms: SmsService
   push: PushService
 }
-

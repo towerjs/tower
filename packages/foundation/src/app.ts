@@ -5,10 +5,10 @@ import type { TowerBlueprint, TowerModule, TowerInitContext } from "@towerjs/blu
 import { getModuleFactory } from "@towerjs/blueprint";
 import "@towerjs/vault";
 import "@towerjs/gatehouse";
-import "@towerjs/messenger";
+import "@towerjs/courier";
 import type { VaultModule } from "@towerjs/vault";
 import type { GatehouseModule } from "@towerjs/gatehouse";
-import type { MessengerModule } from "@towerjs/messenger";
+import type { CourierModule } from "@towerjs/courier";
 import { ServiceContainer } from "./container";
 import { detectRuntime } from "./runtime";
 import type { TowerRuntime } from "./types";
@@ -28,7 +28,7 @@ export interface TowerApp {
 export interface TowerModules {
   vault: VaultModule;
   gatehouse: GatehouseModule;
-  messenger: MessengerModule;
+  courier: CourierModule;
 }
 
 export type TowerInstance = {
