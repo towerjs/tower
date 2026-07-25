@@ -35,13 +35,13 @@ describe("generateProject", () => {
   it("throws for unsupported frameworks", async () => {
     const state = {
       projectName: "my-app",
-      framework: "solid" as any,
+      framework: "unknown" as any,
       modules: {},
       frameworkAnswers: {},
     }
 
     await expect(generateProject(state, "/target")).rejects.toThrow(
-      'Unsupported framework: "solid"',
+      'Unsupported framework: "unknown"',
     )
   })
 

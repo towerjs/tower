@@ -31,10 +31,6 @@ const BEACON_PROVIDER_CHOICES = [
 
 const FRAMEWORK_CHOICES: { name: string; value: Framework }[] = [
   { name: "Next.js", value: "next" },
-  { name: "React Router", value: "react-router" },
-  { name: "Vite React", value: "vite" },
-  { name: "SvelteKit", value: "sveltekit" },
-  { name: "SolidStart", value: "solid" },
 ];
 
 const DEPLOYMENT_CHOICES = [

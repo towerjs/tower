@@ -1,4 +1,4 @@
-export type Framework = "next" | "react-router" | "vite" | "sveltekit" | "solid";
+export type Framework = "next";
 
 export type ProviderMap = Record<string, Record<string, unknown>>;
 
