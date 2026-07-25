@@ -9,6 +9,7 @@ const hoisted = vi.hoisted(() => ({
 const mockExistsSync = hoisted.mockExistsSync;
 
 const mockApp: any = {
+  config: { modules: { vault: {}, gatehouse: {} } },
   container: {
     has: vi.fn(() => true),
     get: vi.fn((name: string) => {
@@ -24,6 +25,7 @@ const mockApp: any = {
 };
 
 function resetMockApp() {
+  mockApp.config = { modules: { vault: {}, gatehouse: {} } };
   mockApp.container = {
     has: vi.fn(() => true),
     get: vi.fn((name: string) => {
@@ -53,7 +55,7 @@ vi.mock("node:fs", () => ({
   default: { existsSync: hoisted.mockExistsSync },
 }));
 
-import { run, helpText, findConfig, getModule, loadApp, closeModules } from "./cli";
+import { run, helpText, findConfig, getModule, loadApp, closeModules, versionText } from "./cli";
 
 describe("help", () => {
   it("returns help text for no command", async () => {
@@ -77,6 +79,24 @@ describe("help", () => {
   it("returns helpText()", () => {
     const lines = helpText();
     expect(lines[1]).toBe("Usage: tower <command>");
+  });
+});
+
+describe("version", () => {
+  it("returns version for --version", async () => {
+    const result = await run("--version", []);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout[0]).toContain("v0.1.0");
+  });
+
+  it("returns version for -v", async () => {
+    const result = await run("-v", []);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout[0]).toContain("v0.1.0");
+  });
+
+  it("returns versionText()", () => {
+    expect(versionText()).toContain("v0.1.0");
   });
 });
 
@@ -240,7 +260,7 @@ describe("getModule", () => {
   });
 
   it("falls back to module. prefix", () => {
-    mockApp.container.has.mockReturnValue(false);
+    mockApp.container.has.mockImplementation((name: string) => name === "module.vault");
     mockApp.container.get.mockImplementation((name: string) => {
       if (name === "module.vault") return { name: "vault" };
       return undefined;
@@ -266,7 +286,8 @@ describe("closeModules", () => {
   });
 
   it("calls close on vault when available", async () => {
-    const app = {
+    const app: any = {
+      config: { modules: { vault: {} } },
       container: {
         has: vi.fn(() => true),
         get: vi.fn(() => ({ close: mockClose })),
@@ -278,7 +299,8 @@ describe("closeModules", () => {
   });
 
   it("skips close when vault has no close method", async () => {
-    const app = {
+    const app: any = {
+      config: { modules: { vault: {} } },
       container: {
         has: vi.fn(() => true),
         get: vi.fn(() => ({})),
@@ -291,7 +313,8 @@ describe("closeModules", () => {
   it("propagates close error", async () => {
     mockClose.mockRejectedValueOnce(new Error("close failed"));
 
-    const app = {
+    const app: any = {
+      config: { modules: { vault: {} } },
       container: {
         has: vi.fn(() => true),
         get: vi.fn(() => ({ close: mockClose })),
@@ -299,5 +322,25 @@ describe("closeModules", () => {
     };
 
     await expect(closeModules(app)).rejects.toThrow("close failed");
+  });
+
+  it("calls close on all modules that have it", async () => {
+    const closeA = vi.fn();
+    const closeB = vi.fn();
+    const app: any = {
+      config: { modules: { alpha: {}, beta: {}, gamma: {} } },
+      container: {
+        has: vi.fn((name: string) => name === "alpha" || name === "beta"),
+        get: vi.fn((name: string) => {
+          if (name === "alpha") return { close: closeA };
+          if (name === "beta") return { close: closeB };
+          return {};
+        }),
+      },
+    };
+
+    await closeModules(app);
+    expect(closeA).toHaveBeenCalled();
+    expect(closeB).toHaveBeenCalled();
   });
 });

@@ -1,12 +1,23 @@
 import { createJiti } from "jiti";
 import { createTowerApp } from "@towerjs/foundation";
+import type { TowerApp } from "@towerjs/foundation";
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+
+const { version: towerjsVersion } = createRequire(import.meta.url)("../package.json");
 
 export interface CliResult {
   stdout: string[]
   stderr: string[]
   exitCode: number
+}
+
+interface CliModule {
+  migrate?(): Promise<void>;
+  seed?(): Promise<void>;
+  close?(): Promise<void>;
 }
 
 function ok(lines: string[]): CliResult {
@@ -17,8 +28,12 @@ function fail(msg: string): CliResult {
   return { stdout: [], stderr: [msg], exitCode: 1 }
 }
 
-/** Runs a CLI command (migrate, seed, or help). */
+/** Runs a CLI command (migrate, seed, help, or version). */
 export async function run(command: string | undefined, flags: string[], configPath?: string): Promise<CliResult> {
+  if (command === "--version" || command === "-v") {
+    return ok([versionText()]);
+  }
+
   const runSeed = flags.includes("--seed") || flags.includes("-s");
   const skipMigrate = flags.includes("--skip-migrate");
 
@@ -85,23 +100,26 @@ async function runSeedCmd(skipMigrate: boolean, configPath?: string): Promise<Cl
   return ok(lines);
 }
 
-export function getModule(app: any, name: string): any {
-  return app.container.has(name)
-    ? app.container.get(name)
-    : app.container.get(`module.${name}`);
+export function getModule(app: TowerApp, name: string): CliModule | undefined {
+  if (app.container.has(name)) return app.container.get<CliModule>(name);
+  const prefixed = `module.${name}`;
+  if (app.container.has(prefixed)) return app.container.get<CliModule>(prefixed);
+  return undefined;
 }
 
-export async function loadApp(configPath?: string) {
+export async function loadApp(configPath?: string): Promise<TowerApp> {
   if (!configPath) configPath = findConfig();
   const jiti = createJiti(import.meta.url, { interopDefault: true });
-  const config = (await jiti.import(configPath)) as any;
-  return createTowerApp(config);
+  const config = await jiti.import(configPath);
+  return createTowerApp(config as any);
 }
 
-export async function closeModules(app: any) {
-  const vault = getModule(app, "vault");
-  if (vault?.close) {
-    await vault.close();
+export async function closeModules(app: TowerApp) {
+  for (const [name] of Object.entries(app.config.modules)) {
+    const mod = getModule(app, name);
+    if (mod?.close) {
+      await mod.close();
+    }
   }
 }
 
@@ -120,7 +138,9 @@ export function findConfig(cwd?: string): string {
   throw new Error("Could not find tower.config.ts in this or any parent directory.");
 }
 
-
+export function versionText(): string {
+  return `towerjs v${towerjsVersion}`;
+}
 
 export function helpText(): string[] {
   return [
@@ -133,12 +153,13 @@ export function helpText(): string[] {
     "  seed             Run seeds (runs migrations first unless --skip-migrate)",
     "  seed --skip-migrate  Run seeds without running migrations first",
     "  help             Show this message",
+    "  --version, -v    Show version",
     "",
   ];
 }
 
-const entryUrl = process.argv[1];
-if (entryUrl && (entryUrl.endsWith("/cli.ts") || entryUrl.endsWith("/cli.js") || entryUrl.endsWith("\\cli.js"))) {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
   const [command, ...flags] = process.argv.slice(2);
   const result = await run(command, flags);
   for (const line of result.stdout) process.stdout.write(line + "\n");
