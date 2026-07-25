@@ -45,8 +45,13 @@ export type {
   WebPushConfig,
 } from "./types.js"
 
+/** @internal Singleton courier instance, set during tower init. */
 let _courier: CourierModule | undefined
 
+/**
+ * Proxy that delegates to the initialized courier module.
+ * Throws if accessed before tower is started.
+ */
 export const courier: CourierModule = new Proxy({} as CourierModule, {
   get(_, prop) {
     if (!_courier) {
@@ -59,6 +64,24 @@ export const courier: CourierModule = new Proxy({} as CourierModule, {
   },
 })
 
+/**
+ * Creates a tower module that registers the courier notification service.
+ *
+ * Pass the returned object to `modules` in your tower config.
+ *
+ * @example
+ * ```ts
+ * defineTower({
+ *   modules: [
+ *     defineCourier({
+ *       email: { provider: "resend" },
+ *       sms: { provider: "twilio" },
+ *       push: { provider: "web-push" },
+ *     }),
+ *   ],
+ * })
+ * ```
+ */
 export function defineCourier(config: CourierConfig): TowerModule & CourierModule {
   return {
     name: "courier",

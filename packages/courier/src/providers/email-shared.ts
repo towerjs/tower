@@ -1,11 +1,17 @@
 import { render, toPlainText } from "@react-email/render"
 import type { EmailAddress, EmailSendParams } from "../types.js"
 
+/** Normalizes a single address or array into a string array. Returns undefined for empty input. */
 export function toAddressList(value?: EmailAddress): string[] | undefined {
   if (!value) return undefined
   return Array.isArray(value) ? value : [value]
 }
 
+/**
+ * Resolves the html and text content for an email.
+ * Renders react templates to html, then derives plain text from html.
+ * Throws if no content source is provided.
+ */
 export async function resolveEmailContent(params: EmailSendParams): Promise<{ html?: string; text?: string }> {
   let html = params.html
   let text = params.text
@@ -15,7 +21,7 @@ export async function resolveEmailContent(params: EmailSendParams): Promise<{ ht
   }
 
   if (html && !text) {
-    text = toPlainText(html)
+    text = await toPlainText(html)
   }
 
   if (!html && !text && !params.react) {

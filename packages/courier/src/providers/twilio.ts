@@ -1,6 +1,7 @@
 import twilio from "twilio"
 import type { SmsSendParams, SmsSendResult, TwilioSmsConfig } from "../types.js"
 
+/** SMS provider that sends via the Twilio API. */
 export class TwilioSmsProvider {
   private from?: string
   private messagingServiceSid?: string

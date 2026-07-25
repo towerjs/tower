@@ -1,7 +1,9 @@
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2"
+import nodemailer from "nodemailer"
 import type { EmailSendParams, EmailSendResult, SesEmailConfig } from "../types.js"
 import { resolveEmailContent, toAddressList } from "./email-shared.js"
 
+/** Email provider that sends via AWS SESv2. Attachments are handled by building a raw MIME message through nodemailer. */
 export class SesEmailProvider {
   private from?: string
   private configurationSetName?: string
@@ -28,16 +30,32 @@ export class SesEmailProvider {
   }
 
   async send(params: EmailSendParams): Promise<EmailSendResult> {
-    if (params.attachments?.length) {
-      throw new Error("[courier.email] SES adapter does not support attachments in this version.")
-    }
-
     const from = params.from ?? this.from
     if (!from) {
       throw new Error("[courier.email] Missing from address. Set modules.courier.email.from or params.from.")
     }
 
     const { html, text } = await resolveEmailContent(params)
+
+    const rawTransporter = nodemailer.createTransport({ jsonTransport: true })
+    const rawInfo = await rawTransporter.sendMail({
+      from,
+      to: toAddressList(params.to),
+      subject: params.subject,
+      html,
+      text,
+      cc: toAddressList(params.cc),
+      bcc: toAddressList(params.bcc),
+      replyTo: params.replyTo,
+      headers: params.headers,
+      attachments: params.attachments?.map((a) => ({
+        filename: a.filename,
+        content: typeof a.content === "string" ? a.content : Buffer.from(a.content),
+        contentType: a.contentType,
+        cid: a.cid,
+      })),
+    })
+
     const result = await this.client.send(new SendEmailCommand({
       FromEmailAddress: from,
       Destination: {
@@ -47,16 +65,7 @@ export class SesEmailProvider {
       },
       ReplyToAddresses: params.replyTo ? [params.replyTo] : undefined,
       Content: {
-        Simple: {
-          Subject: { Data: params.subject, Charset: "UTF-8" },
-          Body: {
-            Html: html ? { Data: html, Charset: "UTF-8" } : undefined,
-            Text: text ? { Data: text, Charset: "UTF-8" } : undefined,
-          },
-          Headers: params.headers
-            ? Object.entries(params.headers).map(([Name, Value]) => ({ Name, Value }))
-            : undefined,
-        },
+        Raw: { Data: new Uint8Array(rawInfo.message as unknown as Buffer) },
       },
       ConfigurationSetName: this.configurationSetName,
     }))

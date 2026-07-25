@@ -8,6 +8,7 @@ export default defineConfig({
       "@towerjs/foundation": resolve("packages/foundation/src/index.ts"),
       "@towerjs/vault": resolve("packages/vault/src/index.ts"),
       "@towerjs/gatehouse": resolve("packages/gatehouse/src/index.ts"),
+      "@towerjs/courier": resolve("packages/courier/src/index.ts"),
     },
   },
   test: {

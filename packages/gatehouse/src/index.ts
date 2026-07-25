@@ -50,6 +50,7 @@ import type {
 import { AuthenticationError, AuthorizationError } from "./types.js";
 import { BetterAuthAdapter } from "./providers/better-auth.js";
 import { ContextRequiredError } from "./context.js";
+import type { CourierModule } from "@towerjs/courier"
 
 export type {
   GatehouseConfig,
@@ -116,23 +117,6 @@ export type {
 export { AuthenticationError, AuthorizationError, ContextRequiredError };
 
 let _adapter: BetterAuthAdapter | undefined;
-
-type CourierLike = {
-  email: {
-    send(params: {
-      to: string
-      subject: string
-      text?: string
-      html?: string
-    }): Promise<unknown>
-  }
-  sms: {
-    send(params: {
-      to: string
-      body: string
-    }): Promise<unknown>
-  }
-}
 
 export function getAuth(): { getSession(request: { headers: Headers }): Promise<Session | null> } {
   if (!_adapter) throw new Error("Gatehouse not initialized");
@@ -212,7 +196,7 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
       }
       const vault = ctx.container.get<{ db: Kysely<unknown> }>("vault");
       const courier = ctx.container.has("courier")
-        ? ctx.container.get<CourierLike>("courier")
+        ? ctx.container.get<CourierModule>("courier")
         : undefined;
       _adapter = new BetterAuthAdapter(withCourierTransport(config, courier), vault.db);
     },
@@ -241,7 +225,7 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
 
 registerModule("gatehouse", (config) => defineGatehouse(config as unknown as GatehouseConfig));
 
-function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
+function withCourierTransport(config: GatehouseConfig, courier?: CourierModule): GatehouseConfig {
   if (!courier) return config
 
   const appName = config.appName ?? "Tower"

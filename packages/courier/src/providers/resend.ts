@@ -2,6 +2,7 @@ import { Resend } from "resend"
 import type { EmailSendParams, EmailSendResult, ResendEmailConfig } from "../types.js"
 import { toAddressList } from "./email-shared.js"
 
+/** Email provider that sends via the Resend API. */
 export class ResendEmailProvider {
   private client: Resend
   private from?: string

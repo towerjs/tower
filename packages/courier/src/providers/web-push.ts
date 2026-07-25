@@ -1,6 +1,7 @@
 import webpush from "web-push"
 import type { PushSendParams, PushSendResult, WebPushConfig } from "../types.js"
 
+/** Push provider that sends via the Web Push protocol (RFC 8030). */
 export class WebPushProvider {
   constructor(config: WebPushConfig) {
     const subject = config.vapid?.subject ?? process.env.WEB_PUSH_VAPID_SUBJECT

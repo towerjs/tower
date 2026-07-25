@@ -1,6 +1,6 @@
 {
   "name": "@towerjs/gatehouse",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": {
@@ -22,6 +22,7 @@
     "@better-auth/api-key": "^1.6.25",
     "@better-auth/passkey": "^1.6.25",
     "@towerjs/blueprint": "workspace:*",
+    "@towerjs/courier": "workspace:*",
     "better-auth": "^1.6.25",
     "kysely": "^0.29.4"
   },

@@ -2,6 +2,7 @@ import nodemailer from "nodemailer"
 import type { EmailSendParams, EmailSendResult, SmtpEmailConfig } from "../types.js"
 import { resolveEmailContent, toAddressList } from "./email-shared.js"
 
+/** Email provider that sends via SMTP. */
 export class SmtpEmailProvider {
   private from?: string
   private transporter: nodemailer.Transporter
