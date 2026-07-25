@@ -1,6 +1,7 @@
 {
   "name": "@towerjs/vault",
   "version": "0.1.0",
+  "description": "Database ORM, migrations, and seeds for Tower — built on Kysely with PostgreSQL support",
   "type": "module",
   "exports": {
     ".": {

@@ -1,6 +1,7 @@
 {
   "name": "@towerjs/courier",
   "version": "0.1.0",
+  "description": "Multi-channel communications for Tower — email, SMS, and push notifications",
   "type": "module",
   "exports": {
     ".": {

@@ -1,6 +1,7 @@
 {
   "name": "@towerjs/blueprint",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Application definition, module registration, and per-request context for Tower",
   "type": "module",
   "private": false,
   "exports": {

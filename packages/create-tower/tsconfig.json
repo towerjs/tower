@@ -6,5 +6,6 @@
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
+  "exclude": ["**/*.test.ts"],
   "references": [{ "path": "../scribe" }]
 }

@@ -6,9 +6,13 @@
     "build": "tsc -b",
     "clean": "rm -rf packages/*/dist",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "typescript": "^7.0",
     "vitest": "^4.1.10"
   },

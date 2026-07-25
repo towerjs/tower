@@ -1,6 +1,7 @@
 {
   "name": "create-tower",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Quick-start scaffolding for new Tower projects — pnpm create tower",
   "type": "module",
   "bin": { "create-tower": "./dist/index.js" },
   "files": ["dist"],
