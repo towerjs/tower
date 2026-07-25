@@ -13,6 +13,6 @@
     "@towerjs/courier": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20"
+    "@types/node": "^26"
   }
 }

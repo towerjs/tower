@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b",
-    "clean": "rm -rf packages/*/dist examples/next-app/.next examples/next-app/dist",
+    "clean": "rm -rf packages/*/dist",
     "test": "vitest run",
     "test:watch": "vitest"
   },

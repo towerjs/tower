@@ -27,6 +27,6 @@
     "execa": "^10.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.14.10"
+    "@types/node": "^26"
   }
 }
