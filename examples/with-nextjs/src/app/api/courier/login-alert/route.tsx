@@ -1,4 +1,5 @@
 import { tower } from "towerjs";
+import { AuthEmailTemplate } from "@/lib/emails/auth-email";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
@@ -17,8 +18,14 @@ export async function POST(request: Request) {
   const result = await tower.courier.email.send({
     to: body.to,
     subject: "New login to your account",
-    text: `A new login was detected.\nIP: ${ip}\nDevice: ${userAgent}`,
-    html: `<p>A new login was detected.</p><p>IP: ${ip}<br>Device: ${userAgent}</p>`,
+    react: (
+      <AuthEmailTemplate
+        heading="New login detected"
+        intro={`A new login was detected.\nIP: ${ip}\nDevice: ${userAgent}`}
+        actionLabel="Review account activity"
+        actionUrl="https://example.com/settings/security"
+      />
+    ),
   })
 
   return Response.json({ ok: true, provider: result.provider, id: result.id ?? null })
