@@ -478,6 +478,57 @@ describe("neon side-effect", () => {
   })
 })
 
+// ─── Edge Runtime ─────────────────────────────────────────────────
+
+describe("edge runtime", () => {
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    mocks.clearPoolArgs()
+    const { neonConfig } = await import("@neondatabase/serverless")
+    neonConfig.fetchConnectionCache = false
+    delete (neonConfig as any).poolQueryViaFetch
+  })
+
+  it("enables poolQueryViaFetch for neon on edge", async () => {
+    mocks.mockConnect.mockResolvedValueOnce({
+      query: vi.fn().mockResolvedValueOnce(undefined),
+      release: vi.fn(),
+    })
+
+    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
+    await mod.init!(mockCtx({ runtime: { name: "edge", isServerless: true } }))
+
+    const { neonConfig } = await import("@neondatabase/serverless")
+    expect(neonConfig.poolQueryViaFetch).toBe(true)
+  })
+
+  it("skips connection validation on edge", async () => {
+    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
+    await mod.init!(mockCtx({ runtime: { name: "edge", isServerless: true } }))
+
+    expect(mocks.mockConnect).not.toHaveBeenCalled()
+  })
+
+  it("registers configured proxy on edge", async () => {
+    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
+    const ctx = mockCtx({ runtime: { name: "edge", isServerless: true } })
+    await mod.init!(ctx)
+
+    expect(ctx.container.register).toHaveBeenCalledWith("vault", expect.any(Object))
+  })
+
+  it("throws for pg provider on edge", async () => {
+    const mod = createVaultModule({
+      connectionString: "postgres://u:p@localhost:5432/db",
+      provider: "pg",
+    })
+
+    await expect(
+      mod.init!(mockCtx({ runtime: { name: "edge", isServerless: true } })),
+    ).rejects.toThrow("pg provider requires a TCP connection")
+  })
+})
+
 // ─── Auto-registration ────────────────────────────────────────────
 
 describe("auto-registration", () => {

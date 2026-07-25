@@ -1,5 +1,3 @@
-import { AsyncLocalStorage } from "async_hooks"
-
 /**
  * Provides per-request scoped storage via AsyncLocalStorage.
  *
@@ -11,20 +9,30 @@ export interface TowerContextProvider {
   get<T = unknown>(key: string): T | undefined
 }
 
-class NodeTowerContextProvider implements TowerContextProvider {
-  private storage = new AsyncLocalStorage<Record<string, unknown>>()
-
-  run<T>(data: Record<string, unknown>, handler: () => Promise<T>): Promise<T> {
-    return this.storage.run(data, handler)
-  }
-
-  get<T = unknown>(key: string): T | undefined {
-    return this.storage.getStore()?.[key] as T | undefined
-  }
-}
-
 /** Global context provider that holds request-scoped data (e.g. the current gatehouse instance). */
-export const towerContext: TowerContextProvider = new NodeTowerContextProvider()
+export const towerContext: TowerContextProvider = await (async (): Promise<TowerContextProvider> => {
+  try {
+    const { AsyncLocalStorage } = await import("node:async_hooks")
+    const storage = new AsyncLocalStorage<Record<string, unknown>>()
+    return {
+      run<T>(data: Record<string, unknown>, handler: () => Promise<T>) {
+        return storage.run(data, handler)
+      },
+      get<T = unknown>(key: string): T | undefined {
+        return storage.getStore()?.[key] as T | undefined
+      },
+    }
+  } catch {
+    return {
+      run<T>(_data: Record<string, unknown>, handler: () => Promise<T>) {
+        return handler()
+      },
+      get() {
+        return undefined
+      },
+    }
+  }
+})()
 
 /**
  * Registry for named services.

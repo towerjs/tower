@@ -1,6 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
 import type { TowerBlueprint, TowerModule, TowerInitContext } from "@towerjs/blueprint";
 import { getModuleFactory } from "@towerjs/blueprint";
 import "@towerjs/vault";
@@ -114,16 +111,21 @@ export async function createTower(config?: TowerBlueprint): Promise<TowerInstanc
 }
 
 async function discoverConfig(): Promise<TowerBlueprint> {
+  const [{ existsSync }, { join, dirname }, { pathToFileURL }] = await Promise.all([
+    import("node:fs"),
+    import("node:path"),
+    import("node:url"),
+  ])
   let dir = process.cwd()
   for (let i = 0; i < 20; i++) {
     for (const name of ["tower.config.ts", "tower.config.js", "tower.config.mjs"]) {
-      const fullPath = path.join(dir, name)
-      if (fs.existsSync(fullPath)) {
+      const fullPath = join(dir, name)
+      if (existsSync(fullPath)) {
         const mod = await import(pathToFileURL(fullPath).href)
         return mod.default ?? mod
       }
     }
-    const parent = path.dirname(dir)
+    const parent = dirname(dir)
     if (parent === dir) break
     dir = parent
   }

@@ -41,6 +41,7 @@ async function createPool(
   connectionString: string,
   provider: "neon" | "pg",
   poolConfig?: VaultConfig["pool"],
+  runtime?: { name: string; isServerless: boolean },
 ): Promise<any> {
   const config: Record<string, unknown> = {
     connectionString,
@@ -49,16 +50,26 @@ async function createPool(
   if (poolConfig?.idleTimeoutMillis) config.idleTimeoutMillis = poolConfig.idleTimeoutMillis;
   if (poolConfig?.connectionTimeoutMillis) config.connectionTimeoutMillis = poolConfig.connectionTimeoutMillis;
 
+  const isEdge = runtime?.name === "edge";
   const ssl = resolveSsl(poolConfig, connectionString);
 
   if (provider === "neon") {
     const { Pool, neonConfig } = await import("@neondatabase/serverless");
     neonConfig.fetchConnectionCache = true;
+    if (isEdge) neonConfig.poolQueryViaFetch = true;
     const neonPool = ssl !== undefined ? new Pool({ ...config, ssl }) : new Pool(config);
     neonPool.on("error", (err: Error) => {
+      if (isEdge) return;
       console.error("[vault] Unexpected Neon database pool error:", err.message);
     });
     return neonPool;
+  }
+
+  if (isEdge) {
+    throw new Error(
+      'The pg provider requires a TCP connection which is not available on Edge Runtime. ' +
+      'Use the neon provider instead (e.g., { provider: "neon" }).',
+    )
   }
 
   const { Pool: PgPool } = await import("pg");
@@ -167,15 +178,18 @@ export function createVaultModule(options?: VaultConfig): TowerModule {
       }
 
       const provider = resolveProvider(options);
-      const pool = await createPool(connectionString, provider, options?.pool);
+      const isEdge = ctx.runtime.name === "edge";
+      const pool = await createPool(connectionString, provider, options?.pool, ctx.runtime);
 
-      try {
-        await validateConnection(pool, provider);
-      } catch (err) {
-        await pool.end().catch(() => {});
-        throw new Error(
-          `Could not connect to database at ${connectionString.replace(/\/\/.*@/, "//***@")}: ${(err as Error).message}`,
-        );
+      if (!isEdge) {
+        try {
+          await validateConnection(pool, provider);
+        } catch (err) {
+          await pool.end().catch(() => {});
+          throw new Error(
+            `Could not connect to database at ${connectionString.replace(/\/\/.*@/, "//***@")}: ${(err as Error).message}`,
+          );
+        }
       }
 
       const db: VaultDb = new Kysely({ dialect: new PostgresDialect({ pool }) });
