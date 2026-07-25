@@ -41,4 +41,19 @@ describe("module registry", () => {
 
     expect(getModuleFactory("test")).toBe(factory2);
   });
+
+  it("handles empty string module name", () => {
+    const factory = () => ({ name: "", init: async () => {} });
+    registerModule("", factory);
+    expect(getModuleFactory("")).toBe(factory);
+  });
+
+  it("stores factory that throws", () => {
+    const factory = () => {
+      throw new Error("factory error")
+    };
+    registerModule("broken", factory);
+    const retrieved = getModuleFactory("broken");
+    expect(typeof retrieved).toBe("function");
+  });
 });
