@@ -17,6 +17,7 @@ function fail(msg: string): CliResult {
   return { stdout: [], stderr: [msg], exitCode: 1 }
 }
 
+/** Runs a CLI command (migrate, seed, or help). */
 export async function run(command: string | undefined, flags: string[], configPath?: string): Promise<CliResult> {
   const runSeed = flags.includes("--seed") || flags.includes("-s");
   const skipMigrate = flags.includes("--skip-migrate");
@@ -104,6 +105,7 @@ export async function closeModules(app: any) {
   }
 }
 
+/** Searches up from cwd to find tower.config.ts. */
 export function findConfig(cwd?: string): string {
   let dir = cwd ?? process.cwd();
   for (let i = 0; i < 20; i++) {
@@ -134,9 +136,6 @@ export function helpText(): string[] {
     "",
   ];
 }
-
-// ─── CLI entry point ───────────────────────────────────────────────
-// Only runs when invoked directly, not when imported by tests.
 
 const entryUrl = process.argv[1];
 if (entryUrl && (entryUrl.endsWith("/cli.ts") || entryUrl.endsWith("/cli.js") || entryUrl.endsWith("\\cli.js"))) {

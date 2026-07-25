@@ -182,6 +182,7 @@ const GET_METHODS = new Set([
 
 const BA_TOP_LEVEL = new Set(["body", "query", "asResponse", "headers", "method"])
 
+/** Wraps a Better Auth API object to auto-inject headers and route params to query/body. */
 export function buildProxiedApi(api: any, headers: Headers) {
   return new Proxy(api, {
     get(target: any, prop: string) {
@@ -207,6 +208,7 @@ export function buildProxiedApi(api: any, headers: Headers) {
 // Takes a proxied Better Auth API and returns a nested facade object
 // that maps BA method names to Gatehouse paths.
 
+/** Builds a nested facade object from a Better Auth API, mapping method names to dot-separated paths. */
 export function buildFacade(api: Record<string, Function>): Record<string, any> {
   const facade: Record<string, any> = {}
 

@@ -8,6 +8,10 @@ import type {
   GatehouseUser,
   Session,
   UpdateUserData,
+  EmailOtpSendParams,
+  EmailOtpConfirmParams,
+  PhoneOtpSendParams,
+  PhoneOtpConfirmParams,
   PasskeyInfo,
   PasskeyCreateParams,
   PasskeyUpdateParams,
@@ -38,10 +42,6 @@ import type {
   OrganizationRoleUpdateParams,
   Identity,
   AccessToken,
-  EmailOtpSendParams,
-  EmailOtpConfirmParams,
-  PhoneOtpSendParams,
-  PhoneOtpConfirmParams,
   TwoFactorOtpSendParams,
   TwoFactorOtpVerifyParams,
   ProxyOptions,
@@ -62,7 +62,6 @@ export type {
   EmailOtpSendParams,
 } from "./types.js"
 
-// ─── Better Auth plugin option types ──────────────────────────────
 export type {
   MagicLinkOptions,
   EmailOTPOptions,
@@ -118,18 +117,24 @@ export { AuthenticationError, AuthorizationError, ContextRequiredError };
 
 let _adapter: BetterAuthAdapter | undefined;
 
+/** Returns the adapter's getSession method. Useful for server-side session checks. */
 export function getAuth(): { getSession(request: { headers: Headers }): Promise<Session | null> } {
   if (!_adapter) throw new Error("Gatehouse not initialized");
   return _adapter;
 }
 
+/** Returns the adapter's route handlers for the auth API. */
 export function getRoutes(): { GET: (req: Request) => Promise<Response>; POST: (req: Request) => Promise<Response> } {
   if (!_adapter) throw new Error("Gatehouse not initialized");
   return _adapter.routes;
 }
 
-// ─── Escape hatch ─────────────────────────────────────────────────
-
+/**
+ * Raw access to the gatehouse adapter.
+ *
+ * Use `Gatehouse.from()` to create a per-request instance outside of
+ * an ALS context (e.g. in route handlers).
+ */
 export const Gatehouse = {
   from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
     if (!_adapter) throw new Error("Gatehouse not initialized");
@@ -141,8 +146,7 @@ export const Gatehouse = {
   },
 };
 
-// ─── Request-scoped facade ────────────────────────────────────────
-
+/** Runs a handler within a request-scoped gatehouse context. */
 export async function runWithRequest<T>(
   request: Request | { headers: Headers },
   handler: () => Promise<T>,
@@ -154,9 +158,15 @@ export async function runWithRequest<T>(
 
 type GatehouseAPI = GatehouseModule & GatehouseInstance;
 
+/**
+ * Proxy singleton for accessing gatehouse.
+ *
+ * Inside an ALS context (action, withGatehouse, runWithRequest) it delegates to
+ * the per-request instance. Outside ALS, only module-level methods like
+ * `from()`, `migrate()`, `proxy()`, and `routes` are available.
+ */
 export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
   get(_, prop) {
-    // 1. ALS context (per-request instance)
     const instance = towerContext.get<GatehouseInstance>("gatehouse");
     if (instance && (prop in instance)) {
       const value = (instance as any)[prop];
@@ -166,7 +176,6 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
       return value;
     }
 
-    // 2. Module-level fallback (works outside ALS context)
     if (_adapter) {
       if (prop === "from") return (request: any) => _adapter!.from(request);
       if (prop === "migrate") return () => _adapter!.migrate();
@@ -184,8 +193,23 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
   },
 }) as GatehouseAPI;
 
-// ─── Tower module registration ────────────────────────────────────
-
+/**
+ * Creates a Tower module that registers the gatehouse auth service.
+ *
+ * @example
+ * ```ts
+ * defineTower({
+ *   modules: {
+ *     vault: { connectionString: process.env.DATABASE_URL },
+ *     gatehouse: {
+ *       provider: "better-auth",
+ *       credentials: true,
+ *       social: ["google", "github"],
+ *     },
+ *   },
+ * })
+ * ```
+ */
 export function defineGatehouse(config: GatehouseConfig): TowerModule & GatehouseModule {
   return {
     name: "gatehouse",

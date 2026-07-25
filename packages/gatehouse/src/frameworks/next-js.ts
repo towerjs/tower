@@ -159,5 +159,13 @@ function lazy(method: "GET" | "POST") {
   });
 }
 
+/**
+ * Lazy GET handler that delegates to the gatehouse auth routes.
+ * Imported by `app/api/auth/[...all]/route.ts` in user projects.
+ */
 export const GET = lazy("GET") as (req: Request) => Promise<Response>;
+/**
+ * Lazy POST handler that delegates to the gatehouse auth routes.
+ * Imported by `app/api/auth/[...all]/route.ts` in user projects.
+ */
 export const POST = lazy("POST") as (req: Request) => Promise<Response>;

@@ -13,6 +13,7 @@ import { ServiceContainer } from "./container";
 import { detectRuntime } from "./runtime";
 import type { TowerRuntime } from "./types";
 
+/** A running Tower application with access to config, services, and lifecycle control. */
 export interface TowerApp {
   config: TowerBlueprint;
   container: ServiceContainer;
@@ -20,23 +21,26 @@ export interface TowerApp {
   shutdown(): Promise<void>;
 }
 
-/**
- * Module type registry — each known module is listed here.
- * Module packages previously used `declare module "@towerjs/foundation"`
- * to augment this interface; now types are imported directly.
- */
+/** Maps registered module names to their typed interfaces. */
 export interface TowerModules {
   vault: VaultModule;
   gatehouse: GatehouseModule;
   courier: CourierModule;
 }
 
+/** A fully-resolved Tower instance with typed access to every enabled module. */
 export type TowerInstance = {
   [K in keyof TowerModules]: TowerModules[K]
 } & {
   runtime: TowerRuntime
 }
 
+/**
+ * Creates a TowerApp from a blueprint by loading and initializing every declared module.
+ *
+ * Each module's `init()` hook receives the shared service container,
+ * allowing modules to register dependencies for other modules to consume.
+ */
 export async function createTowerApp(config: TowerBlueprint): Promise<TowerApp> {
   const runtime = detectRuntime();
   const container = new ServiceContainer();
@@ -75,7 +79,7 @@ export async function createTowerApp(config: TowerBlueprint): Promise<TowerApp> 
 }
 
 /**
- * Create a fully typed Tower instance.
+ * Creates a fully typed Tower instance.
  *
  * When called without arguments, automatically discovers `tower.config.ts`
  * by searching up from the working directory.
@@ -83,11 +87,10 @@ export async function createTowerApp(config: TowerBlueprint): Promise<TowerApp> 
  * @example
  * ```ts
  * // auto-discover config
- * import { createTower } from "@towerjs/foundation"
  * export const tower = await createTower()
  *
- * // Tests / scripts — explicit config
- * const testTower = await createTower({ modules: { vault: ... } })
+ * // Tests — explicit config
+ * const testTower = await createTower({ modules: { vault: {} } })
  * ```
  */
 export async function createTower(config?: TowerBlueprint): Promise<TowerInstance> {

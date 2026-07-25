@@ -80,6 +80,12 @@ async function validateConnection(pool: any, provider: "neon" | "pg"): Promise<v
   }
 }
 
+/**
+ * Proxy singleton that dispatches to the initialized vault module.
+ *
+ * Throws if accessed before Tower has started. Use `vault.db` to access
+ * the underlying Kysely instance directly.
+ */
 export const vault: VaultModule = new Proxy({} as VaultModule, {
   get(_, prop) {
     if (!_vault) throw new Error("Vault not initialized. Tower must be started first.");
@@ -130,6 +136,18 @@ function buildProxyConfigured(
   });
 }
 
+/**
+ * Creates a Tower module that registers the vault database service.
+ *
+ * @example
+ * ```ts
+ * defineTower({
+ *   modules: {
+ *     vault: { connectionString: process.env.DATABASE_URL },
+ *   },
+ * })
+ * ```
+ */
 export function createVaultModule(options?: VaultConfig): TowerModule {
   return {
     name: "vault",
@@ -173,4 +191,3 @@ export function createVaultModule(options?: VaultConfig): TowerModule {
 }
 
 registerModule("vault", (config) => createVaultModule(config as VaultConfig));
-

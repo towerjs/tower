@@ -2,6 +2,7 @@ import * as nodeFs from "node:fs"
 import * as nodePath from "node:path"
 import type { VaultDb, VaultSeedConfig } from "./types.js"
 
+/** Runs seed files from the configured seed folder. Pass a name to run a single seed file. */
 export async function runSeeds(
   db: VaultDb,
   config: VaultSeedConfig,

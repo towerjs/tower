@@ -158,6 +158,7 @@ async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
   return modules;
 }
 
+/** Collects the full project state through interactive CLI prompts. */
 export async function collectProjectState(): Promise<ProjectState> {
   console.log("\n  Tower — Create application\n");
 

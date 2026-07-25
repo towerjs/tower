@@ -60,7 +60,6 @@ export const nextAdapter: FrameworkAdapter = {
       flags.push("--no-tailwind");
     }
 
-    // create-next-app creates the project directory inside targetDir
     await execa("npx", ["create-next-app@latest", ...flags], {
       cwd: targetDir,
       stdio: "inherit",
@@ -68,7 +67,6 @@ export const nextAdapter: FrameworkAdapter = {
 
     const projectDir = join(targetDir, state.projectName);
 
-    // Layer Tower-specific files
     await writeFile(join(projectDir, "tower.config.ts"), towerConfig(state));
     await writeFile(join(projectDir, ".env.example"), envExample(state));
     if (state.modules.gatehouse || state.modules.vault) {
@@ -91,7 +89,6 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(projectDir, ".env"), envLines.join("\n"));
     }
 
-    // Auth route + proxy (only when gatehouse is enabled)
     if (state.modules.gatehouse) {
       const authDir = join(projectDir, "src", "app", "api", "auth", "[...all]");
       await mkdir(authDir, { recursive: true });
@@ -99,15 +96,14 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(projectDir, "src", "proxy.ts"), proxyFile());
     }
 
-    // Install Tower dependencies
     const towerDeps: string[] = ["towerjs"];
     await execa("pnpm", ["add", ...towerDeps], { cwd: projectDir, stdio: "inherit" });
   },
 };
 
-/** Keys that are used by the CLI only and should not appear in tower.config.ts */
 const CLI_ONLY_KEYS = new Set(["brand"]);
 
+/** Generates the tower.config.ts content for a new project. */
 export function towerConfig(state: ProjectState): string {
   const modules = Object.entries(state.modules)
     .map(([name, cfg]) => {
@@ -179,6 +175,7 @@ function vaultEnvHints(brand?: string): string[] {
   }
 }
 
+/** Generates the .env.example content for the new project. */
 export function envExample(state: ProjectState): string {
   const vars: string[] = [];
 

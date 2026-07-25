@@ -22,6 +22,7 @@ export function createMigrator(
   })
 }
 
+/** Runs all pending migrations and logs their results. */
 export async function migrateToLatest(
   db: VaultDb,
   config: VaultMigrationConfig,

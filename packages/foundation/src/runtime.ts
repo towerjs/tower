@@ -8,6 +8,7 @@ function getProcessEnv(key: string): string | undefined {
   return typeof process !== "undefined" ? process.env?.[key] : undefined;
 }
 
+/** Detects the deployment environment from platform-specific env vars (Vercel, AWS, Netlify, Cloudflare). */
 export function detectRuntime(): TowerRuntime {
   if (hasProcessEnv("VERCEL")) {
     const env = getProcessEnv("VERCEL_ENV");

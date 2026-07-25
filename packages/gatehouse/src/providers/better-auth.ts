@@ -19,6 +19,7 @@ import type {
 import { AuthenticationError } from "../types.js";
 import { buildProxiedApi, buildFacade } from "../facade-builder.js";
 
+/** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
   private auth: any;
   private api: any;
@@ -117,22 +118,26 @@ export class BetterAuthAdapter {
     this.api = this.auth.api;
   }
 
+  /** Runs better-auth database migrations. */
   async migrate(): Promise<void> {
     const { getMigrations } = _require("better-auth/dist/db/get-migration.mjs");
     const { runMigrations } = await getMigrations(this.auth.options);
     await runMigrations();
   }
 
+  /** Raw better-auth provider instance. */
   get provider(): any {
     return this.auth;
   }
 
+  /** Next.js route handlers (GET/POST) for the auth API. */
   get routes() {
     return toNextJsHandler(this.auth);
   }
 
   // ─── From ─────────────────────────────────────────────────────────
 
+  /** Creates a per-request GatehouseInstance from a request or headers. */
   async from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
     const headers = request instanceof Request ? request.headers : request.headers;
     const session = await this.getSession({ headers });
@@ -166,6 +171,7 @@ export class BetterAuthAdapter {
 
   // ─── Proxy ────────────────────────────────────────────────────────
 
+  /** Creates a middleware proxy that redirects unauthenticated requests. */
   createProxy(options?: ProxyOptions): ProxyResult {
     const publicPaths = options?.public ?? []
     const authPaths = options?.redirectIfAuthenticated ?? []

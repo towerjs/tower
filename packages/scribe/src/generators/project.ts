@@ -6,6 +6,7 @@ const adapters: Record<string, FrameworkAdapter> = {
   next: nextAdapter,
 };
 
+/** Generates a full project scaffold from a resolved state. */
 export async function generateProject(
   state: ProjectState,
   targetDir: string,

@@ -1,3 +1,4 @@
+/** A user managed by Gatehouse. */
 export interface GatehouseUser {
   id: string
   name: string
@@ -22,6 +23,7 @@ export interface GatehouseSession {
   userAgent?: string | null
 }
 
+/** Combined user and session returned by auth operations. */
 export interface Session {
   user: GatehouseUser
   session: GatehouseSession
@@ -32,6 +34,7 @@ export interface UpdateUserData {
   image?: string | null
 }
 
+/** A linked social identity (OAuth account). */
 export interface Identity {
   id: string
   provider: string
@@ -96,6 +99,7 @@ export interface OrganizationRoleUpdateParams {
   roleName?: string
 }
 
+/** TOTP setup data returned after enabling two-factor auth. */
 export interface TwoFactorInfo {
   totpURI: string
   backupCodes: string[]
@@ -145,6 +149,7 @@ export interface AdminUserCreateParams {
   keepCurrentActiveOrganization?: boolean
 }
 
+/** Parameters for temporarily restricting a user account. */
 export interface AdminUserBanParams {
   banReason?: string
   banExpiresIn?: number
@@ -163,6 +168,7 @@ export interface AdminUpdateUserParams {
   data?: Record<string, unknown>
 }
 
+/** Options for the admin user listing endpoint. */
 export interface AdminListUsersOptions {
   searchField?: string
   searchOperator?: "eq" | "ne" | "starts_with" | "ends_with" | "contains"
@@ -237,6 +243,7 @@ export interface ApiKeyVerifyParams {
   key: string
 }
 
+/** Thrown when authentication is required but the user is not logged in. */
 export class AuthenticationError extends Error {
   constructor(message = "Authentication required") {
     super(message)
@@ -244,6 +251,7 @@ export class AuthenticationError extends Error {
   }
 }
 
+/** Thrown when the current user lacks the required permissions. */
 export class AuthorizationError extends Error {
   constructor(message = "Not authorized") {
     super(message)
@@ -340,6 +348,15 @@ type BetterAuthGenerateIdFn = (options: {
   size?: number | undefined
 }) => string | false
 
+/**
+ * Configuration for the gatehouse auth module backed by better-auth.
+ *
+ * Controls which authentication features are enabled (email/password, social,
+ * magic links, OTP, passkeys, TOTP, organizations, admin, API keys) and how
+ * they behave. Each feature maps to a better-auth plugin.
+ *
+ * Most config fields are optional — omit a feature to disable it.
+ */
 export interface GatehouseConfig {
   provider: "better-auth"
 
@@ -453,6 +470,7 @@ export interface GatehouseConfig {
   passThrough?: Record<string, unknown>
 }
 
+/** Controls which paths the gatehouse proxy protects and where redirects go. */
 export interface ProxyOptions {
   public?: string[]
   redirectIfAuthenticated?: string[]
@@ -465,12 +483,22 @@ export interface ProxyResult {
   config: { matcher: string[] }
 }
 
+/**
+ * Per-request authentication API created by `gatehouse.from()`.
+ *
+ * Every method is bound to the request's session. Use this interface
+ * to sign in/up users, manage sessions, organizations, API keys, etc.
+ */
 export interface GatehouseInstance {
   session(): Promise<Session | null>
   user(): Promise<GatehouseUser | null>
   readonly headers: Headers
   readonly provider: any
 
+  /**
+   * Returns the current session or throws AuthenticationError.
+   * Use this in route handlers and server actions where a user must be logged in.
+   */
   requireUser(): Promise<Session>
 
   signIn: {
@@ -623,6 +651,12 @@ export interface GatehouseInstance {
   can(params: { user: GatehouseUser; permission: string | string[]; organizationId?: string }): Promise<boolean>
 }
 
+/**
+ * Module-level gatehouse API.
+ *
+ * Use `from()` to create a per-request instance, `proxy()` for the
+ * auth middleware, and `migrate()` during deployment setup.
+ */
 export interface GatehouseModule {
   provider: any
 

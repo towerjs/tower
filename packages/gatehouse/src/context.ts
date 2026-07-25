@@ -1,6 +1,13 @@
 import { towerContext } from "@towerjs/blueprint"
 import type { GatehouseInstance } from "./types.js"
 
+/**
+ * Thrown when a gatehouse method is called outside of a request context.
+ *
+ * This happens when using the `gatehouse` proxy without first creating
+ * a per-request instance via `gatehouse.from()` or wrapping the handler
+ * in `action()` / `withGatehouse()`.
+ */
 export class ContextRequiredError extends Error {
   constructor(message?: string) {
     super(message ?? (
@@ -12,6 +19,7 @@ export class ContextRequiredError extends Error {
   }
 }
 
+/** Returns the current request-scoped gatehouse instance from the ALS context, if one is active. */
 export function getCurrentGatehouse(): GatehouseInstance | undefined {
   return towerContext.get<GatehouseInstance>("gatehouse")
 }
