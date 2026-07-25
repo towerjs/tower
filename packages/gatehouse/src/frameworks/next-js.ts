@@ -151,12 +151,8 @@ export function withGatehouse<T extends Response>(
 
 // ─── Route handler (lazily resolved) ──────────────────────────────
 
-function lazy(method: "GET" | "POST") {
-  return new Proxy({} as any, {
-    apply(_, __, args: [Request]) {
-      return getRoutes()[method](args[0]);
-    },
-  });
+function lazy(method: "GET" | "POST"): (req: Request) => Promise<Response> {
+  return (req: Request) => getRoutes()[method](req);
 }
 
 /**
