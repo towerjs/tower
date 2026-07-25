@@ -1,6 +1,7 @@
 {
   "name": "towerjs",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Meta-package that bundles all Tower modules for convenient access",
   "type": "module",
   "exports": {
     ".": {
@@ -10,6 +11,18 @@
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
+    },
+    "./vault": {
+      "types": "./dist/vault.d.ts",
+      "default": "./dist/vault.js"
+    },
+    "./gatehouse": {
+      "types": "./dist/gatehouse.d.ts",
+      "default": "./dist/gatehouse.js"
+    },
+    "./courier": {
+      "types": "./dist/courier.d.ts",
+      "default": "./dist/courier.js"
     }
   },
   "bin": { "tower": "./dist/cli.js" },
