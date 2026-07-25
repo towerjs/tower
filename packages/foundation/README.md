@@ -1,6 +1,6 @@
 # `@towerjs/foundation`
 
-[![npm version](https://img.shields.io/npm/v/@towerjs/foundation?color=blue)](https://www.npmjs.com/package/@towerjs/foundation)
+[![npm version](https://img.shields.io/npm/v/@towerjs/foundation.svg?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/foundation)
 
 Core runtime for Tower applications. Manages the application lifecycle, dependency injection, configuration discovery, and runtime environment detection.
 
