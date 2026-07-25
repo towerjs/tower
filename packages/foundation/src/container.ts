@@ -19,8 +19,7 @@ export class ServiceContainer implements ServiceRegistry {
   }
 
   get<T>(name: string): T {
-    const instance = this.instances.get(name);
-    if (instance !== undefined) return instance as T;
+    if (this.instances.has(name)) return this.instances.get(name) as T;
 
     const factory = this.factories.get(name);
     if (factory) {

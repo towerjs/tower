@@ -72,4 +72,27 @@ describe("createTowerApp", () => {
     expect(app.runtime.name).toBe("node-server");
     expect(app.runtime.isServerless).toBe(false);
   });
+
+  it("propagates init errors", async () => {
+    registerModule("exploder", () => ({
+      name: "exploder",
+      async init() {
+        throw new Error("init failed");
+      },
+    }));
+
+    await expect(
+      createTowerApp({ modules: { exploder: {} } }),
+    ).rejects.toThrow("init failed");
+  });
+
+  it("shutdown handles modules without shutdown hook", async () => {
+    registerModule("quiet", () => ({
+      name: "quiet",
+      async init() {},
+    }));
+
+    const app = await createTowerApp({ modules: { quiet: {}, mock: {} } });
+    await expect(app.shutdown()).resolves.toBeUndefined();
+  });
 });

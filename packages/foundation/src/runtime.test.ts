@@ -62,4 +62,12 @@ describe("detectRuntime", () => {
     const runtime = detectRuntime();
     expect(runtime).toEqual({ name: "edge", isServerless: true });
   });
+
+  it("gives VERCEL priority over AWS when both are set", () => {
+    process.env.VERCEL = "1";
+    process.env.AWS_LAMBDA_FUNCTION_NAME = "my-function";
+
+    const runtime = detectRuntime();
+    expect(runtime).toEqual({ name: "vercel-serverless", isServerless: true });
+  });
 });

@@ -76,4 +76,32 @@ describe("ServiceContainer", () => {
     container.has("lazy");
     expect(called).toBe(false);
   });
+
+  it("overwrites a previously registered instance", () => {
+    const container = new ServiceContainer();
+    container.register("key", "first");
+    container.register("key", "second");
+    expect(container.get("key")).toBe("second");
+  });
+
+  it("overwrites a previously registered factory", () => {
+    const container = new ServiceContainer();
+    container.registerFactory("key", () => "first");
+    container.registerFactory("key", () => "second");
+    expect(container.get("key")).toBe("second");
+  });
+
+  it("caches factory result even when undefined", () => {
+    const container = new ServiceContainer();
+    let callCount = 0;
+    container.registerFactory("maybe", () => {
+      callCount++;
+      return undefined as any;
+    });
+
+    expect(container.get("maybe")).toBeUndefined();
+    expect(callCount).toBe(1);
+    expect(container.get("maybe")).toBeUndefined();
+    expect(callCount).toBe(1);
+  });
 });
