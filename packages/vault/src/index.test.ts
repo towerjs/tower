@@ -79,6 +79,7 @@ vi.mock("./seed.js", () => ({
 
 // ─── Imports (must be after mocks) ─────────────────────────────────
 
+import { getModuleFactory } from "@towerjs/blueprint"
 import { createVaultModule, vault } from "./index.js"
 
 // ─── Helpers ───────────────────────────────────────────────────────
@@ -118,6 +119,35 @@ describe("unconfigured vault proxy", () => {
 
   it("throws on close access", () => {
     expect(() => (vault as any).close).toThrow("Vault not initialized")
+  })
+})
+
+// ─── buildProxyUnconfigured (via init with no connection string) ────
+
+describe("buildProxyUnconfigured", () => {
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    // re-init without connection string to get the unconfigured proxy
+    const mod = createVaultModule()
+    await mod.init!(mockCtx())
+  })
+
+  it("throws configured error on migrate", () => {
+    expect(() => (vault as any).migrate()).toThrow(
+      "Vault not configured. Set DATABASE_URL or pass connectionString to vault().",
+    )
+  })
+
+  it("throws configured error on migrator", () => {
+    expect(() => (vault as any).migrator).toThrow(
+      "Vault not configured. Set DATABASE_URL or pass connectionString to vault().",
+    )
+  })
+
+  it("throws configured error on seed", () => {
+    expect(() => (vault as any).seed()).toThrow(
+      "Vault not configured. Set DATABASE_URL or pass connectionString to vault().",
+    )
   })
 })
 
@@ -409,5 +439,53 @@ describe("pool config passthrough", () => {
     expect(args.max).toBe(10)
     expect(args.idleTimeoutMillis).toBe(5000)
     expect(args.connectionTimeoutMillis).toBe(3000)
+  })
+})
+
+// ─── Multiple init calls ───────────────────────────────────────────
+
+describe("multiple init calls", () => {
+  it("closes previous instance on re-init", async () => {
+    mocks.mockConnect.mockResolvedValue({
+      query: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn(),
+    })
+
+    const mod = createVaultModule({ connectionString: "postgres://localhost/db" })
+    await mod.init!(mockCtx())
+
+    // second init should close the first pool
+    const callsBefore = mocks.mockEnd.mock.calls.length
+    await mod.init!(mockCtx())
+    expect(mocks.mockEnd.mock.calls.length).toBeGreaterThan(callsBefore)
+  })
+})
+
+// ─── Neon side-effect ──────────────────────────────────────────────
+
+describe("neon side-effect", () => {
+  it("sets fetchConnectionCache for neon provider", async () => {
+    mocks.mockConnect.mockResolvedValue({
+      query: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn(),
+    })
+
+    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
+    await mod.init!(mockCtx())
+
+    const { neonConfig } = await import("@neondatabase/serverless")
+    expect(neonConfig.fetchConnectionCache).toBe(true)
+  })
+})
+
+// ─── Auto-registration ────────────────────────────────────────────
+
+describe("auto-registration", () => {
+  it("registers vault module factory", () => {
+    const factory = getModuleFactory("vault")!
+    expect(factory).toBeDefined()
+    const mod = factory({})
+    expect(mod).toBeDefined()
+    expect(mod.name).toBe("vault")
   })
 })
