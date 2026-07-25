@@ -1,15 +1,11 @@
 {
-  "name": "@towerjs/gatehouse",
+  "name": "@towerjs/messenger",
   "version": "0.0.0",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./next-js": {
-      "types": "./dist/frameworks/next-js.d.ts",
-      "default": "./dist/frameworks/next-js.js"
     }
   },
   "files": [
@@ -19,14 +15,19 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@better-auth/api-key": "^1.6.25",
-    "@better-auth/passkey": "^1.6.25",
+    "@aws-sdk/client-sesv2": "^3.888.0",
+    "@react-email/render": "^1.4.0",
     "@towerjs/blueprint": "workspace:*",
-    "better-auth": "^1.6.25",
-    "kysely": "^0.29.4"
+    "nodemailer": "^7.0.5",
+    "react": "^19.2.0",
+    "resend": "^6.1.2",
+    "twilio": "^5.10.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
-    "next": "16"
+    "@types/react": "^19.2.2",
+    "@types/nodemailer": "^7.0.2",
+    "@types/web-push": "^3.6.4"
   }
 }

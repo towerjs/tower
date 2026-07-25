@@ -363,7 +363,7 @@ export interface GatehouseConfig {
   }
 
   emailVerification?: {
-    sendVerificationEmail: (data: { user: { id: string; email: string; name: string }; url: string; token: string }, request?: Request) => void | Promise<void>
+    sendVerificationEmail?: (data: { user: { id: string; email: string; name: string }; url: string; token: string }, request?: Request) => void | Promise<void>
     sendOnSignUp?: boolean
     autoSignInAfterVerification?: boolean
     expiresIn?: number

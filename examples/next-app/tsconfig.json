@@ -40,6 +40,9 @@
       ],
       "@towerjs/gatehouse": [
         "../../packages/gatehouse/src/index.ts"
+      ],
+      "@towerjs/gatehouse/next-js": [
+        "../../packages/gatehouse/src/frameworks/next-js.ts"
       ]
     }
   },

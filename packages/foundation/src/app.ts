@@ -3,8 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { TowerBlueprint, TowerModule, TowerInitContext } from "@towerjs/blueprint";
 import { getModuleFactory } from "@towerjs/blueprint";
+import "@towerjs/vault";
+import "@towerjs/gatehouse";
+import "@towerjs/messenger";
 import type { VaultModule } from "@towerjs/vault";
 import type { GatehouseModule } from "@towerjs/gatehouse";
+import type { MessengerModule } from "@towerjs/messenger";
 import { ServiceContainer } from "./container";
 import { detectRuntime } from "./runtime";
 import type { TowerRuntime } from "./types";
@@ -24,6 +28,7 @@ export interface TowerApp {
 export interface TowerModules {
   vault: VaultModule;
   gatehouse: GatehouseModule;
+  messenger: MessengerModule;
 }
 
 export type TowerInstance = {

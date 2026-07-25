@@ -7,11 +7,5 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "references": [
-    { "path": "../foundation" },
-    { "path": "../vault" },
-    { "path": "../gatehouse" },
-    { "path": "../messenger" },
-    { "path": "../blueprint" }
-  ]
+  "references": [{ "path": "../blueprint" }]
 }

@@ -10,6 +10,7 @@
   "references": [
     { "path": "../blueprint" },
     { "path": "../vault" },
-    { "path": "../gatehouse" }
+    { "path": "../gatehouse" },
+    { "path": "../messenger" }
   ]
 }

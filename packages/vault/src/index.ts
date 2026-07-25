@@ -136,7 +136,7 @@ export function createVaultModule(options?: VaultConfig): TowerModule {
 
     async init(ctx: TowerInitContext) {
       if (_vault) {
-        await _vault.close().catch(() => {});
+        try { await _vault.close() } catch {}
         _vault = undefined;
       }
 

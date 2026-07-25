@@ -2,13 +2,29 @@
 
 import { action } from "@towerjs/gatehouse/next-js";
 import { gatehouse } from "@towerjs/gatehouse";
+import { tower } from "towerjs";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const signIn = action(async (formData: FormData) => {
-  await gatehouse.signIn.email({
+  const result = await gatehouse.signIn.email({
     email: formData.get("email") as string,
     password: formData.get("password") as string,
   });
+
+  if (result?.user?.email) {
+    const h = await headers();
+    try {
+      await tower.messenger.email.send({
+        to: result.user.email,
+        subject: "New sign-in to your account",
+        text: `You signed in to Tower Example.\nIP: ${h.get("x-forwarded-for") ?? "unknown"}\nDevice: ${h.get("user-agent") ?? "unknown"}`,
+      });
+    } catch {
+      // login alert is best-effort
+    }
+  }
+
   redirect("/dashboard");
 });
 

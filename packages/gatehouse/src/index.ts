@@ -117,6 +117,23 @@ export { AuthenticationError, AuthorizationError, ContextRequiredError };
 
 let _adapter: BetterAuthAdapter | undefined;
 
+type MessengerLike = {
+  email: {
+    send(params: {
+      to: string
+      subject: string
+      text?: string
+      html?: string
+    }): Promise<unknown>
+  }
+  sms: {
+    send(params: {
+      to: string
+      body: string
+    }): Promise<unknown>
+  }
+}
+
 export function getAuth(): { getSession(request: { headers: Headers }): Promise<Session | null> } {
   if (!_adapter) throw new Error("Gatehouse not initialized");
   return _adapter;
@@ -194,7 +211,10 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
         console.warn("[gatehouse] Re-initializing — previous adapter state discarded");
       }
       const vault = ctx.container.get<{ db: Kysely<unknown> }>("vault");
-      _adapter = new BetterAuthAdapter(config, vault.db);
+      const messenger = ctx.container.has("messenger")
+        ? ctx.container.get<MessengerLike>("messenger")
+        : undefined;
+      _adapter = new BetterAuthAdapter(withMessengerTransport(config, messenger), vault.db);
     },
 
     get provider() {
@@ -221,3 +241,158 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
 
 registerModule("gatehouse", (config) => defineGatehouse(config as unknown as GatehouseConfig));
 
+function withMessengerTransport(config: GatehouseConfig, messenger?: MessengerLike): GatehouseConfig {
+  if (!messenger) return config
+
+  const appName = config.appName ?? "Tower"
+  const next: any = { ...config }
+
+  if (config.credentials) {
+    const credentials = config.credentials === true
+      ? { enabled: true }
+      : { ...config.credentials }
+
+    if (!credentials.sendResetPassword) {
+      credentials.sendResetPassword = async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
+        await messenger.email.send(buildAuthEmail({
+          to: user.email,
+          subject: `${appName} password reset`,
+          heading: "Reset your password",
+          intro: `A password reset was requested for your ${appName} account.`,
+          actionLabel: "Reset password",
+          actionUrl: url,
+        }))
+      }
+    }
+
+    next.credentials = credentials
+  }
+
+  if (config.emailVerification) {
+    const emailVerification = { ...config.emailVerification }
+    if (!emailVerification.sendVerificationEmail) {
+      emailVerification.sendVerificationEmail = async ({ user, url }) => {
+        await messenger.email.send(buildAuthEmail({
+          to: user.email,
+          subject: `${appName} email confirmation`,
+          heading: "Confirm your email",
+          intro: `Confirm your email to finish setting up your ${appName} account.`,
+          actionLabel: "Confirm email",
+          actionUrl: url,
+        }))
+      }
+    }
+    next.emailVerification = emailVerification
+  }
+
+  if (config.magicLinks) {
+    const magicLinks = config.magicLinks === true
+      ? {}
+      : { ...config.magicLinks }
+    if (!(magicLinks as any).sendMagicLink) {
+      ;(magicLinks as any).sendMagicLink = async ({ email, url }: { email: string; url: string }) => {
+        await messenger.email.send(buildAuthEmail({
+          to: email,
+          subject: `${appName} sign-in link`,
+          heading: "Your sign-in link",
+          intro: `Use this secure link to sign in to ${appName}.`,
+          actionLabel: "Sign in",
+          actionUrl: url,
+        }))
+      }
+    }
+    next.magicLinks = magicLinks
+  }
+
+  if (config.emailOtp) {
+    const emailOtp = config.emailOtp === true
+      ? {}
+      : { ...config.emailOtp }
+    if (!(emailOtp as any).sendVerificationOTP) {
+      ;(emailOtp as any).sendVerificationOTP = async ({
+        email,
+        otp,
+        type,
+      }: {
+        email: string
+        otp: string
+        type: string
+      }) => {
+        const subject = type === "forget-password"
+          ? `${appName} password reset code`
+          : `${appName} verification code`
+        await messenger.email.send({
+          to: email,
+          subject,
+          text: `${appName} verification code: ${otp}`,
+          html: `<p>${appName} verification code: <strong>${otp}</strong></p>`,
+        })
+      }
+    }
+    next.emailOtp = emailOtp
+  }
+
+  if (config.phoneNumber) {
+    const phoneNumber = config.phoneNumber === true
+      ? {}
+      : { ...config.phoneNumber }
+    if (!(phoneNumber as any).sendOTP) {
+      ;(phoneNumber as any).sendOTP = async ({ phoneNumber, code }: { phoneNumber: string; code: string }) => {
+        await messenger.sms.send({
+          to: phoneNumber,
+          body: `${appName} verification code: ${code}`,
+        })
+      }
+    }
+    next.phoneNumber = phoneNumber
+  }
+
+  return next
+}
+
+function buildAuthEmail(params: {
+  to: string
+  subject: string
+  heading: string
+  intro: string
+  actionLabel: string
+  actionUrl: string
+}): {
+  to: string
+  subject: string
+  text: string
+  html: string
+} {
+  const text = `${params.heading}\n\n${params.intro}\n\n${params.actionLabel}: ${params.actionUrl}`
+  const html = [
+    `<div style="font-family: Inter, -apple-system, Segoe UI, sans-serif; max-width: 560px; margin: 0 auto; color: #111827;">`,
+    `<h2 style="margin: 0 0 16px; font-size: 24px;">${escapeHtml(params.heading)}</h2>`,
+    `<p style="margin: 0 0 20px; line-height: 1.5;">${escapeHtml(params.intro)}</p>`,
+    `<p style="margin: 0 0 24px;">`,
+    `<a href="${escapeHtml(params.actionUrl)}" style="display: inline-block; background: #111827; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 8px;">`,
+    `${escapeHtml(params.actionLabel)}`,
+    `</a>`,
+    `</p>`,
+    `<p style="margin: 0; font-size: 12px; color: #6b7280;">`,
+    `If the button does not work, use this URL: <br />`,
+    `<a href="${escapeHtml(params.actionUrl)}">${escapeHtml(params.actionUrl)}</a>`,
+    `</p>`,
+    `</div>`,
+  ].join("")
+
+  return {
+    to: params.to,
+    subject: params.subject,
+    text,
+    html,
+  }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;")
+}

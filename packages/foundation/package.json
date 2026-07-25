@@ -9,7 +9,8 @@
   "dependencies": {
     "@towerjs/blueprint": "workspace:*",
     "@towerjs/vault": "workspace:*",
-    "@towerjs/gatehouse": "workspace:*"
+    "@towerjs/gatehouse": "workspace:*",
+    "@towerjs/messenger": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20"

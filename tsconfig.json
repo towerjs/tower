@@ -4,6 +4,7 @@
     { "path": "./packages/blueprint" },
     { "path": "./packages/vault" },
     { "path": "./packages/gatehouse" },
+    { "path": "./packages/messenger" },
     { "path": "./packages/foundation" },
     { "path": "./packages/towerjs" },
     { "path": "./packages/scribe" },
