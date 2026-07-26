@@ -1,5 +1,5 @@
-import { render, toPlainText } from "@react-email/render"
-import type { EmailAddress, EmailSendParams } from "../types.js"
+import { render, toPlainText } from '@react-email/render'
+import type { EmailAddress, EmailSendParams } from '../types.js'
 
 /** Normalizes a single address or array into a string array. Returns undefined for empty input. */
 export function toAddressList(value?: EmailAddress): string[] | undefined {
@@ -25,7 +25,7 @@ export async function resolveEmailContent(params: EmailSendParams): Promise<{ ht
   }
 
   if (!html && !text && !params.react) {
-    throw new Error("[courier.email] Missing body. Provide html, text, or react template.")
+    throw new Error('[courier.email] Missing body. Provide html, text, or react template.')
   }
 
   return { html, text }

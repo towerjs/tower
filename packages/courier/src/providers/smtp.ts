@@ -1,6 +1,6 @@
-import nodemailer from "nodemailer"
-import type { EmailSendParams, EmailSendResult, SmtpEmailConfig } from "../types.js"
-import { resolveEmailContent, toAddressList } from "./email-shared.js"
+import nodemailer from 'nodemailer'
+import type { EmailSendParams, EmailSendResult, SmtpEmailConfig } from '../types.js'
+import { resolveEmailContent, toAddressList } from './email-shared.js'
 
 /** Email provider that sends via SMTP. */
 export class SmtpEmailProvider {
@@ -10,7 +10,7 @@ export class SmtpEmailProvider {
   constructor(config: SmtpEmailConfig) {
     const host = config.host ?? process.env.SMTP_HOST
     if (!host) {
-      throw new Error("[courier.email] Missing SMTP host. Set modules.courier.email.host or SMTP_HOST.")
+      throw new Error('[courier.email] Missing SMTP host. Set modules.courier.email.host or SMTP_HOST.')
     }
 
     const port = config.port ?? Number(process.env.SMTP_PORT ?? 587)
@@ -30,7 +30,7 @@ export class SmtpEmailProvider {
   async send(params: EmailSendParams): Promise<EmailSendResult> {
     const from = params.from ?? this.from
     if (!from) {
-      throw new Error("[courier.email] Missing from address. Set modules.courier.email.from or params.from.")
+      throw new Error('[courier.email] Missing from address. Set modules.courier.email.from or params.from.')
     }
 
     const { html, text } = await resolveEmailContent(params)
@@ -46,7 +46,7 @@ export class SmtpEmailProvider {
       headers: params.headers,
       attachments: params.attachments?.map((attachment) => ({
         filename: attachment.filename,
-        content: typeof attachment.content === "string" ? attachment.content : Buffer.from(attachment.content),
+        content: typeof attachment.content === 'string' ? attachment.content : Buffer.from(attachment.content),
         contentType: attachment.contentType,
         cid: attachment.cid,
       })),
@@ -54,7 +54,7 @@ export class SmtpEmailProvider {
 
     return {
       id: info.messageId,
-      provider: "smtp",
+      provider: 'smtp',
     }
   }
 }

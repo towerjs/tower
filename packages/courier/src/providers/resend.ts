@@ -1,6 +1,6 @@
-import { Resend } from "resend"
-import type { EmailSendParams, EmailSendResult, ResendEmailConfig } from "../types.js"
-import { toAddressList } from "./email-shared.js"
+import { Resend } from 'resend'
+import type { EmailSendParams, EmailSendResult, ResendEmailConfig } from '../types.js'
+import { toAddressList } from './email-shared.js'
 
 /** Email provider that sends via the Resend API. */
 export class ResendEmailProvider {
@@ -10,7 +10,7 @@ export class ResendEmailProvider {
   constructor(config: ResendEmailConfig) {
     const apiKey = config.apiKey ?? process.env.RESEND_API_KEY
     if (!apiKey) {
-      throw new Error("[courier.email] Missing RESEND_API_KEY for resend provider.")
+      throw new Error('[courier.email] Missing RESEND_API_KEY for resend provider.')
     }
     this.client = new Resend(apiKey)
     this.from = config.from ?? process.env.COURIER_EMAIL_FROM
@@ -19,7 +19,7 @@ export class ResendEmailProvider {
   async send(params: EmailSendParams): Promise<EmailSendResult> {
     const from = params.from ?? this.from
     if (!from) {
-      throw new Error("[courier.email] Missing from address. Set modules.courier.email.from or params.from.")
+      throw new Error('[courier.email] Missing from address. Set modules.courier.email.from or params.from.')
     }
 
     const payload: Record<string, unknown> = {
@@ -43,7 +43,7 @@ export class ResendEmailProvider {
 
     return {
       id: result.data?.id,
-      provider: "resend",
+      provider: 'resend',
     }
   }
 }

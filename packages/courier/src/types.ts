@@ -1,4 +1,4 @@
-import type { ReactElement } from "react"
+import type { ReactElement } from 'react'
 
 export type EmailAddress = string | string[]
 
@@ -62,7 +62,7 @@ export interface PushSendParams {
   body?: string
   data?: Record<string, unknown>
   ttl?: number
-  urgency?: "very-low" | "low" | "normal" | "high"
+  urgency?: 'very-low' | 'low' | 'normal' | 'high'
   topic?: string
 }
 
@@ -71,9 +71,9 @@ export interface PushSendResult {
   provider: PushProviderName
 }
 
-export type EmailProviderName = "resend" | "smtp" | "ses"
-export type SmsProviderName = "twilio"
-export type PushProviderName = "web-push"
+export type EmailProviderName = 'resend' | 'smtp' | 'ses'
+export type SmsProviderName = 'twilio'
+export type PushProviderName = 'web-push'
 
 interface EmailConfigBase {
   provider: EmailProviderName
@@ -81,12 +81,12 @@ interface EmailConfigBase {
 }
 
 export interface ResendEmailConfig extends EmailConfigBase {
-  provider: "resend"
+  provider: 'resend'
   apiKey?: string
 }
 
 export interface SmtpEmailConfig extends EmailConfigBase {
-  provider: "smtp"
+  provider: 'smtp'
   host?: string
   port?: number
   secure?: boolean
@@ -96,7 +96,7 @@ export interface SmtpEmailConfig extends EmailConfigBase {
 }
 
 export interface SesEmailConfig extends EmailConfigBase {
-  provider: "ses"
+  provider: 'ses'
   region?: string
   accessKeyId?: string
   secretAccessKey?: string
@@ -112,7 +112,7 @@ interface SmsConfigBase {
 }
 
 export interface TwilioSmsConfig extends SmsConfigBase {
-  provider: "twilio"
+  provider: 'twilio'
   accountSid?: string
   authToken?: string
   messagingServiceSid?: string
@@ -125,7 +125,7 @@ interface PushConfigBase {
 }
 
 export interface WebPushConfig extends PushConfigBase {
-  provider: "web-push"
+  provider: 'web-push'
   vapid?: {
     subject?: string
     publicKey?: string

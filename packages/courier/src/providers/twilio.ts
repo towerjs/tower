@@ -1,5 +1,5 @@
-import twilio from "twilio"
-import type { SmsSendParams, SmsSendResult, TwilioSmsConfig } from "../types.js"
+import twilio from 'twilio'
+import type { SmsSendParams, SmsSendResult, TwilioSmsConfig } from '../types.js'
 
 /** SMS provider that sends via the Twilio API. */
 export class TwilioSmsProvider {
@@ -12,7 +12,7 @@ export class TwilioSmsProvider {
     const authToken = config.authToken ?? process.env.TWILIO_AUTH_TOKEN
 
     if (!accountSid || !authToken) {
-      throw new Error("[courier.sms] Missing Twilio credentials. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.")
+      throw new Error('[courier.sms] Missing Twilio credentials. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.')
     }
 
     this.client = twilio(accountSid, authToken)
@@ -23,13 +23,13 @@ export class TwilioSmsProvider {
   async send(params: SmsSendParams): Promise<SmsSendResult> {
     const body = params.body.trim()
     if (!body) {
-      throw new Error("[courier.sms] Message body must not be empty.")
+      throw new Error('[courier.sms] Message body must not be empty.')
     }
 
     const from = params.from ?? this.from
     if (!from && !this.messagingServiceSid) {
       throw new Error(
-        "[courier.sms] Missing sender. Set modules.courier.sms.from or modules.courier.sms.messagingServiceSid.",
+        '[courier.sms] Missing sender. Set modules.courier.sms.from or modules.courier.sms.messagingServiceSid.'
       )
     }
 
@@ -43,7 +43,7 @@ export class TwilioSmsProvider {
     return {
       id: result.sid,
       status: result.status,
-      provider: "twilio",
+      provider: 'twilio',
     }
   }
 }

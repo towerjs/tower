@@ -1,49 +1,35 @@
-import * as nodeFs from "node:fs"
-import * as nodePath from "node:path"
-import type { VaultDb, VaultSeedConfig } from "./types.js"
+import * as nodeFs from 'node:fs'
+import * as nodePath from 'node:path'
+import type { VaultDb, VaultSeedConfig } from './types.js'
 
 /** Runs seed files from the configured seed folder. Pass a name to run a single seed file. */
-export async function runSeeds(
-  db: VaultDb,
-  config: VaultSeedConfig,
-  name?: string,
-): Promise<void> {
+export async function runSeeds(db: VaultDb, config: VaultSeedConfig, name?: string): Promise<{ applied: string[] }> {
   const seedFolder = nodePath.resolve(config.folder)
+  const applied: string[] = []
 
   if (!nodeFs.existsSync(seedFolder)) {
-    console.log(`Seed folder not found: ${seedFolder}`)
-    return
+    return { applied }
   }
 
   const all = await nodeFs.promises.readdir(seedFolder)
-  const entries = all
-    .filter(f => f.endsWith(".js") || f.endsWith(".ts"))
-    .sort()
+  const entries = all.filter((f) => f.endsWith('.js') || f.endsWith('.ts')).sort()
 
-  const files = name
-    ? entries.filter(e => e.includes(name))
-    : entries
+  const files = name ? entries.filter((e) => e.includes(name)) : entries
 
   if (files.length === 0) {
-    console.log(name ? `No seed file matching "${name}"` : "No seed files found")
-    return
+    return { applied }
   }
 
   for (const file of files) {
     const seedPath = nodePath.join(seedFolder, file)
-    console.log(`Running seed: ${file}`)
-    try {
-      const mod = await import(seedPath)
-      const run = mod.default ?? mod.seed
-      if (typeof run !== "function") {
-        console.warn(`Seed "${file}" has no default export or named "seed" export`)
-        continue
-      }
-      await run(db)
-      console.log(`Seed "${file}" applied`)
-    } catch (err) {
-      console.error(`Seed "${file}" failed:`, err)
-      throw err
+    const mod = await import(seedPath)
+    const run = mod.default ?? mod.seed
+    if (typeof run !== 'function') {
+      throw new Error(`Seed "${file}" has no default export or named "seed" export`)
     }
+    await run(db)
+    applied.push(file)
   }
+
+  return { applied }
 }

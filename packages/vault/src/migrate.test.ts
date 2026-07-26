@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { mockMigrateToLatest, mockMigrator } = vi.hoisted(() => {
   const fn = vi.fn()
@@ -8,7 +8,7 @@ const { mockMigrateToLatest, mockMigrator } = vi.hoisted(() => {
   }
 })
 
-vi.mock("kysely/migration", () => ({
+vi.mock('kysely/migration', () => ({
   Migrator: class {
     constructor() {
       return mockMigrator
@@ -17,101 +17,78 @@ vi.mock("kysely/migration", () => ({
   FileMigrationProvider: class {},
 }))
 
-vi.mock("node:path", () => ({
+vi.mock('node:path', () => ({
   resolve: vi.fn((_: string, folder: string) => `/resolved/${folder}`),
   default: { resolve: vi.fn((_: string, folder: string) => `/resolved/${folder}`) },
 }))
 
-import { createMigrator, migrateToLatest } from "./migrate.js"
+import { createMigrator, migrateToLatest } from './migrate.js'
 
-describe("createMigrator", () => {
-  it("creates a Migrator with FileMigrationProvider", () => {
+describe('createMigrator', () => {
+  it('creates a Migrator with FileMigrationProvider', () => {
     const db = {} as any
-    const config = { folder: "migrations" }
+    const config = { folder: 'migrations' }
     const result = createMigrator(db, config)
 
     expect(result).toBe(mockMigrator)
   })
 })
 
-describe("migrateToLatest", () => {
+describe('migrateToLatest', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it("calls migrator.migrateToLatest and logs results", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {})
+  it('calls migrator.migrateToLatest', async () => {
     mockMigrateToLatest.mockResolvedValueOnce({
       error: null,
       results: [
-        { migrationName: "001_create_users", status: "Success" },
-        { migrationName: "002_add_roles", status: "Success" },
+        { migrationName: '001_create_users', status: 'Success' },
+        { migrationName: '002_add_roles', status: 'Success' },
       ],
     })
 
-    await migrateToLatest({} as any, { folder: "migrations" })
+    await migrateToLatest({} as any, { folder: 'migrations' })
 
     expect(mockMigrateToLatest).toHaveBeenCalledOnce()
-    expect(consoleLog).toHaveBeenCalledWith('Migration "001_create_users" applied')
-    expect(consoleLog).toHaveBeenCalledWith('Migration "002_add_roles" applied')
-
-    consoleLog.mockRestore()
   })
 
-  it("logs errors for failed migrations", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+  it('throws on failed migration', async () => {
     mockMigrateToLatest.mockResolvedValueOnce({
       error: null,
       results: [
-        { migrationName: "001_create_users", status: "Success" },
-        { migrationName: "002_broken", status: "Error" },
+        { migrationName: '001_create_users', status: 'Success' },
+        { migrationName: '002_broken', status: 'Error' },
       ],
     })
 
-    await migrateToLatest({} as any, { folder: "migrations" })
-
-    expect(consoleError).toHaveBeenCalledWith('Migration "002_broken" failed')
-
-    consoleLog.mockRestore()
-    consoleError.mockRestore()
+    await expect(migrateToLatest({} as any, { folder: 'migrations' })).rejects.toThrow('Migration "002_broken" failed')
   })
 
-  it("throws when migrator returns an error", async () => {
+  it('throws when migrator returns an error', async () => {
     mockMigrateToLatest.mockResolvedValueOnce({
-      error: new Error("Migration failed"),
+      error: new Error('Migration failed'),
       results: [],
     })
 
-    await expect(
-      migrateToLatest({} as any, { folder: "migrations" }),
-    ).rejects.toThrow("Migration failed")
+    await expect(migrateToLatest({} as any, { folder: 'migrations' })).rejects.toThrow('Migration failed')
   })
 
-  it("handles empty results array", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {})
+  it('handles empty results array', async () => {
     mockMigrateToLatest.mockResolvedValueOnce({
       error: null,
       results: [],
     })
 
-    await migrateToLatest({} as any, { folder: "migrations" })
-
-    expect(consoleLog).not.toHaveBeenCalled()
-
-    consoleLog.mockRestore()
+    await expect(migrateToLatest({} as any, { folder: 'migrations' })).resolves.toBeUndefined()
   })
 
-  it("handles null results gracefully", async () => {
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {})
+  it('handles null results gracefully', async () => {
     mockMigrateToLatest.mockResolvedValueOnce({
       error: null,
       results: null,
     })
 
-    await migrateToLatest({} as any, { folder: "migrations" })
-
-    expect(consoleLog).not.toHaveBeenCalled()
-    consoleLog.mockRestore()
+    await expect(migrateToLatest({} as any, { folder: 'migrations' })).resolves.toBeUndefined()
   })
 })

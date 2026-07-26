@@ -12,7 +12,7 @@ export interface TowerContextProvider {
 /** Global context provider that holds request-scoped data (e.g. the current gatehouse instance). */
 export const towerContext: TowerContextProvider = await (async (): Promise<TowerContextProvider> => {
   try {
-    const { AsyncLocalStorage } = await import("node:async_hooks")
+    const { AsyncLocalStorage } = await import('node:async_hooks')
     const storage = new AsyncLocalStorage<Record<string, unknown>>()
     return {
       run<T>(data: Record<string, unknown>, handler: () => Promise<T>) {
@@ -41,17 +41,17 @@ export const towerContext: TowerContextProvider = await (async (): Promise<Tower
  * so they can be discovered by other modules at runtime.
  */
 export interface ServiceRegistry {
-  register<T>(name: string, instance: T): void;
-  registerFactory<T>(name: string, factory: () => T): void;
-  get<T>(name: string): T;
-  has(name: string): boolean;
+  register<T>(name: string, instance: T): void
+  registerFactory<T>(name: string, factory: () => T): void
+  get<T>(name: string): T
+  has(name: string): boolean
 }
 
 /** Context passed to each module's `init()` hook during application startup. */
 export interface TowerInitContext {
-  container: ServiceRegistry;
-  config: TowerBlueprint;
-  runtime: { name: string; isServerless: boolean };
+  container: ServiceRegistry
+  config: TowerBlueprint
+  runtime: { name: string; isServerless: boolean }
 }
 
 /**
@@ -61,17 +61,17 @@ export interface TowerInitContext {
  * and `shutdown` to release resources on graceful termination.
  */
 export interface TowerModule {
-  name: string;
-  init?(ctx: TowerInitContext): Promise<void>;
-  shutdown?(): Promise<void>;
+  name: string
+  init?(ctx: TowerInitContext): Promise<void>
+  shutdown?(): Promise<void>
 }
 
-export type ModuleFactory = (config: Record<string, unknown>) => TowerModule;
+export type ModuleFactory = (config: Record<string, unknown>) => TowerModule
 
 /** Application blueprint that declares which modules to load and their configuration. */
 export type TowerBlueprint = {
-  modules: Record<string, Record<string, unknown>>;
-};
+  modules: Record<string, Record<string, unknown>>
+}
 
 /**
  * Defines the application configuration.
@@ -87,16 +87,21 @@ export type TowerBlueprint = {
  * ```
  */
 export function defineTower(config: TowerBlueprint): TowerBlueprint {
-  return config;
+  return config
 }
 
-const moduleFactories = new Map<string, ModuleFactory>();
+const moduleFactories = new Map<string, ModuleFactory>()
 
 /** Registers a module factory so it can be instantiated by name from the config. */
 export function registerModule(name: string, factory: ModuleFactory): void {
-  moduleFactories.set(name, factory);
+  moduleFactories.set(name, factory)
 }
 
 export function getModuleFactory(name: string): ModuleFactory | undefined {
-  return moduleFactories.get(name);
+  return moduleFactories.get(name)
+}
+
+/** @internal Clears all registered module factories. Used only in tests. */
+export function resetModuleFactories(): void {
+  moduleFactories.clear()
 }

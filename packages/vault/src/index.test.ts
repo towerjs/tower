@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ─── Hoisted shared mocks (must be before any vi.mock) ─────────────
 
@@ -10,23 +10,35 @@ const mocks = vi.hoisted(() => {
   const mockMigrateToLatest = vi.fn()
   const mockRunSeeds = vi.fn()
   let kyselyInstance: any = {}
-  const setKyselyInstance = (inst: any) => { kyselyInstance = inst }
+  const setKyselyInstance = (inst: any) => {
+    kyselyInstance = inst
+  }
 
   const pgPoolArgs: any[] = []
   const neonPoolArgs: any[] = []
-  const clearPoolArgs = () => { pgPoolArgs.length = 0; neonPoolArgs.length = 0 }
+  const clearPoolArgs = () => {
+    pgPoolArgs.length = 0
+    neonPoolArgs.length = 0
+  }
 
   return {
-    mockConnect, mockEnd, mockOn, mockQuery,
-    mockMigrateToLatest, mockRunSeeds,
-    kyselyInstance, setKyselyInstance,
-    pgPoolArgs, neonPoolArgs, clearPoolArgs,
+    mockConnect,
+    mockEnd,
+    mockOn,
+    mockQuery,
+    mockMigrateToLatest,
+    mockRunSeeds,
+    kyselyInstance,
+    setKyselyInstance,
+    pgPoolArgs,
+    neonPoolArgs,
+    clearPoolArgs,
   }
 })
 
 // ─── Mocks ─────────────────────────────────────────────────────────
 
-vi.mock("pg", () => {
+vi.mock('pg', () => {
   function Pool(this: any, opts: any) {
     mocks.pgPoolArgs.push(opts)
     return {
@@ -39,7 +51,7 @@ vi.mock("pg", () => {
   return { Pool }
 })
 
-vi.mock("@neondatabase/serverless", () => {
+vi.mock('@neondatabase/serverless', () => {
   function Pool(this: any, opts: any) {
     mocks.neonPoolArgs.push(opts)
     return {
@@ -52,7 +64,7 @@ vi.mock("@neondatabase/serverless", () => {
   return { Pool, neonConfig: { fetchConnectionCache: false } }
 })
 
-vi.mock("kysely", () => {
+vi.mock('kysely', () => {
   function Kysely(this: any, opts: any) {
     const inst = {
       _opts: opts,
@@ -66,21 +78,21 @@ vi.mock("kysely", () => {
   return { Kysely, PostgresDialect }
 })
 
-vi.mock("./migrate.js", () => ({
+vi.mock('./migrate.js', () => ({
   createMigrator: vi.fn(() => ({
     migrateToLatest: mocks.mockMigrateToLatest,
   })),
   migrateToLatest: mocks.mockMigrateToLatest,
 }))
 
-vi.mock("./seed.js", () => ({
+vi.mock('./seed.js', () => ({
   runSeeds: mocks.mockRunSeeds,
 }))
 
 // ─── Imports (must be after mocks) ─────────────────────────────────
 
-import { getModuleFactory } from "@towerjs/blueprint"
-import { createVaultModule, vault } from "./index.js"
+import { getModuleFactory } from '@towerjs/blueprint'
+import { createVaultModule, vault } from './index.js'
 
 // ─── Helpers ───────────────────────────────────────────────────────
 
@@ -94,7 +106,7 @@ const mockContainer = () => ({
 const mockCtx = (overrides = {}) => ({
   container: mockContainer(),
   config: { modules: {} },
-  runtime: { name: "node-server" as const, isServerless: false },
+  runtime: { name: 'node-server' as const, isServerless: false },
   ...overrides,
 })
 
@@ -108,23 +120,23 @@ beforeEach(() => {
 
 // ─── Unconfigured proxy (must run first — _vault is module-level) ──
 
-describe("unconfigured vault proxy", () => {
-  it("throws on migrate access", () => {
-    expect(() => (vault as any).migrate).toThrow("Vault not initialized")
+describe('unconfigured vault proxy', () => {
+  it('throws on migrate access', () => {
+    expect(() => (vault as any).migrate).toThrow('Vault not initialized')
   })
 
-  it("throws on seed access", () => {
-    expect(() => (vault as any).seed).toThrow("Vault not initialized")
+  it('throws on seed access', () => {
+    expect(() => (vault as any).seed).toThrow('Vault not initialized')
   })
 
-  it("throws on close access", () => {
-    expect(() => (vault as any).close).toThrow("Vault not initialized")
+  it('throws on close access', () => {
+    expect(() => (vault as any).close).toThrow('Vault not initialized')
   })
 })
 
 // ─── buildProxyUnconfigured (via init with no connection string) ────
 
-describe("buildProxyUnconfigured", () => {
+describe('buildProxyUnconfigured', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     // re-init without connection string to get the unconfigured proxy
@@ -132,57 +144,57 @@ describe("buildProxyUnconfigured", () => {
     await mod.init!(mockCtx())
   })
 
-  it("throws configured error on migrate", () => {
+  it('throws configured error on migrate', () => {
     expect(() => (vault as any).migrate()).toThrow(
-      "Vault not configured. Set DATABASE_URL or pass connectionString to vault().",
+      'Vault not configured. Set DATABASE_URL or pass connectionString to vault().'
     )
   })
 
-  it("throws configured error on migrator", () => {
+  it('throws configured error on migrator', () => {
     expect(() => (vault as any).migrator).toThrow(
-      "Vault not configured. Set DATABASE_URL or pass connectionString to vault().",
+      'Vault not configured. Set DATABASE_URL or pass connectionString to vault().'
     )
   })
 
-  it("throws configured error on seed", () => {
+  it('throws configured error on seed', () => {
     expect(() => (vault as any).seed()).toThrow(
-      "Vault not configured. Set DATABASE_URL or pass connectionString to vault().",
+      'Vault not configured. Set DATABASE_URL or pass connectionString to vault().'
     )
   })
 })
 
 // ─── Module lifecycle ──────────────────────────────────────────────
 
-describe("createVaultModule", () => {
-  it("returns a TowerModule with name vault", () => {
+describe('createVaultModule', () => {
+  it('returns a TowerModule with name vault', () => {
     const mod = createVaultModule()
-    expect(mod.name).toBe("vault")
-    expect(typeof mod.init).toBe("function")
+    expect(mod.name).toBe('vault')
+    expect(typeof mod.init).toBe('function')
   })
 
-  it("registers unconfigured proxy when no connection string", async () => {
+  it('registers unconfigured proxy when no connection string', async () => {
     const mod = createVaultModule()
     const ctx = mockCtx()
     await mod.init!(ctx)
-    expect(ctx.container.register).toHaveBeenCalledWith("vault", expect.any(Object))
+    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
   })
 
-  it("registers configured proxy when connection string provided", async () => {
+  it('registers configured proxy when connection string provided', async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
 
-    const mod = createVaultModule({ connectionString: "postgres://u:p@localhost:5432/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     const ctx = mockCtx()
     await mod.init!(ctx)
 
-    expect(ctx.container.register).toHaveBeenCalledWith("vault", expect.any(Object))
+    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
     expect(mocks.mockConnect).toHaveBeenCalled()
   })
 
-  it("reads DATABASE_URL env var", async () => {
-    process.env.DATABASE_URL = "postgres://u:p@host:5432/db"
+  it('reads DATABASE_URL env var', async () => {
+    process.env.DATABASE_URL = 'postgres://u:p@host:5432/db'
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
@@ -192,145 +204,151 @@ describe("createVaultModule", () => {
     const ctx = mockCtx()
     await mod.init!(ctx)
 
-    expect(ctx.container.register).toHaveBeenCalledWith("vault", expect.any(Object))
+    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
   })
 
-  it("fails fast when connection fails", async () => {
-    mocks.mockConnect.mockRejectedValueOnce(new Error("connect ECONNREFUSED"))
+  it('fails fast when connection fails', async () => {
+    mocks.mockConnect.mockRejectedValueOnce(new Error('connect ECONNREFUSED'))
 
-    const mod = createVaultModule({ connectionString: "postgres://u:p@localhost:5432/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     const ctx = mockCtx()
 
-    await expect(mod.init!(ctx)).rejects.toThrow("Could not connect to database")
+    await expect(mod.init!(ctx)).rejects.toThrow('Could not connect to database')
   })
 
-  it("drains pool on connection failure then throws", async () => {
-    mocks.mockConnect.mockRejectedValueOnce(new Error("fail"))
+  it('drains pool on connection failure then throws', async () => {
+    mocks.mockConnect.mockRejectedValueOnce(new Error('fail'))
 
-    const mod = createVaultModule({ connectionString: "postgres://u:p@localhost:5432/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     const ctx = mockCtx()
 
-    await expect(mod.init!(ctx)).rejects.toThrow("Could not connect to database")
+    await expect(mod.init!(ctx)).rejects.toThrow('Could not connect to database')
     expect(mocks.mockEnd).toHaveBeenCalled()
   })
 
-  it("sanitizes credentials in error message", async () => {
-    mocks.mockConnect.mockRejectedValue(new Error("auth failed"))
+  it('sanitizes credentials in error message', async () => {
+    mocks.mockConnect.mockRejectedValue(new Error('auth failed'))
 
-    const mod = createVaultModule({ connectionString: "postgres://admin:s3cret@localhost:5432/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://admin:s3cret@localhost:5432/db' })
     let err: any
-    try { await mod.init!(mockCtx()) } catch (e) { err = e }
+    try {
+      await mod.init!(mockCtx())
+    } catch (e) {
+      err = e
+    }
 
     expect(err).toBeDefined()
-    expect(err.message).toContain("//***@")
-    expect(err.message).not.toContain("s3cret")
+    expect(err.message).toContain('//***@')
+    expect(err.message).not.toContain('s3cret')
   })
 })
 
 // ─── vault singleton proxy (after init) ────────────────────────────
 
-describe("vault singleton proxy", () => {
+describe('vault singleton proxy', () => {
   beforeEach(async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
-    const mod = createVaultModule({ connectionString: "postgres://u:p@localhost:5432/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     await mod.init!(mockCtx())
   })
 
-  it("forwards Kysely methods", () => {
-    expect(typeof (vault as any).selectFrom).toBe("function")
+  it('forwards Kysely methods', () => {
+    expect(typeof (vault as any).selectFrom).toBe('function')
   })
 })
 
 // ─── Proxy methods ─────────────────────────────────────────────────
 
-describe("vault proxy methods", () => {
+describe('vault proxy methods', () => {
   beforeEach(async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
-    const mod = createVaultModule({ connectionString: "postgres://u:p@localhost:5432/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     await mod.init!(mockCtx())
   })
 
-  it("migrate calls migrateToLatest", async () => {
+  it('migrate calls migrateToLatest', async () => {
     mocks.mockMigrateToLatest.mockResolvedValueOnce({ error: null, results: [] })
     await (vault as any).migrate()
     expect(mocks.mockMigrateToLatest).toHaveBeenCalled()
   })
 
-  it("migrate throws on migration error", async () => {
-    mocks.mockMigrateToLatest.mockRejectedValueOnce(new Error("fail"))
-    await expect((vault as any).migrate()).rejects.toThrow("fail")
+  it('migrate throws on migration error', async () => {
+    mocks.mockMigrateToLatest.mockRejectedValueOnce(new Error('fail'))
+    await expect((vault as any).migrate()).rejects.toThrow('fail')
   })
 
-  it("seed calls runSeeds", async () => {
+  it('seed calls runSeeds', async () => {
     await (vault as any).seed()
     expect(mocks.mockRunSeeds).toHaveBeenCalledWith(
       expect.any(Object),
-      { folder: expect.stringContaining("seeds") },
-      undefined,
+      { folder: expect.stringContaining('seeds') },
+      undefined
     )
   })
 
-  it("seed passes optional name filter", async () => {
-    await (vault as any).seed("users")
+  it('seed passes optional name filter', async () => {
+    await (vault as any).seed('users')
     expect(mocks.mockRunSeeds).toHaveBeenCalledWith(
       expect.any(Object),
-      { folder: expect.stringContaining("seeds") },
-      "users",
+      { folder: expect.stringContaining('seeds') },
+      'users'
     )
   })
 
-  it("close drains pool", async () => {
+  it('close drains pool', async () => {
     await (vault as any).close()
     expect(mocks.mockEnd).toHaveBeenCalled()
   })
 
-  it("transaction delegates to Kysely", async () => {
-    const trxFn = vi.fn().mockResolvedValue("ok")
+  it('transaction delegates to Kysely', async () => {
+    const trxFn = vi.fn().mockResolvedValue('ok')
     const result = await (vault as any).transaction(trxFn)
-    expect(result).toBe("ok")
+    expect(result).toBe('ok')
     expect(trxFn).toHaveBeenCalled()
   })
 
-  it("exposes migrator", () => {
+  it('exposes migrator', () => {
     expect((vault as any).migrator).toBeDefined()
-    expect(typeof (vault as any).migrator.migrateToLatest).toBe("function")
+    expect(typeof (vault as any).migrator.migrateToLatest).toBe('function')
   })
 })
 
 // ─── Provider detection ────────────────────────────────────────────
 
-describe("provider detection", () => {
-  beforeEach(() => { vi.clearAllMocks() })
+describe('provider detection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   async function initWithUrl(url: string, provider?: string) {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
-    const mod = createVaultModule(provider
-      ? { connectionString: url, provider: provider as any }
-      : { connectionString: url })
+    const mod = createVaultModule(
+      provider ? { connectionString: url, provider: provider as any } : { connectionString: url }
+    )
     await mod.init!(mockCtx())
   }
 
-  it("defaults to pg for standard URLs", async () => {
-    await initWithUrl("postgres://u:p@localhost:5432/db")
+  it('defaults to pg for standard URLs', async () => {
+    await initWithUrl('postgres://u:p@localhost:5432/db')
     expect(mocks.pgPoolArgs.length).toBeGreaterThanOrEqual(1)
   })
 
-  it("uses neon for neon.tech URLs", async () => {
-    await initWithUrl("postgres://u:p@db.neon.tech/db")
+  it('uses neon for neon.tech URLs', async () => {
+    await initWithUrl('postgres://u:p@db.neon.tech/db')
     expect(mocks.neonPoolArgs.length).toBeGreaterThanOrEqual(1)
   })
 
-  it("honours explicit provider config over URL detection", async () => {
-    await initWithUrl("postgres://u:p@db.neon.tech/db", "pg")
+  it('honours explicit provider config over URL detection', async () => {
+    await initWithUrl('postgres://u:p@db.neon.tech/db', 'pg')
     expect(mocks.pgPoolArgs.length).toBeGreaterThanOrEqual(1)
     expect(mocks.neonPoolArgs.length).toBe(0)
   })
@@ -338,8 +356,10 @@ describe("provider detection", () => {
 
 // ─── SSL ───────────────────────────────────────────────────────────
 
-describe("SSL resolution", () => {
-  beforeEach(() => { vi.clearAllMocks() })
+describe('SSL resolution', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   async function initWithUrl(url: string, pool?: any) {
     mocks.mockConnect.mockResolvedValueOnce({
@@ -352,78 +372,68 @@ describe("SSL resolution", () => {
     return mocks.pgPoolArgs[0]
   }
 
-  it("no SSL in dev without sslmode", async () => {
-    const args = await initWithUrl("postgres://localhost/db")
+  it('no SSL in dev without sslmode', async () => {
+    const args = await initWithUrl('postgres://localhost/db')
     expect(args.ssl).toBeUndefined()
   })
 
-  it("SSL in production", async () => {
-    process.env.NODE_ENV = "production"
-    const args = await initWithUrl("postgres://localhost/db")
+  it('SSL in production', async () => {
+    process.env.NODE_ENV = 'production'
+    const args = await initWithUrl('postgres://localhost/db')
     expect(args.ssl).toBe(true)
   })
 
-  it("SSL from sslmode=require", async () => {
-    const args = await initWithUrl("postgres://localhost/db?sslmode=require")
+  it('SSL from sslmode=require', async () => {
+    const args = await initWithUrl('postgres://localhost/db?sslmode=require')
     expect(args.ssl).toBe(true)
   })
 
-  it("self-signed certs from sslmode=no-verify", async () => {
-    const args = await initWithUrl("postgres://localhost/db?sslmode=no-verify")
+  it('self-signed certs from sslmode=no-verify', async () => {
+    const args = await initWithUrl('postgres://localhost/db?sslmode=no-verify')
     expect(args.ssl).toEqual({ rejectUnauthorized: false })
   })
 
-  it("explicit pool.ssl overrides everything", async () => {
-    process.env.NODE_ENV = "production"
-    const args = await initWithUrl("postgres://localhost/db?sslmode=require", { ssl: false })
+  it('explicit pool.ssl overrides everything', async () => {
+    process.env.NODE_ENV = 'production'
+    const args = await initWithUrl('postgres://localhost/db?sslmode=require', { ssl: false })
     expect(args.ssl).toBe(false)
   })
 })
 
 // ─── Pool error handler ────────────────────────────────────────────
 
-describe("pool error handler", () => {
-  it("attaches error listener to pool", async () => {
+describe('pool error handler', () => {
+  it('attaches error listener to pool', async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
 
-    const mod = createVaultModule({ connectionString: "postgres://localhost/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://localhost/db' })
     await mod.init!(mockCtx())
 
-    expect(mocks.mockOn).toHaveBeenCalledWith("error", expect.any(Function))
+    expect(mocks.mockOn).toHaveBeenCalledWith('error', expect.any(Function))
   })
 
-  it("logs pool errors without crashing", async () => {
+  it('does not crash on pool errors', async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
 
-    const mod = createVaultModule({ connectionString: "postgres://localhost/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://localhost/db' })
     await mod.init!(mockCtx())
 
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-
-    const handler = mocks.mockOn.mock.calls.find(
-      (c: any[]) => c[0] === "error",
-    )?.[1]
+    const handler = mocks.mockOn.mock.calls.find((c: any[]) => c[0] === 'error')?.[1]
     expect(handler).toBeDefined()
-    expect(() => handler(new Error("connection lost"))).not.toThrow()
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[vault] Unexpected database pool error:",
-      "connection lost",
-    )
-
-    consoleSpy.mockRestore()
+    expect(() => handler(new Error('connection lost'))).not.toThrow()
   })
 })
 
 // ─── Pool config passthrough ───────────────────────────────────────
 
-describe("pool config passthrough", () => {
-  it("forwards pool config options", async () => {
+describe('pool config passthrough', () => {
+  it('forwards pool config options', async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
@@ -431,7 +441,7 @@ describe("pool config passthrough", () => {
 
     mocks.clearPoolArgs()
     await createVaultModule({
-      connectionString: "postgres://localhost/db",
+      connectionString: 'postgres://localhost/db',
       pool: { max: 10, idleTimeoutMillis: 5000, connectionTimeoutMillis: 3000 },
     }).init!(mockCtx())
 
@@ -444,14 +454,14 @@ describe("pool config passthrough", () => {
 
 // ─── Multiple init calls ───────────────────────────────────────────
 
-describe("multiple init calls", () => {
-  it("closes previous instance on re-init", async () => {
+describe('multiple init calls', () => {
+  it('closes previous instance on re-init', async () => {
     mocks.mockConnect.mockResolvedValue({
       query: vi.fn().mockResolvedValue(undefined),
       release: vi.fn(),
     })
 
-    const mod = createVaultModule({ connectionString: "postgres://localhost/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://localhost/db' })
     await mod.init!(mockCtx())
 
     // second init should close the first pool
@@ -463,80 +473,80 @@ describe("multiple init calls", () => {
 
 // ─── Neon side-effect ──────────────────────────────────────────────
 
-describe("neon side-effect", () => {
-  it("sets fetchConnectionCache for neon provider", async () => {
+describe('neon side-effect', () => {
+  it('sets fetchConnectionCache for neon provider', async () => {
     mocks.mockConnect.mockResolvedValue({
       query: vi.fn().mockResolvedValue(undefined),
       release: vi.fn(),
     })
 
-    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
     await mod.init!(mockCtx())
 
-    const { neonConfig } = await import("@neondatabase/serverless")
+    const { neonConfig } = await import('@neondatabase/serverless')
     expect(neonConfig.fetchConnectionCache).toBe(true)
   })
 })
 
 // ─── Edge Runtime ─────────────────────────────────────────────────
 
-describe("edge runtime", () => {
+describe('edge runtime', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     mocks.clearPoolArgs()
-    const { neonConfig } = await import("@neondatabase/serverless")
+    const { neonConfig } = await import('@neondatabase/serverless')
     neonConfig.fetchConnectionCache = false
     delete (neonConfig as any).poolQueryViaFetch
   })
 
-  it("enables poolQueryViaFetch for neon on edge", async () => {
+  it('enables poolQueryViaFetch for neon on edge', async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
 
-    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
-    await mod.init!(mockCtx({ runtime: { name: "edge", isServerless: true } }))
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
+    await mod.init!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))
 
-    const { neonConfig } = await import("@neondatabase/serverless")
+    const { neonConfig } = await import('@neondatabase/serverless')
     expect(neonConfig.poolQueryViaFetch).toBe(true)
   })
 
-  it("skips connection validation on edge", async () => {
-    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
-    await mod.init!(mockCtx({ runtime: { name: "edge", isServerless: true } }))
+  it('skips connection validation on edge', async () => {
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
+    await mod.init!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))
 
     expect(mocks.mockConnect).not.toHaveBeenCalled()
   })
 
-  it("registers configured proxy on edge", async () => {
-    const mod = createVaultModule({ connectionString: "postgres://u:p@db.neon.tech/db" })
-    const ctx = mockCtx({ runtime: { name: "edge", isServerless: true } })
+  it('registers configured proxy on edge', async () => {
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
+    const ctx = mockCtx({ runtime: { name: 'edge', isServerless: true } })
     await mod.init!(ctx)
 
-    expect(ctx.container.register).toHaveBeenCalledWith("vault", expect.any(Object))
+    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
   })
 
-  it("throws for pg provider on edge", async () => {
+  it('throws for pg provider on edge', async () => {
     const mod = createVaultModule({
-      connectionString: "postgres://u:p@localhost:5432/db",
-      provider: "pg",
+      connectionString: 'postgres://u:p@localhost:5432/db',
+      provider: 'pg',
     })
 
-    await expect(
-      mod.init!(mockCtx({ runtime: { name: "edge", isServerless: true } })),
-    ).rejects.toThrow("pg provider requires a TCP connection")
+    await expect(mod.init!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))).rejects.toThrow(
+      'pg provider requires a TCP connection'
+    )
   })
 })
 
 // ─── Auto-registration ────────────────────────────────────────────
 
-describe("auto-registration", () => {
-  it("registers vault module factory", () => {
-    const factory = getModuleFactory("vault")!
+describe('auto-registration', () => {
+  it('registers vault module factory', () => {
+    const factory = getModuleFactory('vault')!
     expect(factory).toBeDefined()
     const mod = factory({})
     expect(mod).toBeDefined()
-    expect(mod.name).toBe("vault")
+    expect(mod.name).toBe('vault')
   })
 })

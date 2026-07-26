@@ -1,10 +1,10 @@
-import type { TowerInitContext, TowerModule } from "@towerjs/blueprint"
-import { registerModule } from "@towerjs/blueprint"
-import { ResendEmailProvider } from "./providers/resend.js"
-import { SmtpEmailProvider } from "./providers/smtp.js"
-import { SesEmailProvider } from "./providers/ses.js"
-import { TwilioSmsProvider } from "./providers/twilio.js"
-import { WebPushProvider } from "./providers/web-push.js"
+import type { TowerInitContext, TowerModule } from '@towerjs/blueprint'
+import { registerModule } from '@towerjs/blueprint'
+import { ResendEmailProvider } from './providers/resend.js'
+import { SmtpEmailProvider } from './providers/smtp.js'
+import { SesEmailProvider } from './providers/ses.js'
+import { TwilioSmsProvider } from './providers/twilio.js'
+import { WebPushProvider } from './providers/web-push.js'
 import type {
   CourierConfig,
   CourierModule,
@@ -14,7 +14,7 @@ import type {
   PushService,
   SmsConfig,
   SmsService,
-} from "./types.js"
+} from './types.js'
 
 export type {
   CourierConfig,
@@ -43,7 +43,7 @@ export type {
   SmtpEmailConfig,
   TwilioSmsConfig,
   WebPushConfig,
-} from "./types.js"
+} from './types.js'
 
 /** @internal Singleton courier instance, set during tower init. */
 let _courier: CourierModule | undefined
@@ -55,12 +55,10 @@ let _courier: CourierModule | undefined
 export const courier: CourierModule = new Proxy({} as CourierModule, {
   get(_, prop) {
     if (!_courier) {
-      throw new Error("Courier not initialized. Tower must be started first.")
+      throw new Error('Courier not initialized. Tower must be started first.')
     }
     const value = (_courier as any)[prop]
-    return typeof value === "function"
-      ? (...args: any[]) => (value as Function)(...args)
-      : value
+    return typeof value === 'function' ? (...args: any[]) => (value as Function)(...args) : value
   },
 })
 
@@ -84,11 +82,11 @@ export const courier: CourierModule = new Proxy({} as CourierModule, {
  */
 export function defineCourier(config: CourierConfig): TowerModule & CourierModule {
   return {
-    name: "courier",
+    name: 'courier',
 
     async init(ctx: TowerInitContext) {
       _courier = createCourier(config)
-      ctx.container.register("courier", _courier)
+      ctx.container.register('courier', _courier)
     },
 
     get email() {
@@ -111,44 +109,44 @@ function createCourier(config: CourierConfig): CourierModule {
   const pushProvider = config.push ? createPushService(config.push) : undefined
 
   return {
-    email: emailProvider ?? unconfiguredChannel("email"),
-    sms: smsProvider ?? unconfiguredChannel("sms"),
-    push: pushProvider ?? unconfiguredChannel("push"),
+    email: emailProvider ?? unconfiguredChannel('email'),
+    sms: smsProvider ?? unconfiguredChannel('sms'),
+    push: pushProvider ?? unconfiguredChannel('push'),
   }
 }
 
 function requireCourier(): CourierModule {
-  if (!_courier) throw new Error("Courier not initialized.")
+  if (!_courier) throw new Error('Courier not initialized.')
   return _courier
 }
 
 function createEmailService(config: EmailConfig): EmailService {
   switch (config.provider) {
-    case "resend":
+    case 'resend':
       return new ResendEmailProvider(config)
-    case "smtp":
+    case 'smtp':
       return new SmtpEmailProvider(config)
-    case "ses":
+    case 'ses':
       return new SesEmailProvider(config)
   }
-  throw new Error("Unsupported courier email provider.")
+  throw new Error('Unsupported courier email provider.')
 }
 
 function createSmsService(config: SmsConfig): SmsService {
-  if (config.provider !== "twilio") {
+  if (config.provider !== 'twilio') {
     throw new Error(`Unsupported courier sms provider: ${String(config.provider)}`)
   }
   return new TwilioSmsProvider(config)
 }
 
 function createPushService(config: PushConfig): PushService {
-  if (config.provider !== "web-push") {
+  if (config.provider !== 'web-push') {
     throw new Error(`Unsupported courier push provider: ${String(config.provider)}`)
   }
   return new WebPushProvider(config)
 }
 
-function unconfiguredChannel(name: "email" | "sms" | "push") {
+function unconfiguredChannel(name: 'email' | 'sms' | 'push') {
   return {
     async send() {
       throw new Error(`[courier.${name}] Not configured. Add modules.courier.${name} to tower.config.ts.`)
@@ -156,4 +154,4 @@ function unconfiguredChannel(name: "email" | "sms" | "push") {
   }
 }
 
-registerModule("courier", (config) => defineCourier(config as CourierConfig))
+registerModule('courier', (config) => defineCourier(config as CourierConfig))

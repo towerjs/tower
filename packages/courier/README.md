@@ -15,56 +15,56 @@ pnpm add @towerjs/courier
 Configure Courier in your `tower.config.ts`:
 
 ```ts
-import { defineTower } from "@towerjs/blueprint";
+import { defineTower } from '@towerjs/blueprint'
 
 export default defineTower({
   modules: {
     courier: {
-      email: { provider: "resend" },
-      sms: { provider: "twilio" },
-      push: { provider: "web-push" },
+      email: { provider: 'resend' },
+      sms: { provider: 'twilio' },
+      push: { provider: 'web-push' },
     },
   },
-});
+})
 ```
 
 Send messages:
 
 ```ts
-import { tower } from "towerjs";
+import { tower } from 'towerjs'
 
 await tower.courier.email.send({
-  to: "user@example.com",
-  subject: "Welcome!",
-  text: "Hello from Tower",
-});
+  to: 'user@example.com',
+  subject: 'Welcome!',
+  text: 'Hello from Tower',
+})
 
 await tower.courier.sms.send({
-  to: "+1234567890",
-  body: "Your code is 123456",
-});
+  to: '+1234567890',
+  body: 'Your code is 123456',
+})
 ```
 
 ## Providers
 
 ### Email
 
-| Provider | Package | Config value |
-|----------|---------|-------------|
-| Resend | `resend` | `"resend"` |
-| AWS SES | `@aws-sdk/client-sesv2` | `"ses"` |
-| SMTP | `nodemailer` | `"smtp"` |
+| Provider | Package                 | Config value |
+| -------- | ----------------------- | ------------ |
+| Resend   | `resend`                | `"resend"`   |
+| AWS SES  | `@aws-sdk/client-sesv2` | `"ses"`      |
+| SMTP     | `nodemailer`            | `"smtp"`     |
 
 ### SMS
 
-| Provider | Package | Config value |
-|----------|---------|-------------|
-| Twilio | `twilio` | `"twilio"` |
+| Provider | Package  | Config value |
+| -------- | -------- | ------------ |
+| Twilio   | `twilio` | `"twilio"`   |
 
 ### Push
 
-| Provider | Package | Config value |
-|----------|---------|-------------|
+| Provider | Package    | Config value |
+| -------- | ---------- | ------------ |
 | Web Push | `web-push` | `"web-push"` |
 
 ## React email
@@ -72,14 +72,14 @@ await tower.courier.sms.send({
 Courier supports rendering React email templates:
 
 ```tsx
-import { render } from "@react-email/render";
-import WelcomeEmail from "./emails/welcome.tsx";
+import { render } from '@react-email/render'
+import WelcomeEmail from './emails/welcome.tsx'
 
 await tower.courier.email.send({
-  to: "user@example.com",
-  subject: "Welcome!",
+  to: 'user@example.com',
+  subject: 'Welcome!',
   html: render(<WelcomeEmail name="Alice" />),
-});
+})
 ```
 
 ## Configuration

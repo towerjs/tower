@@ -1,5 +1,5 @@
-import webpush from "web-push"
-import type { PushSendParams, PushSendResult, WebPushConfig } from "../types.js"
+import webpush from 'web-push'
+import type { PushSendParams, PushSendResult, WebPushConfig } from '../types.js'
 
 /** Push provider that sends via the Web Push protocol (RFC 8030). */
 export class WebPushProvider {
@@ -10,7 +10,7 @@ export class WebPushProvider {
 
     if (!subject || !publicKey || !privateKey) {
       throw new Error(
-        "[courier.push] Missing VAPID config. Set modules.courier.push.vapid.{subject,publicKey,privateKey}.",
+        '[courier.push] Missing VAPID config. Set modules.courier.push.vapid.{subject,publicKey,privateKey}.'
       )
     }
 
@@ -27,17 +27,17 @@ export class WebPushProvider {
 
     return {
       status: result.statusCode,
-      provider: "web-push",
+      provider: 'web-push',
     }
   }
 }
 
 function buildPayload(params: PushSendParams): string {
-  if (typeof params.payload === "string") return params.payload
+  if (typeof params.payload === 'string') return params.payload
   if (params.payload) return JSON.stringify(params.payload)
 
   if (!params.title && !params.body && !params.data) {
-    throw new Error("[courier.push] Missing payload. Provide payload or title/body/data fields.")
+    throw new Error('[courier.push] Missing payload. Provide payload or title/body/data fields.')
   }
 
   return JSON.stringify({

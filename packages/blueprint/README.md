@@ -13,14 +13,14 @@ pnpm add @towerjs/blueprint
 ## Usage
 
 ```ts
-import { defineTower } from "@towerjs/blueprint";
+import { defineTower } from '@towerjs/blueprint'
 
 export default defineTower({
   modules: {
-    vault: { provider: "neon" },
-    gatehouse: { provider: "better-auth", credentials: true },
+    vault: { provider: 'neon' },
+    gatehouse: { provider: 'better-auth', credentials: true },
   },
-});
+})
 ```
 
 ## API
@@ -41,10 +41,10 @@ Per-request scoped storage using `AsyncLocalStorage`. Provides `run(data, handle
 
 ```ts
 interface TowerModule {
-  name: string;
-  version: string;
-  init(ctx: TowerInitContext): Promise<void>;
-  shutdown?(): Promise<void>;
+  name: string
+  version: string
+  init(ctx: TowerInitContext): Promise<void>
+  shutdown?(): Promise<void>
 }
 ```
 

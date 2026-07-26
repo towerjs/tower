@@ -1,9 +1,9 @@
-import type { Kysely } from "kysely"
-import type { Migrator } from "kysely/migration"
+import type { Kysely } from 'kysely'
+import type { Migrator } from 'kysely/migration'
 
-export type VaultDb<T = any> = Kysely<T>
+export type VaultDb<T = unknown> = Kysely<T>
 
-export type VaultProvider = "neon" | "pg"
+export type VaultProvider = 'neon' | 'pg'
 
 /** Connection pool tuning for the database adapter. */
 export type VaultPoolConfig = {
@@ -36,7 +36,7 @@ export type VaultSeedConfig = {
  * Use `.db` to access the raw Kysely instance, `.transaction` for transactions,
  * `.migrate` / `.seed` for database management, and `.close` to release the pool.
  */
-export interface VaultModule<TSchema = any> extends Omit<Kysely<TSchema>, "transaction"> {
+export interface VaultModule<TSchema = unknown> extends Omit<Kysely<TSchema>, 'transaction'> {
   readonly db: VaultDb<TSchema>
   transaction<T>(fn: (trx: VaultDb<TSchema>) => Promise<T>): Promise<T>
   migrate(): Promise<void>
