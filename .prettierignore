@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+node_modules
+dist
+.turbo
+.next
+*.tsbuildinfo
+*.js.map
+*.d.ts.map
+CHANGELOG.md

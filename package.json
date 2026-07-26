@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -b",
+    "build": "turbo build",
+    "format": "prettier --write .",
     "clean": "rm -rf packages/*/dist",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -13,8 +14,20 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
+    "prettier": "^3.9.6",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "turbo": "^2.10.7",
     "typescript": "^7.0",
     "vitest": "^4.1.10"
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "printWidth": 120,
+    "trailingComma": "es5",
+    "plugins": [
+      "prettier-plugin-organize-imports"
+    ]
   },
   "packageManager": "pnpm@11.17.0"
 }
