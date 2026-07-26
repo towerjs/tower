@@ -13,22 +13,22 @@ pnpm add towerjs
 ## Usage
 
 ```ts
-import { tower } from "towerjs";
+import { tower } from 'towerjs'
 
 // Access any registered module
-await tower.vault.db.selectFrom("users").selectAll().execute();
-const session = await tower.gatehouse.getSession();
-await tower.courier.email.send({ to: "user@example.com", subject: "Hello", text: "World" });
+await tower.vault.db.selectFrom('users').selectAll().execute()
+const session = await tower.gatehouse.getSession()
+await tower.courier.email.send({ to: 'user@example.com', subject: 'Hello', text: 'World' })
 ```
 
 ## Exports
 
-| Export | Description |
-|--------|-------------|
-| `tower` | Pre-initialized Tower instance (auto-discovers `tower.config.ts`) |
-| `createTower` | Programmatic initialization |
-| `defineTower` | Configuration helper from `@towerjs/blueprint` |
-| `TowerInstance` | Type for the initialized Tower object |
+| Export          | Description                                                       |
+| --------------- | ----------------------------------------------------------------- |
+| `tower`         | Pre-initialized Tower instance (auto-discovers `tower.config.ts`) |
+| `createTower`   | Programmatic initialization                                       |
+| `defineTower`   | Configuration helper from `@towerjs/blueprint`                    |
+| `TowerInstance` | Type for the initialized Tower object                             |
 
 ## What's included
 
