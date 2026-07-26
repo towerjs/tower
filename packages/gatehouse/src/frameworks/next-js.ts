@@ -1,7 +1,7 @@
-import { cookies, headers } from "next/headers"
-import { towerContext } from "@towerjs/blueprint"
-import { runWithRequest, getAuth, getRoutes, Gatehouse } from "../index.js"
-import type { GatehouseInstance, Session } from "../types.js"
+import { cookies, headers } from 'next/headers'
+import { towerContext } from '@towerjs/blueprint'
+import { runWithRequest, getAuth, getRoutes, Gatehouse } from '../index.js'
+import type { GatehouseInstance, Session } from '../types.js'
 
 type NextRouteContext = {
   params: Promise<Record<string, string>>
@@ -12,21 +12,21 @@ type GatehouseNextConfig = {
 }
 
 function sessionCookieName(config?: GatehouseNextConfig): string {
-  return config?.sessionCookie ?? "better-auth.session_token"
+  return config?.sessionCookie ?? 'better-auth.session_token'
 }
 
 function cookieString(token: string, config?: GatehouseNextConfig): string {
-  const secure = process.env.NODE_ENV === "production"
+  const secure = process.env.NODE_ENV === 'production'
   return [
     `${sessionCookieName(config)}=${token}`,
-    "HttpOnly",
-    "SameSite=Lax",
-    "Path=/",
-    secure && "Secure",
-    "Max-Age=" + 60 * 60 * 24 * 7,
+    'HttpOnly',
+    'SameSite=Lax',
+    'Path=/',
+    secure && 'Secure',
+    'Max-Age=' + 60 * 60 * 24 * 7,
   ]
     .filter(Boolean)
-    .join("; ")
+    .join('; ')
 }
 
 function clearCookieString(config?: GatehouseNextConfig): string {
@@ -54,11 +54,11 @@ function clearCookieString(config?: GatehouseNextConfig): string {
  * })
  * ```
  */
-export function action<TArgs extends unknown[]>(
-  handler: (...args: TArgs) => Promise<void>,
-  config?: GatehouseNextConfig,
-): (...args: TArgs) => Promise<void> {
-  return async (...args: TArgs) => {
+export function action<TResult, TArgs extends unknown[]>(
+  handler: (...args: TArgs) => Promise<TResult>,
+  config?: GatehouseNextConfig
+): (...args: TArgs) => Promise<TResult> {
+  return async (...args: TArgs): Promise<TResult> => {
     const h = await headers()
     const gh = await Gatehouse.from({ headers: h })
 
@@ -91,18 +91,21 @@ export function action<TArgs extends unknown[]>(
       },
     } as GatehouseInstance
 
-    await towerContext.run({ gatehouse: tracked }, () => handler(...args))
+    const result: TResult = await towerContext.run({ gatehouse: tracked }, () => handler(...args))
 
     const c = await cookies()
     const name = sessionCookieName(config)
     if (pendingToken) {
       c.set(name, pendingToken, {
-        httpOnly: true, sameSite: "lax", path: "/",
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
         maxAge: 60 * 60 * 24 * 7,
       })
     } else if (pendingToken === null) {
-      c.set(name, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 })
+      c.set(name, '', { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 })
     }
+    return result
   }
 }
 
@@ -126,7 +129,7 @@ export async function getSession(): Promise<Session | null> {
  */
 export function withGatehouse<T extends Response>(
   handler: (request: Request, context: NextRouteContext) => Promise<T>,
-  config?: GatehouseNextConfig,
+  config?: GatehouseNextConfig
 ): (request: Request, context: NextRouteContext) => Promise<T> {
   return async (request, context) => {
     const auth = getAuth()
@@ -140,9 +143,9 @@ export function withGatehouse<T extends Response>(
     const currentToken = current?.session?.token ?? null
 
     if (currentToken && currentToken !== initialToken) {
-      response.headers.append("Set-Cookie", cookieString(currentToken, config))
+      response.headers.append('Set-Cookie', cookieString(currentToken, config))
     } else if (!currentToken && initialToken) {
-      response.headers.append("Set-Cookie", clearCookieString(config))
+      response.headers.append('Set-Cookie', clearCookieString(config))
     }
 
     return response
@@ -151,17 +154,17 @@ export function withGatehouse<T extends Response>(
 
 // ─── Route handler (lazily resolved) ──────────────────────────────
 
-function lazy(method: "GET" | "POST"): (req: Request) => Promise<Response> {
-  return (req: Request) => getRoutes()[method](req);
+function lazy(method: 'GET' | 'POST'): (req: Request) => Promise<Response> {
+  return (req: Request) => getRoutes()[method](req)
 }
 
 /**
  * Lazy GET handler that delegates to the gatehouse auth routes.
  * Imported by `app/api/auth/[...all]/route.ts` in user projects.
  */
-export const GET = lazy("GET") as (req: Request) => Promise<Response>;
+export const GET = lazy('GET') as (req: Request) => Promise<Response>
 /**
  * Lazy POST handler that delegates to the gatehouse auth routes.
  * Imported by `app/api/auth/[...all]/route.ts` in user projects.
  */
-export const POST = lazy("POST") as (req: Request) => Promise<Response>;
+export const POST = lazy('POST') as (req: Request) => Promise<Response>

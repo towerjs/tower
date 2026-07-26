@@ -171,12 +171,12 @@ export interface AdminUpdateUserParams {
 /** Options for the admin user listing endpoint. */
 export interface AdminListUsersOptions {
   searchField?: string
-  searchOperator?: "eq" | "ne" | "starts_with" | "ends_with" | "contains"
+  searchOperator?: 'eq' | 'ne' | 'starts_with' | 'ends_with' | 'contains'
   searchValue?: string
   limit?: number
   offset?: number
   sortBy?: string
-  sortOrder?: "asc" | "desc"
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface AdminImpersonationResult {
@@ -234,7 +234,7 @@ export interface ApiKeyListOptions {
   limit?: number
   offset?: number
   sortBy?: string
-  sortDirection?: "asc" | "desc"
+  sortDirection?: 'asc' | 'desc'
   organizationId?: string
   configId?: string
 }
@@ -245,29 +245,29 @@ export interface ApiKeyVerifyParams {
 
 /** Thrown when authentication is required but the user is not logged in. */
 export class AuthenticationError extends Error {
-  constructor(message = "Authentication required") {
+  constructor(message = 'Authentication required') {
     super(message)
-    this.name = "AuthenticationError"
+    this.name = 'AuthenticationError'
   }
 }
 
 /** Thrown when the current user lacks the required permissions. */
 export class AuthorizationError extends Error {
-  constructor(message = "Not authorized") {
+  constructor(message = 'Not authorized') {
     super(message)
-    this.name = "AuthorizationError"
+    this.name = 'AuthorizationError'
   }
 }
 
 export interface EmailOtpSendParams {
   email: string
-  type?: "sign-in" | "email-verification" | "forget-password" | "change-email"
+  type?: 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
 }
 
 export interface EmailOtpConfirmParams {
   email: string
   code: string
-  type?: "sign-in" | "email-verification" | "forget-password" | "change-email"
+  type?: 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
 }
 
 export interface TwoFactorEnableParams {
@@ -321,9 +321,9 @@ import type {
   TwoFactorOptions,
   OrganizationOptions,
   AdminOptions,
-} from "better-auth/plugins"
-import type { PasskeyOptions } from "@better-auth/passkey"
-import type { ApiKeyOptions } from "@better-auth/api-key"
+} from 'better-auth/plugins'
+import type { PasskeyOptions } from '@better-auth/passkey'
+import type { ApiKeyOptions } from '@better-auth/api-key'
 
 type SocialProviderEntry = {
   clientId?: string | string[]
@@ -343,10 +343,7 @@ type SocialProviderEntry = {
 
 export type GatehouseSocialConfig = string[] | Record<string, SocialProviderEntry | true>
 
-type BetterAuthGenerateIdFn = (options: {
-  model: string
-  size?: number | undefined
-}) => string | false
+type BetterAuthGenerateIdFn = (options: { model: string; size?: number | undefined }) => string | false
 
 /**
  * Configuration for the gatehouse auth module backed by better-auth.
@@ -358,29 +355,41 @@ type BetterAuthGenerateIdFn = (options: {
  * Most config fields are optional — omit a feature to disable it.
  */
 export interface GatehouseConfig {
-  provider: "better-auth"
+  provider: 'better-auth'
 
-  credentials?: boolean | {
-    enabled?: boolean
-    disableSignUp?: boolean
-    requireEmailVerification?: boolean
-    minPasswordLength?: number
-    maxPasswordLength?: number
-    autoSignIn?: boolean
-    revokeSessionsOnPasswordReset?: boolean
-    resetPasswordTokenExpiresIn?: number
-    sendResetPassword?: (data: { user: { id: string; email: string; name: string }; url: string; token: string }, request?: Request) => void | Promise<void>
-    onPasswordReset?: (data: { user: { id: string; email: string; name: string } }) => void | Promise<void>
-    onExistingUserSignUp?: (data: { user: { id: string; email: string; name: string } }) => void | Promise<void>
-    customSyntheticUser?: (data: { coreFields: Record<string, unknown>; additionalFields: Record<string, unknown>; id: string }) => Record<string, unknown>
-    password?: {
-      hash?: (password: string) => Promise<string>
-      verify?: (data: { hash: string; password: string }) => Promise<boolean>
-    }
-  }
+  credentials?:
+    | boolean
+    | {
+        enabled?: boolean
+        disableSignUp?: boolean
+        requireEmailVerification?: boolean
+        minPasswordLength?: number
+        maxPasswordLength?: number
+        autoSignIn?: boolean
+        revokeSessionsOnPasswordReset?: boolean
+        resetPasswordTokenExpiresIn?: number
+        sendResetPassword?: (
+          data: { user: { id: string; email: string; name: string }; url: string; token: string },
+          request?: Request
+        ) => void | Promise<void>
+        onPasswordReset?: (data: { user: { id: string; email: string; name: string } }) => void | Promise<void>
+        onExistingUserSignUp?: (data: { user: { id: string; email: string; name: string } }) => void | Promise<void>
+        customSyntheticUser?: (data: {
+          coreFields: Record<string, unknown>
+          additionalFields: Record<string, unknown>
+          id: string
+        }) => Record<string, unknown>
+        password?: {
+          hash?: (password: string) => Promise<string>
+          verify?: (data: { hash: string; password: string }) => Promise<boolean>
+        }
+      }
 
   emailVerification?: {
-    sendVerificationEmail?: (data: { user: { id: string; email: string; name: string }; url: string; token: string }, request?: Request) => void | Promise<void>
+    sendVerificationEmail?: (
+      data: { user: { id: string; email: string; name: string }; url: string; token: string },
+      request?: Request
+    ) => void | Promise<void>
     sendOnSignUp?: boolean
     autoSignInAfterVerification?: boolean
     expiresIn?: number
@@ -396,15 +405,17 @@ export interface GatehouseConfig {
   admin?: boolean | AdminOptions
   apiKey?: boolean | ApiKeyOptions
 
-  baseURL?: string | {
-    allowedHosts: string[]
-    protocol?: "http" | "https" | "auto"
-    fallback?: string
-  }
+  baseURL?:
+    | string
+    | {
+        allowedHosts: string[]
+        protocol?: 'http' | 'https' | 'auto'
+        fallback?: string
+      }
 
   appName?: string
   trustedOrigins?: string[]
-  plugins?: import("better-auth").BetterAuthPlugin[]
+  plugins?: import('better-auth').BetterAuthPlugin[]
 
   user?: {
     modelName?: string
@@ -412,12 +423,21 @@ export interface GatehouseConfig {
     additionalFields?: Record<string, { type: string; required?: boolean; defaultValue?: unknown; input?: boolean }>
     changeEmail?: {
       enabled: boolean
-      sendChangeEmailConfirmation?: (data: { user: { id: string; email: string; name: string }; newEmail: string; url: string; token: string }) => void | Promise<void>
+      sendChangeEmailConfirmation?: (data: {
+        user: { id: string; email: string; name: string }
+        newEmail: string
+        url: string
+        token: string
+      }) => void | Promise<void>
       updateEmailWithoutVerification?: boolean
     }
     deleteUser?: {
       enabled: boolean
-      sendDeleteAccountVerification?: (data: { user: { id: string; email: string; name: string }; url: string; token: string }) => void | Promise<void>
+      sendDeleteAccountVerification?: (data: {
+        user: { id: string; email: string; name: string }
+        url: string
+        token: string
+      }) => void | Promise<void>
       beforeDelete?: (user: { id: string; email: string; name: string }) => void | Promise<void>
       afterDelete?: (user: { id: string; email: string; name: string }) => void | Promise<void>
     }
@@ -436,7 +456,7 @@ export interface GatehouseConfig {
     cookieCache?: {
       enabled: boolean
       maxAge?: number
-      strategy?: "compact" | "jwt" | "jwe"
+      strategy?: 'compact' | 'jwt' | 'jwe'
     }
   }
 
@@ -445,7 +465,7 @@ export interface GatehouseConfig {
     fields?: Record<string, string>
     encryptOAuthTokens?: boolean
     updateAccountOnSignIn?: boolean
-    storeStateStrategy?: "cookie" | "database"
+    storeStateStrategy?: 'cookie' | 'database'
     storeAccountCookie?: boolean
     accountLinking?: {
       enabled?: boolean
@@ -462,7 +482,7 @@ export interface GatehouseConfig {
     disableCSRFCheck?: boolean
     cookiePrefix?: string
     database?: {
-      generateId?: BetterAuthGenerateIdFn | false | "serial" | "uuid"
+      generateId?: BetterAuthGenerateIdFn | false | 'serial' | 'uuid'
       defaultFindManyLimit?: number
     }
   }
@@ -504,6 +524,7 @@ export interface GatehouseInstance {
   signIn: {
     email(params: { email: string; password: string }): Promise<Session>
     emailOtp(params: { email: string; code: string; type?: string }): Promise<Session>
+    magicLink(params: { email: string; callbackURL?: string }): Promise<void>
     phone(params: { phoneNumber: string; code: string }): Promise<Session>
     social(params: { provider: string; callbackURL?: string; disableRedirect?: boolean }): Promise<Session>
   }

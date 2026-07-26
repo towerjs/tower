@@ -1,12 +1,9 @@
-import { createRequire } from "node:module";
-import { betterAuth } from "better-auth";
-import { toNextJsHandler } from "better-auth/next-js";
-import type { Kysely } from "kysely";
-
-const _require = createRequire(import.meta.url);
-import { magicLink, emailOTP, twoFactor, organization, admin, phoneNumber } from "better-auth/plugins";
-import { passkey } from "@better-auth/passkey";
-import { apiKey } from "@better-auth/api-key";
+import { betterAuth } from 'better-auth'
+import { toNextJsHandler } from 'better-auth/next-js'
+import type { Kysely } from 'kysely'
+import { magicLink, emailOTP, twoFactor, organization, admin, phoneNumber } from 'better-auth/plugins'
+import { passkey } from '@better-auth/passkey'
+import { apiKey } from '@better-auth/api-key'
 import type {
   GatehouseConfig,
   GatehouseInstance,
@@ -15,86 +12,83 @@ import type {
   Session,
   ProxyOptions,
   ProxyResult,
-} from "../types.js";
-import { AuthenticationError } from "../types.js";
-import { buildProxiedApi, buildFacade } from "../facade-builder.js";
+} from '../types.js'
+import { AuthenticationError } from '../types.js'
+import { buildProxiedApi, buildFacade } from '../facade-builder.js'
 
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
-  private auth: any;
-  private api: any;
-  private db: Kysely<unknown>;
-  private config: GatehouseConfig;
+  private auth: any
+  private api: any
+  private db: Kysely<unknown>
+  private config: GatehouseConfig
 
   constructor(config: GatehouseConfig, db: Kysely<unknown>) {
-    this.db = db;
-    this.config = config;
+    this.db = db
+    this.config = config
 
-    const baseURL = config.baseURL || process.env.BETTER_AUTH_URL;
+    const baseURL = config.baseURL || process.env.BETTER_AUTH_URL
 
     const creds =
       config.credentials === true
         ? { enabled: true }
         : config.credentials
           ? { enabled: true, ...config.credentials }
-          : undefined;
+          : undefined
 
-    const allPlugins = [...(config.plugins || [])];
+    const allPlugins = [...(config.plugins || [])]
 
     if (config.magicLinks) {
-      const sendMagicLink = typeof config.magicLinks === "object" && config.magicLinks.sendMagicLink
-        ? config.magicLinks.sendMagicLink
-        : async ({ email, url }: { email: string; url: string }) => {
-            throw new Error(
-              `sendMagicLink not implemented — provide a sendMagicLink callback in the magicLinks config`,
-            );
-          };
-      allPlugins.push(magicLink({ sendMagicLink }));
+      const sendMagicLink =
+        typeof config.magicLinks === 'object' && config.magicLinks.sendMagicLink
+          ? config.magicLinks.sendMagicLink
+          : async ({ email, url }: { email: string; url: string }) => {
+              throw new Error(
+                `sendMagicLink not implemented — provide a sendMagicLink callback in the magicLinks config`
+              )
+            }
+      allPlugins.push(magicLink({ sendMagicLink }))
     }
     if (config.emailOtp) {
-      const sendVerificationOTP = typeof config.emailOtp === "object" && config.emailOtp.sendVerificationOTP
-        ? config.emailOtp.sendVerificationOTP
-        : async ({ email, otp, type }: { email: string; otp: string; type: string }) => {
-            throw new Error(
-              `sendVerificationOTP not implemented — provide a sendVerificationOTP callback in the emailOtp config`,
-            );
-          };
-      allPlugins.push(emailOTP({ sendVerificationOTP }));
+      const sendVerificationOTP =
+        typeof config.emailOtp === 'object' && config.emailOtp.sendVerificationOTP
+          ? config.emailOtp.sendVerificationOTP
+          : async ({ email, otp, type }: { email: string; otp: string; type: string }) => {
+              throw new Error(
+                `sendVerificationOTP not implemented — provide a sendVerificationOTP callback in the emailOtp config`
+              )
+            }
+      allPlugins.push(emailOTP({ sendVerificationOTP }))
     }
     if (config.phoneNumber) {
-      const sendOTP = typeof config.phoneNumber === "object" && config.phoneNumber.sendOTP
-        ? config.phoneNumber.sendOTP
-        : async ({ phoneNumber: _phone, code }: { phoneNumber: string; code: string }) => {
-            throw new Error(
-              `sendOTP not implemented — provide a sendOTP callback in the phoneNumber config`,
-            );
-          };
-      allPlugins.push(phoneNumber({ sendOTP }));
+      const sendOTP =
+        typeof config.phoneNumber === 'object' && config.phoneNumber.sendOTP
+          ? config.phoneNumber.sendOTP
+          : async ({ phoneNumber: _phone, code }: { phoneNumber: string; code: string }) => {
+              throw new Error(`sendOTP not implemented — provide a sendOTP callback in the phoneNumber config`)
+            }
+      allPlugins.push(phoneNumber({ sendOTP }))
     }
     if (config.passkeys) {
-      allPlugins.push(passkey(
-        typeof config.passkeys === "object" ? config.passkeys : undefined
-      ));
+      allPlugins.push(passkey(typeof config.passkeys === 'object' ? config.passkeys : undefined))
     }
     if (config.apiKey) {
-      allPlugins.push(apiKey(
-        typeof config.apiKey === "object" ? config.apiKey : undefined
-      ));
+      allPlugins.push(apiKey(typeof config.apiKey === 'object' ? config.apiKey : undefined))
     }
     if (config.admin) {
-      allPlugins.push(admin());
+      allPlugins.push(admin())
     }
     if (config.twoFactor) {
-      allPlugins.push(twoFactor());
+      allPlugins.push(twoFactor())
     }
     if (config.organization) {
-      allPlugins.push(organization());
+      allPlugins.push(organization())
     }
 
     const social = expandSocial(config.social)
 
     const baOptions: Record<string, unknown> = {
-      database: { db, type: "postgres" },
+      database: { db, type: 'postgres' },
       secret: config.passThrough?.secret || process.env.BETTER_AUTH_SECRET,
       baseURL,
       basePath: config.passThrough?.basePath,
@@ -108,41 +102,43 @@ export class BetterAuthAdapter {
       trustedOrigins: config.trustedOrigins,
       advanced: config.advanced,
       plugins: allPlugins,
-    };
+    }
     if (config.passThrough) {
       for (const [k, v] of Object.entries(config.passThrough)) {
-        baOptions[k] = v;
+        baOptions[k] = v
       }
     }
-    this.auth = betterAuth(baOptions as any);
-    this.api = this.auth.api;
+    this.auth = betterAuth(baOptions as any)
+    this.api = this.auth.api
   }
 
-  /** Runs better-auth database migrations. */
+  /** Runs better-auth database migrations. Called only from the Tower CLI, never during page rendering. */
   async migrate(): Promise<void> {
-    const { getMigrations } = _require("better-auth/dist/db/get-migration.mjs");
-    const { runMigrations } = await getMigrations(this.auth.options);
-    await runMigrations();
+    const mod = (await Function('return import("better-auth/dist/db/get-migration.mjs")')()) as {
+      getMigrations: (o: any) => Promise<{ runMigrations: () => Promise<void> }>
+    }
+    const { runMigrations } = await mod.getMigrations(this.auth.options)
+    await runMigrations()
   }
 
   /** Raw better-auth provider instance. */
   get provider(): any {
-    return this.auth;
+    return this.auth
   }
 
   /** Next.js route handlers (GET/POST) for the auth API. */
   get routes() {
-    return toNextJsHandler(this.auth);
+    return toNextJsHandler(this.auth)
   }
 
   // ─── From ─────────────────────────────────────────────────────────
 
   /** Creates a per-request GatehouseInstance from a request or headers. */
   async from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
-    const headers = request instanceof Request ? request.headers : request.headers;
-    const session = await this.getSession({ headers });
-    const api = buildProxiedApi(this.api, headers);
-    const built = buildFacade(api);
+    const headers = request instanceof Request ? request.headers : request.headers
+    const session = await this.getSession({ headers })
+    const api = buildProxiedApi(this.api, headers)
+    const built = buildFacade(api)
 
     return {
       session: async () => session,
@@ -166,7 +162,7 @@ export class BetterAuthAdapter {
 
       // Tier 3 — built from mapping
       ...built,
-    } as GatehouseInstance;
+    } as GatehouseInstance
   }
 
   // ─── Proxy ────────────────────────────────────────────────────────
@@ -175,13 +171,11 @@ export class BetterAuthAdapter {
   createProxy(options?: ProxyOptions): ProxyResult {
     const publicPaths = options?.public ?? []
     const authPaths = options?.redirectIfAuthenticated ?? []
-    const redirectTo = options?.redirectTo ?? "/sign-in"
-    const redirectAfterSignIn = options?.redirectAfterSignIn ?? "/"
+    const redirectTo = options?.redirectTo ?? '/sign-in'
+    const redirectAfterSignIn = options?.redirectAfterSignIn ?? '/'
 
-    const allPaths = [...publicPaths, ...authPaths].filter(p => p !== "/")
-    const matcher = allPaths.length > 0
-      ? allPaths
-      : ["/((?!_next/static|favicon.ico).*)"]
+    const allPaths = [...publicPaths, ...authPaths].filter((p) => p !== '/')
+    const matcher = allPaths.length > 0 ? allPaths : ['/((?!_next/static|favicon.ico).*)']
 
     const handler = async (request: Request): Promise<Response | undefined> => {
       const url = new URL(request.url)
@@ -190,7 +184,7 @@ export class BetterAuthAdapter {
       try {
         const auth = await this.from(request)
         if (await auth.user()) {
-          if (authPaths.some(p => matchPath(path, p))) {
+          if (authPaths.some((p) => matchPath(path, p))) {
             return Response.redirect(new URL(redirectAfterSignIn, url))
           }
           return
@@ -199,7 +193,7 @@ export class BetterAuthAdapter {
         // Treat session failure as unauthenticated
       }
 
-      if (publicPaths.some(p => matchPath(path, p))) return
+      if (publicPaths.some((p) => matchPath(path, p))) return
 
       return Response.redirect(new URL(redirectTo, url))
     }
@@ -212,58 +206,54 @@ export class BetterAuthAdapter {
   async getSession(request: { headers: Headers }): Promise<Session | null> {
     const result = await this.api.getSession({
       headers: request.headers,
-    });
-    if (!result) return null;
+    })
+    if (!result) return null
     return {
       user: mapUser(result.user),
       session: mapSession(result.session),
-    };
+    }
   }
 
   async requireAuth(request: { headers: Headers }): Promise<Session> {
-    const session = await this.getSession(request);
-    if (!session) throw new AuthenticationError();
-    return session;
+    const session = await this.getSession(request)
+    if (!session) throw new AuthenticationError()
+    return session
   }
 
   // ─── Users ────────────────────────────────────────────────────────
 
   async findUser(id: string, headers: Headers): Promise<GatehouseUser | null> {
     try {
-      const result = await this.api.getUser({ headers, body: { userId: id } }) as Record<string, unknown> | null;
-      if (!result) return null;
-      return mapUser(result);
+      const result = (await this.api.getUser({ headers, body: { userId: id } })) as Record<string, unknown> | null
+      if (!result) return null
+      return mapUser(result)
     } catch {
-      return null;
+      return null
     }
   }
 
   async findUserByEmail(email: string, headers: Headers): Promise<GatehouseUser | null> {
-    const user = await (this.db as any)
-      .selectFrom("user")
-      .where("email", "=", email)
-      .selectAll()
-      .executeTakeFirst();
-    if (!user) return null;
-    return mapUser(user);
+    const user = await (this.db as any).selectFrom('user').where('email', '=', email).selectAll().executeTakeFirst()
+    if (!user) return null
+    return mapUser(user)
   }
 
   // ─── Role management (via better-auth admin API) ─────────────────
 
   async setRole(userId: string, role: string, headers: Headers): Promise<void> {
-    await this.api.setRole({ headers, body: { userId, role } });
+    await this.api.setRole({ headers, body: { userId, role } })
   }
 
   async removeRole(userId: string, headers: Headers): Promise<void> {
     // better-auth treats empty/null role as removal
-    await this.api.setRole({ headers, body: { userId, role: "" } });
+    await this.api.setRole({ headers, body: { userId, role: '' } })
   }
 
   // ─── Authorization ───────────────────────────────────────────────
   async checkPermission(params: {
-    user: GatehouseUser;
-    permission: string | string[];
-    organizationId?: string;
+    user: GatehouseUser
+    permission: string | string[]
+    organizationId?: string
   }): Promise<boolean> {
     try {
       if (params.organizationId && this.api.hasPermission) {
@@ -273,15 +263,14 @@ export class BetterAuthAdapter {
             organizationId: params.organizationId,
             permission: Array.isArray(params.permission) ? params.permission : [params.permission],
           },
-        });
-        return result.hasPermission === true;
+        })
+        return result.hasPermission === true
       }
-      return true;
+      return true
     } catch {
-      return false;
+      return false
     }
   }
-
 }
 
 function env(key: string): string | undefined {
@@ -289,7 +278,7 @@ function env(key: string): string | undefined {
 }
 
 function expandSocial(
-  config: string[] | Record<string, Record<string, unknown> | true> | undefined,
+  config: string[] | Record<string, Record<string, unknown> | true> | undefined
 ): Record<string, Record<string, unknown>> | undefined {
   if (!config) return config
   const entries: [string, Record<string, unknown>][] = Array.isArray(config)
@@ -297,14 +286,14 @@ function expandSocial(
     : Object.entries(config).map(([p, v]) => [p, v === true ? {} : v])
   const expanded: Record<string, Record<string, unknown>> = {}
   for (const [provider, opts] of entries) {
-    const key = provider.toUpperCase().replace(/-/g, "_")
+    const key = provider.toUpperCase().replace(/-/g, '_')
     const clientId = opts.clientId ?? env(`${key}_CLIENT_ID`)
     const clientSecret = opts.clientSecret ?? env(`${key}_CLIENT_SECRET`)
     if (!clientId || !clientSecret) {
       throw new Error(
         `Missing credentials for "${provider}" social provider. ` +
-        `Set ${key}_CLIENT_ID and ${key}_CLIENT_SECRET in your environment, ` +
-        `or pass clientId/clientSecret explicitly in tower.config.ts.`,
+          `Set ${key}_CLIENT_ID and ${key}_CLIENT_SECRET in your environment, ` +
+          `or pass clientId/clientSecret explicitly in tower.config.ts.`
       )
     }
     expanded[provider] = { ...opts, clientId, clientSecret }
@@ -325,7 +314,7 @@ function mapUser(user: Record<string, unknown>): GatehouseUser {
     banned: user.banned as boolean | undefined,
     banReason: user.banReason as string | null | undefined,
     role: user.role as string | undefined,
-  };
+  }
 }
 
 function mapSession(session: Record<string, unknown>): GatehouseSession {
@@ -336,26 +325,35 @@ function mapSession(session: Record<string, unknown>): GatehouseSession {
     token: session.token as string,
     ipAddress: session.ipAddress as string | null | undefined,
     userAgent: session.userAgent as string | null | undefined,
-  };
+  }
 }
 
 function matchPath(pathname: string, pattern: string): boolean {
-  let regex = ""
+  let regex = ''
   let i = 0
   while (i < pattern.length) {
     const c = pattern[i]
-    if (c === ":") {
+    if (c === ':') {
       i++
       while (i < pattern.length && /[a-zA-Z0-9_]/.test(pattern[i])) i++
-      if (pattern[i] === "*") { regex += "[^/]+"; i++ }
-      else { regex += "[^/]+" }
-    } else if (c === "*") {
-      if (pattern[i + 1] === "*") { regex += ".*"; i += 2 }
-      else { regex += "[^/]+"; i++ }
+      if (pattern[i] === '*') {
+        regex += '[^/]+'
+        i++
+      } else {
+        regex += '[^/]+'
+      }
+    } else if (c === '*') {
+      if (pattern[i + 1] === '*') {
+        regex += '.*'
+        i += 2
+      } else {
+        regex += '[^/]+'
+        i++
+      }
     } else {
-      regex += c === "/" ? "\\/" : c
+      regex += c === '/' ? '\\/' : c
       i++
     }
   }
-  return new RegExp("^" + regex + "$").test(pathname)
+  return new RegExp('^' + regex + '$').test(pathname)
 }
