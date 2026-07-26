@@ -3,10 +3,19 @@
   "version": "0.1.0",
   "description": "Core runtime, application lifecycle, dependency injection, and runtime detection for Tower",
   "type": "module",
-  "types": "src/index.ts",
-  "exports": { ".": { "types": "./src/index.ts", "default": "./dist/index.js" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b" },
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
   "dependencies": {
     "@towerjs/blueprint": "workspace:*",
     "@towerjs/vault": "workspace:*",

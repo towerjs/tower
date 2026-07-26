@@ -1,5 +1,6 @@
-export { createTowerApp, createTower } from "./app";
-export type { TowerApp, TowerModules, TowerInstance } from "./app";
-export { ServiceContainer } from "./container";
-export { detectRuntime } from "./runtime";
-export type { RuntimeName, TowerRuntime, TowerConfig } from "./types";
+export { createTowerApp, createTower } from './app.js'
+export type { TowerApp, TowerModules, TowerInstance } from './app.js'
+export { ServiceContainer } from './container.js'
+export { detectRuntime } from './runtime.js'
+export type { RuntimeName, TowerRuntime, TowerConfig } from './types.js'
+export { resolveConfig } from './resolve-config.js'

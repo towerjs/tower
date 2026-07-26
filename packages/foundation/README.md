@@ -13,23 +13,23 @@ pnpm add @towerjs/foundation
 ## Usage
 
 ```ts
-import { createTowerApp, defineTower } from "@towerjs/blueprint";
+import { createTowerApp, defineTower } from '@towerjs/blueprint'
 
 export default defineTower({
   modules: {
-    vault: { provider: "pg" },
-    gatehouse: { provider: "better-auth" },
+    vault: { provider: 'pg' },
+    gatehouse: { provider: 'better-auth' },
   },
-});
+})
 ```
 
 Then initialize:
 
 ```ts
-import { tower } from "towerjs";
+import { tower } from 'towerjs'
 // or
-import { createTower } from "@towerjs/foundation";
-const app = await createTower();
+import { createTower } from '@towerjs/foundation'
+const app = await createTower()
 ```
 
 ## API

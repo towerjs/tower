@@ -1,28 +1,28 @@
-import type { TowerBlueprint, TowerModule, TowerInitContext } from "@towerjs/blueprint";
-import { getModuleFactory } from "@towerjs/blueprint";
-import "@towerjs/vault";
-import "@towerjs/gatehouse";
-import "@towerjs/courier";
-import type { VaultModule } from "@towerjs/vault";
-import type { GatehouseModule } from "@towerjs/gatehouse";
-import type { CourierModule } from "@towerjs/courier";
-import { ServiceContainer } from "./container";
-import { detectRuntime } from "./runtime";
-import type { TowerRuntime } from "./types";
+import type { TowerBlueprint, TowerModule, TowerInitContext } from '@towerjs/blueprint'
+import { getModuleFactory } from '@towerjs/blueprint'
+import '@towerjs/vault'
+import '@towerjs/gatehouse'
+import '@towerjs/courier'
+import type { VaultModule } from '@towerjs/vault'
+import type { GatehouseModule } from '@towerjs/gatehouse'
+import type { CourierModule } from '@towerjs/courier'
+import { ServiceContainer } from './container.js'
+import { detectRuntime } from './runtime.js'
+import type { TowerRuntime } from './types.js'
 
 /** A running Tower application with access to config, services, and lifecycle control. */
 export interface TowerApp {
-  config: TowerBlueprint;
-  container: ServiceContainer;
-  runtime: TowerRuntime;
-  shutdown(): Promise<void>;
+  config: TowerBlueprint
+  container: ServiceContainer
+  runtime: TowerRuntime
+  shutdown(): Promise<void>
 }
 
 /** Maps registered module names to their typed interfaces. */
 export interface TowerModules {
-  vault: VaultModule;
-  gatehouse: GatehouseModule;
-  courier: CourierModule;
+  vault: VaultModule
+  gatehouse: GatehouseModule
+  courier: CourierModule
 }
 
 /** A fully-resolved Tower instance with typed access to every enabled module. */
@@ -39,28 +39,26 @@ export type TowerInstance = {
  * allowing modules to register dependencies for other modules to consume.
  */
 export async function createTowerApp(config: TowerBlueprint): Promise<TowerApp> {
-  const runtime = detectRuntime();
-  const container = new ServiceContainer();
+  const runtime = detectRuntime()
+  const container = new ServiceContainer()
 
-  container.register("tower.config", config);
-  container.register("tower.runtime", runtime);
+  container.register('tower.config', config)
+  container.register('tower.runtime', runtime)
 
-  const moduleList: TowerModule[] = [];
+  const moduleList: TowerModule[] = []
 
   for (const [name, options] of Object.entries(config.modules)) {
-    const factory = getModuleFactory(name);
+    const factory = getModuleFactory(name)
 
     if (!factory) {
-      throw new Error(
-        `Unknown module "${name}". Is the corresponding @towerjs/${name} package installed?`,
-      );
+      throw new Error(`Unknown module "${name}". Is the corresponding @towerjs/${name} package installed?`)
     }
 
-    const mod = factory(options ?? {});
-    const ctx: TowerInitContext = { container, config, runtime };
-    if (mod.init) await mod.init(ctx);
-    moduleList.push(mod);
-    container.register(`module.${mod.name}`, mod);
+    const mod = factory(options ?? {})
+    const ctx: TowerInitContext = { container, config, runtime }
+    if (mod.init) await mod.init(ctx)
+    moduleList.push(mod)
+    container.register(`module.${mod.name}`, mod)
   }
 
   return {
@@ -69,10 +67,10 @@ export async function createTowerApp(config: TowerBlueprint): Promise<TowerApp> 
     runtime,
     async shutdown() {
       for (const mod of moduleList.reverse()) {
-        if (mod.shutdown) await mod.shutdown();
+        if (mod.shutdown) await mod.shutdown()
       }
     },
-  };
+  }
 }
 
 /**
@@ -99,9 +97,7 @@ export async function createTower(config?: TowerBlueprint): Promise<TowerInstanc
 
   const modules: Record<string, unknown> = {}
   for (const [name] of Object.entries(config.modules)) {
-    modules[name] = app.container.has(name)
-      ? app.container.get(name)
-      : app.container.get(`module.${name}`)
+    modules[name] = app.container.has(name) ? app.container.get(name) : app.container.get(`module.${name}`)
   }
 
   return {
@@ -112,13 +108,13 @@ export async function createTower(config?: TowerBlueprint): Promise<TowerInstanc
 
 async function discoverConfig(): Promise<TowerBlueprint> {
   const [{ existsSync }, { join, dirname }, { pathToFileURL }] = await Promise.all([
-    import("node:fs"),
-    import("node:path"),
-    import("node:url"),
+    import('node:fs'),
+    import('node:path'),
+    import('node:url'),
   ])
   let dir = process.cwd()
   for (let i = 0; i < 20; i++) {
-    for (const name of ["tower.config.ts", "tower.config.js", "tower.config.mjs"]) {
+    for (const name of ['tower.config.ts', 'tower.config.js', 'tower.config.mjs']) {
       const fullPath = join(dir, name)
       if (existsSync(fullPath)) {
         const mod = await import(pathToFileURL(fullPath).href)
@@ -130,8 +126,8 @@ async function discoverConfig(): Promise<TowerBlueprint> {
     dir = parent
   }
   throw new Error(
-    "Could not find tower.config.ts.\n" +
-    "Ensure the file exists in your project root, " +
-    "or pass an explicit config to createTower(config)."
+    'Could not find tower.config.ts.\n' +
+      'Ensure the file exists in your project root, ' +
+      'or pass an explicit config to createTower(config).'
   )
 }
