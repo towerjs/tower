@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-import { createCommand } from "@towerjs/scribe";
+import { createCommand } from '@towerjs/scribe'
 
-await createCommand();
+await createCommand()

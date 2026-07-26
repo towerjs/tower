@@ -47,9 +47,9 @@ tower seed
 ## Programmatic API
 
 ```ts
-import { createCommand } from "@towerjs/scribe/commands/create";
+import { createCommand } from '@towerjs/scribe/commands/create'
 
-await createCommand();
+await createCommand()
 ```
 
 ## Included in

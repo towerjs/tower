@@ -1,4 +1,4 @@
-import type { ProjectState } from "../state.js";
+import type { ProjectState } from '../state.js'
 
 /**
  * Interface for framework adapters that scaffold Tower projects.
@@ -7,7 +7,7 @@ import type { ProjectState } from "../state.js";
  * generating config files, and installing dependencies.
  */
 export interface FrameworkAdapter {
-  name: string;
-  prompt(): Promise<Record<string, unknown>>;
-  generate(state: ProjectState, targetDir: string): Promise<void>;
+  name: string
+  prompt(): Promise<Record<string, unknown>>
+  generate(state: ProjectState, targetDir: string): Promise<void>
 }

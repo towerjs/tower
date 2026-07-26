@@ -4,8 +4,7 @@
   "description": "CLI for scaffolding and managing Tower applications",
   "type": "module",
   "bin": {
-    "tower": "./dist/cli.js",
-    "create-tower": "./dist/cli.js"
+    "tower": "./dist/cli.js"
   },
   "exports": {
     ".": {

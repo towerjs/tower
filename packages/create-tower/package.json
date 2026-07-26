@@ -3,9 +3,15 @@
   "version": "0.1.0",
   "description": "Quick-start scaffolding for new Tower projects — pnpm create tower",
   "type": "module",
-  "bin": { "create-tower": "./dist/index.js" },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b" },
+  "bin": {
+    "create-tower": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
   "dependencies": {
     "@towerjs/scribe": "workspace:*"
   }
