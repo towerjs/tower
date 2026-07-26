@@ -6,10 +6,6 @@ import type { TowerBlueprint } from '@towerjs/blueprint'
 export async function resolveConfig(): Promise<TowerBlueprint> {
   // 1. Generated Scribe bridge or package.json imports
   try {
-    const mod = await import('#tower-config' as string)
-    if (mod?.default) return mod.default
-  } catch {}
-  try {
     const load = Function('return import("#tower-config")') as () => Promise<{ default: TowerBlueprint }>
     const mod = await load()
     if (mod?.default) return mod.default
