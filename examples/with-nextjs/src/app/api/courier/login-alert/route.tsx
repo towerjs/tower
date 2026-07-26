@@ -1,5 +1,5 @@
-import { tower } from "towerjs";
-import { AuthEmailTemplate } from "@/lib/emails/auth-email";
+import { courier } from 'towerjs/courier'
+import { AuthEmailTemplate } from '@/lib/emails/auth-email'
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
@@ -9,15 +9,15 @@ export async function POST(request: Request) {
   }
 
   if (!body.to) {
-    return Response.json({ error: "Missing required field: to" }, { status: 400 })
+    return Response.json({ error: 'Missing required field: to' }, { status: 400 })
   }
 
-  const ip = body.ipAddress ?? "unknown"
-  const userAgent = body.userAgent ?? "unknown"
+  const ip = body.ipAddress ?? 'unknown'
+  const userAgent = body.userAgent ?? 'unknown'
 
-  const result = await tower.courier.email.send({
+  const result = await courier.email.send({
     to: body.to,
-    subject: "New login to your account",
+    subject: 'New login to your account',
     react: (
       <AuthEmailTemplate
         heading="New login detected"

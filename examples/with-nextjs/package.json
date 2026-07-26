@@ -9,6 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
+  "imports": {
+    "#tower-config": "./tower.config.ts"
+  },
   "dependencies": {
     "towerjs": "workspace:*",
     "next": "16.2.11",

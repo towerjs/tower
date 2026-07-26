@@ -1,48 +1,62 @@
-import { getSession } from "@towerjs/gatehouse/next-js";
-import { signOut } from "@/app/actions";
+import { getSession } from 'towerjs/gatehouse/next'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export default async function DashboardPage() {
-  const session = await getSession();
-  if (!session) throw new Error("proxy should have redirected unauthenticated users");
-  const user = session.user;
+  const session = await getSession()
+  if (!session) return null
+  const { user } = session
 
   return (
-    <div className="mx-auto max-w-lg py-12 space-y-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-          >
-            Sign out
-          </button>
-        </form>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Welcome back, {user.name}</p>
       </div>
 
-      <section className="space-y-3">
-        <p><span className="text-neutral-500">Name:</span> {user.name}</p>
-        <p><span className="text-neutral-500">Email:</span> {user.email}</p>
-        <p><span className="text-neutral-500">Verified:</span> {user.emailVerified ? "Yes" : "No"}</p>
-        <p>
-          <span className="text-neutral-500">ID:</span>{" "}
-          <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs">{user.id}</code>
-        </p>
-      </section>
+      <Card className="p-5 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-medium">{user.name}</p>
+            <p className="text-sm text-muted-foreground">{user.email}</p>
+          </div>
+          {user.emailVerified && <Badge variant="success">Verified</Badge>}
+        </div>
+        <div className="flex gap-3 text-sm text-muted-foreground">
+          <span>ID: {user.id.slice(0, 12)}…</span>
+          {user.twoFactorEnabled && <Badge>2FA on</Badge>}
+        </div>
+      </Card>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Courier</h2>
-        <p className="text-sm text-neutral-600">
-          A login alert email was sent when you signed in. Try the Courier API routes:
-        </p>
-        <pre className="rounded bg-neutral-100 p-4 text-xs overflow-x-auto">{`curl -X POST http://localhost:3000/api/courier/email \\
-  -H "content-type: application/json" \\
-  -d '{"to":"${user.email}"}'
-
-curl -X POST http://localhost:3000/api/courier/login-alert \\
-  -H "content-type: application/json" \\
-  -d '{"to":"${user.email}","ipAddress":"203.0.113.10"}'`}</pre>
-      </section>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <a href="/dashboard/settings" className="card-link">
+          <Card className="p-5 space-y-1">
+            <h3 className="font-medium">Settings</h3>
+            <p className="text-sm text-muted-foreground">Update your name and password</p>
+          </Card>
+        </a>
+        <a href="/dashboard/security" className="card-link">
+          <Card className="p-5 space-y-1">
+            <h3 className="font-medium">Security</h3>
+            <p className="text-sm text-muted-foreground">Two-factor auth, API keys, and sessions</p>
+          </Card>
+        </a>
+        <a href="/dashboard/organizations" className="card-link">
+          <Card className="p-5 space-y-1">
+            <h3 className="font-medium">Organizations</h3>
+            <p className="text-sm text-muted-foreground">Manage teams and members</p>
+          </Card>
+        </a>
+        <a href="/dashboard/courier" className="card-link">
+          <Card className="p-5 space-y-1">
+            <h3 className="font-medium">Courier</h3>
+            <p className="text-sm text-muted-foreground">Send test emails, SMS, and push notifications</p>
+          </Card>
+        </a>
+      </div>
     </div>
-  );
+  )
 }

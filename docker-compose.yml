@@ -7,8 +7,11 @@ services:
       POSTGRES_DB: tower
       POSTGRES_USER: tower
       POSTGRES_PASSWORD: tower
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tower']
+      interval: 1s
+      timeout: 3s
+      retries: 15
 
 volumes:
   pgdata:

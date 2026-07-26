@@ -1,10 +1,7 @@
-import { tower } from "towerjs";
+import { vault } from 'towerjs/vault'
 
 export async function GET() {
-  const projects = await tower.vault.db
-    .selectFrom("projects")
-    .selectAll()
-    .execute();
+  const projects = await (vault as any).selectFrom('projects').selectAll().execute()
 
-  return Response.json({ projects });
+  return Response.json({ projects })
 }

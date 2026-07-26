@@ -1,4 +1,4 @@
-import { tower } from "towerjs";
+import { courier } from 'towerjs/courier'
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
@@ -9,17 +9,14 @@ export async function POST(request: Request) {
   }
 
   if (!body.subscription?.endpoint || !body.subscription?.keys?.p256dh || !body.subscription?.keys?.auth) {
-    return Response.json(
-      { error: "Missing required field: subscription with endpoint and keys" },
-      { status: 400 },
-    )
+    return Response.json({ error: 'Missing required field: subscription with endpoint and keys' }, { status: 400 })
   }
 
-  const result = await tower.courier.push.send({
+  const result = await courier.push.send({
     subscription: body.subscription,
-    title: body.title ?? "Tower Courier test push",
-    body: body.body ?? "Push channel is active.",
-    data: body.data ?? { source: "with-nextjs-example" },
+    title: body.title ?? 'Tower Courier test push',
+    body: body.body ?? 'Push channel is active.',
+    data: body.data ?? { source: 'with-nextjs-example' },
   })
 
   return Response.json({ ok: true, provider: result.provider, status: result.status ?? null })

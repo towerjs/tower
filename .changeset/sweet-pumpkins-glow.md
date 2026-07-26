@@ -1,12 +1,12 @@
 ---
-"@towerjs/blueprint": minor
-"@towerjs/courier": minor
-"@towerjs/foundation": minor
-"@towerjs/gatehouse": minor
-"@towerjs/scribe": minor
-"create-tower": minor
-"towerjs": minor
-"@towerjs/vault": minor
+'@towerjs/blueprint': minor
+'@towerjs/courier': minor
+'@towerjs/foundation': minor
+'@towerjs/gatehouse': minor
+'@towerjs/scribe': minor
+'create-tower': minor
+'towerjs': minor
+'@towerjs/vault': minor
 ---
 
 v0.1.0 — public alpha release

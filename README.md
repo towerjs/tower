@@ -18,29 +18,29 @@ Currently supports **Next.js** with more frameworks coming.
 
 ## Modules
 
-| Module | Description | Providers |
-|--------|-------------|-----------|
-| [Foundation](/packages/foundation) | Core runtime, lifecycle, DI, config discovery, runtime detection | — |
-| [Blueprint](/packages/blueprint) | Application definition, module registration, context | — |
-| [Vault](/packages/vault) | Database ORM with Kysely, migrations, seeds | Neon, pg |
-| [Gatehouse](/packages/gatehouse) | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth |
-| [Courier](/packages/courier) | Multi-channel communication — email, SMS, push | Resend, SES, SMTP, Twilio, Web Push |
-| [Scribe](/packages/scribe) | CLI for scaffolding and managing Tower applications | — |
-| [create-tower](/packages/create-tower) | Quick-start project scaffolding | — |
-| [towerjs](/packages/towerjs) | Meta-package that bundles all Tower modules | — |
+| Module                                 | Description                                                         | Providers                           |
+| -------------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
+| [Foundation](/packages/foundation)     | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
+| [Blueprint](/packages/blueprint)       | Application definition, module registration, context                | —                                   |
+| [Vault](/packages/vault)               | Database ORM with Kysely, migrations, seeds                         | Neon, pg                            |
+| [Gatehouse](/packages/gatehouse)       | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
+| [Courier](/packages/courier)           | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
+| [Scribe](/packages/scribe)             | CLI for scaffolding and managing Tower applications                 | —                                   |
+| [create-tower](/packages/create-tower) | Quick-start project scaffolding                                     | —                                   |
+| [towerjs](/packages/towerjs)           | Meta-package that bundles all Tower modules                         | —                                   |
 
 ### On the roadmap
 
-| Module | Description | Providers |
-|--------|-------------|-----------|
-| Beacon | Realtime channels and events | Ably, Pusher |
-| Crane | Background jobs and queues | Inngest, Trigger.dev |
-| Keep | File storage and assets | S3, Cloudflare R2 |
-| Treasury | Billing and payments | Stripe |
-| Observatory | Search and indexing | Meilisearch, Algolia |
-| Watchtower | Logs, metrics, tracing, error tracking, health checks | — |
-| Atlas | File-based routing for frameworks that don't provide it | — |
-| Forge | Build and deployment for environments and infrastructure | — |
+| Module      | Description                                              | Providers            |
+| ----------- | -------------------------------------------------------- | -------------------- |
+| Beacon      | Realtime channels and events                             | Ably, Pusher         |
+| Crane       | Background jobs and queues                               | Inngest, Trigger.dev |
+| Keep        | File storage and assets                                  | S3, Cloudflare R2    |
+| Treasury    | Billing and payments                                     | Stripe               |
+| Observatory | Search and indexing                                      | Meilisearch, Algolia |
+| Watchtower  | Logs, metrics, tracing, error tracking, health checks    | —                    |
+| Atlas       | File-based routing for frameworks that don't provide it  | —                    |
+| Forge       | Build and deployment for environments and infrastructure | —                    |
 
 ## Why Tower?
 

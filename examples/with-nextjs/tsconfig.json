@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,41 +19,16 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "towerjs": [
-        "../../packages/towerjs/src/index.ts"
-      ],
-      "@towerjs/foundation": [
-        "../../packages/foundation/src/index.ts"
-      ],
-      "@towerjs/blueprint": [
-        "../../packages/blueprint/src/index.ts"
-      ],
-      "@towerjs/vault": [
-        "../../packages/vault/src/index.ts"
-      ],
-      "@towerjs/gatehouse": [
-        "../../packages/gatehouse/src/index.ts"
-      ],
-      "@towerjs/gatehouse/next-js": [
-        "../../packages/gatehouse/src/frameworks/next-js.ts"
-      ],
-      "@towerjs/gatehouse/next": [
-        "../../packages/gatehouse/src/frameworks/next-js.ts"
-      ]
+      "@/*": ["./src/*"],
+      "towerjs": ["../../packages/towerjs/dist/index"],
+      "@towerjs/foundation": ["../../packages/foundation/dist/index"],
+      "@towerjs/blueprint": ["../../packages/blueprint/dist/index"],
+      "@towerjs/vault": ["../../packages/vault/dist/index"],
+      "@towerjs/gatehouse": ["../../packages/gatehouse/dist/index"],
+      "@towerjs/gatehouse/next-js": ["../../packages/gatehouse/dist/frameworks/next-js"],
+      "@towerjs/gatehouse/next": ["../../packages/gatehouse/dist/frameworks/next-js"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "**/*.mts"],
+  "exclude": ["node_modules"]
 }
