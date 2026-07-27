@@ -17,7 +17,6 @@ const TEST_DB_URL = 'postgres://tower:tower@localhost:5432/tower'
 async function ensureTestDatabase(): Promise<void> {
   if (process.env.DATABASE_URL) return
   if (!existsSync(COMPOSE_FILE)) return
-  if (process.env.CI) return
 
   try {
     execSync('docker compose up -d postgres --wait', {
