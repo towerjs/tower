@@ -1,7 +1,6 @@
 import type { TowerConfig, TowerModule, TowerContext, ModuleFactory, TowerRuntime } from './types.js'
 import { ServiceContainer } from './container.js'
 import { detectRuntime } from './runtime.js'
-import { resolveConfig } from './resolve-config.js'
 import { resolveDependencyOrder } from './dependency-graph.js'
 
 export interface TowerApp {
@@ -110,7 +109,8 @@ export async function createTower(
   getModuleFactory?: (name: string) => ModuleFactory | undefined
 ): Promise<TowerApp & Record<string, unknown>> {
   if (!config) {
-    config = await resolveConfig()
+    const { resolveConfig: _resolveConfig } = await import('./resolve-config.js')
+    config = await _resolveConfig()
   }
 
   const app = await createTowerApp(config, getModuleFactory)

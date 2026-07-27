@@ -101,7 +101,7 @@ export function defineCourier(
     init(ctx: TowerContext) {
       return this.initialize!(ctx)
     },
-  } satisfies TowerModule & CourierModule
+  } satisfies TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> }
 }
 
 async function createCourier(config: CourierConfig): Promise<CourierModule> {

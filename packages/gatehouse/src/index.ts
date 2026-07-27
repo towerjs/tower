@@ -364,7 +364,7 @@ export function defineGatehouse(
     init(ctx: TowerContext) {
       return this.initialize!(ctx)
     },
-  } satisfies TowerModule & GatehouseModule
+  } satisfies TowerModule & GatehouseModule & { init: (ctx: TowerContext) => Promise<void> }
 }
 
 registerModule({
