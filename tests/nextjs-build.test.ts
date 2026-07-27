@@ -18,7 +18,7 @@ describe('Next.js build acceptance', () => {
     }
     // Build workspace deps first (edge, etc.) so the example app can resolve their dist
     execSync('pnpm build', { cwd: ROOT_DIR, stdio: 'pipe' })
-  })
+  }, 180_000)
 
   it('builds the example app', ({ skip }) => {
     if (!runBuildTest) skip()
