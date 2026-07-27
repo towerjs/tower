@@ -127,7 +127,7 @@ ${modules}
 }
 
 function authRoute(): string {
-  return `export { GET, POST } from "@towerjs/gatehouse/next";
+  return `export { GET, POST } from "towerjs/gatehouse/next";
 `
 }
 

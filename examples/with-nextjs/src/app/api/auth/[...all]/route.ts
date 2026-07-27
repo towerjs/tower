@@ -1,1 +1,1 @@
-export { GET, POST } from '@towerjs/gatehouse/next'
+export { GET, POST } from 'towerjs/gatehouse/next'
