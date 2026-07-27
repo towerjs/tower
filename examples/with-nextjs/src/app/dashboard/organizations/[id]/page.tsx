@@ -15,7 +15,7 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">{org.name}</h1>
-          <p className="mt-1 text-sm text-neutral-500">{org.slug}</p>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{org.slug}</p>
         </div>
       </div>
 
@@ -49,10 +49,10 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
         </CardHeader>
         <div className="space-y-3">
           {(org.members ?? []).map((member: any) => (
-            <div key={member.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3">
+            <div key={member.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
               <div>
-                <p className="text-sm font-medium text-neutral-900">{member.user?.name ?? 'Unknown'}</p>
-                <p className="text-xs text-neutral-500">
+                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{member.user?.name ?? 'Unknown'}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   {member.role} &middot; {member.user?.email ?? ''}
                 </p>
               </div>
@@ -84,13 +84,13 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
             required
           />
           <div>
-            <label htmlFor="invite-role" className="block text-sm font-medium text-neutral-700 mb-1.5">
+            <label htmlFor="invite-role" className="block text-sm font-medium text-neutral-700 mb-1.5 dark:text-neutral-300">
               Role
             </label>
             <select
               id="invite-role"
               name="role"
-              className="block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              className="block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:focus:border-neutral-100 dark:focus:ring-neutral-100"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -108,10 +108,10 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
           </CardHeader>
           <div className="space-y-3">
             {(org.invitations as any[]).map((inv: any) => (
-              <div key={inv.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3">
+              <div key={inv.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
                 <div>
-                  <p className="text-sm font-medium text-neutral-900">{inv.email}</p>
-                  <p className="text-xs text-neutral-500">Role: {inv.role}</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{inv.email}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Role: {inv.role}</p>
                 </div>
                 <form action={cancelInvitation}>
                   <input type="hidden" name="invitationId" value={inv.id} />

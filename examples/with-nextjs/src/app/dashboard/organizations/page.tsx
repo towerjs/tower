@@ -12,7 +12,7 @@ export default async function OrganizationsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Organizations</h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
           {orgs.length > 0
             ? `You're a member of ${orgs.length} organization(s).`
             : 'Create your first organization to get started.'}
@@ -23,9 +23,9 @@ export default async function OrganizationsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {orgs.map((org) => (
             <Link key={org.id} href={`/dashboard/organizations/${org.id}`}>
-              <Card className="p-5 hover:border-primary/50 transition-colors">
+              <Card className="p-5 hover:border-neutral-500 transition-colors dark:hover:border-neutral-400">
                 <h3 className="font-medium">{org.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{org.slug}</p>
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{org.slug}</p>
               </Card>
             </Link>
           ))}

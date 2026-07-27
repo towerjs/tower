@@ -77,18 +77,6 @@ export const generateBackupCodes = action(async (formData: FormData) => {
   return codes
 })
 
-export const createApiKey = action(async (formData: FormData) => {
-  const key = await gatehouse.apiKeys.create({
-    name: formData.get('name') as string,
-    userId: formData.get('userId') as string,
-  })
-  return key
-})
-
-export const revokeApiKey = action(async (formData: FormData) => {
-  await gatehouse.apiKeys.delete(formData.get('keyId') as string)
-})
-
 export const revokeSession = action(async (formData: FormData) => {
   await gatehouse.sessions.revoke(formData.get('token') as string)
 })
@@ -104,22 +92,4 @@ export const sendCourierEmail = action(async (formData: FormData) => {
     text: (formData.get('body') as string) || 'This is a test email from Tower.',
   })
   return { id: result.id, provider: result.provider }
-})
-
-export const sendCourierSms = action(async (formData: FormData) => {
-  const result = await courier.sms.send({
-    to: formData.get('to') as string,
-    body: (formData.get('body') as string) || 'This is a test SMS from Tower.',
-  })
-  return { id: result.id, provider: result.provider, status: result.status }
-})
-
-export const sendCourierPush = action(async (formData: FormData) => {
-  const subscription = JSON.parse(formData.get('subscription') as string)
-  const result = await courier.push.send({
-    subscription,
-    title: (formData.get('title') as string) || 'Tower test',
-    body: (formData.get('body') as string) || 'Push is working.',
-  })
-  return { provider: result.provider, status: result.status }
 })

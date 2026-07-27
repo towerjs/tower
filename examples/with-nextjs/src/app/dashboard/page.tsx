@@ -12,21 +12,21 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back, {user.name}</p>
+        <p className="text-neutral-500 mt-1 dark:text-neutral-400">Welcome back, {user.name}</p>
       </div>
 
       <Card className="p-5 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary">
+          <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-lg font-semibold text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div>
             <p className="font-medium">{user.name}</p>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{user.email}</p>
           </div>
           {user.emailVerified && <Badge variant="success">Verified</Badge>}
         </div>
-        <div className="flex gap-3 text-sm text-muted-foreground">
+        <div className="flex gap-3 text-sm text-neutral-500 dark:text-neutral-400">
           <span>ID: {user.id.slice(0, 12)}…</span>
           {user.twoFactorEnabled && <Badge>2FA on</Badge>}
         </div>
@@ -36,25 +36,25 @@ export default async function DashboardPage() {
         <Link href="/dashboard/settings" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Settings</h3>
-            <p className="text-sm text-muted-foreground">Update your name and password</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Update your name and password</p>
           </Card>
         </Link>
         <Link href="/dashboard/security" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Security</h3>
-            <p className="text-sm text-muted-foreground">Two-factor auth, API keys, and sessions</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Two-factor auth, passkeys, and sessions</p>
           </Card>
         </Link>
         <Link href="/dashboard/organizations" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Organizations</h3>
-            <p className="text-sm text-muted-foreground">Manage teams and members</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Manage teams and members</p>
           </Card>
         </Link>
         <Link href="/dashboard/courier" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Courier</h3>
-            <p className="text-sm text-muted-foreground">Send test emails, SMS, and push notifications</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Send test emails through the configured provider</p>
           </Card>
         </Link>
       </div>

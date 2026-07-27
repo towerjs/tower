@@ -6,8 +6,6 @@ import {
   verifyTwoFactor,
   disableTwoFactor,
   generateBackupCodes,
-  createApiKey,
-  revokeApiKey,
   revokeSession,
   revokeOtherSessions,
 } from '@/app/actions'
@@ -28,24 +26,16 @@ type SecurityContentProps = {
     userAgent?: string | null
     createdAt?: Date | string
   }>
-  apiKeys: Array<{
-    id: string
-    name: string
-    prefix: string
-    createdAt: Date | string
-  }>
 }
 
-export function SecurityContent({ user, sessions, apiKeys }: SecurityContentProps) {
+export function SecurityContent({ user, sessions }: SecurityContentProps) {
   const [tab, setTab] = useState<string>('2fa')
   const [totpQr, setTotpQr] = useState<string | null>(null)
   const [backupCodesList, setBackupCodesList] = useState<string[] | null>(null)
-  const [newKey, setNewKey] = useState<{ id: string; name: string; key: string } | null>(null)
 
   const TABS = [
     { id: '2fa', label: 'Two-factor' },
     { id: 'passkeys', label: 'Passkeys' },
-    { id: 'api-keys', label: 'API keys' },
     { id: 'sessions', label: 'Sessions' },
   ]
 
@@ -53,17 +43,17 @@ export function SecurityContent({ user, sessions, apiKeys }: SecurityContentProp
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Security</h1>
-        <p className="mt-1 text-sm text-neutral-500">Manage your security settings</p>
+        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Manage your security settings</p>
       </div>
 
-      <div className="flex gap-1 rounded-lg border border-neutral-200 p-0.5">
+      <div className="flex gap-1 rounded-lg border border-neutral-200 p-0.5 dark:border-neutral-800">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              tab === t.id ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:text-neutral-900'
+              tab === t.id ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900' : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
             }`}
           >
             {t.label}
@@ -98,11 +88,11 @@ export function SecurityContent({ user, sessions, apiKeys }: SecurityContentProp
 
             {totpQr && (
               <div className="space-y-4">
-                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-                  <p className="mb-2 text-sm font-medium text-neutral-700">
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
+                  <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Scan this QR code in your authenticator app:
                   </p>
-                  <p className="break-all rounded bg-white p-3 text-xs text-neutral-600 font-mono">{totpQr}</p>
+                  <p className="break-all rounded bg-white p-3 text-xs text-neutral-600 font-mono dark:bg-neutral-950 dark:text-neutral-400">{totpQr}</p>
                 </div>
                 <form
                   action={async (fd: FormData) => {
@@ -172,7 +162,7 @@ export function SecurityContent({ user, sessions, apiKeys }: SecurityContentProp
               </CardHeader>
               <div className="space-y-2">
                 {backupCodesList.map((code, i) => (
-                  <div key={i} className="rounded bg-neutral-100 px-3 py-2 font-mono text-sm">
+                  <div key={i} className="rounded bg-neutral-100 px-3 py-2 font-mono text-sm dark:bg-neutral-800">
                     {code}
                   </div>
                 ))}
@@ -196,87 +186,11 @@ export function SecurityContent({ user, sessions, apiKeys }: SecurityContentProp
             <CardTitle>Passkeys</CardTitle>
             <CardDescription>Use biometric or security key authentication</CardDescription>
           </CardHeader>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Passkey registration requires the WebAuthn browser API. Add a passkey from your browser&apos;s autofill
             settings.
           </p>
         </Card>
-      )}
-
-      {tab === 'api-keys' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create API key</CardTitle>
-              <CardDescription>Generate a new API key for programmatic access</CardDescription>
-            </CardHeader>
-            <form
-              action={async (fd: FormData) => {
-                fd.set('userId', user.id)
-                const key = await createApiKey(fd)
-                setNewKey(key)
-              }}
-              className="space-y-4"
-            >
-              <Input id="key-name" name="name" label="Key name" placeholder="e.g. Development" required />
-              <Button type="submit">Create key</Button>
-            </form>
-          </Card>
-
-          {newKey && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your new API key</CardTitle>
-                <CardDescription>Copy this key now — it won&apos;t be shown again.</CardDescription>
-              </CardHeader>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded bg-neutral-100 px-3 py-2 font-mono text-sm break-all">
-                  {newKey.key}
-                </code>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(newKey.key)
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
-              <Button variant="ghost" size="sm" className="mt-2" onClick={() => setNewKey(null)}>
-                Dismiss
-              </Button>
-            </Card>
-          )}
-
-          {apiKeys.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your API keys</CardTitle>
-                <CardDescription>Revoke keys that are no longer needed</CardDescription>
-              </CardHeader>
-              <div className="space-y-3">
-                {apiKeys.map((key) => (
-                  <div
-                    key={key.id}
-                    className="flex items-center justify-between rounded-lg border border-neutral-200 p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-neutral-900">{key.name}</p>
-                      <p className="text-xs text-neutral-500">{key.prefix}...</p>
-                    </div>
-                    <form action={revokeApiKey}>
-                      <input type="hidden" name="keyId" value={key.id} />
-                      <Button type="submit" variant="ghost" size="sm">
-                        Revoke
-                      </Button>
-                    </form>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-        </div>
       )}
 
       {tab === 'sessions' && (
@@ -287,12 +201,12 @@ export function SecurityContent({ user, sessions, apiKeys }: SecurityContentProp
           </CardHeader>
           <div className="space-y-3">
             {sessions.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3">
+              <div key={s.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
                 <div>
-                  <p className="text-sm font-medium text-neutral-900">
+                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                     {s.userAgent ? s.userAgent.split('/')[0] || 'Unknown device' : 'Unknown device'}
                   </p>
-                  <p className="text-xs text-neutral-500">{s.ipAddress || 'Unknown IP'}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{s.ipAddress || 'Unknown IP'}</p>
                 </div>
                 <form action={revokeSession}>
                   <input type="hidden" name="token" value={s.token} />

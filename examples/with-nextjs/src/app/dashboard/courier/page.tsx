@@ -1,21 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import { sendCourierEmail, sendCourierSms, sendCourierPush } from '@/app/actions'
+import { sendCourierEmail } from '@/app/actions'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+type SendResult = {
+  id?: string
+  provider: string
+}
+
 export default function CourierDemoPage() {
-  const [emailResult, setEmailResult] = useState<any>(null)
-  const [smsResult, setSmsResult] = useState<any>(null)
-  const [pushResult, setPushResult] = useState<any>(null)
+  const [emailResult, setEmailResult] = useState<SendResult | null>(null)
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Courier</h1>
-        <p className="mt-1 text-sm text-neutral-500">Test Tower&apos;s communication channels</p>
+        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Test Tower&apos;s email channel</p>
       </div>
 
       <Card>
@@ -36,60 +39,8 @@ export default function CourierDemoPage() {
           <Button type="submit">Send email</Button>
         </form>
         {emailResult && (
-          <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+          <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-400">
             Sent via {emailResult.provider} (id: {emailResult.id ?? 'N/A'})
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>SMS</CardTitle>
-          <CardDescription>Send an SMS through the configured provider</CardDescription>
-        </CardHeader>
-        <form
-          action={async (fd: FormData) => {
-            const result = await sendCourierSms(fd)
-            setSmsResult(result)
-          }}
-          className="space-y-4"
-        >
-          <Input id="sms-to" name="to" type="tel" label="Phone number" placeholder="+1234567890" required />
-          <Input id="sms-body" name="body" label="Message" placeholder="Hello from Tower!" />
-          <Button type="submit">Send SMS</Button>
-        </form>
-        {smsResult && (
-          <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
-            Sent via {smsResult.provider} (status: {smsResult.status ?? 'N/A'})
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Web Push</CardTitle>
-          <CardDescription>Send a push notification (requires a stored subscription)</CardDescription>
-        </CardHeader>
-        <form
-          action={async (fd: FormData) => {
-            const result = await sendCourierPush(fd)
-            setPushResult(result)
-          }}
-          className="space-y-4"
-        >
-          <Input id="push-title" name="title" label="Title" placeholder="Tower Notification" />
-          <Input id="push-body" name="body" label="Body" placeholder="Hello from Tower Push!" />
-          <Input
-            id="push-sub"
-            name="subscription"
-            label="Push subscription (JSON)"
-            placeholder='{"endpoint":"...","keys":{"p256dh":"...","auth":"..."}}'
-          />
-          <Button type="submit">Send push</Button>
-        </form>
-        {pushResult && (
-          <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
-            Sent via {pushResult.provider} (status: {pushResult.status ?? 'N/A'})
           </div>
         )}
       </Card>

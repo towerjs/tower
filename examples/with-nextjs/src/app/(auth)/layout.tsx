@@ -8,7 +8,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           <Link href="/" className="text-xl font-bold tracking-tight">
             Tower
           </Link>
-          <p className="mt-1 text-sm text-neutral-500">+ Next.js</p>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">+ Next.js</p>
         </div>
         {children}
       </div>

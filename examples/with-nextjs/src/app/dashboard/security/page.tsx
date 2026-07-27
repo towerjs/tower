@@ -5,7 +5,6 @@ export default async function SecurityPage() {
   const session = await gatehouse.getSession()
   if (!session) return null
   const userSessions = await gatehouse.getUserSessions()
-  const apiKeys = await gatehouse.getApiKeys(session.user.id)
 
   return (
     <SecurityContent
@@ -15,7 +14,6 @@ export default async function SecurityPage() {
         twoFactorEnabled: session!.user.twoFactorEnabled,
       }}
       sessions={userSessions}
-      apiKeys={apiKeys}
     />
   )
 }
