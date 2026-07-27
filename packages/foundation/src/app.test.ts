@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
-import { registerModule, resetModuleFactories } from '@towerjs/blueprint'
+import { registerModule, getModuleFactory } from '@towerjs/blueprint'
+import { resetModuleFactories } from '@towerjs/blueprint/internal'
 import { createTowerApp } from './app.js'
 
 beforeAll(() => {
@@ -15,23 +16,19 @@ afterAll(() => {
   resetModuleFactories()
 })
 
+function modules(m: Record<string, unknown>) {
+  return { modules: m }
+}
+
 describe('createTowerApp', () => {
   it('initializes configured modules', async () => {
-    const app = await createTowerApp({
-      modules: { mock: {} },
-    })
-
+    const app = await createTowerApp(modules({ mock: {} }), getModuleFactory)
     expect(app.container.get('mock')).toEqual({ value: 42 })
   })
 
   it('exposes the config on the app', async () => {
-    const app = await createTowerApp({
-      modules: { mock: {} },
-    })
-
-    expect(app.config).toEqual({
-      modules: { mock: {} },
-    })
+    const app = await createTowerApp(modules({ mock: {} }), getModuleFactory)
+    expect(app.config).toEqual(modules({ mock: {} }))
   })
 
   it('calls shutdown in reverse order', async () => {
@@ -51,28 +48,19 @@ describe('createTowerApp', () => {
       },
     }))
 
-    const app = await createTowerApp({
-      modules: { alpha: {}, beta: {}, mock: {} },
-    })
-
+    const app = await createTowerApp(modules({ alpha: {}, beta: {}, mock: {} }), getModuleFactory)
     await app.shutdown()
-
     expect(order).toEqual([2, 1])
   })
 
   it('throws for an unknown module', async () => {
-    await expect(
-      createTowerApp({
-        modules: { nonexistent: {} },
-      })
-    ).rejects.toThrow('Unknown module "nonexistent"')
+    await expect(createTowerApp(modules({ nonexistent: {} }), getModuleFactory)).rejects.toThrow(
+      'Unknown module "nonexistent"'
+    )
   })
 
   it('detects and exposes the runtime', async () => {
-    const app = await createTowerApp({
-      modules: { mock: {} },
-    })
-
+    const app = await createTowerApp(modules({ mock: {} }), getModuleFactory)
     expect(app.runtime.name).toBe('node-server')
     expect(app.runtime.isServerless).toBe(false)
   })
@@ -85,7 +73,7 @@ describe('createTowerApp', () => {
       },
     }))
 
-    await expect(createTowerApp({ modules: { exploder: {} } })).rejects.toThrow('init failed')
+    await expect(createTowerApp(modules({ exploder: {} }), getModuleFactory)).rejects.toThrow('init failed')
   })
 
   it('shutdown handles modules without shutdown hook', async () => {
@@ -94,7 +82,7 @@ describe('createTowerApp', () => {
       async init() {},
     }))
 
-    const app = await createTowerApp({ modules: { quiet: {}, mock: {} } })
+    const app = await createTowerApp(modules({ quiet: {}, mock: {} }), getModuleFactory)
     await expect(app.shutdown()).resolves.toBeUndefined()
   })
 })

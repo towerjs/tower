@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { registerModule, resetModuleFactories } from '@towerjs/blueprint'
+import { registerModule, getModuleFactory } from '@towerjs/blueprint'
+import { resetModuleFactories } from '@towerjs/blueprint/internal'
 
 const mocks = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
@@ -33,13 +34,13 @@ describe('createTower with auto-discovery', () => {
       async init() {},
     }))
 
-    const result = await createTower({ modules: { test: {} } })
+    const result = await createTower({ modules: { test: {} } }, getModuleFactory)
 
     expect(result).toBeDefined()
     expect(mocks.mockExistsSync).not.toHaveBeenCalled()
   })
 
-  it('returns TowerInstance with runtime and module accessors', async () => {
+  it('returns TowerApp with runtime and container', async () => {
     registerModule('alpha', () => ({
       name: 'alpha',
       async init(ctx) {
@@ -47,9 +48,9 @@ describe('createTower with auto-discovery', () => {
       },
     }))
 
-    const result = await createTower({ modules: { alpha: {} } })
+    const result = await createTower({ modules: { alpha: {} } }, getModuleFactory)
 
     expect(result.runtime).toEqual({ name: 'node-server', isServerless: false })
-    expect((result as any).alpha).toEqual({ val: 1 })
+    expect(result.container.get('alpha')).toEqual({ val: 1 })
   })
 })

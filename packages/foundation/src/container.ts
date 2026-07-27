@@ -1,11 +1,5 @@
-import type { ServiceRegistry } from '@towerjs/blueprint'
+import type { ServiceRegistry } from './types.js'
 
-/**
- * Simple service container used during application initialization.
- *
- * Supports direct instance registration and lazy factory registration.
- * Once resolved, factory-built instances are cached as singletons.
- */
 export class ServiceContainer implements ServiceRegistry {
   private instances = new Map<string, unknown>()
   private factories = new Map<string, () => unknown>()

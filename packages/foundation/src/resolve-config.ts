@@ -1,38 +1,67 @@
-import { existsSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { pathToFileURL } from 'node:url'
-import type { TowerBlueprint } from '@towerjs/blueprint'
+import type { TowerConfig } from './types.js'
 
-export async function resolveConfig(): Promise<TowerBlueprint> {
-  // 1. Generated Scribe bridge or package.json imports
-  try {
-    const load = Function('return import("#tower-config")') as () => Promise<{ default: TowerBlueprint }>
-    const mod = await load()
-    if (mod?.default) return mod.default
-  } catch {}
+type ConfigProvider = () => Promise<TowerConfig | undefined>
 
-  // 2. Environment variable
+const configProviders: ConfigProvider[] = []
+
+export function registerConfigProvider(provider: ConfigProvider): void {
+  configProviders.push(provider)
+}
+
+const CONFIG_NAMES = ['tower.config.ts', 'tower.config.js', 'tower.config.mjs', 'tower.config.mts']
+
+export async function resolveConfig(): Promise<TowerConfig> {
+  for (const provider of configProviders) {
+    try {
+      const config = await provider()
+      if (config) return config
+    } catch {}
+  }
+
   if (process.env.TOWER_CONFIG_PATH) {
     try {
-      const load = Function('return import("' + process.env.TOWER_CONFIG_PATH + '")') as () => Promise<{
-        default: TowerBlueprint
-      }>
-      const mod = await load()
+      const url = process.env.TOWER_CONFIG_PATH
+      const mod = (await Function('return import("' + url + '")')()) as { default: TowerConfig }
       if (mod?.default) return mod.default
     } catch {}
   }
 
-  // 3. Filesystem discovery (Node.js fallback)
   return discoverConfig()
 }
 
-async function discoverConfig(): Promise<TowerBlueprint> {
+async function discoverConfig(): Promise<TowerConfig> {
+  let existsSync: (path: string) => boolean
+  let join: (...paths: string[]) => string
+  let dirname: (path: string) => string
+  let pathToFileURL: (path: string) => URL
+  try {
+    ;[{ existsSync }, { join, dirname }, { pathToFileURL }] = await Promise.all([
+      (Function('return import("fs")')() as Promise<typeof import('node:fs')>).then((m) => ({
+        existsSync: m.existsSync,
+      })),
+      (Function('return import("path")')() as Promise<typeof import('node:path')>).then((m) => ({
+        join: m.join,
+        dirname: m.dirname,
+      })),
+      (Function('return import("url")')() as Promise<typeof import('node:url')>).then((m) => ({
+        pathToFileURL: m.pathToFileURL,
+      })),
+    ])
+  } catch {
+    throw new Error(
+      'Could not find tower.config.\n' +
+        'On Edge Runtime, pass an explicit config to initTower(config), ' +
+        'or use create-tower to set up automatic config discovery.'
+    )
+  }
   let dir = process.cwd()
   for (let i = 0; i < 20; i++) {
-    for (const name of ['tower.config.ts', 'tower.config.js', 'tower.config.mjs']) {
+    for (const name of CONFIG_NAMES) {
       const fullPath = join(dir, name)
       if (existsSync(fullPath)) {
-        const mod = await import(pathToFileURL(fullPath).href)
+        const mod = (await Function('return import("' + pathToFileURL(fullPath).href + '")')()) as {
+          default: TowerConfig
+        }
         return mod.default ?? mod
       }
     }

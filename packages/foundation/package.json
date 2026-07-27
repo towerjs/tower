@@ -16,12 +16,6 @@
   "scripts": {
     "build": "tsc -b"
   },
-  "dependencies": {
-    "@towerjs/blueprint": "workspace:*",
-    "@towerjs/vault": "workspace:*",
-    "@towerjs/gatehouse": "workspace:*",
-    "@towerjs/courier": "workspace:*"
-  },
   "devDependencies": {
     "@types/node": "^26"
   }

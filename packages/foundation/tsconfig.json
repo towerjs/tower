@@ -7,11 +7,5 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "exclude": ["**/*.test.ts"],
-  "references": [
-    { "path": "../blueprint" },
-    { "path": "../vault" },
-    { "path": "../gatehouse" },
-    { "path": "../courier" }
-  ]
+  "exclude": ["**/*.test.ts"]
 }
