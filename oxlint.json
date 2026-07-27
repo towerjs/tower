@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "rules": {
+    "correctness": "warn",
+    "suspicious": "warn",
+    "style/noUnusedVariable": "warn"
+  },
+  "ignorePatterns": ["dist", ".next", "node_modules", "*.js", "*.js.map", "*.d.ts", "*.d.ts.map"]
+}
