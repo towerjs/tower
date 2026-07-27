@@ -1,12 +1,23 @@
-import webpush from 'web-push'
 import type { PushSendParams, PushSendResult, WebPushConfig } from '../types.js'
 
-/** Push provider that sends via the Web Push protocol (RFC 8030). */
 export class WebPushProvider {
+  private config: WebPushConfig
+  private _initialized = false
+
   constructor(config: WebPushConfig) {
-    const subject = config.vapid?.subject ?? process.env.WEB_PUSH_VAPID_SUBJECT
-    const publicKey = config.vapid?.publicKey ?? process.env.WEB_PUSH_VAPID_PUBLIC_KEY
-    const privateKey = config.vapid?.privateKey ?? process.env.WEB_PUSH_VAPID_PRIVATE_KEY
+    this.config = config
+  }
+
+  private async ensureInitialized(): Promise<void> {
+    if (this._initialized) return
+    const subject =
+      this.config.vapid?.subject ?? (typeof process !== 'undefined' ? process.env.WEB_PUSH_VAPID_SUBJECT : undefined)
+    const publicKey =
+      this.config.vapid?.publicKey ??
+      (typeof process !== 'undefined' ? process.env.WEB_PUSH_VAPID_PUBLIC_KEY : undefined)
+    const privateKey =
+      this.config.vapid?.privateKey ??
+      (typeof process !== 'undefined' ? process.env.WEB_PUSH_VAPID_PRIVATE_KEY : undefined)
 
     if (!subject || !publicKey || !privateKey) {
       throw new Error(
@@ -14,10 +25,14 @@ export class WebPushProvider {
       )
     }
 
+    const webpush = await import('web-push')
     webpush.setVapidDetails(subject, publicKey, privateKey)
+    this._initialized = true
   }
 
   async send(params: PushSendParams): Promise<PushSendResult> {
+    await this.ensureInitialized()
+    const webpush = await import('web-push')
     const payload = buildPayload(params)
     const result = await webpush.sendNotification(params.subscription, payload, {
       TTL: params.ttl,

@@ -1,19 +1,29 @@
-import type { TowerModule, TowerInitContext } from '@towerjs/blueprint'
+import type { TowerModule, TowerContext } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
-import { Kysely, PostgresDialect } from 'kysely'
 import type { Migrator } from 'kysely/migration'
-import type { VaultConfig, VaultDb, VaultModule } from './types.js'
-import { createMigrator, migrateToLatest } from './migrate.js'
-import { runSeeds } from './seed.js'
+import type { VaultConfig, VaultDb, VaultModule, VaultMigrationConfig, VaultSeedConfig } from './types.js'
 
-export type { VaultConfig, VaultDb, VaultModule, VaultSeedConfig } from './types.js'
-export { createMigrator, migrateToLatest } from './migrate.js'
-export { runSeeds } from './seed.js'
+export type { VaultConfig, VaultDb, VaultModule, VaultSeedConfig, VaultMigrationConfig } from './types.js'
+
+export async function createMigrator(db: VaultDb, config: VaultMigrationConfig): Promise<Migrator> {
+  const mod = await (Function('return import("./migrate.js")')() as Promise<typeof import('./migrate.js')>)
+  return mod.createMigrator(db, config)
+}
+
+export async function migrateToLatest(db: VaultDb, config: VaultMigrationConfig): Promise<void> {
+  const mod = await (Function('return import("./migrate.js")')() as Promise<typeof import('./migrate.js')>)
+  return mod.migrateToLatest(db, config)
+}
+
+export async function runSeeds(db: VaultDb, config: VaultSeedConfig, name?: string): Promise<{ applied: string[] }> {
+  const mod = await (Function('return import("./seed.js")')() as Promise<typeof import('./seed.js')>)
+  return mod.runSeeds(db, config, name)
+}
 
 let _vault: VaultModule | undefined
 
 function resolveConnectionString(config?: VaultConfig): string {
-  return config?.connectionString ?? process.env.DATABASE_URL ?? ''
+  return config?.connectionString ?? (typeof process !== 'undefined' ? process.env.DATABASE_URL : undefined) ?? ''
 }
 
 function resolveProvider(config?: VaultConfig): 'neon' | 'pg' {
@@ -31,8 +41,16 @@ function resolveSsl(
   if (connectionString.includes('sslmode=require') || connectionString.includes('sslmode=no-verify')) {
     return connectionString.includes('sslmode=no-verify') ? { rejectUnauthorized: false } : true
   }
-  if (process.env.NODE_ENV === 'production') return true
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') return true
   return undefined
+}
+
+async function loadKysely(): Promise<{
+  Kysely: new (config: { dialect: import('kysely').PostgresDialect }) => import('kysely').Kysely<any>
+  PostgresDialect: new (config: { pool: any }) => import('kysely').PostgresDialect
+}> {
+  const fn = Function('return import("kysely")') as () => Promise<typeof import('kysely')>
+  return fn()
 }
 
 async function createPool(
@@ -52,7 +70,10 @@ async function createPool(
   const ssl = resolveSsl(poolConfig, connectionString)
 
   if (provider === 'neon') {
-    const { Pool, neonConfig } = await import('@neondatabase/serverless')
+    const { Pool, neonConfig } = await (Function('return import("@neondatabase/serverless")')() as Promise<{
+      Pool: any
+      neonConfig: any
+    }>)
     neonConfig.fetchConnectionCache = true
     if (isEdge) neonConfig.poolQueryViaFetch = true
     const neonPool = ssl !== undefined ? new Pool({ ...config, ssl }) : new Pool(config)
@@ -69,7 +90,7 @@ async function createPool(
     )
   }
 
-  const { Pool: PgPool } = await import('pg')
+  const { Pool: PgPool } = await (Function('return import("pg")')() as Promise<{ Pool: any }>)
   const pool = new PgPool(ssl !== undefined ? { ...config, ssl } : config)
 
   pool.on('error', () => {
@@ -79,7 +100,7 @@ async function createPool(
   return pool
 }
 
-async function validateConnection(pool: any, provider: 'neon' | 'pg'): Promise<void> {
+async function validateConnection(pool: any, _provider: 'neon' | 'pg'): Promise<void> {
   const client = await pool.connect()
   try {
     await client.query('SELECT 1')
@@ -111,6 +132,26 @@ function buildProxyUnconfigured(): VaultModule {
       return () => {
         throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
       }
+    },
+  })
+}
+
+function buildProxyDb(db: VaultDb, pool: { end(): Promise<void> }): VaultModule {
+  return new Proxy(db as unknown as VaultModule, {
+    get(target, prop) {
+      if (prop === 'db') return db
+      if (prop === 'close') return () => pool.end()
+      if (prop === 'transaction') {
+        return <T>(fn: (trx: VaultDb) => Promise<T>) => db.transaction().execute(fn)
+      }
+      if (prop === 'migrate' || prop === 'migrator' || prop === 'seed') {
+        return () => {
+          throw new Error(
+            'Migrations and seeds are not available on Edge Runtime. Run them locally or in a Node.js environment.'
+          )
+        }
+      }
+      return (target as any)[prop]
     },
   })
 }
@@ -159,21 +200,17 @@ export function createVaultModule(options?: VaultConfig): TowerModule {
   return {
     name: 'vault',
 
-    async init(ctx: TowerInitContext) {
-      if (_vault) {
-        try {
-          await _vault.close()
-        } catch {
-          /* previous instance may have no pool */
-        }
-        _vault = undefined
-      }
+    register(ctx: TowerContext) {
+      _vault = buildProxyUnconfigured()
+      ctx.services.register('vault', _vault)
+    },
 
+    async initialize(ctx: TowerContext) {
       const connectionString = resolveConnectionString(options)
 
       if (!connectionString) {
         _vault = buildProxyUnconfigured()
-        ctx.container.register('vault', _vault)
+        ctx.services.register('vault', _vault)
         return
       }
 
@@ -192,16 +229,25 @@ export function createVaultModule(options?: VaultConfig): TowerModule {
         }
       }
 
+      const { Kysely, PostgresDialect } = await loadKysely()
       const db: VaultDb = new Kysely({ dialect: new PostgresDialect({ pool }) })
 
-      const migrationFolder = options?.migrations?.folder ?? './src/vault/migrations'
-      const seedFolder = options?.seeds?.folder ?? './src/vault/seeds'
-      const migrator = createMigrator(db, { folder: migrationFolder })
+      if (isEdge) {
+        _vault = buildProxyDb(db, pool)
+      } else {
+        const migrationFolder = options?.migrations?.folder ?? './src/vault/migrations'
+        const seedFolder = options?.seeds?.folder ?? './src/vault/seeds'
+        const migrator = await createMigrator(db, { folder: migrationFolder })
+        _vault = buildProxyConfigured(db, pool, migrationFolder, seedFolder, migrator)
+      }
 
-      _vault = buildProxyConfigured(db, pool, migrationFolder, seedFolder, migrator)
-      ctx.container.register('vault', _vault)
+      ctx.services.register('vault', _vault)
     },
   }
 }
 
-registerModule('vault', (config) => createVaultModule(config as VaultConfig))
+registerModule({
+  name: 'vault',
+  dependsOn: [],
+  factory: (config) => createVaultModule(config as VaultConfig),
+})

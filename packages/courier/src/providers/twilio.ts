@@ -1,23 +1,26 @@
-import twilio from 'twilio'
 import type { SmsSendParams, SmsSendResult, TwilioSmsConfig } from '../types.js'
 
-/** SMS provider that sends via the Twilio API. */
 export class TwilioSmsProvider {
-  private from?: string
-  private messagingServiceSid?: string
-  private client: ReturnType<typeof twilio>
+  private config: TwilioSmsConfig
+  private _client: any
 
   constructor(config: TwilioSmsConfig) {
-    const accountSid = config.accountSid ?? process.env.TWILIO_ACCOUNT_SID
-    const authToken = config.authToken ?? process.env.TWILIO_AUTH_TOKEN
+    this.config = config
+  }
 
-    if (!accountSid || !authToken) {
-      throw new Error('[courier.sms] Missing Twilio credentials. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.')
+  private async client(): Promise<any> {
+    if (!this._client) {
+      const { default: twilio } = await import('twilio')
+      const accountSid =
+        this.config.accountSid ?? (typeof process !== 'undefined' ? process.env.TWILIO_ACCOUNT_SID : undefined)
+      const authToken =
+        this.config.authToken ?? (typeof process !== 'undefined' ? process.env.TWILIO_AUTH_TOKEN : undefined)
+      if (!accountSid || !authToken) {
+        throw new Error('[courier.sms] Missing Twilio credentials. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.')
+      }
+      this._client = twilio(accountSid, authToken)
     }
-
-    this.client = twilio(accountSid, authToken)
-    this.from = config.from ?? process.env.COURIER_SMS_FROM
-    this.messagingServiceSid = config.messagingServiceSid ?? process.env.TWILIO_MESSAGING_SERVICE_SID
+    return this._client
   }
 
   async send(params: SmsSendParams): Promise<SmsSendResult> {
@@ -26,18 +29,24 @@ export class TwilioSmsProvider {
       throw new Error('[courier.sms] Message body must not be empty.')
     }
 
-    const from = params.from ?? this.from
-    if (!from && !this.messagingServiceSid) {
+    const from =
+      params.from ?? this.config.from ?? (typeof process !== 'undefined' ? process.env.COURIER_SMS_FROM : undefined)
+    const messagingServiceSid =
+      this.config.messagingServiceSid ??
+      (typeof process !== 'undefined' ? process.env.TWILIO_MESSAGING_SERVICE_SID : undefined)
+
+    if (!from && !messagingServiceSid) {
       throw new Error(
         '[courier.sms] Missing sender. Set modules.courier.sms.from or modules.courier.sms.messagingServiceSid.'
       )
     }
 
-    const result = await this.client.messages.create({
+    const c = await this.client()
+    const result = await c.messages.create({
       to: params.to,
       body,
       from,
-      messagingServiceSid: this.messagingServiceSid,
+      messagingServiceSid,
     })
 
     return {

@@ -1,27 +1,34 @@
-import { Resend } from 'resend'
 import type { EmailSendParams, EmailSendResult, ResendEmailConfig } from '../types.js'
 import { toAddressList } from './email-shared.js'
 
-/** Email provider that sends via the Resend API. */
 export class ResendEmailProvider {
-  private client: Resend
-  private from?: string
+  private config: ResendEmailConfig
+  private _client: any
 
   constructor(config: ResendEmailConfig) {
-    const apiKey = config.apiKey ?? process.env.RESEND_API_KEY
-    if (!apiKey) {
-      throw new Error('[courier.email] Missing RESEND_API_KEY for resend provider.')
+    this.config = config
+  }
+
+  private async client(): Promise<any> {
+    if (!this._client) {
+      const apiKey = this.config.apiKey ?? (typeof process !== 'undefined' ? process.env.RESEND_API_KEY : undefined)
+      if (!apiKey) {
+        throw new Error('[courier.email] Missing RESEND_API_KEY for resend provider.')
+      }
+      const { Resend } = await import('resend')
+      this._client = new Resend(apiKey)
     }
-    this.client = new Resend(apiKey)
-    this.from = config.from ?? process.env.COURIER_EMAIL_FROM
+    return this._client
   }
 
   async send(params: EmailSendParams): Promise<EmailSendResult> {
-    const from = params.from ?? this.from
+    const from =
+      params.from ?? this.config.from ?? (typeof process !== 'undefined' ? process.env.COURIER_EMAIL_FROM : undefined)
     if (!from) {
       throw new Error('[courier.email] Missing from address. Set modules.courier.email.from or params.from.')
     }
 
+    const c = await this.client()
     const payload: Record<string, unknown> = {
       from,
       to: toAddressList(params.to),
@@ -36,7 +43,7 @@ export class ResendEmailProvider {
       attachments: params.attachments,
     }
 
-    const result = await this.client.emails.send(payload as any)
+    const result = await c.emails.send(payload as any)
     if (result.error) {
       throw new Error(`[courier.email] ${result.error.message}`)
     }

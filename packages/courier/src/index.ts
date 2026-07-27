@@ -1,10 +1,5 @@
-import type { TowerInitContext, TowerModule } from '@towerjs/blueprint'
+import type { TowerContext, TowerModule } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
-import { ResendEmailProvider } from './providers/resend.js'
-import { SmtpEmailProvider } from './providers/smtp.js'
-import { SesEmailProvider } from './providers/ses.js'
-import { TwilioSmsProvider } from './providers/twilio.js'
-import { WebPushProvider } from './providers/web-push.js'
 import type {
   CourierConfig,
   CourierModule,
@@ -84,9 +79,9 @@ export function defineCourier(config: CourierConfig): TowerModule & CourierModul
   return {
     name: 'courier',
 
-    async init(ctx: TowerInitContext) {
-      _courier = createCourier(config)
-      ctx.container.register('courier', _courier)
+    async initialize(ctx: TowerContext) {
+      _courier = await createCourier(config)
+      ctx.services.register('courier', _courier)
     },
 
     get email() {
@@ -103,10 +98,10 @@ export function defineCourier(config: CourierConfig): TowerModule & CourierModul
   } satisfies TowerModule & CourierModule
 }
 
-function createCourier(config: CourierConfig): CourierModule {
-  const emailProvider = config.email ? createEmailService(config.email) : undefined
-  const smsProvider = config.sms ? createSmsService(config.sms) : undefined
-  const pushProvider = config.push ? createPushService(config.push) : undefined
+async function createCourier(config: CourierConfig): Promise<CourierModule> {
+  const emailProvider = config.email ? await createEmailService(config.email) : undefined
+  const smsProvider = config.sms ? await createSmsService(config.sms) : undefined
+  const pushProvider = config.push ? await createPushService(config.push) : undefined
 
   return {
     email: emailProvider ?? unconfiguredChannel('email'),
@@ -120,30 +115,42 @@ function requireCourier(): CourierModule {
   return _courier
 }
 
-function createEmailService(config: EmailConfig): EmailService {
+function dynImport<T>(mod: string): Promise<T> {
+  return Function('return import("' + mod.replace(/"/g, '\\"') + '")')() as Promise<T>
+}
+
+async function createEmailService(config: EmailConfig): Promise<EmailService> {
   switch (config.provider) {
     case 'resend':
-      return new ResendEmailProvider(config)
+      return new (await dynImport<typeof import('./providers/resend.js')>('./providers/resend.js')).ResendEmailProvider(
+        config
+      )
     case 'smtp':
-      return new SmtpEmailProvider(config)
+      return new (await dynImport<typeof import('./providers/smtp.js')>('./providers/smtp.js')).SmtpEmailProvider(
+        config
+      )
     case 'ses':
-      return new SesEmailProvider(config)
+      return new (await dynImport<typeof import('./providers/ses.js')>('./providers/ses.js')).SesEmailProvider(config)
   }
   throw new Error('Unsupported courier email provider.')
 }
 
-function createSmsService(config: SmsConfig): SmsService {
+async function createSmsService(config: SmsConfig): Promise<SmsService> {
   if (config.provider !== 'twilio') {
     throw new Error(`Unsupported courier sms provider: ${String(config.provider)}`)
   }
-  return new TwilioSmsProvider(config)
+  return new (await dynImport<typeof import('./providers/twilio.js')>('./providers/twilio.js')).TwilioSmsProvider(
+    config
+  )
 }
 
-function createPushService(config: PushConfig): PushService {
+async function createPushService(config: PushConfig): Promise<PushService> {
   if (config.provider !== 'web-push') {
     throw new Error(`Unsupported courier push provider: ${String(config.provider)}`)
   }
-  return new WebPushProvider(config)
+  return new (await dynImport<typeof import('./providers/web-push.js')>('./providers/web-push.js')).WebPushProvider(
+    config
+  )
 }
 
 function unconfiguredChannel(name: 'email' | 'sms' | 'push') {
@@ -154,4 +161,8 @@ function unconfiguredChannel(name: 'email' | 'sms' | 'push') {
   }
 }
 
-registerModule('courier', (config) => defineCourier(config as CourierConfig))
+registerModule({
+  name: 'courier',
+  dependsOn: [],
+  factory: (config) => defineCourier(config as CourierConfig),
+})

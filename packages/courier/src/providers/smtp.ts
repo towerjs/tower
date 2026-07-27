@@ -1,40 +1,47 @@
-import nodemailer from 'nodemailer'
 import type { EmailSendParams, EmailSendResult, SmtpEmailConfig } from '../types.js'
 import { resolveEmailContent, toAddressList } from './email-shared.js'
 
-/** Email provider that sends via SMTP. */
 export class SmtpEmailProvider {
-  private from?: string
-  private transporter: nodemailer.Transporter
+  private config: SmtpEmailConfig
+  private _transporter: any
 
   constructor(config: SmtpEmailConfig) {
-    const host = config.host ?? process.env.SMTP_HOST
-    if (!host) {
-      throw new Error('[courier.email] Missing SMTP host. Set modules.courier.email.host or SMTP_HOST.')
+    this.config = config
+  }
+
+  private async transporter(): Promise<any> {
+    if (!this._transporter) {
+      const host = this.config.host ?? (typeof process !== 'undefined' ? process.env.SMTP_HOST : undefined)
+      if (!host) {
+        throw new Error('[courier.email] Missing SMTP host. Set modules.courier.email.host or SMTP_HOST.')
+      }
+
+      const port = this.config.port ?? (typeof process !== 'undefined' ? Number(process.env.SMTP_PORT ?? 587) : 587)
+      const user = this.config.user ?? (typeof process !== 'undefined' ? process.env.SMTP_USER : undefined)
+      const password = this.config.password ?? (typeof process !== 'undefined' ? process.env.SMTP_PASSWORD : undefined)
+
+      const { default: nodemailer } = await import('nodemailer')
+      this._transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: this.config.secure ?? port === 465,
+        ignoreTLS: this.config.ignoreTLS,
+        auth: user ? { user, pass: password } : undefined,
+      })
     }
-
-    const port = config.port ?? Number(process.env.SMTP_PORT ?? 587)
-    const user = config.user ?? process.env.SMTP_USER
-    const password = config.password ?? process.env.SMTP_PASSWORD
-
-    this.transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: config.secure ?? port === 465,
-      ignoreTLS: config.ignoreTLS,
-      auth: user ? { user, pass: password } : undefined,
-    })
-    this.from = config.from ?? process.env.COURIER_EMAIL_FROM
+    return this._transporter
   }
 
   async send(params: EmailSendParams): Promise<EmailSendResult> {
-    const from = params.from ?? this.from
+    const from =
+      params.from ?? this.config.from ?? (typeof process !== 'undefined' ? process.env.COURIER_EMAIL_FROM : undefined)
     if (!from) {
       throw new Error('[courier.email] Missing from address. Set modules.courier.email.from or params.from.')
     }
 
     const { html, text } = await resolveEmailContent(params)
-    const info = await this.transporter.sendMail({
+    const t = await this.transporter()
+    const info = await t.sendMail({
       from,
       to: toAddressList(params.to),
       subject: params.subject,
@@ -46,7 +53,7 @@ export class SmtpEmailProvider {
       headers: params.headers,
       attachments: params.attachments?.map((attachment) => ({
         filename: attachment.filename,
-        content: typeof attachment.content === 'string' ? attachment.content : Buffer.from(attachment.content),
+        content: typeof attachment.content === 'string' ? attachment.content : new Uint8Array(attachment.content),
         contentType: attachment.contentType,
         cid: attachment.cid,
       })),

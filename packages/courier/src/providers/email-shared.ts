@@ -1,4 +1,3 @@
-import { render, toPlainText } from '@react-email/render'
 import type { EmailAddress, EmailSendParams } from '../types.js'
 
 /** Normalizes a single address or array into a string array. Returns undefined for empty input. */
@@ -13,6 +12,8 @@ export function toAddressList(value?: EmailAddress): string[] | undefined {
  * Throws if no content source is provided.
  */
 export async function resolveEmailContent(params: EmailSendParams): Promise<{ html?: string; text?: string }> {
+  const { render, toPlainText } = await import('@react-email/render')
+
   let html = params.html
   let text = params.text
 

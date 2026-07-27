@@ -1,42 +1,56 @@
-import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2'
-import nodemailer from 'nodemailer'
 import type { EmailSendParams, EmailSendResult, SesEmailConfig } from '../types.js'
 import { resolveEmailContent, toAddressList } from './email-shared.js'
 
-/** Email provider that sends via AWS SESv2. Attachments are handled by building a raw MIME message through nodemailer. */
 export class SesEmailProvider {
-  private from?: string
-  private configurationSetName?: string
-  private client: SESv2Client
+  private config: SesEmailConfig
+  private _client: any
 
   constructor(config: SesEmailConfig) {
-    const region = config.region ?? process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    if (!region) {
-      throw new Error('[courier.email] Missing AWS region. Set modules.courier.email.region or AWS_REGION.')
-    }
+    this.config = config
+  }
 
-    this.client = new SESv2Client({
-      region,
-      credentials:
-        config.accessKeyId || process.env.AWS_ACCESS_KEY_ID
-          ? {
-              accessKeyId: config.accessKeyId ?? process.env.AWS_ACCESS_KEY_ID ?? '',
-              secretAccessKey: config.secretAccessKey ?? process.env.AWS_SECRET_ACCESS_KEY ?? '',
-              sessionToken: config.sessionToken ?? process.env.AWS_SESSION_TOKEN,
-            }
-          : undefined,
-    })
-    this.from = config.from ?? process.env.COURIER_EMAIL_FROM
-    this.configurationSetName = config.configurationSetName
+  private async client(): Promise<any> {
+    if (!this._client) {
+      const region =
+        this.config.region ??
+        (typeof process !== 'undefined' ? (process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION) : undefined)
+      if (!region) {
+        throw new Error('[courier.email] Missing AWS region. Set modules.courier.email.region or AWS_REGION.')
+      }
+
+      const { SESv2Client } = await import('@aws-sdk/client-sesv2')
+      this._client = new SESv2Client({
+        region,
+        credentials:
+          this.config.accessKeyId || (typeof process !== 'undefined' ? process.env.AWS_ACCESS_KEY_ID : undefined)
+            ? {
+                accessKeyId:
+                  this.config.accessKeyId ??
+                  (typeof process !== 'undefined' ? process.env.AWS_ACCESS_KEY_ID : undefined) ??
+                  '',
+                secretAccessKey:
+                  this.config.secretAccessKey ??
+                  (typeof process !== 'undefined' ? process.env.AWS_SECRET_ACCESS_KEY : undefined) ??
+                  '',
+                sessionToken:
+                  this.config.sessionToken ??
+                  (typeof process !== 'undefined' ? process.env.AWS_SESSION_TOKEN : undefined),
+              }
+            : undefined,
+      })
+    }
+    return this._client
   }
 
   async send(params: EmailSendParams): Promise<EmailSendResult> {
-    const from = params.from ?? this.from
+    const from =
+      params.from ?? this.config.from ?? (typeof process !== 'undefined' ? process.env.COURIER_EMAIL_FROM : undefined)
     if (!from) {
       throw new Error('[courier.email] Missing from address. Set modules.courier.email.from or params.from.')
     }
 
     const { html, text } = await resolveEmailContent(params)
+    const { default: nodemailer } = await import('nodemailer')
 
     const rawTransporter = nodemailer.createTransport({ jsonTransport: true })
     const rawInfo = await rawTransporter.sendMail({
@@ -51,13 +65,15 @@ export class SesEmailProvider {
       headers: params.headers,
       attachments: params.attachments?.map((a) => ({
         filename: a.filename,
-        content: typeof a.content === 'string' ? a.content : Buffer.from(a.content),
+        content: typeof a.content === 'string' ? a.content : (Buffer.from(a.content) as any),
         contentType: a.contentType,
         cid: a.cid,
       })),
     })
 
-    const result = await this.client.send(
+    const { SendEmailCommand } = await import('@aws-sdk/client-sesv2')
+    const c = await this.client()
+    const result = await c.send(
       new SendEmailCommand({
         FromEmailAddress: from,
         Destination: {
@@ -67,9 +83,9 @@ export class SesEmailProvider {
         },
         ReplyToAddresses: params.replyTo ? [params.replyTo] : undefined,
         Content: {
-          Raw: { Data: new Uint8Array(rawInfo.message as unknown as Buffer) },
+          Raw: { Data: new Uint8Array((rawInfo as any).message as Uint8Array) },
         },
-        ConfigurationSetName: this.configurationSetName,
+        ConfigurationSetName: this.config.configurationSetName,
       })
     )
 
