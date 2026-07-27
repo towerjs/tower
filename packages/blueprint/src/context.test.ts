@@ -60,7 +60,7 @@ describe('towerContext (ALS provider)', () => {
   })
 
   it('cleans up data after the handler resolves', async () => {
-    const after = await towerContext.run({ temp: 'data' }, async () => {
+    await towerContext.run({ temp: 'data' }, async () => {
       // inside context
     })
     const result = towerContext.get('temp')
