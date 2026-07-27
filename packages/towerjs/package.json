@@ -8,21 +8,33 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
+    "./blueprint": {
+      "types": "./dist/blueprint.d.ts",
+      "default": "./dist/blueprint.js"
     },
-    "./vault": {
-      "types": "./dist/vault.d.ts",
-      "default": "./dist/vault.js"
+    "./foundation": {
+      "types": "./dist/foundation.d.ts",
+      "default": "./dist/foundation.js"
     },
     "./gatehouse": {
       "types": "./dist/gatehouse.d.ts",
       "default": "./dist/gatehouse.js"
     },
+    "./gatehouse/actions": {
+      "types": "./dist/gatehouse/actions.d.ts",
+      "default": "./dist/gatehouse/actions.js"
+    },
     "./gatehouse/next": {
       "types": "./dist/gatehouse/next.d.ts",
       "default": "./dist/gatehouse/next.js"
+    },
+    "./gatehouse/client": {
+      "types": "./dist/gatehouse/client.d.ts",
+      "default": "./dist/gatehouse/client.js"
+    },
+    "./vault": {
+      "types": "./dist/vault.d.ts",
+      "default": "./dist/vault.js"
     },
     "./next": {
       "types": "./dist/next.d.ts",
@@ -55,7 +67,6 @@
     "@towerjs/gatehouse": "workspace:*",
     "@towerjs/courier": "workspace:*",
     "@towerjs/blueprint": "workspace:*",
-    "better-auth": "^1.6.25",
     "jiti": "^2.4.2"
   }
 }

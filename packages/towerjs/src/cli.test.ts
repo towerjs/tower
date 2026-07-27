@@ -55,7 +55,7 @@ vi.mock('node:fs', () => ({
   default: { existsSync: hoisted.mockExistsSync },
 }))
 
-import { run, helpText, findConfig, getModule, loadApp, closeModules, versionText } from './cli.js'
+import { run, helpText, findConfig, getModule, closeModules, versionText } from './cli.js'
 
 describe('help', () => {
   it('returns help text for no command', async () => {

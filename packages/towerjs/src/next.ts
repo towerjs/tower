@@ -1,6 +1,5 @@
-import { headers } from 'next/headers'
 import { Gatehouse } from '@towerjs/gatehouse'
-import { towerContext } from '@towerjs/blueprint'
+import { towerContext } from '@towerjs/foundation'
 import { getTowerApp } from './runtime'
 
 export function action<TResult, TArgs extends unknown[]>(
@@ -12,6 +11,7 @@ export function action<TResult, TArgs extends unknown[]>(
     const normalized = args.map(normalizeArg) as TArgs
 
     try {
+      const { headers } = await import('next/headers')
       const h = await headers()
       const gh = await Gatehouse.from({ headers: h })
       return await towerContext.run({ gatehouse: gh }, () => handler(...normalized))

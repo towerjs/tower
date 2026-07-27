@@ -1,49 +1,34 @@
-export { action, withGatehouse, GET, POST } from '@towerjs/gatehouse/next-js'
+export { signIn, signUp, signOut } from './actions'
 
-export { signIn, signUp, signOut } from './auth-actions'
-
-import { Gatehouse } from '@towerjs/gatehouse'
-import type { ApiKeyInfo, GatehouseSession, Organization, OrganizationFull, Session } from '@towerjs/gatehouse'
-import { getTowerApp } from '../runtime'
-
-async function getRequestInstance() {
-  try {
-    const { cookies } = await import('next/headers' as string)
-    const c = await cookies()
-    await getTowerApp()
-    return Gatehouse.from({ headers: new Headers({ Cookie: c.toString() }) })
-  } catch {
-    return null
+export function action<TResult, TArgs extends unknown[]>(
+  handler: (...args: TArgs) => Promise<TResult>,
+  config?: { sessionCookie?: string }
+): (...args: TArgs) => Promise<TResult> {
+  return async (...args: TArgs) => {
+    const ghAction = await loadGatehouseAction()
+    return ghAction(handler, config)(...args)
   }
 }
 
-export async function getSession(): Promise<Session | null> {
-  const gh = await getRequestInstance()
-  if (!gh) return null
-  return gh.session()
+async function loadGatehouseAction(): Promise<typeof import('@towerjs/gatehouse/next').action> {
+  const mod = await (Function('return import("@towerjs/gatehouse/next")')() as Promise<
+    typeof import('@towerjs/gatehouse/next')
+  >)
+  return mod.action
 }
 
-export async function getUserSessions(): Promise<GatehouseSession[]> {
-  const gh = await getRequestInstance()
-  if (!gh) return []
-  return gh.sessions.list()
+export const withGatehouse: typeof import('@towerjs/gatehouse/next').withGatehouse = (
+  handler: any,
+  config?: { sessionCookie?: string }
+) => {
+  return (request: Request, context: any) =>
+    Function('return import("@towerjs/gatehouse/next")')().then((mod: any) =>
+      mod.withGatehouse(handler, config)(request, context)
+    )
 }
 
-export async function getApiKeys(userId: string): Promise<ApiKeyInfo[]> {
-  const gh = await getRequestInstance()
-  if (!gh) return []
-  const { keys } = await gh.apiKeys.list(userId)
-  return keys
-}
+export const GET: (req: Request) => Promise<Response> = (req: Request) =>
+  Function('return import("@towerjs/gatehouse/next")')().then((mod: any) => mod.GET(req))
 
-export async function getOrganizations(): Promise<Organization[]> {
-  const gh = await getRequestInstance()
-  if (!gh) return []
-  return gh.organizations.list()
-}
-
-export async function getOrganization(id: string): Promise<OrganizationFull | null> {
-  const gh = await getRequestInstance()
-  if (!gh) return null
-  return gh.organizations.getFull(id)
-}
+export const POST: (req: Request) => Promise<Response> = (req: Request) =>
+  Function('return import("@towerjs/gatehouse/next")')().then((mod: any) => mod.POST(req))

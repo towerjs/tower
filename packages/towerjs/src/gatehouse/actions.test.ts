@@ -39,7 +39,7 @@ describe('signIn', () => {
   it('redirects to Blueprint-configured afterSignIn path', async () => {
     mockGetTowerApp.mockResolvedValue(mockConfig({ afterSignIn: '/app', afterSignUp: '/welcome', afterSignOut: '/' }))
 
-    const { signIn } = await import('./auth-actions')
+    const { signIn } = await import('./actions')
 
     mockHeaders.mockResolvedValue(new Headers())
     mockCookies.mockResolvedValue({ set: vi.fn() })
@@ -59,7 +59,7 @@ describe('signIn', () => {
   it('formData redirectTo overrides Blueprint config', async () => {
     mockGetTowerApp.mockResolvedValue(mockConfig({ afterSignIn: '/app' }))
 
-    const { signIn } = await import('./auth-actions')
+    const { signIn } = await import('./actions')
 
     mockHeaders.mockResolvedValue(new Headers())
     mockCookies.mockResolvedValue({ set: vi.fn() })
@@ -80,7 +80,7 @@ describe('signIn', () => {
   it('falls back to /dashboard when no config or formData', async () => {
     mockGetTowerApp.mockResolvedValue(mockConfig())
 
-    const { signIn } = await import('./auth-actions')
+    const { signIn } = await import('./actions')
 
     mockHeaders.mockResolvedValue(new Headers())
     mockCookies.mockResolvedValue({ set: vi.fn() })
@@ -100,7 +100,7 @@ describe('signIn', () => {
   it('sets session cookie on successful sign in', async () => {
     mockGetTowerApp.mockResolvedValue(mockConfig())
 
-    const { signIn } = await import('./auth-actions')
+    const { signIn } = await import('./actions')
 
     const cookieSet = vi.fn()
     mockHeaders.mockResolvedValue(new Headers())
@@ -127,7 +127,7 @@ describe('signOut', () => {
   it('clears session cookie and redirects to afterSignOut', async () => {
     mockGetTowerApp.mockResolvedValue(mockConfig({ afterSignOut: '/' }))
 
-    const { signOut } = await import('./auth-actions')
+    const { signOut } = await import('./actions')
 
     const cookieSet = vi.fn()
     mockHeaders.mockResolvedValue(new Headers())
