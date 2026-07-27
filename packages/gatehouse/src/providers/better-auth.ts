@@ -11,10 +11,6 @@ import type {
 import { AuthenticationError } from '../types.js'
 import { buildProxiedApi, buildFacade } from '../facade-builder.js'
 
-function dyn<T>(mod: string): Promise<T> {
-  return Function('return import("' + mod.replace(/"/g, '\\"') + '")')() as Promise<T>
-}
-
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
   private auth: any
@@ -38,20 +34,13 @@ export class BetterAuthAdapter {
     const [
       { betterAuth },
       { magicLink, emailOTP, twoFactor, organization, admin, phoneNumber },
-      passkeyMod,
-      apiKeyMod,
+      { passkey },
+      { apiKey: apiKeyPlugin },
     ] = await Promise.all([
-      dyn<{ betterAuth: (o: any) => any }>('better-auth'),
-      dyn<{
-        magicLink: (o: any) => any
-        emailOTP: (o: any) => any
-        twoFactor: () => any
-        organization: () => any
-        admin: () => any
-        phoneNumber: (o: any) => any
-      }>('better-auth/plugins'),
-      dyn<{ passkey: (o?: any) => any }>('@better-auth/passkey'),
-      dyn<{ apiKey: (o?: any) => any }>('@better-auth/api-key'),
+      import('better-auth'),
+      import('better-auth/plugins'),
+      import('@better-auth/passkey'),
+      import('@better-auth/api-key'),
     ])
 
     const baseURL = config.baseURL || process.env.BETTER_AUTH_URL
@@ -97,10 +86,10 @@ export class BetterAuthAdapter {
       allPlugins.push(phoneNumber({ sendOTP }))
     }
     if (config.passkeys) {
-      allPlugins.push(passkeyMod.passkey(typeof config.passkeys === 'object' ? config.passkeys : undefined))
+      allPlugins.push(passkey(typeof config.passkeys === 'object' ? config.passkeys : undefined))
     }
     if (config.apiKey) {
-      allPlugins.push(apiKeyMod.apiKey(typeof config.apiKey === 'object' ? config.apiKey : undefined))
+      allPlugins.push(apiKeyPlugin(typeof config.apiKey === 'object' ? config.apiKey : undefined))
     }
     if (config.admin) {
       allPlugins.push(admin())
@@ -138,16 +127,22 @@ export class BetterAuthAdapter {
 
     this.auth = betterAuth(baOptions as any)
     this.api = this.auth.api
+
+    const { toNextJsHandler } = await import('better-auth/next-js')
+    this._routes = toNextJsHandler(this.auth) as any
   }
 
   /** Runs better-auth database migrations. Called only from the Tower CLI, never during page rendering. */
   async migrate(): Promise<void> {
-    const mod = (await Function('return import("better-auth/dist/db/get-migration.mjs")')()) as {
+    const mod = (await import('better-auth/db/migration')) as {
       getMigrations: (o: any) => Promise<{ runMigrations: () => Promise<void> }>
     }
     const { runMigrations } = await mod.getMigrations(this.auth.options)
     await runMigrations()
   }
+
+  /** Eagerly pre-loaded routes from better-auth/next-js. */
+  private _routes: { GET: (req: Request) => Promise<Response>; POST: (req: Request) => Promise<Response> } | null = null
 
   /** Raw better-auth provider instance. */
   get provider(): any {
@@ -156,8 +151,8 @@ export class BetterAuthAdapter {
 
   /** Next.js route handlers (GET/POST) for the auth API. */
   get routes() {
-    const { toNextJsHandler } = loadNextJsHandler()
-    return toNextJsHandler(this.auth)
+    if (!this._routes) throw new Error('Routes not available. Gatehouse must be initialized first.')
+    return this._routes
   }
 
   // ─── From ─────────────────────────────────────────────────────────
@@ -296,18 +291,6 @@ export class BetterAuthAdapter {
       return false
     }
   }
-}
-
-// ─── Lazy module loaders ────────────────────────────────────────
-
-let _nextJsHandlerMod: any
-
-function loadNextJsHandler(): { toNextJsHandler: (auth: any) => any } {
-  if (!_nextJsHandlerMod) {
-    const prom = dyn<{ toNextJsHandler: (auth: any) => any }>('better-auth/next-js')
-    _nextJsHandlerMod = { toNextJsHandler: (auth: any) => prom.then((m) => m.toNextJsHandler(auth)) }
-  }
-  return _nextJsHandlerMod
 }
 
 function env(key: string): string | undefined {

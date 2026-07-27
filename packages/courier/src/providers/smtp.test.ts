@@ -38,8 +38,11 @@ describe('SmtpEmailProvider', () => {
       expect(p).toBeInstanceOf(SmtpEmailProvider)
     })
 
-    it('throws when host missing', () => {
-      expect(() => new SmtpEmailProvider({ provider: 'smtp' })).toThrow('[courier.email] Missing SMTP host')
+    it('throws when host missing', async () => {
+      const p = new SmtpEmailProvider({ provider: 'smtp' })
+      await expect(p.send({ from: 'a@b.com', to: 'a@b.com', subject: 'x', text: 'y' })).rejects.toThrow(
+        '[courier.email] Missing SMTP host'
+      )
     })
   })
 
@@ -110,7 +113,7 @@ describe('SmtpEmailProvider', () => {
 
       expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({
-          attachments: [{ filename: 'f.pdf', content: expect.any(Buffer), contentType: 'application/pdf' }],
+          attachments: [{ filename: 'f.pdf', content: expect.any(Uint8Array), contentType: 'application/pdf' }],
         })
       )
     })

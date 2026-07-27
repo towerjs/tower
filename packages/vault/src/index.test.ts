@@ -104,7 +104,7 @@ const mockContainer = () => ({
 })
 
 const mockCtx = (overrides = {}) => ({
-  container: mockContainer(),
+  services: mockContainer(),
   config: { modules: {} },
   runtime: { name: 'node-server' as const, isServerless: false },
   ...overrides,
@@ -176,7 +176,7 @@ describe('createVaultModule', () => {
     const mod = createVaultModule()
     const ctx = mockCtx()
     await mod.init!(ctx)
-    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
   })
 
   it('registers configured proxy when connection string provided', async () => {
@@ -189,7 +189,7 @@ describe('createVaultModule', () => {
     const ctx = mockCtx()
     await mod.init!(ctx)
 
-    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
     expect(mocks.mockConnect).toHaveBeenCalled()
   })
 
@@ -204,7 +204,7 @@ describe('createVaultModule', () => {
     const ctx = mockCtx()
     await mod.init!(ctx)
 
-    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
   })
 
   it('fails fast when connection fails', async () => {
@@ -524,7 +524,7 @@ describe('edge runtime', () => {
     const ctx = mockCtx({ runtime: { name: 'edge', isServerless: true } })
     await mod.init!(ctx)
 
-    expect(ctx.container.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
   })
 
   it('throws for pg provider on edge', async () => {

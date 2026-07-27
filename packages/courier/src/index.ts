@@ -75,7 +75,9 @@ export const courier: CourierModule = new Proxy({} as CourierModule, {
  * })
  * ```
  */
-export function defineCourier(config: CourierConfig): TowerModule & CourierModule {
+export function defineCourier(
+  config: CourierConfig
+): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
   return {
     name: 'courier',
 
@@ -94,6 +96,10 @@ export function defineCourier(config: CourierConfig): TowerModule & CourierModul
 
     get push() {
       return requireCourier().push
+    },
+
+    init(ctx: TowerContext) {
+      return this.initialize!(ctx)
     },
   } satisfies TowerModule & CourierModule
 }
@@ -115,22 +121,20 @@ function requireCourier(): CourierModule {
   return _courier
 }
 
-function dynImport<T>(mod: string): Promise<T> {
-  return Function('return import("' + mod.replace(/"/g, '\\"') + '")')() as Promise<T>
-}
-
 async function createEmailService(config: EmailConfig): Promise<EmailService> {
   switch (config.provider) {
-    case 'resend':
-      return new (await dynImport<typeof import('./providers/resend.js')>('./providers/resend.js')).ResendEmailProvider(
-        config
-      )
-    case 'smtp':
-      return new (await dynImport<typeof import('./providers/smtp.js')>('./providers/smtp.js')).SmtpEmailProvider(
-        config
-      )
-    case 'ses':
-      return new (await dynImport<typeof import('./providers/ses.js')>('./providers/ses.js')).SesEmailProvider(config)
+    case 'resend': {
+      const { ResendEmailProvider } = await import('./providers/resend.js')
+      return new ResendEmailProvider(config)
+    }
+    case 'smtp': {
+      const { SmtpEmailProvider } = await import('./providers/smtp.js')
+      return new SmtpEmailProvider(config)
+    }
+    case 'ses': {
+      const { SesEmailProvider } = await import('./providers/ses.js')
+      return new SesEmailProvider(config)
+    }
   }
   throw new Error('Unsupported courier email provider.')
 }
@@ -139,18 +143,16 @@ async function createSmsService(config: SmsConfig): Promise<SmsService> {
   if (config.provider !== 'twilio') {
     throw new Error(`Unsupported courier sms provider: ${String(config.provider)}`)
   }
-  return new (await dynImport<typeof import('./providers/twilio.js')>('./providers/twilio.js')).TwilioSmsProvider(
-    config
-  )
+  const { TwilioSmsProvider } = await import('./providers/twilio.js')
+  return new TwilioSmsProvider(config)
 }
 
 async function createPushService(config: PushConfig): Promise<PushService> {
   if (config.provider !== 'web-push') {
     throw new Error(`Unsupported courier push provider: ${String(config.provider)}`)
   }
-  return new (await dynImport<typeof import('./providers/web-push.js')>('./providers/web-push.js')).WebPushProvider(
-    config
-  )
+  const { WebPushProvider } = await import('./providers/web-push.js')
+  return new WebPushProvider(config)
 }
 
 function unconfiguredChannel(name: 'email' | 'sms' | 'push') {

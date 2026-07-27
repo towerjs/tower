@@ -15,6 +15,8 @@ export function defineTower(config: TowerConfig): TowerConfig {
 
 export { registerModule, getModuleFactory, getModuleDependencies, getRegisteredModules, getModuleDeclarations }
 
+export { towerContext } from '@towerjs/foundation'
+
 export type {
   TowerConfig,
   TowerModule,

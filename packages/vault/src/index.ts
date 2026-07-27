@@ -6,21 +6,22 @@ import type { VaultConfig, VaultDb, VaultModule, VaultMigrationConfig, VaultSeed
 export type { VaultConfig, VaultDb, VaultModule, VaultSeedConfig, VaultMigrationConfig } from './types.js'
 
 export async function createMigrator(db: VaultDb, config: VaultMigrationConfig): Promise<Migrator> {
-  const mod = await (Function('return import("./migrate.js")')() as Promise<typeof import('./migrate.js')>)
+  const mod = await import('./migrate.js')
   return mod.createMigrator(db, config)
 }
 
 export async function migrateToLatest(db: VaultDb, config: VaultMigrationConfig): Promise<void> {
-  const mod = await (Function('return import("./migrate.js")')() as Promise<typeof import('./migrate.js')>)
+  const mod = await import('./migrate.js')
   return mod.migrateToLatest(db, config)
 }
 
 export async function runSeeds(db: VaultDb, config: VaultSeedConfig, name?: string): Promise<{ applied: string[] }> {
-  const mod = await (Function('return import("./seed.js")')() as Promise<typeof import('./seed.js')>)
+  const mod = await import('./seed.js')
   return mod.runSeeds(db, config, name)
 }
 
 let _vault: VaultModule | undefined
+let _pool: { end(): Promise<void> } | undefined
 
 function resolveConnectionString(config?: VaultConfig): string {
   return config?.connectionString ?? (typeof process !== 'undefined' ? process.env.DATABASE_URL : undefined) ?? ''
@@ -49,8 +50,7 @@ async function loadKysely(): Promise<{
   Kysely: new (config: { dialect: import('kysely').PostgresDialect }) => import('kysely').Kysely<any>
   PostgresDialect: new (config: { pool: any }) => import('kysely').PostgresDialect
 }> {
-  const fn = Function('return import("kysely")') as () => Promise<typeof import('kysely')>
-  return fn()
+  return import('kysely')
 }
 
 async function createPool(
@@ -70,10 +70,7 @@ async function createPool(
   const ssl = resolveSsl(poolConfig, connectionString)
 
   if (provider === 'neon') {
-    const { Pool, neonConfig } = await (Function('return import("@neondatabase/serverless")')() as Promise<{
-      Pool: any
-      neonConfig: any
-    }>)
+    const { Pool, neonConfig } = await import('@neondatabase/serverless')
     neonConfig.fetchConnectionCache = true
     if (isEdge) neonConfig.poolQueryViaFetch = true
     const neonPool = ssl !== undefined ? new Pool({ ...config, ssl }) : new Pool(config)
@@ -90,7 +87,7 @@ async function createPool(
     )
   }
 
-  const { Pool: PgPool } = await (Function('return import("pg")')() as Promise<{ Pool: any }>)
+  const { Pool: PgPool } = await import('pg')
   const pool = new PgPool(ssl !== undefined ? { ...config, ssl } : config)
 
   pool.on('error', () => {
@@ -196,7 +193,7 @@ function buildProxyConfigured(
  * })
  * ```
  */
-export function createVaultModule(options?: VaultConfig): TowerModule {
+export function createVaultModule(options?: VaultConfig): TowerModule & { init: (ctx: TowerContext) => Promise<void> } {
   return {
     name: 'vault',
 
@@ -216,7 +213,9 @@ export function createVaultModule(options?: VaultConfig): TowerModule {
 
       const provider = resolveProvider(options)
       const isEdge = ctx.runtime.name === 'edge'
+      await _pool?.end().catch(() => {})
       const pool = await createPool(connectionString, provider, options?.pool, ctx.runtime)
+      _pool = pool
 
       if (!isEdge) {
         try {
@@ -242,6 +241,10 @@ export function createVaultModule(options?: VaultConfig): TowerModule {
       }
 
       ctx.services.register('vault', _vault)
+    },
+
+    init(ctx: TowerContext) {
+      return this.initialize!(ctx)
     },
   }
 }

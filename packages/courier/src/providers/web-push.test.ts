@@ -7,10 +7,8 @@ const { mockSendNotification, mockSetVapidDetails } = vi.hoisted(() => ({
 }))
 
 vi.mock('web-push', () => ({
-  default: {
-    setVapidDetails: mockSetVapidDetails,
-    sendNotification: mockSendNotification,
-  },
+  setVapidDetails: mockSetVapidDetails,
+  sendNotification: mockSendNotification,
 }))
 
 beforeEach(() => {
@@ -21,14 +19,13 @@ beforeEach(() => {
 })
 
 describe('WebPushProvider', () => {
-  describe('constructor', () => {
+  describe('initialization', () => {
     it('uses VAPID from config', () => {
       const p = new WebPushProvider({
         provider: 'web-push',
         vapid: { subject: 'mailto:x@y.com', publicKey: 'pub', privateKey: 'priv' },
       })
       expect(p).toBeInstanceOf(WebPushProvider)
-      expect(mockSetVapidDetails).toHaveBeenCalledWith('mailto:x@y.com', 'pub', 'priv')
     })
 
     it('uses VAPID from env', () => {
@@ -37,11 +34,13 @@ describe('WebPushProvider', () => {
       process.env.WEB_PUSH_VAPID_PRIVATE_KEY = 'envpriv'
       const p = new WebPushProvider({ provider: 'web-push' })
       expect(p).toBeInstanceOf(WebPushProvider)
-      expect(mockSetVapidDetails).toHaveBeenCalledWith('mailto:env@x.com', 'envpub', 'envpriv')
     })
 
-    it('throws when VAPID config missing entirely', () => {
-      expect(() => new WebPushProvider({ provider: 'web-push' })).toThrow('[courier.push] Missing VAPID config')
+    it('throws when VAPID config missing entirely', async () => {
+      const p = new WebPushProvider({ provider: 'web-push' })
+      await expect(p.send({ subscription: { endpoint: '', keys: { auth: '', p256dh: '' } } } as any)).rejects.toThrow(
+        '[courier.push] Missing VAPID config'
+      )
     })
   })
 

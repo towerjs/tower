@@ -2,15 +2,13 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { defineCourier, courier } from './index.js'
 
 vi.mock('web-push', () => ({
-  default: {
-    setVapidDetails: vi.fn(),
-    sendNotification: vi.fn(),
-  },
+  setVapidDetails: vi.fn(),
+  sendNotification: vi.fn(),
 }))
 
 function mockCtx() {
   return {
-    container: {
+    services: {
       register: vi.fn(),
       registerFactory: vi.fn(),
       get: vi.fn(),
@@ -73,7 +71,7 @@ describe('defineCourier', () => {
   it('registers courier in the container on init', async () => {
     const { mod, ctx } = initAndGetModule({})
     await mod.init?.(ctx as any)
-    expect(ctx.container.register).toHaveBeenCalledWith('courier', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('courier', expect.any(Object))
   })
 
   it('throws unconfigured errors for email when not configured', async () => {

@@ -25,7 +25,7 @@ describe('createTower with auto-discovery', () => {
   it('throws when no tower.config found', async () => {
     mocks.mockExistsSync.mockReturnValue(false)
 
-    await expect(createTower()).rejects.toThrow('Could not find tower.config.ts')
+    await expect(createTower()).rejects.toThrow('Could not find tower.config')
   })
 
   it('accepts explicit config and skips discovery', async () => {
@@ -43,7 +43,7 @@ describe('createTower with auto-discovery', () => {
   it('returns TowerApp with runtime and container', async () => {
     registerModule('alpha', () => ({
       name: 'alpha',
-      async init(ctx) {
+      async init(ctx: any) {
         ctx.container.register('alpha', { val: 1 })
       },
     }))
@@ -51,6 +51,6 @@ describe('createTower with auto-discovery', () => {
     const result = await createTower({ modules: { alpha: {} } }, getModuleFactory)
 
     expect(result.runtime).toEqual({ name: 'node-server', isServerless: false })
-    expect(result.container.get('alpha')).toEqual({ val: 1 })
+    expect(result.alpha).toEqual({ val: 1 })
   })
 })

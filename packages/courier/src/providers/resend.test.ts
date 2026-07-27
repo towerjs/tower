@@ -30,8 +30,11 @@ describe('ResendEmailProvider', () => {
       expect(p).toBeInstanceOf(ResendEmailProvider)
     })
 
-    it('throws when apiKey missing', () => {
-      expect(() => new ResendEmailProvider({ provider: 'resend' })).toThrow('[courier.email] Missing RESEND_API_KEY')
+    it('throws when apiKey missing', async () => {
+      const p = new ResendEmailProvider({ provider: 'resend' })
+      await expect(p.send({ from: 'a@b.com', to: 'a@b.com', subject: 'x', text: 'y' })).rejects.toThrow(
+        '[courier.email] Missing RESEND_API_KEY'
+      )
     })
   })
 

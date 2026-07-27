@@ -5,8 +5,8 @@ export async function runSeeds(db: VaultDb, config: VaultSeedConfig, name?: stri
   let nodeFs: typeof import('node:fs')
   let nodePath: typeof import('node:path')
   try {
-    nodeFs = await (Function('return import("fs")')() as Promise<typeof import('node:fs')>)
-    nodePath = await (Function('return import("path")')() as Promise<typeof import('node:path')>)
+    nodeFs = await import('node:fs')
+    nodePath = await import('node:path')
   } catch {
     throw new Error('Filesystem access not available in this runtime. Seed files cannot be loaded.')
   }
@@ -29,11 +29,7 @@ export async function runSeeds(db: VaultDb, config: VaultSeedConfig, name?: stri
 
   for (const file of files) {
     const seedPath = nodePath.join(seedFolder, file)
-    const load = Function('return import("' + seedPath.replace(/"/g, '\\"') + '")') as () => Promise<{
-      default?: (db: VaultDb) => Promise<void>
-      seed?: (db: VaultDb) => Promise<void>
-    }>
-    const mod = await load()
+    const mod = await import(seedPath)
     const run = mod.default ?? mod.seed
     if (typeof run !== 'function') {
       throw new Error(`Seed "${file}" has no default export or named "seed" export`)

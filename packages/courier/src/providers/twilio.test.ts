@@ -37,17 +37,15 @@ describe('TwilioSmsProvider', () => {
       expect(p).toBeInstanceOf(TwilioSmsProvider)
     })
 
-    it('throws when accountSid missing', () => {
+    it('throws when accountSid missing', async () => {
       delete process.env.TWILIO_ACCOUNT_SID
-      expect(() => new TwilioSmsProvider({ provider: 'twilio', authToken: 'tok', messagingServiceSid: 'MGx' })).toThrow(
-        '[courier.sms] Missing Twilio credentials'
-      )
+      const p = new TwilioSmsProvider({ provider: 'twilio', authToken: 'tok', messagingServiceSid: 'MGx' })
+      await expect(p.send({ to: '+1234', body: 'hello' })).rejects.toThrow('[courier.sms] Missing Twilio credentials')
     })
 
-    it('throws when authToken missing', () => {
-      expect(
-        () => new TwilioSmsProvider({ provider: 'twilio', accountSid: 'ACx', messagingServiceSid: 'MGx' })
-      ).toThrow('[courier.sms] Missing Twilio credentials')
+    it('throws when authToken missing', async () => {
+      const p = new TwilioSmsProvider({ provider: 'twilio', accountSid: 'ACx', messagingServiceSid: 'MGx' })
+      await expect(p.send({ to: '+1234', body: 'hello' })).rejects.toThrow('[courier.sms] Missing Twilio credentials')
     })
   })
 

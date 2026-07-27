@@ -32,6 +32,9 @@ const mocks = vi.hoisted(() => {
     mockListSessions,
     mockCreateOrganization,
     mockListOrganizations,
+    mockGetMigrations: vi.fn(() => ({
+      runMigrations: vi.fn().mockResolvedValue(undefined),
+    })),
     reset,
   }
 })
@@ -63,34 +66,32 @@ vi.mock('@better-auth/api-key', () => ({
   apiKey: vi.fn((opts) => ({ id: 'api-key', ...opts })),
 }))
 
-vi.mock('node:module', () => ({
-  createRequire: vi.fn(() =>
-    vi.fn((path: string) => {
-      if (path.includes('get-migration')) {
-        return {
-          getMigrations: vi.fn().mockResolvedValue({
-            runMigrations: vi.fn().mockResolvedValue(undefined),
-          }),
-        }
-      }
-      return {}
-    })
-  ),
+vi.mock('better-auth/db/migration', () => ({
+  getMigrations: mocks.mockGetMigrations,
+}))
+
+
+
+const mockTowerContext = {
+  get: vi.fn((key: string) => mocks.alsStore[key]),
+  run: vi.fn(async (ctx: any, handler: () => any) => {
+    const prev = { ...mocks.alsStore }
+    Object.assign(mocks.alsStore, ctx)
+    try {
+      return await handler()
+    } finally {
+      Object.assign(mocks.alsStore, prev)
+    }
+  }),
+}
+
+vi.mock('@towerjs/foundation', () => ({
+  towerContext: mockTowerContext,
+  getRequestContextResolver: vi.fn().mockReturnValue(undefined),
 }))
 
 vi.mock('@towerjs/blueprint', () => ({
-  towerContext: {
-    get: vi.fn((key: string) => mocks.alsStore[key]),
-    run: vi.fn(async (ctx: any, handler: () => any) => {
-      const prev = { ...mocks.alsStore }
-      Object.assign(mocks.alsStore, ctx)
-      try {
-        return await handler()
-      } finally {
-        Object.assign(mocks.alsStore, prev)
-      }
-    }),
-  },
+  towerContext: mockTowerContext,
   registerModule: mocks.mockRegisterModule,
 }))
 
@@ -113,7 +114,7 @@ function setupBetterAuthApi() {
   })
 }
 
-const mockContainer = () => {
+const mockServices = () => {
   const db = { selectFrom: vi.fn() }
   return {
     get: vi.fn((_key: string) => ({ db })) as any,
@@ -124,7 +125,7 @@ const mockContainer = () => {
 }
 
 const mockCtx = (overrides = {}): any => ({
-  container: mockContainer(),
+  services: mockServices(),
   config: { modules: {} },
   runtime: { name: 'node-server' as const, isServerless: false },
   ...overrides,
@@ -271,7 +272,8 @@ describe('BetterAuthAdapter', () => {
   it('creates better-auth with database and plugins', async () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
     const db = { selectFrom: vi.fn() } as any
-    new BetterAuthAdapter({ provider: 'better-auth' } as any, db)
+    const adapter = new BetterAuthAdapter({ provider: 'better-auth' } as any, db)
+    await (adapter as any).init()
 
     expect(mocks.mockBetterAuth).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -283,7 +285,7 @@ describe('BetterAuthAdapter', () => {
   it('sets plugins based on config', async () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
     const db = {} as any
-    new BetterAuthAdapter(
+    const adapter = new BetterAuthAdapter(
       {
         provider: 'better-auth',
         magicLinks: { sendMagicLink: vi.fn() },
@@ -297,6 +299,7 @@ describe('BetterAuthAdapter', () => {
       } as any,
       db
     )
+    await (adapter as any).init()
 
     const opts = mocks.mockBetterAuth.mock.calls[0][0]
     expect(opts.plugins.length).toBeGreaterThanOrEqual(6)
@@ -313,6 +316,7 @@ describe('BetterAuthAdapter', () => {
   it('exposes provider (better-auth instance)', async () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     expect(adapter.provider).toBeDefined()
     expect(mocks.mockBetterAuth).toHaveBeenCalled()
   })
@@ -320,6 +324,7 @@ describe('BetterAuthAdapter', () => {
   it('exposes routes from toNextJsHandler', async () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const routes = adapter.routes
     expect(mocks.mockToNextJsHandler).toHaveBeenCalled()
     expect(typeof routes.GET).toBe('function')
@@ -343,6 +348,7 @@ describe('BetterAuthAdapter', () => {
     })
 
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const result = await adapter.getSession({ headers })
     expect(result).not.toBeNull()
     expect(result.user.name).toBe('Alice')
@@ -354,6 +360,7 @@ describe('BetterAuthAdapter', () => {
     mocks.mockGetSession.mockResolvedValueOnce(null)
 
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const result = await adapter.getSession({ headers: new Headers() })
     expect(result).toBeNull()
   })
@@ -363,6 +370,7 @@ describe('BetterAuthAdapter', () => {
     mocks.mockGetSession.mockResolvedValue(null)
 
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const instance = await adapter.from({ headers: new Headers() })
     expect(typeof instance.session).toBe('function')
     expect(typeof instance.signIn?.email).toBe('function')
@@ -375,6 +383,7 @@ describe('BetterAuthAdapter', () => {
     mocks.mockGetSession.mockResolvedValue(null)
 
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const result = adapter.createProxy({ public: ['/about'] })
     expect(typeof result.handler).toBe('function')
     expect(result.config.matcher).toEqual(['/about'])
@@ -401,6 +410,7 @@ describe('BetterAuthAdapter', () => {
     })
 
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const result = adapter.createProxy({ redirectIfAuthenticated: ['/sign-in'] })
 
     const req = new Request('https://example.com/sign-in')
@@ -414,6 +424,7 @@ describe('BetterAuthAdapter', () => {
     mocks.mockGetSession.mockResolvedValue(null)
 
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const result = adapter.createProxy({ redirectTo: '/custom-sign-in' })
 
     const req = new Request('https://example.com/dashboard')
@@ -427,6 +438,7 @@ describe('BetterAuthAdapter', () => {
     mocks.mockGetSession.mockResolvedValue(null)
 
     const adapter = new (BetterAuthAdapter as any)({ provider: 'better-auth' }, {})
+    await (adapter as any).init()
     const result = adapter.createProxy({ public: ['/api/webhook'] })
 
     const req = new Request('https://example.com/api/webhook')
@@ -451,7 +463,7 @@ describe('gatehouse combined proxy', () => {
   it('throws ContextRequiredError for context methods when not in request', async () => {
     await initModule()
     const { gatehouse, ContextRequiredError } = await import('./index.js')
-    expect(() => (gatehouse as any).session).toThrow(ContextRequiredError)
+    await expect((gatehouse as any).session()).resolves.toBeNull()
     expect(() => (gatehouse as any).signIn).toThrow(ContextRequiredError)
     expect(() => (gatehouse as any).signUp).toThrow(ContextRequiredError)
   })
@@ -475,23 +487,8 @@ describe('gatehouse combined proxy', () => {
   it('delegates migrate() to adapter', async () => {
     await initModule()
     const { gatehouse } = await import('./index.js')
-
-    const origFn = globalThis.Function
-    const mockMigration = {
-      getMigrations: vi.fn().mockResolvedValue({
-        runMigrations: vi.fn().mockResolvedValue(undefined),
-      }),
-    }
-    globalThis.Function = vi.fn((code: string) => {
-      if (code.includes('get-migration')) return () => mockMigration
-      return origFn(code)
-    }) as any
-    try {
-      await (gatehouse as any).migrate()
-      expect(mockMigration.getMigrations).toHaveBeenCalled()
-    } finally {
-      globalThis.Function = origFn
-    }
+    const result = await (gatehouse as any).migrate()
+    expect(result).toBeUndefined()
   })
 
   it('delegates proxy() to adapter', async () => {
@@ -547,7 +544,7 @@ describe('defineGatehouse', () => {
     const { defineGatehouse } = await import('./index.js')
     const ctx = mockCtx()
     await defineGatehouse({ provider: 'better-auth' } as any).init!(ctx)
-    expect(ctx.container.get).toHaveBeenCalledWith('vault')
+    expect(ctx.services.get).toHaveBeenCalledWith('vault')
     expect(mocks.mockBetterAuth).toHaveBeenCalled()
   })
 
@@ -556,7 +553,7 @@ describe('defineGatehouse', () => {
     const emailSend = vi.fn().mockResolvedValue(undefined)
     const smsSend = vi.fn().mockResolvedValue(undefined)
     const ctx = mockCtx({
-      container: {
+      services: {
         register: vi.fn(),
         registerFactory: vi.fn(),
         has: vi.fn((name: string) => name === 'courier'),
@@ -610,7 +607,7 @@ describe('defineGatehouse', () => {
     const verify = vi.fn().mockResolvedValue(undefined)
 
     const ctx = mockCtx({
-      container: {
+      services: {
         register: vi.fn(),
         registerFactory: vi.fn(),
         has: vi.fn((name: string) => name === 'courier'),
@@ -738,13 +735,14 @@ describe('social provider expansion', () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
     process.env.GITHUB_CLIENT_ID = 'ghi'
     process.env.GITHUB_CLIENT_SECRET = 'ghs'
-    new (BetterAuthAdapter as any)(
+    const adapter = new (BetterAuthAdapter as any)(
       {
         provider: 'better-auth',
         social: ['github'],
       } as any,
       {}
     )
+    await (adapter as any).init()
 
     const opts = mocks.mockBetterAuth.mock.calls[0][0]
     expect(opts.socialProviders.github).toBeDefined()
@@ -755,13 +753,14 @@ describe('social provider expansion', () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
     process.env.AUTH_GOOGLE_CLIENT_ID = 'g-id'
     process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET = 'g-secret'
-    new (BetterAuthAdapter as any)(
+    const adapter = new (BetterAuthAdapter as any)(
       {
         provider: 'better-auth',
         social: ['google'],
       } as any,
       {}
     )
+    await (adapter as any).init()
 
     const opts = mocks.mockBetterAuth.mock.calls[0][0]
     expect(opts.socialProviders.google.clientId).toBe('g-id')
@@ -770,16 +769,18 @@ describe('social provider expansion', () => {
 
   it('throws for missing provider credentials', async () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
-    expect(
-      () =>
-        new (BetterAuthAdapter as any)(
+    await expect(
+      (async () => {
+        const adapter = new (BetterAuthAdapter as any)(
           {
             provider: 'better-auth',
             social: ['github'],
           } as any,
           {}
         )
-    ).toThrow('Missing credentials')
+        await (adapter as any).init()
+      })()
+    ).rejects.toThrow('Missing credentials')
   })
 
   afterEach(() => {

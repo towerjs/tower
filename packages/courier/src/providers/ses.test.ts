@@ -52,8 +52,11 @@ describe('SesEmailProvider', () => {
       expect(p).toBeInstanceOf(SesEmailProvider)
     })
 
-    it('throws when region missing', () => {
-      expect(() => new SesEmailProvider({ provider: 'ses' })).toThrow('[courier.email] Missing AWS region')
+    it('throws when region missing', async () => {
+      const p = new SesEmailProvider({ provider: 'ses' })
+      await expect(p.send({ from: 'a@b.com', to: 'a@b.com', subject: 'x', text: 'y' })).rejects.toThrow(
+        '[courier.email] Missing AWS region'
+      )
     })
   })
 

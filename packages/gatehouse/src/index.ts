@@ -324,14 +324,14 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
  * })
  * ```
  */
-export function defineGatehouse(config: GatehouseConfig): TowerModule & GatehouseModule {
+export function defineGatehouse(
+  config: GatehouseConfig
+): TowerModule & GatehouseModule & { init: (ctx: TowerContext) => Promise<void> } {
   return {
     name: 'gatehouse',
 
     async initialize(ctx: TowerContext) {
-      const { BetterAuthAdapter: BaAdapter } = await (Function(
-        'return import("./providers/better-auth.js")'
-      )() as Promise<{ BetterAuthAdapter: new (...args: any[]) => any }>)
+      const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
       if (_adapter) {
         /* previous adapter discarded on re-init */
       }
@@ -359,6 +359,10 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
 
     async migrate() {
       return _adapter!.migrate()
+    },
+
+    init(ctx: TowerContext) {
+      return this.initialize!(ctx)
     },
   } satisfies TowerModule & GatehouseModule
 }

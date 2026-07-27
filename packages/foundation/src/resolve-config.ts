@@ -36,14 +36,14 @@ async function discoverConfig(): Promise<TowerConfig> {
   let pathToFileURL: (path: string) => URL
   try {
     ;[{ existsSync }, { join, dirname }, { pathToFileURL }] = await Promise.all([
-      (Function('return import("fs")')() as Promise<typeof import('node:fs')>).then((m) => ({
+      import('node:fs').then((m) => ({
         existsSync: m.existsSync,
       })),
-      (Function('return import("path")')() as Promise<typeof import('node:path')>).then((m) => ({
+      import('node:path').then((m) => ({
         join: m.join,
         dirname: m.dirname,
       })),
-      (Function('return import("url")')() as Promise<typeof import('node:url')>).then((m) => ({
+      import('node:url').then((m) => ({
         pathToFileURL: m.pathToFileURL,
       })),
     ])
@@ -59,7 +59,7 @@ async function discoverConfig(): Promise<TowerConfig> {
     for (const name of CONFIG_NAMES) {
       const fullPath = join(dir, name)
       if (existsSync(fullPath)) {
-        const mod = (await Function('return import("' + pathToFileURL(fullPath).href + '")')()) as {
+        const mod = (await import(pathToFileURL(fullPath).href)) as {
           default: TowerConfig
         }
         return mod.default ?? mod
