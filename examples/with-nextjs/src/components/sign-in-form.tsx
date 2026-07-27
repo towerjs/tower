@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { signIn } from '@/app/actions'
 import { Button } from '@/components/ui/button'
@@ -121,9 +122,9 @@ export function SignInForm({ socialEnabled }: { socialEnabled?: boolean }) {
 
       <p className="mt-6 text-center text-sm text-neutral-500">
         No account?{' '}
-        <a href="/sign-up" className="font-medium text-neutral-900 underline underline-offset-2">
+        <Link href="/sign-up" className="font-medium text-neutral-900 underline underline-offset-2">
           Sign up
-        </a>
+        </Link>
       </p>
     </form>
   )

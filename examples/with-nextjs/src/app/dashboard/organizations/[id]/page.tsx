@@ -1,4 +1,4 @@
-import { getOrganization } from 'towerjs/gatehouse/next'
+import { gatehouse } from 'towerjs/gatehouse'
 import { notFound } from 'next/navigation'
 import { updateOrganization, deleteOrganization, inviteMember, removeMember, cancelInvitation } from '@/app/actions'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 
 export default async function OrganizationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const org = await getOrganization(id)
+  const org = await gatehouse.getOrganization(id)
   if (!org) notFound()
 
   return (

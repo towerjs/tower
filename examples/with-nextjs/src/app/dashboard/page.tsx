@@ -1,9 +1,10 @@
-import { getSession } from 'towerjs/gatehouse/next'
+import Link from 'next/link'
+import { gatehouse } from 'towerjs/gatehouse'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 export default async function DashboardPage() {
-  const session = await getSession()
+  const session = await gatehouse.getSession()
   if (!session) return null
   const { user } = session
 
@@ -32,30 +33,30 @@ export default async function DashboardPage() {
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <a href="/dashboard/settings" className="card-link">
+        <Link href="/dashboard/settings" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Settings</h3>
             <p className="text-sm text-muted-foreground">Update your name and password</p>
           </Card>
-        </a>
-        <a href="/dashboard/security" className="card-link">
+        </Link>
+        <Link href="/dashboard/security" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Security</h3>
             <p className="text-sm text-muted-foreground">Two-factor auth, API keys, and sessions</p>
           </Card>
-        </a>
-        <a href="/dashboard/organizations" className="card-link">
+        </Link>
+        <Link href="/dashboard/organizations" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Organizations</h3>
             <p className="text-sm text-muted-foreground">Manage teams and members</p>
           </Card>
-        </a>
-        <a href="/dashboard/courier" className="card-link">
+        </Link>
+        <Link href="/dashboard/courier" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Courier</h3>
             <p className="text-sm text-muted-foreground">Send test emails, SMS, and push notifications</p>
           </Card>
-        </a>
+        </Link>
       </div>
     </div>
   )

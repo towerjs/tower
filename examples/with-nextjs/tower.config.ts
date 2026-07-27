@@ -1,4 +1,4 @@
-import { defineTower } from '@towerjs/blueprint'
+import { defineTower } from 'towerjs/blueprint'
 
 const emailProvider = (process.env.COURIER_EMAIL_PROVIDER ?? 'resend') as 'resend' | 'smtp' | 'ses'
 const smsEnabled = Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)

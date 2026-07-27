@@ -1,5 +1,8 @@
-import { getSession } from 'towerjs/gatehouse/next'
+import Link from 'next/link'
+import { gatehouse } from 'towerjs/gatehouse'
 import { signOut } from '@/app/actions'
+
+export const dynamic = 'force-dynamic'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home' },
@@ -10,41 +13,37 @@ const NAV_ITEMS = [
 ]
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession()
+  const user = await gatehouse.requireUser()
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-3">
         <div className="flex items-center gap-6">
-          <a href="/dashboard" className="text-sm font-bold tracking-tight">
+          <Link href="/dashboard" className="text-sm font-bold tracking-tight">
             Tower
-          </a>
+          </Link>
           <nav className="hidden items-center gap-1 md:flex">
             {NAV_ITEMS.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className="rounded-md px-3 py-1.5 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          {session && (
-            <>
-              <span className="hidden text-sm text-neutral-500 md:block">{session.user.email}</span>
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                >
-                  Sign out
-                </button>
-              </form>
-            </>
-          )}
+          <span className="hidden text-sm text-neutral-500 md:block">{user.email}</span>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </header>
 
@@ -52,13 +51,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <nav className="hidden w-56 shrink-0 border-r border-neutral-200 p-4 md:block">
           <div className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className="rounded-md px-3 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </div>
         </nav>

@@ -1,6 +1,6 @@
-export { signIn, signUp, signOut } from 'towerjs/gatehouse/next'
+export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
 
-import { action } from 'towerjs/next'
+import { action } from 'towerjs/gatehouse/next'
 import { gatehouse } from 'towerjs/gatehouse'
 import { courier } from 'towerjs/courier'
 

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { signUp } from '@/app/actions'
 import { Button } from '@/components/ui/button'
@@ -28,9 +29,9 @@ export function SignUpForm() {
 
       <p className="text-center text-sm text-neutral-500">
         Already have an account?{' '}
-        <a href="/sign-in" className="font-medium text-neutral-900 underline underline-offset-2">
+        <Link href="/sign-in" className="font-medium text-neutral-900 underline underline-offset-2">
           Sign in
-        </a>
+        </Link>
       </p>
     </form>
   )

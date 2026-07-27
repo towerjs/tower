@@ -1,11 +1,11 @@
-import { getSession, getUserSessions, getApiKeys } from 'towerjs/gatehouse/next'
+import { gatehouse } from 'towerjs/gatehouse'
 import { SecurityContent } from '@/components/security-content'
 
 export default async function SecurityPage() {
-  const session = await getSession()
+  const session = await gatehouse.getSession()
   if (!session) return null
-  const userSessions = await getUserSessions()
-  const apiKeys = await getApiKeys(session.user.id)
+  const userSessions = await gatehouse.getUserSessions()
+  const apiKeys = await gatehouse.getApiKeys(session.user.id)
 
   return (
     <SecurityContent

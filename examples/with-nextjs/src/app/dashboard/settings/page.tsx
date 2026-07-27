@@ -1,11 +1,11 @@
-import { getSession } from 'towerjs/gatehouse/next'
+import { gatehouse } from 'towerjs/gatehouse'
 import { updateProfile, changePassword } from '@/app/actions'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 export default async function SettingsPage() {
-  const session = await getSession()
+  const session = await gatehouse.getSession()
   if (!session) return null
   const { user } = session
 

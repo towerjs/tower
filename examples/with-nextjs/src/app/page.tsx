@@ -1,20 +1,22 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-        <a href="/" className="text-lg font-bold tracking-tight">
+        <Link href="/" className="text-lg font-bold tracking-tight">
           Tower
-        </a>
+        </Link>
         <nav className="flex items-center gap-4 text-sm">
-          <a href="/sign-in" className="text-neutral-600 hover:text-neutral-900">
+          <Link href="/sign-in" className="text-neutral-600 hover:text-neutral-900">
             Sign in
-          </a>
-          <a
+          </Link>
+          <Link
             href="/sign-up"
             className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
           >
             Get started
-          </a>
+          </Link>
         </nav>
       </header>
 
@@ -30,18 +32,18 @@ export default function Home() {
             the box.
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
-            <a
+            <Link
               href="/sign-up"
               className="rounded-md bg-neutral-900 px-6 py-3 text-sm font-medium text-white hover:bg-neutral-800"
             >
               Get started
-            </a>
-            <a
+            </Link>
+            <Link
               href="/sign-in"
               className="rounded-md border border-neutral-300 px-6 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-100"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </section>
 

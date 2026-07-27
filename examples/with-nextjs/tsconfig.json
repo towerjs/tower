@@ -20,13 +20,11 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "towerjs": ["../../packages/towerjs/dist/index"],
       "@towerjs/foundation": ["../../packages/foundation/dist/index"],
       "@towerjs/blueprint": ["../../packages/blueprint/dist/index"],
       "@towerjs/vault": ["../../packages/vault/dist/index"],
       "@towerjs/gatehouse": ["../../packages/gatehouse/dist/index"],
-      "@towerjs/gatehouse/next-js": ["../../packages/gatehouse/dist/frameworks/next-js"],
-      "@towerjs/gatehouse/next": ["../../packages/gatehouse/dist/frameworks/next-js"]
+      "@towerjs/gatehouse/next": ["../../packages/gatehouse/dist/frameworks/next"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "**/*.mts"],

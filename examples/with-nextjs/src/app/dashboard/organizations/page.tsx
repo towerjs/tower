@@ -1,11 +1,12 @@
-import { getOrganizations } from 'towerjs/gatehouse/next'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import Link from 'next/link'
+import { gatehouse } from 'towerjs/gatehouse'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createOrganization } from '@/app/actions'
 
 export default async function OrganizationsPage() {
-  const orgs = await getOrganizations()
+  const orgs = await gatehouse.getOrganizations()
 
   return (
     <div className="space-y-8">
@@ -21,12 +22,12 @@ export default async function OrganizationsPage() {
       {orgs.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {orgs.map((org) => (
-            <a key={org.id} href={`/dashboard/organizations/${org.id}`}>
+            <Link key={org.id} href={`/dashboard/organizations/${org.id}`}>
               <Card className="p-5 hover:border-primary/50 transition-colors">
                 <h3 className="font-medium">{org.name}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{org.slug}</p>
               </Card>
-            </a>
+            </Link>
           ))}
         </div>
       )}

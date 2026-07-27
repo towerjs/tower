@@ -1,5 +1,3 @@
-import type { NextConfig } from 'next'
+import { withTowerEdge } from '@towerjs/edge'
 
-const nextConfig: NextConfig = {/* config options here */}
-
-export default nextConfig
+export default withTowerEdge({})
