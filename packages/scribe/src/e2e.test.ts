@@ -82,10 +82,10 @@ describe('scaffolding — real file output', () => {
 
     const envExample = readFileSync(join(projectDir, '.env.example'), 'utf-8')
     expect(envExample).toContain('DATABASE_URL')
-    expect(envExample).toContain('BETTER_AUTH_SECRET')
+    expect(envExample).toContain('GATEHOUSE_SECRET')
 
     const env = readFileSync(join(projectDir, '.env'), 'utf-8')
-    expect(env).toContain('BETTER_AUTH_SECRET')
+    expect(env).toContain('GATEHOUSE_SECRET')
     expect(env).toContain('DATABASE_URL')
   })
 
@@ -99,7 +99,7 @@ describe('scaffolding — real file output', () => {
     expect(existsSync(join(projectDir, '.env'))).toBe(true)
     const env = readFileSync(join(projectDir, '.env'), 'utf-8')
     expect(env).toContain('DATABASE_URL')
-    expect(env).not.toContain('BETTER_AUTH_SECRET')
+    expect(env).not.toContain('GATEHOUSE_SECRET')
     expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(false)
   })
 

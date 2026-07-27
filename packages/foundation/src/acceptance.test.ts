@@ -102,7 +102,7 @@ describe('boot — full tower', () => {
             provider: 'better-auth',
             appName: 'Tower Acceptance Test',
             baseURL: 'http://localhost:3000',
-            secret: process.env.BETTER_AUTH_SECRET ?? 'test-secret-32-chars-minimum!!',
+            secret: process.env.GATEHOUSE_SECRET ?? process.env.BETTER_AUTH_SECRET ?? 'test-secret-32-chars-minimum!!',
             credentials: { enabled: true },
           },
           courier: {},

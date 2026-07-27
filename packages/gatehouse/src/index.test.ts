@@ -521,7 +521,10 @@ describe('gatehouse combined proxy', () => {
     const { gatehouse, ContextRequiredError } = await import('./index.js')
     expect(() => (gatehouse as any).from).toThrow(ContextRequiredError)
     expect(() => (gatehouse as any).migrate).toThrow(ContextRequiredError)
-    expect(() => (gatehouse as any).proxy).toThrow(ContextRequiredError)
+    expect(typeof (gatehouse as any).proxy).toBe('function')
+    const result = (gatehouse as any).proxy()
+    expect(result).toHaveProperty('handler')
+    expect(typeof result.handler).toBe('function')
   })
 })
 
@@ -749,10 +752,10 @@ describe('social provider expansion', () => {
     expect(opts.socialProviders.github.clientId).toBe('ghi')
   })
 
-  it('reads AUTH_ and BETTER_AUTH_ prefixed env vars', async () => {
+  it('reads GATEHOUSE_, AUTH_ and BETTER_AUTH_ prefixed env vars', async () => {
     const { BetterAuthAdapter } = await import('./providers/better-auth.js')
     process.env.AUTH_GOOGLE_CLIENT_ID = 'g-id'
-    process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET = 'g-secret'
+    process.env.GATEHOUSE_GOOGLE_CLIENT_SECRET = 'g-secret'
     const adapter = new (BetterAuthAdapter as any)(
       {
         provider: 'better-auth',
@@ -787,6 +790,6 @@ describe('social provider expansion', () => {
     delete process.env.GITHUB_CLIENT_ID
     delete process.env.GITHUB_CLIENT_SECRET
     delete process.env.AUTH_GOOGLE_CLIENT_ID
-    delete process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET
+    delete process.env.GATEHOUSE_GOOGLE_CLIENT_SECRET
   })
 })

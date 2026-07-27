@@ -135,8 +135,8 @@ describe('envExample', () => {
     }
     const result = envExample(state)
 
-    expect(result).toContain('BETTER_AUTH_SECRET')
-    expect(result).toContain('BETTER_AUTH_URL')
+    expect(result).toContain('GATEHOUSE_SECRET')
+    expect(result).toContain('GATEHOUSE_URL')
   })
 })
 

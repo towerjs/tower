@@ -43,7 +43,11 @@ export class BetterAuthAdapter {
       import('@better-auth/api-key'),
     ])
 
-    const baseURL = config.baseURL || process.env.BETTER_AUTH_URL
+    const baseURL =
+      config.baseURL ||
+      process.env.GATEHOUSE_URL ||
+      process.env.BETTER_AUTH_URL ||
+      (process.env.NODE_ENV !== 'production' ? 'http://localhost:3000' : undefined)
 
     const creds =
       config.credentials === true
@@ -105,7 +109,11 @@ export class BetterAuthAdapter {
 
     const baOptions: Record<string, unknown> = {
       database: { db, type: 'postgres' },
-      secret: config.passThrough?.secret || process.env.BETTER_AUTH_SECRET,
+      secret:
+        config.passThrough?.secret ||
+        process.env.GATEHOUSE_SECRET ||
+        process.env.BETTER_AUTH_SECRET ||
+        (process.env.NODE_ENV !== 'production' ? 'dev-secret-do-not-use-in-production-at-least-32-chars' : undefined),
       baseURL,
       basePath: config.passThrough?.basePath,
       appName: config.appName,
@@ -294,7 +302,12 @@ export class BetterAuthAdapter {
 }
 
 function env(key: string): string | undefined {
-  return process.env[key] || process.env[`AUTH_${key}`] || process.env[`BETTER_AUTH_${key}`]
+  return (
+    process.env[key] ||
+    process.env[`GATEHOUSE_${key}`] ||
+    process.env[`AUTH_${key}`] ||
+    process.env[`BETTER_AUTH_${key}`]
+  )
 }
 
 function expandSocial(

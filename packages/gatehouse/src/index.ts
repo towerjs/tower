@@ -276,10 +276,20 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
       return value
     }
 
+    if (prop === 'proxy') {
+      return (options?: any) => {
+        if (_adapter) return _adapter!.createProxy(options)
+        return {
+          handler: async (_request: Request) => {
+            return undefined
+          },
+        }
+      }
+    }
+
     if (_adapter) {
       if (prop === 'from') return (request: any) => _adapter!.from(request)
       if (prop === 'migrate') return () => _adapter!.migrate()
-      if (prop === 'proxy') return (options?: any) => _adapter!.createProxy(options)
       if (prop === 'provider') return _adapter!.provider
       if (prop === 'routes') return _adapter!.routes
 

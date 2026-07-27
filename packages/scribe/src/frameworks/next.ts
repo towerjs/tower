@@ -75,8 +75,8 @@ export const nextAdapter: FrameworkAdapter = {
       if (state.modules.gatehouse) {
         envLines.push(
           `# Authentication — auto-generated during setup`,
-          `BETTER_AUTH_SECRET="${randomBytes(32).toString('base64')}"`,
-          `BETTER_AUTH_URL="http://localhost:3000"`
+          `GATEHOUSE_SECRET="${randomBytes(32).toString('base64')}"`,
+          `GATEHOUSE_URL="http://localhost:3000"`
         )
       }
       if (state.modules.vault) {
@@ -182,8 +182,8 @@ export function envExample(state: ProjectState): string {
     if (name === 'gatehouse') {
       if (vars.length > 0) vars.push('')
       vars.push('# Authentication')
-      vars.push('BETTER_AUTH_SECRET=')
-      vars.push('BETTER_AUTH_URL="http://localhost:3000"')
+      vars.push('GATEHOUSE_SECRET=')
+      vars.push('GATEHOUSE_URL="http://localhost:3000"')
     }
   }
 
