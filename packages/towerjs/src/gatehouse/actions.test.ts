@@ -4,6 +4,7 @@ const mockHeaders = vi.fn()
 const mockCookies = vi.fn()
 const mockRedirect = vi.fn()
 const mockGatehouseFrom = vi.fn()
+const mockGetTowerApp = vi.fn()
 
 vi.mock('next/headers', () => ({
   headers: mockHeaders,
@@ -14,14 +15,19 @@ vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
 }))
 
-vi.mock('../gatehouse', () => ({
-  gatehouse: { from: mockGatehouseFrom },
+vi.mock('../runtime', () => ({
+  getTowerApp: mockGetTowerApp,
+}))
+
+vi.mock('@towerjs/gatehouse', () => ({
+  Gatehouse: { from: mockGatehouseFrom },
 }))
 
 describe('signIn', () => {
   it('redirects to /dashboard on success', async () => {
     const { signIn } = await import('./actions')
 
+    mockGetTowerApp.mockResolvedValue(undefined)
     mockHeaders.mockResolvedValue(new Headers())
     mockCookies.mockResolvedValue({ set: vi.fn() })
     mockGatehouseFrom.mockResolvedValue({
@@ -40,6 +46,7 @@ describe('signIn', () => {
   it('formData redirectTo overrides default', async () => {
     const { signIn } = await import('./actions')
 
+    mockGetTowerApp.mockResolvedValue(undefined)
     mockHeaders.mockResolvedValue(new Headers())
     mockCookies.mockResolvedValue({ set: vi.fn() })
     mockGatehouseFrom.mockResolvedValue({
@@ -59,6 +66,7 @@ describe('signIn', () => {
   it('sets session cookie on successful sign in', async () => {
     const { signIn } = await import('./actions')
 
+    mockGetTowerApp.mockResolvedValue(undefined)
     const cookieSet = vi.fn()
     mockHeaders.mockResolvedValue(new Headers())
     mockCookies.mockResolvedValue({ set: cookieSet })
@@ -84,6 +92,7 @@ describe('signOut', () => {
   it('clears session cookie and redirects to /sign-in', async () => {
     const { signOut } = await import('./actions')
 
+    mockGetTowerApp.mockResolvedValue(undefined)
     const cookieSet = vi.fn()
     mockHeaders.mockResolvedValue(new Headers())
     mockCookies.mockResolvedValue({ set: cookieSet })

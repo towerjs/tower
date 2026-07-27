@@ -2,7 +2,16 @@
 
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { gatehouse } from '../gatehouse.js'
+import { getTowerApp } from '../runtime.js'
+
+let _gatehouse: Promise<typeof import('@towerjs/gatehouse')> | undefined
+
+async function ghModule(): Promise<typeof import('@towerjs/gatehouse')> {
+  if (!_gatehouse) {
+    _gatehouse = getTowerApp().then(() => import('@towerjs/gatehouse'))
+  }
+  return _gatehouse
+}
 
 async function setSessionCookie(token: string | null | undefined) {
   const c = await cookies()
@@ -20,8 +29,8 @@ async function setSessionCookie(token: string | null | undefined) {
 }
 
 export async function signIn(formData: FormData) {
-  const h = await headers()
-  const gh = await gatehouse.from({ headers: h })
+  const [h, { Gatehouse }] = await Promise.all([headers(), ghModule()])
+  const gh = await Gatehouse.from({ headers: h })
 
   const redirectTo = (formData.get('redirectTo') as string) ?? '/dashboard'
   const email = formData.get('email') as string
@@ -37,8 +46,8 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signUp(formData: FormData) {
-  const h = await headers()
-  const gh = await gatehouse.from({ headers: h })
+  const [h, { Gatehouse }] = await Promise.all([headers(), ghModule()])
+  const gh = await Gatehouse.from({ headers: h })
 
   const redirectTo = (formData.get('redirectTo') as string) ?? '/dashboard'
   const name = formData.get('name') as string
@@ -55,8 +64,8 @@ export async function signUp(formData: FormData) {
 }
 
 export async function signOut(formData?: FormData) {
-  const h = await headers()
-  const gh = await gatehouse.from({ headers: h })
+  const [h, { Gatehouse }] = await Promise.all([headers(), ghModule()])
+  const gh = await Gatehouse.from({ headers: h })
 
   const redirectTo = (formData?.get('redirectTo') as string) ?? '/sign-in'
 
