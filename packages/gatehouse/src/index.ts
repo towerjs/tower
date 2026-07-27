@@ -1,14 +1,12 @@
-import type { TowerModule, TowerInitContext } from '@towerjs/blueprint'
-import { registerModule, towerContext } from '@towerjs/blueprint'
+import type { TowerModule, TowerContext } from '@towerjs/blueprint'
+import { registerModule } from '@towerjs/blueprint'
+import { towerContext, getRequestContextResolver } from '@towerjs/foundation'
 import type { Kysely } from 'kysely'
 import type {
   GatehouseConfig,
   GatehouseModule,
   GatehouseInstance,
-  GatehouseUser,
   Session,
-  UpdateUserData,
-  EmailOtpSendParams,
   EmailOtpConfirmParams,
   PhoneOtpSendParams,
   PhoneOtpConfirmParams,
@@ -42,15 +40,28 @@ import type {
   OrganizationRoleUpdateParams,
   Identity,
   AccessToken,
+  GatehouseSession,
   TwoFactorOtpSendParams,
   TwoFactorOtpVerifyParams,
   ProxyOptions,
   ProxyResult,
 } from './types.js'
+import type { GatehouseUser } from './types.js'
 import { AuthenticationError, AuthorizationError } from './types.js'
-import { BetterAuthAdapter } from './providers/better-auth.js'
+import type { BetterAuthAdapter } from './providers/better-auth.js'
 import { ContextRequiredError } from './context.js'
-import type { CourierModule } from '@towerjs/courier'
+interface EmailService {
+  send(params: { to: string; subject: string; text?: string; html?: string }): Promise<{ id: string; provider: string }>
+}
+
+interface SmsService {
+  send(params: { to: string; body: string }): Promise<{ id?: string; provider: string; status: string }>
+}
+
+interface CourierLike {
+  email: EmailService
+  sms: SmsService
+}
 
 export type {
   GatehouseConfig,
@@ -64,16 +75,16 @@ export type {
 } from './types.js'
 
 export type {
-  MagicLinkOptions,
-  EmailOTPOptions,
-  PhoneNumberOptions,
-  TwoFactorOptions,
-  OrganizationOptions,
-  AdminOptions,
-} from 'better-auth/plugins'
-export type { SocialProviders } from 'better-auth/types'
-export type { PasskeyOptions } from '@better-auth/passkey'
-export type { ApiKeyOptions } from '@better-auth/api-key'
+  GatehouseMagicLinkOptions,
+  GatehouseEmailOTPOptions,
+  GatehousePhoneNumberOptions,
+  GatehouseTwoFactorOptions,
+  GatehouseOrganizationOptions,
+  GatehouseAdminOptions,
+  GatehouseSocialProviders,
+  GatehousePasskeyOptions,
+  GatehouseApiKeyOptions,
+} from './types.js'
 
 export type {
   EmailOtpConfirmParams,
@@ -147,6 +158,61 @@ export const Gatehouse = {
   },
 }
 
+/**
+ * Reads the current session using the registered framework adapter's
+ * request context. Returns null if no session exists or no adapter is registered.
+ */
+export async function getSession(): Promise<Session | null> {
+  return requestGetSession()
+}
+
+/**
+ * Returns the current user using the registered framework adapter's
+ * request context. Returns null if not authenticated.
+ */
+export async function user(): Promise<GatehouseUser | null> {
+  const s = await requestGetSession()
+  return s?.user ?? null
+}
+
+/**
+ * Returns the current user or throws AuthenticationError.
+ */
+export async function requireUser(): Promise<GatehouseUser> {
+  return requestRequireUser()
+}
+
+/**
+ * Lists all sessions for the current user.
+ */
+export async function getUserSessions(): Promise<GatehouseSession[]> {
+  return withRequestContext((instance) => instance.sessions.list())
+}
+
+/**
+ * Lists API keys for a given user.
+ */
+export async function getApiKeys(userId: string): Promise<ApiKeyInfo[]> {
+  return withRequestContext(async (instance) => {
+    const { keys } = await instance.apiKeys.list(userId)
+    return keys
+  })
+}
+
+/**
+ * Lists organizations the current user belongs to.
+ */
+export async function getOrganizations(): Promise<Organization[]> {
+  return withRequestContext((instance) => instance.organizations.list())
+}
+
+/**
+ * Gets a single organization by ID. Returns null if not found.
+ */
+export async function getOrganization(id: string): Promise<OrganizationFull | null> {
+  return withRequestContext((instance) => instance.organizations.getFull(id))
+}
+
 /** Runs a handler within a request-scoped gatehouse context. */
 export async function runWithRequest<T>(
   request: Request | { headers: Headers },
@@ -157,14 +223,47 @@ export async function runWithRequest<T>(
   return towerContext.run({ gatehouse: instance }, handler)
 }
 
-type GatehouseAPI = GatehouseModule & GatehouseInstance
+type GatehouseFacadeMethods = {
+  getSession(): Promise<Session | null>
+  session(): Promise<Session | null>
+  user(): Promise<GatehouseUser | null>
+  requireUser(): Promise<GatehouseUser>
+  getUserSessions(): Promise<GatehouseSession[]>
+  getApiKeys(userId: string): Promise<ApiKeyInfo[]>
+  getOrganizations(): Promise<Organization[]>
+  getOrganization(id: string): Promise<OrganizationFull | null>
+}
+
+type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseFacadeMethods> & GatehouseFacadeMethods
+
+async function withRequestContext<T>(fn: (instance: GatehouseInstance) => Promise<T>): Promise<T> {
+  const resolver = getRequestContextResolver()
+  if (!resolver) throw new ContextRequiredError('No request context available.')
+  const rc = await resolver()
+  if (!_adapter) throw new Error('Gatehouse not initialized')
+  const instance = await _adapter.from(rc)
+  return fn(instance)
+}
+
+async function requestGetSession(): Promise<Session | null> {
+  const resolver = getRequestContextResolver()
+  if (!resolver) return null
+  return withRequestContext((instance) => instance.session())
+}
+
+async function requestRequireUser(): Promise<GatehouseUser> {
+  const s = await requestGetSession()
+  if (!s) throw new AuthenticationError('Authentication required')
+  return s.user
+}
 
 /**
  * Proxy singleton for accessing gatehouse.
  *
  * Inside an ALS context (action, withGatehouse, runWithRequest) it delegates to
- * the per-request instance. Outside ALS, only module-level methods like
- * `from()`, `migrate()`, `proxy()`, and `routes` are available.
+ * the per-request instance. Outside ALS, request-based methods
+ * (`getSession`, `session`, `user`, `requireUser`) use the registered
+ * framework adapter to resolve the request context.
  */
 export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
   get(_, prop) {
@@ -183,6 +282,20 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
       if (prop === 'proxy') return (options?: any) => _adapter!.createProxy(options)
       if (prop === 'provider') return _adapter!.provider
       if (prop === 'routes') return _adapter!.routes
+
+      if (prop === 'getSession' || prop === 'session') return requestGetSession
+      if (prop === 'user') return async () => withRequestContext((instance) => instance.user()).catch(() => null)
+      if (prop === 'requireUser') return requestRequireUser
+      if (prop === 'getUserSessions') return () => withRequestContext((instance) => instance.sessions.list())
+      if (prop === 'getApiKeys')
+        return (userId: string) =>
+          withRequestContext(async (instance) => {
+            const { keys } = await instance.apiKeys.list(userId)
+            return keys
+          })
+      if (prop === 'getOrganizations') return () => withRequestContext((instance) => instance.organizations.list())
+      if (prop === 'getOrganization')
+        return (id: string) => withRequestContext((instance) => instance.organizations.getFull(id))
     }
 
     if (prop === Symbol.toPrimitive) return undefined
@@ -215,13 +328,17 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
   return {
     name: 'gatehouse',
 
-    async init(ctx: TowerInitContext) {
+    async initialize(ctx: TowerContext) {
+      const { BetterAuthAdapter: BaAdapter } = await (Function(
+        'return import("./providers/better-auth.js")'
+      )() as Promise<{ BetterAuthAdapter: new (...args: any[]) => any }>)
       if (_adapter) {
         /* previous adapter discarded on re-init */
       }
-      const vault = ctx.container.get<{ db: Kysely<unknown> }>('vault')
-      const courier = ctx.container.has('courier') ? ctx.container.get<CourierModule>('courier') : undefined
-      _adapter = new BetterAuthAdapter(withCourierTransport(config, courier), vault.db)
+      const vault = ctx.services.get<{ db: Kysely<unknown> }>('vault')
+      const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
+      _adapter = new (BaAdapter as any)(withCourierTransport(config, courier), vault.db) as BetterAuthAdapter
+      await (_adapter as any).init()
     },
 
     get provider() {
@@ -246,9 +363,13 @@ export function defineGatehouse(config: GatehouseConfig): TowerModule & Gatehous
   } satisfies TowerModule & GatehouseModule
 }
 
-registerModule('gatehouse', (config) => defineGatehouse(config as unknown as GatehouseConfig))
+registerModule({
+  name: 'gatehouse',
+  dependsOn: ['vault'],
+  factory: (config) => defineGatehouse(config as unknown as GatehouseConfig),
+})
 
-function withCourierTransport(config: GatehouseConfig, courier?: CourierModule): GatehouseConfig {
+function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
   if (!courier) return config
 
   const appName = config.appName ?? 'Tower'

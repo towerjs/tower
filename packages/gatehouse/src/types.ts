@@ -315,15 +315,35 @@ export interface OrganizationInviteParams {
 }
 
 import type {
-  MagicLinkOptions,
-  EmailOTPOptions,
-  PhoneNumberOptions,
-  TwoFactorOptions,
-  OrganizationOptions,
-  AdminOptions,
+  MagicLinkOptions as BetterAuthMagicLinkOptions,
+  EmailOTPOptions as BetterAuthEmailOTPOptions,
+  PhoneNumberOptions as BetterAuthPhoneNumberOptions,
+  TwoFactorOptions as BetterAuthTwoFactorOptions,
+  OrganizationOptions as BetterAuthOrganizationOptions,
+  AdminOptions as BetterAuthAdminOptions,
 } from 'better-auth/plugins'
-import type { PasskeyOptions } from '@better-auth/passkey'
-import type { ApiKeyOptions } from '@better-auth/api-key'
+import type { SocialProviders as BetterAuthSocialProviders } from 'better-auth/types'
+import type { PasskeyOptions as BetterAuthPasskeyOptions } from '@better-auth/passkey'
+import type { ApiKeyOptions as BetterAuthApiKeyOptions } from '@better-auth/api-key'
+
+/** Options for magic-link authentication. Maps to the better-auth magic link plugin. */
+export type GatehouseMagicLinkOptions = BetterAuthMagicLinkOptions
+/** Options for email OTP authentication. Maps to the better-auth email OTP plugin. */
+export type GatehouseEmailOTPOptions = BetterAuthEmailOTPOptions
+/** Options for phone number OTP authentication. Maps to the better-auth phone number plugin. */
+export type GatehousePhoneNumberOptions = BetterAuthPhoneNumberOptions
+/** Options for two-factor authentication. Maps to the better-auth 2FA plugin. */
+export type GatehouseTwoFactorOptions = BetterAuthTwoFactorOptions
+/** Options for organizations. Maps to the better-auth organization plugin. */
+export type GatehouseOrganizationOptions = BetterAuthOrganizationOptions
+/** Options for admin user management. Maps to the better-auth admin plugin. */
+export type GatehouseAdminOptions = BetterAuthAdminOptions
+/** Supported social provider identifiers. Maps to better-auth social provider types. */
+export type GatehouseSocialProviders = BetterAuthSocialProviders
+/** Options for passkey (WebAuthn) authentication. Maps to `@better-auth/passkey`. */
+export type GatehousePasskeyOptions = BetterAuthPasskeyOptions
+/** Options for API key management. Maps to `@better-auth/api-key`. */
+export type GatehouseApiKeyOptions = BetterAuthApiKeyOptions
 
 type SocialProviderEntry = {
   clientId?: string | string[]
@@ -396,14 +416,14 @@ export interface GatehouseConfig {
   }
 
   social?: GatehouseSocialConfig
-  passkeys?: boolean | PasskeyOptions
-  magicLinks?: boolean | Partial<MagicLinkOptions>
-  emailOtp?: boolean | Partial<EmailOTPOptions>
-  phoneNumber?: boolean | Partial<PhoneNumberOptions>
-  twoFactor?: boolean | TwoFactorOptions
-  organization?: boolean | OrganizationOptions
-  admin?: boolean | AdminOptions
-  apiKey?: boolean | ApiKeyOptions
+  passkeys?: boolean | GatehousePasskeyOptions
+  magicLinks?: boolean | Partial<GatehouseMagicLinkOptions>
+  emailOtp?: boolean | Partial<GatehouseEmailOTPOptions>
+  phoneNumber?: boolean | Partial<GatehousePhoneNumberOptions>
+  twoFactor?: boolean | GatehouseTwoFactorOptions
+  organization?: boolean | GatehouseOrganizationOptions
+  admin?: boolean | GatehouseAdminOptions
+  apiKey?: boolean | GatehouseApiKeyOptions
 
   baseURL?:
     | string

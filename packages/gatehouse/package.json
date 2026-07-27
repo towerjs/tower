@@ -8,9 +8,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./next-js": {
-      "types": "./dist/frameworks/next-js.d.ts",
-      "default": "./dist/frameworks/next-js.js"
+    "./next": {
+      "types": "./dist/frameworks/next.d.ts",
+      "default": "./dist/frameworks/next.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
     }
   },
   "files": [
@@ -23,9 +27,12 @@
     "@better-auth/api-key": "^1.6.25",
     "@better-auth/passkey": "^1.6.25",
     "@towerjs/blueprint": "workspace:*",
-    "@towerjs/courier": "workspace:*",
+    "@towerjs/foundation": "workspace:*",
     "better-auth": "^1.6.25",
     "kysely": "^0.29.4"
+  },
+  "peerDependencies": {
+    "next": "^16"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

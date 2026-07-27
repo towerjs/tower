@@ -1,7 +1,14 @@
-import { cookies, headers } from 'next/headers'
-import { towerContext } from '@towerjs/blueprint'
+import { towerContext, setRequestContextResolver } from '@towerjs/foundation'
 import { runWithRequest, getAuth, getRoutes, Gatehouse } from '../index.js'
-import type { GatehouseInstance, Session } from '../types.js'
+import type { GatehouseInstance } from '../types.js'
+
+setRequestContextResolver(async () => {
+  const { unstable_noStore } = await import('next/cache')
+  unstable_noStore()
+  const { headers } = await import('next/headers')
+  const h = await headers()
+  return { headers: h }
+})
 
 type NextRouteContext = {
   params: Promise<Record<string, string>>
@@ -16,7 +23,7 @@ function sessionCookieName(config?: GatehouseNextConfig): string {
 }
 
 function cookieString(token: string, config?: GatehouseNextConfig): string {
-  const secure = process.env.NODE_ENV === 'production'
+  const secure = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'
   return [
     `${sessionCookieName(config)}=${token}`,
     'HttpOnly',
@@ -44,7 +51,7 @@ function clearCookieString(config?: GatehouseNextConfig): string {
  * @example
  * ```ts
  * "use server"
- * import { action } from "@towerjs/gatehouse/next-js"
+ * import { action } from "@towerjs/gatehouse/next"
  * import { gatehouse } from "@towerjs/gatehouse"
  * import { redirect } from "next/navigation"
  *
@@ -59,6 +66,7 @@ export function action<TResult, TArgs extends unknown[]>(
   config?: GatehouseNextConfig
 ): (...args: TArgs) => Promise<TResult> {
   return async (...args: TArgs): Promise<TResult> => {
+    const { headers } = await import('next/headers')
     const h = await headers()
     const gh = await Gatehouse.from({ headers: h })
 
@@ -93,6 +101,7 @@ export function action<TResult, TArgs extends unknown[]>(
 
     const result: TResult = await towerContext.run({ gatehouse: tracked }, () => handler(...args))
 
+    const { cookies } = await import('next/headers')
     const c = await cookies()
     const name = sessionCookieName(config)
     if (pendingToken) {
@@ -107,17 +116,6 @@ export function action<TResult, TArgs extends unknown[]>(
     }
     return result
   }
-}
-
-/**
- * Reads the current session in a Server Component (RSC).
- */
-export async function getSession(): Promise<Session | null> {
-  const c = await cookies()
-  const auth = await Gatehouse.from({
-    headers: new Headers({ Cookie: c.toString() }),
-  })
-  return auth.session()
 }
 
 /**

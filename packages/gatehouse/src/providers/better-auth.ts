@@ -1,9 +1,4 @@
-import { betterAuth } from 'better-auth'
-import { toNextJsHandler } from 'better-auth/next-js'
 import type { Kysely } from 'kysely'
-import { magicLink, emailOTP, twoFactor, organization, admin, phoneNumber } from 'better-auth/plugins'
-import { passkey } from '@better-auth/passkey'
-import { apiKey } from '@better-auth/api-key'
 import type {
   GatehouseConfig,
   GatehouseInstance,
@@ -16,6 +11,10 @@ import type {
 import { AuthenticationError } from '../types.js'
 import { buildProxiedApi, buildFacade } from '../facade-builder.js'
 
+function dyn<T>(mod: string): Promise<T> {
+  return Function('return import("' + mod.replace(/"/g, '\\"') + '")')() as Promise<T>
+}
+
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
   private auth: any
@@ -26,6 +25,34 @@ export class BetterAuthAdapter {
   constructor(config: GatehouseConfig, db: Kysely<unknown>) {
     this.db = db
     this.config = config
+  }
+
+  /**
+   * Async factory — initializes better-auth with all plugins.
+   * Must be called before any method is used.
+   */
+  async init(): Promise<void> {
+    const config = this.config
+    const db = this.db
+
+    const [
+      { betterAuth },
+      { magicLink, emailOTP, twoFactor, organization, admin, phoneNumber },
+      passkeyMod,
+      apiKeyMod,
+    ] = await Promise.all([
+      dyn<{ betterAuth: (o: any) => any }>('better-auth'),
+      dyn<{
+        magicLink: (o: any) => any
+        emailOTP: (o: any) => any
+        twoFactor: () => any
+        organization: () => any
+        admin: () => any
+        phoneNumber: (o: any) => any
+      }>('better-auth/plugins'),
+      dyn<{ passkey: (o?: any) => any }>('@better-auth/passkey'),
+      dyn<{ apiKey: (o?: any) => any }>('@better-auth/api-key'),
+    ])
 
     const baseURL = config.baseURL || process.env.BETTER_AUTH_URL
 
@@ -42,7 +69,7 @@ export class BetterAuthAdapter {
       const sendMagicLink =
         typeof config.magicLinks === 'object' && config.magicLinks.sendMagicLink
           ? config.magicLinks.sendMagicLink
-          : async ({ email, url }: { email: string; url: string }) => {
+          : async (_params: { email: string; url: string }) => {
               throw new Error(
                 `sendMagicLink not implemented — provide a sendMagicLink callback in the magicLinks config`
               )
@@ -53,7 +80,7 @@ export class BetterAuthAdapter {
       const sendVerificationOTP =
         typeof config.emailOtp === 'object' && config.emailOtp.sendVerificationOTP
           ? config.emailOtp.sendVerificationOTP
-          : async ({ email, otp, type }: { email: string; otp: string; type: string }) => {
+          : async (_params: { email: string; otp: string; type: string }) => {
               throw new Error(
                 `sendVerificationOTP not implemented — provide a sendVerificationOTP callback in the emailOtp config`
               )
@@ -64,16 +91,16 @@ export class BetterAuthAdapter {
       const sendOTP =
         typeof config.phoneNumber === 'object' && config.phoneNumber.sendOTP
           ? config.phoneNumber.sendOTP
-          : async ({ phoneNumber: _phone, code }: { phoneNumber: string; code: string }) => {
+          : async (_params: { phoneNumber: string; code: string }) => {
               throw new Error(`sendOTP not implemented — provide a sendOTP callback in the phoneNumber config`)
             }
       allPlugins.push(phoneNumber({ sendOTP }))
     }
     if (config.passkeys) {
-      allPlugins.push(passkey(typeof config.passkeys === 'object' ? config.passkeys : undefined))
+      allPlugins.push(passkeyMod.passkey(typeof config.passkeys === 'object' ? config.passkeys : undefined))
     }
     if (config.apiKey) {
-      allPlugins.push(apiKey(typeof config.apiKey === 'object' ? config.apiKey : undefined))
+      allPlugins.push(apiKeyMod.apiKey(typeof config.apiKey === 'object' ? config.apiKey : undefined))
     }
     if (config.admin) {
       allPlugins.push(admin())
@@ -108,6 +135,7 @@ export class BetterAuthAdapter {
         baOptions[k] = v
       }
     }
+
     this.auth = betterAuth(baOptions as any)
     this.api = this.auth.api
   }
@@ -128,6 +156,7 @@ export class BetterAuthAdapter {
 
   /** Next.js route handlers (GET/POST) for the auth API. */
   get routes() {
+    const { toNextJsHandler } = loadNextJsHandler()
     return toNextJsHandler(this.auth)
   }
 
@@ -147,7 +176,6 @@ export class BetterAuthAdapter {
       provider: this.auth,
       requireUser: () => this.requireAuth({ headers }),
 
-      // Tier 2 — goes through better-auth API (not direct DB)
       users: {
         get: (id) => this.findUser(id, headers),
         findByEmail: (email) => this.findUserByEmail(email, headers),
@@ -159,8 +187,6 @@ export class BetterAuthAdapter {
       },
 
       can: (params) => this.checkPermission(params),
-
-      // Tier 3 — built from mapping
       ...built,
     } as GatehouseInstance
   }
@@ -232,7 +258,7 @@ export class BetterAuthAdapter {
     }
   }
 
-  async findUserByEmail(email: string, headers: Headers): Promise<GatehouseUser | null> {
+  async findUserByEmail(email: string, _headers: Headers): Promise<GatehouseUser | null> {
     const user = await (this.db as any).selectFrom('user').where('email', '=', email).selectAll().executeTakeFirst()
     if (!user) return null
     return mapUser(user)
@@ -245,7 +271,6 @@ export class BetterAuthAdapter {
   }
 
   async removeRole(userId: string, headers: Headers): Promise<void> {
-    // better-auth treats empty/null role as removal
     await this.api.setRole({ headers, body: { userId, role: '' } })
   }
 
@@ -271,6 +296,18 @@ export class BetterAuthAdapter {
       return false
     }
   }
+}
+
+// ─── Lazy module loaders ────────────────────────────────────────
+
+let _nextJsHandlerMod: any
+
+function loadNextJsHandler(): { toNextJsHandler: (auth: any) => any } {
+  if (!_nextJsHandlerMod) {
+    const prom = dyn<{ toNextJsHandler: (auth: any) => any }>('better-auth/next-js')
+    _nextJsHandlerMod = { toNextJsHandler: (auth: any) => prom.then((m) => m.toNextJsHandler(auth)) }
+  }
+  return _nextJsHandlerMod
 }
 
 function env(key: string): string | undefined {

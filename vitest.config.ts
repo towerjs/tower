@@ -4,7 +4,9 @@ import { resolve } from 'node:path'
 export default defineConfig({
   resolve: {
     alias: [
-      { find: /^@towerjs\/gatehouse\/next-js$/, replacement: resolve('packages/gatehouse/src/frameworks/next-js.ts') },
+      { find: /^@towerjs\/gatehouse\/next$/, replacement: resolve('packages/gatehouse/src/frameworks/next.ts') },
+      { find: /^@towerjs\/gatehouse\/client$/, replacement: resolve('packages/gatehouse/src/client.ts') },
+      { find: /^@towerjs\/blueprint\/internal$/, replacement: resolve('packages/blueprint/src/internal.ts') },
       { find: /^@towerjs\/blueprint$/, replacement: resolve('packages/blueprint/src/index.ts') },
       { find: /^@towerjs\/foundation$/, replacement: resolve('packages/foundation/src/index.ts') },
       { find: /^@towerjs\/vault$/, replacement: resolve('packages/vault/src/index.ts') },
@@ -13,6 +15,7 @@ export default defineConfig({
     ],
   },
   test: {
-    include: ['packages/*/src/**/*.test.ts'],
+    include: ['packages/*/src/**/*.test.ts', 'tests/*.test.ts'],
+    testTimeout: 120_000,
   },
 })
