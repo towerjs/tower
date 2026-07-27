@@ -21,7 +21,7 @@ describe('towerConfig', () => {
   it('generates config with no modules', () => {
     const result = towerConfig(baseState)
 
-    expect(result).toContain('import { defineTower } from "@towerjs/blueprint"')
+    expect(result).toContain('import { defineTower } from "towerjs/blueprint"')
     expect(result).toContain('modules:')
   })
 

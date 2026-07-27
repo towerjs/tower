@@ -116,7 +116,7 @@ export function towerConfig(state: ProjectState): string {
     })
     .join('\n')
 
-  return `import { defineTower } from "@towerjs/blueprint";
+  return `import { defineTower } from "towerjs/blueprint";
 
 export default defineTower({
   modules: {
@@ -127,7 +127,7 @@ ${modules}
 }
 
 function authRoute(): string {
-  return `export { GET, POST } from "@towerjs/gatehouse/next-js";
+  return `export { GET, POST } from "@towerjs/gatehouse/next";
 `
 }
 
@@ -141,9 +141,7 @@ const { handler } = gatehouse.proxy({
   redirectAfterSignIn: "/dashboard",
 });
 
-export function proxy(request: Request) {
-  return handler(request);
-}
+export const proxy = handler;
 
 export const config = {
   matcher: ["/((?!_next/static|favicon.ico|api/auth).*)"],

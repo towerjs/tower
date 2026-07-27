@@ -1,4 +1,3 @@
-import { join } from 'node:path'
 import { collectProjectState } from '../prompts.js'
 import { generateProject } from '../generators/project.js'
 
