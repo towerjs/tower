@@ -2,20 +2,7 @@
 
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { Gatehouse } from '@towerjs/gatehouse'
-import { getTowerApp } from '../runtime'
-
-type RedirectConfig = {
-  afterSignIn?: string
-  afterSignUp?: string
-  afterSignOut?: string
-}
-
-async function getRedirectConfig(): Promise<RedirectConfig> {
-  const app = await getTowerApp()
-  const ghConfig = app.config.modules.gatehouse ?? {}
-  return (ghConfig as { redirects?: RedirectConfig }).redirects ?? {}
-}
+import { gatehouse } from '../gatehouse.js'
 
 async function setSessionCookie(token: string | null | undefined) {
   const c = await cookies()
@@ -33,15 +20,12 @@ async function setSessionCookie(token: string | null | undefined) {
 }
 
 export async function signIn(formData: FormData) {
-  await getTowerApp()
+  const h = await headers()
+  const gh = await gatehouse.from({ headers: h })
 
-  const redirectConfig = await getRedirectConfig()
-  const redirectTo = (formData.get('redirectTo') as string) ?? redirectConfig.afterSignIn ?? '/dashboard'
+  const redirectTo = (formData.get('redirectTo') as string) ?? '/dashboard'
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-
-  const h = await headers()
-  const gh = await Gatehouse.from({ headers: h })
 
   const result = await gh.signIn.email({ email, password })
 
@@ -53,16 +37,13 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signUp(formData: FormData) {
-  await getTowerApp()
+  const h = await headers()
+  const gh = await gatehouse.from({ headers: h })
 
-  const redirectConfig = await getRedirectConfig()
-  const redirectTo = (formData.get('redirectTo') as string) ?? redirectConfig.afterSignUp ?? '/dashboard'
+  const redirectTo = (formData.get('redirectTo') as string) ?? '/dashboard'
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-
-  const h = await headers()
-  const gh = await Gatehouse.from({ headers: h })
 
   const result = await gh.signUp.email({ name, email, password })
 
@@ -74,13 +55,10 @@ export async function signUp(formData: FormData) {
 }
 
 export async function signOut(formData?: FormData) {
-  await getTowerApp()
-
-  const redirectConfig = await getRedirectConfig()
-  const redirectTo = (formData?.get('redirectTo') as string) ?? redirectConfig.afterSignOut ?? '/sign-in'
-
   const h = await headers()
-  const gh = await Gatehouse.from({ headers: h })
+  const gh = await gatehouse.from({ headers: h })
+
+  const redirectTo = (formData?.get('redirectTo') as string) ?? '/sign-in'
 
   await gh.sessions.signOut()
 

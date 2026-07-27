@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 const mockHeaders = vi.fn()
 const mockCookies = vi.fn()
 const mockRedirect = vi.fn()
 const mockGatehouseFrom = vi.fn()
-const mockGetTowerApp = vi.fn()
 
 vi.mock('next/headers', () => ({
   headers: mockHeaders,
@@ -15,30 +14,12 @@ vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
 }))
 
-vi.mock('@towerjs/gatehouse', () => ({
-  Gatehouse: { from: mockGatehouseFrom },
+vi.mock('../gatehouse', () => ({
+  gatehouse: { from: mockGatehouseFrom },
 }))
-
-vi.mock('../runtime', () => ({
-  getTowerApp: mockGetTowerApp,
-}))
-
-const mockConfig = (redirects?: Record<string, string>) => ({
-  config: {
-    modules: {
-      gatehouse: redirects ? { redirects } : {},
-    },
-  },
-})
-
-beforeAll(() => {
-  mockGetTowerApp.mockResolvedValue(mockConfig())
-})
 
 describe('signIn', () => {
-  it('redirects to Blueprint-configured afterSignIn path', async () => {
-    mockGetTowerApp.mockResolvedValue(mockConfig({ afterSignIn: '/app', afterSignUp: '/welcome', afterSignOut: '/' }))
-
+  it('redirects to /dashboard on success', async () => {
     const { signIn } = await import('./actions')
 
     mockHeaders.mockResolvedValue(new Headers())
@@ -53,12 +34,10 @@ describe('signIn', () => {
 
     await signIn(fd)
 
-    expect(mockRedirect).toHaveBeenCalledWith('/app')
+    expect(mockRedirect).toHaveBeenCalledWith('/dashboard')
   })
 
-  it('formData redirectTo overrides Blueprint config', async () => {
-    mockGetTowerApp.mockResolvedValue(mockConfig({ afterSignIn: '/app' }))
-
+  it('formData redirectTo overrides default', async () => {
     const { signIn } = await import('./actions')
 
     mockHeaders.mockResolvedValue(new Headers())
@@ -77,29 +56,7 @@ describe('signIn', () => {
     expect(mockRedirect).toHaveBeenCalledWith('/custom')
   })
 
-  it('falls back to /dashboard when no config or formData', async () => {
-    mockGetTowerApp.mockResolvedValue(mockConfig())
-
-    const { signIn } = await import('./actions')
-
-    mockHeaders.mockResolvedValue(new Headers())
-    mockCookies.mockResolvedValue({ set: vi.fn() })
-    mockGatehouseFrom.mockResolvedValue({
-      signIn: { email: vi.fn().mockResolvedValue({}) },
-    })
-
-    const fd = new FormData()
-    fd.set('email', 'a@b.com')
-    fd.set('password', 'secret')
-
-    await signIn(fd)
-
-    expect(mockRedirect).toHaveBeenCalledWith('/dashboard')
-  })
-
   it('sets session cookie on successful sign in', async () => {
-    mockGetTowerApp.mockResolvedValue(mockConfig())
-
     const { signIn } = await import('./actions')
 
     const cookieSet = vi.fn()
@@ -124,9 +81,7 @@ describe('signIn', () => {
 })
 
 describe('signOut', () => {
-  it('clears session cookie and redirects to afterSignOut', async () => {
-    mockGetTowerApp.mockResolvedValue(mockConfig({ afterSignOut: '/' }))
-
+  it('clears session cookie and redirects to /sign-in', async () => {
     const { signOut } = await import('./actions')
 
     const cookieSet = vi.fn()
@@ -139,6 +94,6 @@ describe('signOut', () => {
     await signOut()
 
     expect(cookieSet).toHaveBeenCalledWith('better-auth.session_token', '', expect.objectContaining({ maxAge: 0 }))
-    expect(mockRedirect).toHaveBeenCalledWith('/')
+    expect(mockRedirect).toHaveBeenCalledWith('/sign-in')
   })
 })
