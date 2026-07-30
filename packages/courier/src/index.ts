@@ -12,6 +12,7 @@ import type {
 } from './types.js'
 
 export type {
+  ConsoleEmailConfig,
   CourierConfig,
   CourierModule,
   EmailAddress,
@@ -134,6 +135,10 @@ async function createEmailService(config: EmailConfig): Promise<EmailService> {
     case 'ses': {
       const { SesEmailProvider } = await import('./providers/ses.js')
       return new SesEmailProvider(config)
+    }
+    case 'console': {
+      const { ConsoleEmailProvider } = await import('./providers/console.js')
+      return new ConsoleEmailProvider(config)
     }
   }
   throw new Error('Unsupported courier email provider.')

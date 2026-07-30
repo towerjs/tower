@@ -119,6 +119,13 @@ describe('email provider resolution', () => {
     expect(mod.email.send).toBeDefined()
   })
 
+  it('creates Console provider from config', () => {
+    const { mod } = initAndGetModule({
+      email: { provider: 'console', from: 'test@example.com' },
+    })
+    expect(mod.email.send).toBeDefined()
+  })
+
   it('throws during init for unsupported email provider', async () => {
     const { mod, ctx } = initAndGetModule({ email: { provider: 'mailgun' as any } })
     await expect(mod.init?.(ctx as any)).rejects.toThrow('Unsupported courier email provider')

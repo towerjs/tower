@@ -71,7 +71,7 @@ export interface PushSendResult {
   provider: PushProviderName
 }
 
-export type EmailProviderName = 'resend' | 'smtp' | 'ses'
+export type EmailProviderName = 'resend' | 'smtp' | 'ses' | 'console'
 export type SmsProviderName = 'twilio'
 export type PushProviderName = 'web-push'
 
@@ -104,7 +104,11 @@ export interface SesEmailConfig extends EmailConfigBase {
   configurationSetName?: string
 }
 
-export type EmailConfig = ResendEmailConfig | SmtpEmailConfig | SesEmailConfig
+export interface ConsoleEmailConfig extends EmailConfigBase {
+  provider: 'console'
+}
+
+export type EmailConfig = ResendEmailConfig | SmtpEmailConfig | SesEmailConfig | ConsoleEmailConfig
 
 interface SmsConfigBase {
   provider: SmsProviderName
