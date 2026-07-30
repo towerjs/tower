@@ -1,0 +1,124 @@
+---
+title: "Configuration"
+description: "How to configure Tower modules through the config file and environment variables."
+---
+
+## The Config File
+
+Tower reads configuration from `tower.config.ts` at your project root. It uses `defineTower` for type-safe config:
+
+```tsx filename="tower.config.ts"
+import { defineTower } from 'towerjs/blueprint'
+
+export default defineTower({
+  modules: {
+    vault: {
+      connectionString: process.env.DATABASE_URL,
+    },
+    courier: {
+      email: { provider: 'console', from: 'noreply@example.com' },
+    },
+    gatehouse: {
+      provider: 'better-auth',
+      appName: 'My App',
+      baseURL: 'http://localhost:3000',
+      secret: process.env.BETTER_AUTH_SECRET,
+      credentials: { enabled: true },
+      emailVerification: { sendOnSignUp: true },
+    },
+  },
+})
+```
+
+## Config Resolution Order
+
+When `createTower()` is called without a config argument, `resolveConfig()` searches in order:
+
+1. Registered config providers (edge package registers one for bundler compat)
+2. `TOWER_CONFIG_PATH` environment variable (explicit path)
+3. Walks up the directory tree (up to 20 levels) looking for `tower.config.ts`, `.mjs`, `.js`
+
+## Module Configuration
+
+### Vault
+
+```tsx
+vault: {
+  connectionString?: string       // defaults to DATABASE_URL env var
+  pool?: {
+    max?: number                  // default: 20
+    idleTimeoutMillis?: number    // default: 30000
+    connectionTimeoutMillis?: number
+    ssl?: boolean | { rejectUnauthorized?: boolean }
+  }
+  migrations?: { folder: string } // default: './src/vault/migrations'
+  seeds?: { folder: string }      // default: './src/vault/seeds'
+}
+```
+
+Provider auto-detection: `neon` for Neon serverless, `pg` for standard PostgreSQL.
+
+### Gatehouse
+
+```tsx
+gatehouse: {
+  provider: 'better-auth'
+
+  // Auth methods
+  credentials?: boolean | { enabled, disableSignUp, requireEmailVerification,
+    minPasswordLength, maxPasswordLength, autoSignIn }
+  emailVerification?: { sendVerificationEmail, sendOnSignUp, autoSignInAfterVerification, expiresIn }
+  social?: string[] | Record<string, SocialProviderEntry | true>
+  passkeys?: boolean | GatehousePasskeyOptions
+  magicLinks?: boolean | Partial<GatehouseMagicLinkOptions>
+  emailOtp?: boolean | Partial<GatehouseEmailOTPOptions>
+  phoneNumber?: boolean | Partial<GatehousePhoneNumberOptions>
+  twoFactor?: boolean | GatehouseTwoFactorOptions
+  organization?: boolean | GatehouseOrganizationOptions
+  admin?: boolean | GatehouseAdminOptions
+  apiKey?: boolean | GatehouseApiKeyOptions
+
+  baseURL?: string | { allowedHosts, protocol, fallback }
+  appName?: string
+  trustedOrigins?: string[]
+  plugins?: BetterAuthPlugin[]
+  rateLimit?: { enabled, window, max, storage, customRules }
+  advanced?: { useSecureCookies, disableCSRFCheck, cookiePrefix, database }
+}
+```
+
+Social provider credentials resolve from environment variables automatically:
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, etc.
+
+### Courier
+
+```tsx
+courier: {
+  email?: {
+    provider: 'console' | 'resend' | 'smtp' | 'ses'
+    // provider-specific options...
+    from?: string
+  }
+  sms?: {
+    provider: 'twilio'
+    // twilio-specific options...
+  }
+  push?: {
+    provider: 'web-push'
+    // web-push options...
+  }
+}
+```
+
+## Environment Variables
+
+| Variable | Required for | Default |
+|---|---|---|
+| `DATABASE_URL` | Vault | — |
+| `BETTER_AUTH_SECRET` | Gatehouse | — |
+| `RESEND_API_KEY` | Courier (Resend) | — |
+| `GOOGLE_CLIENT_ID` | Gatehouse (Google social) | — |
+| `GOOGLE_CLIENT_SECRET` | Gatehouse (Google social) | — |
+| `GITHUB_CLIENT_ID` | Gatehouse (GitHub social) | — |
+| `GITHUB_CLIENT_SECRET` | Gatehouse (GitHub social) | — |
+| `TOWER_CONFIG_PATH` | Config resolution | — |

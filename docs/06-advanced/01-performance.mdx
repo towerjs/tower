@@ -1,0 +1,65 @@
+---
+title: "Performance"
+description: "Performance considerations for Tower applications."
+---
+
+## Lazy Initialization
+
+Tower modules are initialized on first use, not at import time. This means you can import module symbols at the top level without paying the initialization cost on every request:
+
+```tsx
+import { gatehouse } from 'towerjs/gatehouse'
+
+// No initialization cost here
+
+export async function handler() {
+  // First access triggers init — subsequent calls use the cached app
+  const session = await gatehouse.getSession()
+}
+```
+
+## Connection Pooling
+
+Configure your database pool for your workload:
+
+```tsx
+vault: {
+  connectionString: process.env.DATABASE_URL,
+  pool: {
+    max: 20,                    // max connections in pool
+    idleTimeoutMillis: 30000,   // close idle connections after 30s
+    connectionTimeoutMillis: 5000,
+  },
+}
+```
+
+Guidelines:
+- **Serverless (Vercel)**: Lower pool max (5-10) since each function instance shares the pool
+- **Node server**: Higher pool max (20-50) for concurrent request handling
+- **Neon**: Use Neon's serverless driver for optimal connection management
+
+## Edge Runtime
+
+For API routes and auth middleware, use the Edge Runtime for fast cold starts:
+
+```tsx filename="next.config.ts"
+import { withTowerEdge } from '@towerjs/edge'
+export default withTowerEdge({})
+```
+
+On Edge, Vault uses Neon's serverless driver with HTTP-based queries (no persistent connections needed).
+
+## Database Queries
+
+- Use Kysely's type-safe query builder for optimal SQL generation
+- Add indexes for frequently queried columns
+- Use `selectAll()` sparingly — select only the columns you need
+- Use transactions for multi-step operations
+
+## Caching
+
+Tower doesn't include a built-in cache layer. For production applications:
+
+- Add a CDN (Vercel Edge Cache, Cloudflare) for static and semi-static content
+- Use Next.js `'use cache'` directive for cached server components
+- Consider Redis or in-memory caching for frequently accessed data

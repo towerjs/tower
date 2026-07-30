@@ -1,0 +1,53 @@
+---
+title: "What is Tower?"
+description: "Tower is a composable monolithic stack for JavaScript applications. It provides a full-featured backend framework — database, auth, email — while keeping the option to split into smaller services when you outgrow a single process."
+---
+
+## Composable Monolith
+
+A composable monolith is a single deployable unit built from well-factored, independently-testable modules. Tower provides these modules as first-party packages so you don't spend weekends researching which ORM pairs with which auth library.
+
+If your application grows enough to need separate services, Tower's module boundaries become your service boundaries — each module has a clean API surface and explicit dependencies.
+
+## Modules
+
+| Module | Package | Purpose |
+|---|---|---|
+| **Foundation** | `@towerjs/foundation` | Core runtime, DI, config discovery, runtime detection |
+| **Blueprint** | `@towerjs/blueprint` | Module registration, app definition |
+| **Vault** | `@towerjs/vault` | Database ORM (Kysely), migrations, seeds |
+| **Gatehouse** | `@towerjs/gatehouse` | Authentication, sessions, organizations, API keys |
+| **Courier** | `@towerjs/courier` | Email, SMS, push notifications |
+| **Sorcerer** | `@towerjs/sorcerer` | AI agents, chat, tools, and workflows |
+
+Each module follows the same contract: register at import time, initialize on first use, and expose a consistent API.
+
+## Framework-Agnostic Core
+
+Foundation and Blueprint have no framework dependencies. The core runtime adapts to any JavaScript environment — Node.js, serverless, or Edge — through automatic runtime detection.
+
+Framework adapters live in each module's `frameworks/` directory. Currently only Next.js is supported:
+
+- **Auth**: `getSession`, server actions, middleware proxy, API routes
+- **Config**: Edge runtime bundling via `withTowerEdge`
+- **CLI**: `tower migrate`, `tower seed`
+
+## Installation
+
+```bash
+pnpm add towerjs
+```
+
+Or install individual modules:
+
+```bash
+pnpm add @towerjs/foundation @towerjs/blueprint @towerjs/vault @towerjs/gatehouse @towerjs/courier
+```
+
+## When to Use Tower
+
+- You want a batteries-included framework without microservice complexity
+- You need production-grade database access, auth, and notifications out of the box
+- You value vertical slice architecture and clean module boundaries
+- You want to start monolithic and preserve the option to split later
+- You're building on Next.js and want framework integration that Just Works

@@ -1,0 +1,66 @@
+---
+title: "Style Guide"
+description: "Code style conventions used in Tower."
+---
+
+## TypeScript
+
+Tower uses TypeScript 7 with strict settings.
+
+### Naming
+
+| Convention | Examples |
+|---|---|
+| `camelCase` for variables, functions, methods | `getUser()`, `connectionString` |
+| `PascalCase` for classes, types, interfaces | `FrameworkAdapter`, `TowerApp` |
+| `UPPER_CASE` for module-level constants | `MAX_RETRIES`, `DEFAULT_PORT` |
+| `kebab-case` for file names | `connection-pool.ts`, `tower.config.ts` |
+
+### Imports
+
+Use `import type` for type-only imports:
+
+```tsx
+import type { TowerApp } from './types'
+import { createTowerApp } from './app'
+```
+
+Within a package use relative imports with `.js` extension (Node.js ESM):
+
+```tsx
+import { thing } from './sibling.js'
+import { thing } from '../parent/file.js'
+```
+
+Between packages import from the package name:
+
+```tsx
+import { registerModule } from '@towerjs/blueprint'
+import { towerContext } from '@towerjs/foundation'
+```
+
+### Coding Style
+
+- No semicolons
+- Single quotes for strings
+- Trailing commas where possible
+- 2-space indentation
+- 100 character line width
+- Arrow functions over `function` keyword
+- `async/await` over raw promises
+- Named exports, no default exports
+
+## Testing
+
+- Colocate tests with source: `src/**/*.test.ts`
+- Describe blocks group related tests
+- Use Vitest for unit tests
+- Use Playwright for E2E tests
+
+## Documentation
+
+- MDX files in `docs/` directory (one per page)
+- YAML frontmatter with `title` and `description`
+- Use `Note`, `Row`, `Col`, `CodeTabs`, `CodeTab`, `Properties`, `Property` custom components
+- Examples in `tsx` (or `ts` for non-React)
+- Filenames for code blocks: `filename="src/app/actions.ts"`

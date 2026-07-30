@@ -1,0 +1,79 @@
+---
+title: "Crane"
+description: "Crane is Tower's background jobs module. It provides a unified system for queueing, scheduling, and processing asynchronous work."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Crane is not yet implemented. This document describes the intended vision.
+
+
+## Vision
+
+Crane aims to make background job processing as simple as calling a function. Define a job, dispatch it, and let Crane handle retries, concurrency, and persistence — backed by your database or Redis.
+
+## Queues
+
+A **queue** holds pending jobs until a worker picks them up. Queues can be configured with different backends (Postgres, Redis, in-memory).
+
+```tsx
+import { defineJob, queue } from "@towerjs/crane"
+
+const sendEmail = defineJob({
+  name: "send-email",
+  async execute(payload: { to: string; subject: string }) {
+    // ...
+  },
+})
+
+await queue.enqueue(sendEmail, {
+  to: "user@example.com",
+  subject: "Welcome!",
+})
+```
+
+## Cron Scheduling
+
+Crane supports recurring schedules using cron expressions. The scheduler runs inside your Node.js process and enqueues jobs at the configured intervals.
+
+```tsx
+import { cron } from "@towerjs/crane"
+
+cron.schedule("daily-report", "0 6 * * *", async () => {
+  await generateReport()
+})
+```
+
+## Worker Management
+
+Workers process jobs from queues. Crane handles:
+
+- **Concurrency control** — limit how many jobs run simultaneously
+- **Retries** — automatic retry with exponential backoff
+- **Dead-letter queues** — jobs that exhaust retries are moved to a DLQ for inspection
+- **Graceful shutdown** — finish in-flight jobs before the process exits
+
+```tsx
+import { createWorker } from "@towerjs/crane"
+
+const worker = createWorker({
+  concurrency: 5,
+  backoff: { type: "exponential", delay: 1000 },
+})
+
+worker.start()
+```
+
+## Persistence
+
+Job state is persisted so no work is lost on crash. Crane will support Postgres (using Kysely) and Redis adapters.
+
+## Planned Features
+
+- Delayed jobs (run at a specific future time)
+- Job dependencies / chains
+- Rate limiting
+- Dashboard UI for monitoring queues
+
+## Integration with Tower
+
+Crane integrates naturally with Vault (store job results), Beacon (emit events when jobs complete), and Observatory (log job lifecycle).

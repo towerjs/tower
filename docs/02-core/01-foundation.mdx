@@ -1,0 +1,110 @@
+---
+title: "Foundation"
+description: "Core runtime: app creation, dependency injection, runtime detection, config discovery."
+---
+
+Foundation is the lowest-level package. It provides the runtime infrastructure that all other modules depend on.
+
+## createTowerApp
+
+The primary way to create a Tower application:
+
+```tsx
+import { createTowerApp } from '@towerjs/foundation'
+
+const app = await createTowerApp({
+  modules: {
+    vault: { connectionString: process.env.DATABASE_URL },
+    gatehouse: { provider: 'better-auth', secret: 'my-secret', credentials: { enabled: true } },
+  },
+})
+```
+
+When using the `towerjs` meta-package, `getModuleFactory` is wired automatically. Calling `createTower()` (no "App") adds config file resolution:
+
+```tsx
+import { createTower } from 'towerjs'
+
+const app = await createTower() // resolves tower.config.ts automatically
+```
+
+### TowerApp interface
+
+```tsx
+interface TowerApp {
+  config: TowerConfig
+  container: ServiceContainer
+  runtime: TowerRuntime
+  shutdown(): Promise<void>
+}
+```
+
+### Lifecycle
+
+1. **Runtime detection** — platform is identified (Node, serverless, Edge)
+2. **Service container** — created for this app instance
+3. **Module factories** — each module config key maps to a registered factory
+4. **Dependency validation** — modules are topologically sorted (circular deps throw)
+5. **Registration** — each module's `register()` is called in dependency order
+6. **Initialization** — each module's `initialize()` is called (async setup)
+7. **App ready** — modules are accessible through their proxy APIs
+
+## Runtime Detection
+
+```tsx
+import { detectRuntime } from '@towerjs/foundation'
+
+const runtime = detectRuntime()
+// → { name: 'node-server', isServerless: false }
+// → { name: 'edge', isServerless: true }
+// → { name: 'vercel-serverless', isServerless: true }
+```
+
+Detection checks environment variables: `VERCEL`, `AWS_LAMBDA_FUNCTION_NAME`, `AWS_EXECUTION_ENV`, `NETLIFY`, `CLOUDFLARE_WORKER`.
+
+## Service Container
+
+Per-app DI container:
+
+```tsx
+container.register('key', instance)
+container.has('key') // → boolean
+container.get('key') // → T
+container.registerFactory('key', () => new Instance())
+```
+
+Modules register themselves during the registration phase (`module.vault`, `module.gatehouse`, etc.).
+
+## Global Service Registry
+
+For cross-module access after initialization:
+
+```tsx
+import { registerService, getService } from '@towerjs/blueprint'
+
+registerService('database', pool)
+const pool = getService<Pool>('database')
+```
+
+## Request Context
+
+Tower uses AsyncLocalStorage to provide request-scoped context:
+
+```tsx
+import { towerContext } from '@towerjs/foundation'
+
+towerContext.run({ request, headers }, () => {
+  // Gatehouse reads headers from context
+})
+```
+
+In Edge environments, AsyncLocalStorage is replaced with a no-op provider.
+
+## Config Resolution
+
+```tsx
+import { resolveConfig } from '@towerjs/foundation'
+
+const config = await resolveConfig()
+// Searches: providers → TOWER_CONFIG_PATH → filesystem walk
+```

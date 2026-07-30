@@ -1,0 +1,140 @@
+---
+title: "towerjs"
+description: "The meta-package that bundles all Tower modules under a single dependency with lazy initialization."
+---
+
+`towerjs` is the user-facing entry point. It re-exports from all `@towerjs/*` packages and adds lazy initialization — the app is initialized on first use, not at import time.
+
+## Installation
+
+```bash
+pnpm add towerjs
+```
+
+## Subpath Exports
+
+### `towerjs`
+
+```tsx
+import { defineTower, createTower, createTowerApp, initTower, getTowerApp, tower } from 'towerjs'
+
+defineTower({ modules: { vault: {} } })     // type-safe config (from blueprint)
+createTower()                                // auto-resolves tower.config.ts
+createTowerApp({ modules: {...} })           // explicit config
+initTower({ modules: {...} })                // explicit init, returns TowerApp
+getTowerApp()                                // get cached TowerApp singleton
+tower                                        // TowerApp proxy (warns if uninitialized)
+```
+
+### `towerjs/blueprint`
+
+```tsx
+import { defineTower, registerModule, getModuleFactory } from 'towerjs/blueprint'
+```
+
+### `towerjs/foundation`
+
+```tsx
+import { createTowerApp, detectRuntime, resolveConfig } from 'towerjs/foundation'
+```
+
+### `towerjs/gatehouse`
+
+```tsx
+import { gatehouse } from 'towerjs/gatehouse'
+// Fully lazy proxy — awaits tower init, then delegates to @towerjs/gatehouse
+
+const session = await gatehouse.getSession()
+const user = await gatehouse.requireUser()
+const orgs = await gatehouse.getOrganizations()
+```
+
+### `towerjs/gatehouse/actions`
+
+50+ pre-built server actions for all auth operations:
+
+```tsx
+import { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
+```
+
+Full list: `signIn`, `signUp`, `signOut`, `refreshSession`, `revokeSession`, `revokeOtherSessions`, `revokeAllSessions`, `updateSession`, `updateProfile`, `deleteAccount`, `setPassword`, `changeEmail`, `changePassword`, `verifyPassword`, `requestPasswordReset`, `resetPassword`, `sendVerificationEmail`, `verifyEmail`, `sendVerificationOTP`, `verifyEmailOTP`, `sendVerificationOTP`, `verifyPhoneOTP`, `requestPasswordResetPhoneOTP`, `resetPasswordPhoneOTP`, `sendPhoneOTP`, `verifyPhoneOTP`, `verifyPhone`, `updatePasskey`, `removePasskey`, `deletePasskey`, `createUser`, `removeUser`, `adminUpdateUser`, `setUserPassword`, `setRole`, `banUser`, `unbanUser`, `impersonateUser`, `stopImpersonating`, `revokeUserSession`, `revokeUserSessions`, `userHasPermission`, `createApiKey`, `updateApiKey`, `deleteApiKey`, `verifyApiKey`, `deleteExpiredApiKeys`, `unlinkAccount`, `enableTwoFactor`, `verifyTwoFactor`, `disableTwoFactor`, `generateTOTP`, `verifyBackupCode`, `generateBackupCodes`, `createOrganization`, `updateOrganization`, `deleteOrganization`, `setActiveOrganization`, `leaveOrganization`, `createOrgRole`, `updateOrgRole`, `deleteOrgRole`, `addMember`, `updateMemberRole`, `removeMember`, `inviteMember`, `cancelInvitation`, `acceptInvitation`, `rejectInvitation`, `assignRole`, `removeRole`, `hasPermission`.
+
+### `towerjs/gatehouse/next`
+
+```tsx
+import { action, withGatehouse, GET, POST } from 'towerjs/gatehouse/next'
+
+// action — wraps a server action in gatehouse request context
+export const myAction = action(async (formData: FormData) => {
+  const session = await gatehouse.getSession()
+})
+
+// GET, POST — auth API route handlers (for api/auth/[...all])
+export { GET, POST } // in route.ts
+```
+
+### `towerjs/gatehouse/client`
+
+```tsx
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+
+await gatehouseClient.signIn.email({ email, password })
+await gatehouseClient.signUp.email({ name, email, password })
+```
+
+### `towerjs/vault`
+
+```tsx
+import { vault } from 'towerjs/vault'
+// Lazy proxy — initializes on first access
+
+await vault.selectFrom('users').selectAll().execute()
+await vault.migrate()
+```
+
+### `towerjs/courier`
+
+```tsx
+import { courier } from 'towerjs/courier'
+
+await courier.email.send({ to: 'user@example.com', subject: 'Hi', html: '<p>Hi</p>' })
+```
+
+### `towerjs/next`
+
+```tsx
+import { action } from 'towerjs/next'
+// Next.js server action wrapper (no .form variant)
+```
+
+### `towerjs/edge`
+
+```tsx
+import { withTowerEdge } from 'towerjs/edge' // (re-exported from @towerjs/edge)
+```
+
+## Lazy Initialization
+
+The `tower` proxy and all module proxies (`gatehouse`, `vault`, `courier`) delegate to `getTowerApp()` before every method call. This means:
+
+```tsx
+import { gatehouse } from 'towerjs/gatehouse'
+
+// No init yet — safe to import at module level
+export async function handler() {
+  // First access triggers config resolution and module init
+  const session = await gatehouse.getSession()
+}
+```
+
+## CLI
+
+`towerjs` exposes a `tower` binary:
+
+```bash
+npx tower migrate          # Run database migrations
+npx tower migrate --seed   # Migrate then seed
+npx tower seed             # Run seeds (migrations first by default)
+npx tower seed --skip-migrate  # Seeds only
+npx tower --version        # Show version
+```

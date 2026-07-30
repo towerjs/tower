@@ -1,0 +1,56 @@
+---
+title: "Edge Runtime"
+description: "Running Tower on Vercel Edge, Cloudflare Workers, and other edge runtimes."
+---
+
+The Edge package configures Tower modules for edge runtime compatibility.
+
+## Setup
+
+```tsx filename="next.config.ts"
+import { withTowerEdge } from '@towerjs/edge'
+
+export default withTowerEdge({
+  // Standard Next.js config options
+})
+```
+
+`withTowerEdge` wraps your Next.js config to:
+
+1. Bundle `tower.config.ts` for the Edge Runtime (avoids filesystem access at runtime)
+2. Ensures all Tower module imports can be resolved at build time
+3. Configures Neon serverless driver for database access in edge functions
+
+## What Changes on Edge
+
+### Runtime Detection
+
+On Vercel Edge, runtime detection returns `{ name: 'edge', isServerless: true }`. This affects:
+
+- **Vault**: Uses Neon's serverless driver with `poolQueryViaFetch`. No filesystem access — migrations and seeds throw if called in edge context.
+- **AsyncLocalStorage**: Replaced with a no-op context provider (Edge doesn't support ALS).
+- **Lazy initialization**: Still works the same way — first access triggers init.
+
+### Vault on Edge
+
+```tsx
+// Querying works
+const users = await vault.selectFrom('users').selectAll().execute()
+
+// Migrations and seeds throw
+await vault.migrate() // Error: migrations unavailable on Edge
+await vault.seed()    // Error: seeds unavailable on Edge
+```
+
+### Neon Serverless
+
+When using Neon, Vault automatically configures:
+- `poolQueryViaFetch = true`
+- SSL defaults to `true` in production
+
+## When to Use Edge
+
+- API routes that need fast cold starts
+- Auth middleware (the Gatehouse proxy runs on Edge by default)
+- Read-only database queries with Neon
+- Pages that don't need migration/seed operations

@@ -1,0 +1,263 @@
+---
+title: "Sorcerer"
+description: "AI application layer for agents, chat, streaming, and intelligent features."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Sorcerer is not yet implemented. This document describes the intended vision.
+
+## Vision
+
+Sorcerer is Tower's AI application layer. Where the Vercel AI SDK gives you a transport for LLM calls, Sorcerer gives you an architecture: agents with tool access to Tower services, typed workflows, conversation management, and React primitives for AI features.
+
+It is to AI what Vault is to databases — the opinionated Tower way of doing it, built on a replaceable engine underneath.
+
+## Architecture
+
+```
+Sorcerer
+  |
+  +-- Public API (agent, chat, generate, workflow)
+  |
+  +-- Agent runtime
+  |     +-- Tools
+  |     +-- Memory
+  |     +-- Context
+  |
+  +-- Providers
+        +-- Vercel AI SDK
+        +-- OpenAI SDK
+        +-- Anthropic SDK
+```
+
+The provider layer is swappable. By default Sorcerer uses the Vercel AI SDK for streaming and model routing, but you can drop down to a raw provider when needed.
+
+## Agents
+
+An agent is a configured AI entity with tools, instructions, and a model.
+
+```tsx
+import { agent } from "towerjs/sorcerer"
+
+const supportAgent = agent({
+  name: "support",
+  model: "gpt-4o",
+  instructions: `
+    You are a helpful customer support agent.
+    Always check the customer's account before creating a ticket.
+  `,
+  tools: {
+    searchDocs: tool({
+      description: "Search the documentation",
+      execute: async (query: string) => {
+        return searchDocs(query)
+      },
+    }),
+    lookupCustomer: tool({
+      description: "Look up a customer by email",
+      parameters: z.object({ email: z.string().email() }),
+      execute: async ({ email }) => {
+        return vault.selectFrom("users").where("email", "=", email).executeTakeFirst()
+      },
+    }),
+    createTicket: tool({
+      description: "Create a support ticket",
+      parameters: z.object({ subject: z.string(), body: z.string() }),
+      execute: async ({ subject, body }) => {
+        return vault.insertInto("tickets").values({ subject, body }).returningAll().executeTakeFirst()
+      },
+    }),
+  },
+})
+```
+
+## Running an agent
+
+```tsx
+const response = await supportAgent.run({
+  input: "Why was I charged twice?",
+})
+```
+
+### Streaming
+
+```tsx
+const stream = await supportAgent.stream({
+  input: "Explain how authentication works",
+})
+
+return new Response(stream)
+```
+
+### Conversations
+
+Agents can maintain conversation state:
+
+```tsx
+const conversation = supportAgent.conversation()
+
+await conversation.send("What is my plan?")
+await conversation.send("Can I upgrade?")
+const summary = conversation.summary()
+```
+
+## Application Context
+
+This is where Sorcerer differentiates from a raw AI SDK. An agent automatically has access to Tower services through the application container:
+
+```tsx
+import { agent } from "towerjs/sorcerer"
+
+const projectAgent = agent({
+  tools: {
+    projects: vault.tool("projects"),
+    users: gatehouse.tool("users"),
+    files: archive.tool("files"),
+    emit: beacon.tool("emit"),
+  },
+})
+```
+
+This makes agents feel like native parts of the application, not bolted-on integrations.
+
+## Chat
+
+For simpler features that don't need tool-using agents:
+
+```tsx
+import { chat } from "towerjs/sorcerer"
+
+const response = await chat({
+  model: "gpt-4o-mini",
+  messages: [
+    { role: "user", content: "Summarize this" },
+  ],
+  system: "You are a summarizer.",
+})
+```
+
+## Generate
+
+For one-shot completions (no conversation, no tools):
+
+```tsx
+import { generate } from "towerjs/sorcerer"
+
+const { text } = await generate({
+  model: "gpt-4o-mini",
+  prompt: "Write a haiku about databases",
+})
+```
+
+## Workflows
+
+For multi-step structured processes:
+
+```tsx
+const summaryWorkflow = workflow({
+  steps: [
+    {
+      name: "extract",
+      execute: async (input: { url: string }) => {
+        return extractContent(input.url)
+      },
+    },
+    {
+      name: "summarize",
+      model: "gpt-4o",
+      prompt: "Summarize the following: {extract.content}",
+    },
+    {
+      name: "translate",
+      model: "gpt-4o-mini",
+      prompt: "Translate to French: {summarize.text}",
+    },
+  ],
+  output: "translate.text",
+})
+```
+
+## Configuration
+
+```tsx
+// tower.config.ts
+sorcerer: {
+  provider: "vercel-ai-sdk",
+  defaultModel: "gpt-4o",
+  models: {
+    fast: "gpt-4o-mini",
+    smart: "gpt-4o",
+    cheap: "claude-3-haiku",
+  },
+  maxToolRoundtrips: 10,
+}
+```
+
+## Conversation Memory
+
+Sorcerer supports multiple memory backends:
+
+```tsx
+import { memory } from "towerjs/sorcerer"
+
+const agent = agent({
+  memory: memory.inMemory(),     // default, ephemeral
+  // memory: memory.vault(),     // persist conversations in the database
+  // memory: memory.redis(),     // Redis-backed
+})
+```
+
+## React Primitives
+
+Sorcerer provides headless React hooks and components that work with any framework adapter:
+
+```tsx
+import { useAgent, AgentMessage } from "towerjs/sorcerer/react"
+
+function Chat() {
+  const { messages, send, isStreaming } = useAgent(supportAgent)
+
+  return (
+    <div>
+      {messages.map((msg) => (
+        <AgentMessage key={msg.id} message={msg} />
+      ))}
+      <input onKeyDown={(e) => {
+        if (e.key === "Enter") send(e.currentTarget.value)
+      }} />
+    </div>
+  )
+}
+```
+
+### AgentMessage
+
+`AgentMessage` renders streaming content server-side:
+
+```tsx
+<AgentMessage message={message} />
+```
+
+Internally it uses Streamdown for progressive markdown rendering. The component is headless and can be styled with any library.
+
+## Planned Features
+
+- **Tool generation** — agents that can create their own tools at runtime
+- **Multi-agent orchestration** — agents that delegate to sub-agents
+- **Human-in-the-loop** — pause a workflow for human approval before continuing
+- **Embeddings** — native RAG support with Vault for vector storage
+- **Rate limiting** — per-agent token and request limits
+- **Observability** — full agent run traces integrated with Observatory
+- **Evaluations** — eval harness for testing agent outputs
+
+## Integration with Tower
+
+| Module | Integration |
+|---|---|
+| **Vault** | Tool access to database models; persistence for conversation memory |
+| **Gatehouse** | User-scoped agent context; enforce permissions on tool access |
+| **Beacon** | Stream agent responses over WebSocket for realtime UX |
+| **Crane** | Enqueue agent runs as background jobs |
+| **Courier** | Send agent-generated messages via email, SMS |
+| **Archive** | Tool access to file storage; RAG document retrieval |
+| **Observatory** | Trace agent runs, log tool calls, measure latency |

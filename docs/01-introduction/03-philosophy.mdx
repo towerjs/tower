@@ -1,0 +1,50 @@
+---
+title: "Philosophy"
+description: "The design principles behind Tower."
+---
+
+## Provider-Agnostic
+
+Modules abstract over specific providers (Neon, Better Auth, Resend, etc.) behind a stable API. Swap providers without changing application code.
+
+## Framework-First
+
+Tower works alongside your framework rather than replacing it. Framework adapters (`frameworks/next.ts`) are separate from core logic, so adding Express, Hono, or other framework support doesn't touch core code.
+
+## Lazy Initialization
+
+Tower apps are initialized on first use, not at import time. This is critical for Edge and SSR compatibility where you may import module symbols at the top level but never use them.
+
+```typescript
+import { gatehouse } from 'towerjs/gatehouse'
+
+// No initialization happens here
+
+export async function handler() {
+  // Initialization happens here, on first access
+  const session = await gatehouse.getSession()
+}
+```
+
+## Minimal API Surface
+
+Modules export only what users need. Internal implementation details stay in the module.
+
+## No Runtime Dependencies on User-Facing Frameworks
+
+The core packages (`foundation`, `blueprint`) don't depend on Next.js, Express, or any framework. Framework adapters are separate and loaded only when used.
+
+## Composable by Default
+
+Each module can be used independently. Modules communicate through well-defined interfaces, not shared state. The `towerjs` meta-package is optional — import from individual `@towerjs/*` packages for a leaner dependency tree.
+
+## Convention over Configuration
+
+Tower follows predictable conventions:
+
+- Config file: `tower.config.ts` at project root
+- Migrations: `src/vault/migrations/*.ts`
+- Seeds: `src/vault/seeds/*.ts`
+- Auth proxy: `src/proxy.ts`
+
+These can be overridden, but the defaults work for most projects.

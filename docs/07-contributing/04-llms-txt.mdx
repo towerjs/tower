@@ -1,0 +1,60 @@
+---
+title: "llms.txt Conventions"
+description: "Guidelines for adding an llms.txt file to a documentation site."
+---
+
+The conventions for adding an `llms.txt` file to a documentation site follow the [llmstxt.org proposal](https://llmstxt.org/) initiated by Jeremy Howard. It serves as a machine-readable, hand-picked table of contents written in Markdown to help AI agents quickly map out your documentation without wasting token limits on cluttered HTML.
+
+## Where to Place the File
+
+- **Root Location**: Place the lowercase file at the primary domain root: `https://example.com/llms.txt`.
+- **Docs Subpath**: If your documentation lives on a subpath, you can duplicate or serve it at `https://example.com`.
+- **Alternative Path**: Some documentation platforms like [Mintlify](https://www.mintlify.com/docs/ai/llmstxt) also expose it at `/.well-known/llms.txt`.
+
+## Standard Structure & Syntax
+
+The file must be clean Markdown using a strict semantic structure:
+
+- **H1 Title**: The exact name of your product or documentation project.
+- **Blockquote Summary**: A 1-2 sentence high-level summary.
+- **H2 Sections**: Categories used to group relevant URLs (e.g., Guide, Reference, API).
+- **Markdown Links**: Explicit links accompanied by short, natural-language definitions explaining what the page covers.
+
+```
+# Project Name
+> Short 1-2 sentence overview explaining what this project or tool is and who it is for.
+
+## Core Documentation
+- [Quickstart](https://example.com): Get up and running in under 5 minutes.
+- [Authentication](https://example.com): Guide on managing API keys and JWT integration.
+
+## API Reference
+- [Users Endpoint](https://example.com): Detailed schema and query arguments for users.
+
+## Optional
+- [Changelog](https://example.com): Historical release notes and migration guides.
+```
+
+## Key Design Conventions
+
+- **Use the "Optional" Header**: The word `## Optional` is a special keyword in the spec. It tells resource-constrained LLMs that they can skip everything below it if they run out of context window tokens.
+- **Link to Clean Markdown**: Whenever possible, link to `.md` versions of your documents rather than full HTML pages. This prevents the AI crawler from parsing heavy webpage navigation, footers, and scripts.
+- **Keep it Small**: The core `llms.txt` should ideally stay under 10KB. It is meant to be a map, not a database.
+
+## Accompanying with llms-full.txt
+
+If you have a massive reference library, code snippet base, or full API schemas, pair your file with an `llms-full.txt` file placed in the same directory.
+
+- `llms.txt` serves as the compressed map for index crawling.
+- `llms-full.txt` compiles the entire raw documentation content in one single file. AI agents (like [Cursor](https://medium.com/data-science/llms-txt-414d5121bcb3)) use it to ingest everything at once without looping HTTP requests.
+
+## Automated Discovery
+
+To ensure AI agents effortlessly catch your file, expose explicit header responses. You can configure your server to return standard HTTP Link headers on your documentation landing pages:
+
+```
+Link: </llms.txt>; rel="llms-txt", </llms-full.txt>; rel="llms-full-txt"
+X-Llms-Txt: /llms.txt
+```
+
+If you are using a modern documentation hosting wrapper like Mintlify or Fern, check your project settings — most of these platforms now auto-generate and host these files for you out of the box.

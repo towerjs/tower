@@ -1,0 +1,97 @@
+---
+title: "Blueprint"
+description: "Module registration system, app definition, and dependency validation."
+---
+
+Blueprint provides the module system that ties all Tower packages together.
+
+## defineTower
+
+Type-safe config helper. A runtime no-op — it only provides TypeScript types:
+
+```tsx
+import { defineTower } from 'towerjs/blueprint'
+
+export default defineTower({
+  modules: {
+    vault: {},
+    gatehouse: {
+      provider: 'better-auth',
+      secret: process.env.BETTER_AUTH_SECRET,
+      credentials: { enabled: true },
+    },
+  },
+})
+```
+
+## Module Registration
+
+Modules self-register at import time:
+
+```tsx
+import '@towerjs/vault'    // registers 'vault' module
+import '@towerjs/gatehouse' // registers 'gatehouse' module
+import '@towerjs/courier'  // registers 'courier' module
+```
+
+Each registration includes a name, dependency list, and factory function:
+
+```tsx
+registerModule({
+  name: 'gatehouse',
+  dependsOn: ['vault'],
+  factory: (config) => defineGatehouse(config as GatehouseConfig),
+})
+```
+
+The `towerjs` meta-package handles all imports automatically.
+
+## Module Declaration
+
+```tsx
+interface ModuleDeclaration {
+  name: string
+  dependsOn: string[]
+  factory: (config: unknown) => TowerModule
+}
+```
+
+## Module Factory
+
+```tsx
+import { getModuleFactory } from 'towerjs/blueprint'
+
+const factory = getModuleFactory('vault')
+// → ModuleFactory | undefined
+```
+
+## Dependency Validation
+
+Before initialization, Blueprint validates the module graph:
+
+- All dependencies are registered
+- No circular dependencies exist
+- Dependency order is resolved (topological sort)
+
+If validation fails, an error is thrown with details about the conflict.
+
+## Programmatic Access
+
+```tsx
+import {
+  registerModule,
+  getModuleFactory,
+  getModuleDependencies,
+  getRegisteredModules,
+  getModuleDeclarations,
+} from 'towerjs/blueprint'
+```
+
+## Module Lifecycle
+
+Each module follows a two-phase lifecycle:
+
+1. **`register(ctx)`** — synchronous setup. Register services in the container.
+2. **`initialize(ctx)`** — async setup. Start connections, run migrations, etc.
+
+Shutdown is the reverse of initialization: modules are shut down in reverse dependency order.

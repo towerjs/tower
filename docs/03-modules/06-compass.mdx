@@ -1,0 +1,85 @@
+---
+title: "Compass"
+description: "Search and discovery layer for indexing and querying application data."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Compass is not yet implemented. This document describes the intended vision.
+
+
+## Vision
+
+Compass aims to make search a first-class feature in Tower apps. Define what to index, run queries with faceted filtering, and get ranked results — without standing up a separate search service.
+
+## Indexing
+
+An **index** defines which model fields are searchable and how they are transformed.
+
+```tsx
+import { defineIndex } from "@towerjs/compass"
+
+const postsIndex = defineIndex({
+  name: "posts",
+  fields: {
+    title: { weight: 10 },
+    body: { weight: 5 },
+    tags: { type: "array" },
+  },
+})
+
+await postsIndex.sync() // index existing records
+```
+
+## Full-Text Search
+
+Queries return ranked results using Postgres `tsvector`/`tsquery` or an external engine like Meilisearch or Typesense.
+
+```tsx
+import { search } from "@towerjs/compass"
+
+const results = await search("posts", {
+  query: "getting started with tower",
+  limit: 20,
+  offset: 0,
+})
+```
+
+## Facets
+
+Faceted search allows filtering results by categorical fields, with count aggregation.
+
+```tsx
+const results = await search("products", {
+  query: "laptop",
+  facets: {
+    brand: true,
+    priceRange: true,
+  },
+  filters: {
+    brand: ["Apple", "Dell"],
+  },
+})
+// results.facets => { brand: { Apple: 12, Dell: 7 }, ... }
+```
+
+## Backend Adapters
+
+Compass will support multiple backends:
+
+| Backend | Full-Text | Facets | Relevance Scoring |
+|---------|-----------|--------|-------------------|
+| Postgres (built-in) | tsvector/tsquery | Partial | `ts_rank` |
+| Meilisearch | ✓ | ✓ | ✓ |
+| Typesense | ✓ | ✓ | ✓ |
+
+## Synchronization
+
+Compass handles incremental sync — when a record is created, updated, or deleted in Vault, the index is updated automatically via internal events.
+
+## Planned Features
+
+- Stop words and stemming
+- Custom analyzers per language
+- Synonym expansion
+- Typo tolerance
+- Search-as-you-type (prefix / n-gram)

@@ -1,0 +1,45 @@
+---
+title: "Scribe"
+description: "Project scaffolding tool. Creates new Tower applications with Next.js."
+---
+
+Scribe is the scaffolding engine behind `pnpm create tower`.
+
+## Usage
+
+```bash
+pnpm create tower
+```
+
+This prompts for:
+- Project name
+- Which modules to include (Vault, Gatehouse, Courier)
+- Optional: social auth providers, email provider, etc.
+
+The scaffolded project includes:
+- Next.js with App Router
+- Tower configuration (`tower.config.ts`)
+- Auth setup (proxy, actions, API routes)
+- Database configuration
+- TypeScript and build tooling
+
+## Output
+
+```
+my-app/
+├── src/
+│   ├── proxy.ts
+│   ├── app/
+│   │   ├── actions.ts
+│   │   ├── api/auth/[...all]/route.ts
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   └── vault/
+│       ├── migrations/
+│       └── seeds/
+├── tower.config.ts
+├── next.config.ts
+├── package.json
+├── tsconfig.json
+└── .env.example
+```

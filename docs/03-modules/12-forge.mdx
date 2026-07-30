@@ -1,0 +1,96 @@
+---
+title: "Forge"
+description: "Forge is Tower's deployment module. It provides build tooling, Docker support, CI/CD integrations, and environment management."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Forge is not yet implemented. This document describes the intended vision.
+
+
+## Vision
+
+Forge aims to make deploying a Tower app a single command — handling builds, environment variable injection, and infrastructure provisioning for your chosen platform.
+
+## Build
+
+Forge compiles your Tower app for production, handling TypeScript compilation, asset bundling, and output optimization.
+
+```bash
+tower build
+# Outputs to ./dist/
+```
+
+The build pipeline:
+
+1. Compiles TypeScript via `tsc` or `swc`
+2. Copies static assets
+3. Generates a Prisma client (if Vault is used)
+4. Creates a production `package.json` with only runtime dependencies
+
+## Docker
+
+Forge generates an optimized Dockerfile for your project.
+
+```dockerfile filename="Dockerfile"
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN tower build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+EXPOSE 3000
+CMD ["node", "dist/index.js"]
+```
+
+```bash
+tower docker:init    # Generate Dockerfile
+tower docker:build   # Build the image
+tower docker:push    # Push to registry
+```
+
+## CI/CD
+
+Forge can scaffold CI/CD configuration files for common providers:
+
+```bash
+tower ci:init --provider github
+# Creates .github/workflows/deploy.yml
+```
+
+Generated pipelines typically include:
+
+- Install dependencies
+- Run linter and type check
+- Run tests
+- Run `tower build`
+- Deploy to the selected platform
+
+## Environment Management
+
+Forge reads `.env` files and validates that all required variables (defined in `tower.config.ts`) are present before building. It also supports:
+
+```bash
+tower env:pull   # Download env from platform
+tower env:push   # Upload env to platform
+tower env:check  # Validate local env
+```
+
+## Platform Adapters
+
+Forge will ship adapters for:
+
+- Vercel
+- Docker (any host)
+- Fly.io
+- Railway
+- AWS (ECS / Elastic Beanstalk)
+
+## Planned Features
+
+- Zero-downtime deploys
+- Rollback support
+- Preview deployments per branch
+- Database migration runs as part of deploy

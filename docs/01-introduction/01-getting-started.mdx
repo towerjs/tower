@@ -1,0 +1,157 @@
+---
+title: "Getting Started"
+description: "Create a new Tower application or add Tower to an existing Next.js project."
+---
+
+import { CreateTower } from '@/components/create-tower'
+import { CodeTabs, CodeTab } from '@/components/code'
+
+## Create a Project
+
+Choose your modules and providers below, then run the generated command:
+
+<CreateTower />
+
+### Project Structure
+
+A freshly scaffolded Tower project includes:
+
+```
+my-app/
+├── src/
+│   ├── proxy.ts                        # Auth middleware
+│   ├── app/
+│   │   ├── actions.ts                  # Server actions
+│   │   ├── api/auth/[...all]/route.ts  # Auth API routes
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   └── vault/
+│       ├── migrations/                 # Database migrations
+│       └── seeds/                      # Seed data
+├── tower.config.ts
+├── next.config.ts
+├── package.json
+└── tsconfig.json
+```
+
+## Manual Setup
+
+Add Tower to an existing Next.js project:
+
+### Install
+
+<CodeTabs>
+  <CodeTab title="pnpm">
+  ```bash
+  pnpm add towerjs
+  pnpm add -D @towerjs/edge
+  ```
+  </CodeTab>
+  <CodeTab title="npm">
+  ```bash
+  npm install towerjs
+  npm install -D @towerjs/edge
+  ```
+  </CodeTab>
+  <CodeTab title="yarn">
+  ```bash
+  yarn add towerjs
+  yarn add -D @towerjs/edge
+  ```
+  </CodeTab>
+  <CodeTab title="bun">
+  ```bash
+  bun add towerjs
+  bun add -D @towerjs/edge
+  ```
+  </CodeTab>
+</CodeTabs>
+
+### 1. Configure tower.config.ts
+
+```tsx filename="tower.config.ts"
+import { defineTower } from 'towerjs/blueprint'
+
+export default defineTower({
+  modules: {
+    vault: {},
+    courier: { email: { provider: 'console', from: 'noreply@example.com' } },
+    gatehouse: {
+      provider: 'better-auth',
+      appName: 'My App',
+      baseURL: 'http://localhost:3000',
+      secret: process.env.BETTER_AUTH_SECRET,
+      credentials: { enabled: true },
+    },
+  },
+})
+```
+
+### 2. Configure next.config.ts
+
+```tsx filename="next.config.ts"
+import { withTowerEdge } from '@towerjs/edge'
+
+export default withTowerEdge({})
+```
+
+### 3. Set up auth middleware
+
+```tsx filename="src/proxy.ts"
+import { gatehouse } from '@towerjs/gatehouse'
+
+const { handler } = gatehouse.proxy({
+  public: ['/', '/sign-in', '/sign-up'],
+  redirectIfAuthenticated: ['/sign-in', '/sign-up'],
+  redirectTo: '/sign-in',
+  redirectAfterSignIn: '/dashboard',
+})
+
+export const proxy = handler
+export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] }
+```
+
+### 4. Add auth route handler
+
+```tsx filename="src/app/api/auth/[...all]/route.ts"
+export { GET, POST } from 'towerjs/gatehouse/next'
+```
+
+### 5. Create server actions
+
+```tsx filename="src/app/actions.ts"
+'use server'
+
+export {
+  signIn,
+  signUp,
+  signOut,
+} from 'towerjs/gatehouse/actions'
+```
+
+### 6. Run migrations
+
+```bash
+npx tower migrate
+```
+
+This creates all auth tables (users, sessions, accounts, organizations, etc.).
+
+### 7. Use in server components
+
+```tsx
+import { gatehouse } from 'towerjs/gatehouse'
+
+export default async function Dashboard() {
+  const session = await gatehouse.getSession()
+  if (!session) return <p>Not signed in</p>
+  return <p>Welcome {session.user.name}</p>
+}
+```
+
+## Next Steps
+
+- Learn about [Vault](/docs/vault) for database access
+- Dive into [Gatehouse](/docs/gatehouse) for auth configuration
+- Set up [Courier](/docs/courier) for email notifications
+- Read the [towerjs](/docs/towerjs) meta-package reference

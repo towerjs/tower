@@ -1,0 +1,79 @@
+---
+title: "Treasury"
+description: "Treasury is Tower's billing module. It provides subscription management, invoicing, payment checkout flows, and webhook handling."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Treasury is not yet implemented. This document describes the intended vision.
+
+
+## Vision
+
+Treasury aims to wrap Stripe (and future payment providers) behind a clean Tower API so you can add billing to any app without boilerplate.
+
+## Subscriptions
+
+Define plans and manage the subscription lifecycle — create, upgrade, downgrade, cancel, and reactivate.
+
+```tsx
+import { subscription } from "@towerjs/treasury"
+
+await subscription.create(teamId, {
+  plan: "pro",
+  interval: "monthly",
+  trialDays: 14,
+})
+
+await subscription.cancel(teamId, { atPeriodEnd: true })
+```
+
+## Invoices
+
+Generate and retrieve invoices for completed billing periods.
+
+```tsx
+import { invoice } from "@towerjs/treasury"
+
+const inv = await invoice.list(teamId)
+const pdf = await invoice.download(inv.id)
+```
+
+## Checkout
+
+Create checkout sessions that redirect to a hosted payment page, then handle the post-checkout flow automatically.
+
+```tsx
+import { checkout } from "@towerjs/treasury"
+
+const session = await checkout.create({
+  customerId: teamId,
+  plan: "pro",
+  successUrl: "/billing/success",
+  cancelUrl: "/billing",
+})
+```
+
+## Webhooks
+
+Treasury registers Stripe webhook endpoints and maps events (`invoice.paid`, `customer.subscription.updated`) to internal Tower events so you can react in application code.
+
+```tsx
+import { webhooks } from "@towerjs/treasury"
+
+webhooks.on("invoice.paid", async (event) => {
+  await grantAccess(event.customerId)
+})
+```
+
+## Integration with Tower
+
+- **Gatehouse** — protect billing admin routes
+- **Vault** — store customer and subscription records
+- **Scribe** — scaffold billing when creating a new project
+
+## Planned Features
+
+- Usage-based billing
+- Coupon / discount codes
+- Multi-currency support
+- Paddle and Lemon Squeezy adapters

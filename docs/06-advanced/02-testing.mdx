@@ -1,0 +1,94 @@
+---
+title: "Testing"
+description: "Testing strategies for Tower applications."
+---
+
+Tower uses [Vitest](https://vitest.dev) for unit tests and [Playwright](https://playwright.dev) for E2E tests.
+
+## Unit Tests
+
+```bash
+pnpm add -D vitest
+```
+
+```tsx filename="vitest.config.ts"
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+  },
+})
+```
+
+### Testing with createTowerApp
+
+```tsx
+import { createTowerApp } from '@towerjs/foundation'
+import { getModuleFactory } from '@towerjs/blueprint'
+
+it('creates an app with vault', async () => {
+  const app = await createTowerApp(
+    { modules: { vault: { connectionString: process.env.DATABASE_URL } } },
+    getModuleFactory
+  )
+  expect(app.container.has('vault')).toBe(true)
+  await app.shutdown()
+})
+```
+
+The second argument to `createTowerApp` is the module factory resolver. The `getModuleFactory` from `@towerjs/blueprint` resolves modules registered via `registerModule`.
+
+### Testing Gatehouse
+
+```tsx
+import { gatehouse } from '@towerjs/gatehouse'
+
+it('gets session', async () => {
+  const session = await gatehouse.getSession()
+  expect(session).toBeNull() // unauthenticated
+})
+```
+
+## E2E Tests
+
+E2E tests live in `examples/with-nextjs/e2e/`:
+
+```bash
+# requirements: Docker Postgres
+docker compose up postgres
+
+pnpm test:e2e
+```
+
+### Test Patterns
+
+```tsx
+import { test, expect } from '@playwright/test'
+
+test('user can sign up', async ({ page }) => {
+  const email = `test-${Date.now()}@example.com`
+
+  await page.goto('/sign-up')
+  await page.fill('[name="name"]', 'Test User')
+  await page.fill('[name="email"]', email)
+  await page.fill('[name="password"]', 'password123')
+  await page.click('button[type="submit"]')
+
+  await expect(page).toHaveURL('/dashboard')
+})
+```
+
+### Conventions
+
+- Each test generates a unique email (`test-${Date.now()}@example.com`) for isolation
+- No database cleanup needed between tests
+- Use `test.skip()` for provider-dependent tests (OAuth, etc.)
+
+## Writing Tests
+
+- Unit tests are colocated with source files: `src/**/*.test.ts`
+- E2E tests go in `examples/with-nextjs/e2e/`
+- Tests should not require external services unless guarded
+- Database-dependent tests check for `DATABASE_URL` and skip gracefully

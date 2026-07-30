@@ -1,0 +1,77 @@
+---
+title: "Atlas"
+description: "Atlas is Tower's routing module. It provides file-based routing conventions and framework adapters so your route structure is derived from your file tree."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Atlas is not yet implemented. This document describes the intended vision.
+
+
+## Vision
+
+Atlas aims to deliver a routing layer that works across frameworks. Define routes as files, and Atlas maps them to framework-specific route registrations — whether you're using Next.js, Hono, Express, or Astro.
+
+## File-Based Routing
+
+Atlas maps your file system to URL patterns using conventions similar to Next.js App Router.
+
+```
+routes/
+  index.tsx          -> /
+  about.tsx          -> /about
+  blog/
+    [slug].tsx       -> /blog/:slug
+    [slug]/
+      comments.tsx   -> /blog/:slug/comments
+  api/
+    users/
+      [id].tsx       -> /api/users/:id
+```
+
+## Framework Adapters
+
+An **adapter** converts Atlas route definitions into framework-specific handlers.
+
+```tsx
+import { defineAdapter } from "@towerjs/atlas"
+
+const honoAdapter = defineAdapter({
+  name: "hono",
+  setup(app, routes) {
+    for (const route of routes) {
+      app.on(route.method, route.path, route.handler)
+    }
+  },
+})
+```
+
+Built-in adapters planned:
+
+- Next.js App Router
+- Hono
+- Express / Fastify
+- Astro
+
+## Route Metadata
+
+Routes export metadata for middleware, auth, and layout composition.
+
+```tsx filename="routes/dashboard/settings.tsx"
+// routes/dashboard/settings.tsx
+export const route = {
+  layout: "dashboard",
+  middleware: ["auth"],
+  title: "Settings",
+}
+
+export default function SettingsPage() {
+  return <div>...</div>
+}
+```
+
+## Planned Features
+
+- Route groups and layouts
+- Middleware chaining per route
+- Automatic OpenAPI generation from routes
+- Route-level loaders for data fetching

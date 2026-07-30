@@ -1,0 +1,156 @@
+---
+title: "Dashboard with Organizations"
+description: "Build a multi-tenant dashboard using Gatehouse organizations."
+---
+
+This tutorial builds a dashboard application with organization support — members can join organizations, each with their own data.
+
+## 1. Configure Organizations
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  secret: process.env.BETTER_AUTH_SECRET,
+  credentials: { enabled: true },
+  organization: {
+    allowUsersToCreateOrganizations: true,
+    creatorRole: 'owner',
+  },
+}
+```
+
+## 2. Seed an Organization
+
+```tsx filename="src/vault/seeds/organization.ts"
+import { type Vault } from '@towerjs/vault'
+
+export default async function seed(db: Vault) {
+  // Organization tables are created by Gatehouse migration
+  // This seed adds sample data
+  const org = await db
+    .insertInto('organization')
+    .values({ name: 'My Organization', slug: 'my-org' })
+    .returningAll()
+    .executeTakeFirstOrThrow()
+
+  console.log(`Created organization: ${org.name}`)
+}
+```
+
+```bash
+npx tower seed
+```
+
+## 3. Organization List
+
+```tsx filename="src/app/dashboard/page.tsx"
+import { gatehouse } from 'towerjs/gatehouse'
+
+export default async function DashboardPage() {
+  const orgs = await gatehouse.getOrganizations()
+
+  return (
+    <div>
+      <h1>Organizations</h1>
+      {orgs.length === 0 ? (
+        <p>You don't belong to any organizations yet.</p>
+      ) : (
+        <ul>
+          {orgs.map(org => (
+            <li key={org.id}>
+              <a href={`/dashboard/organizations/${org.id}`}>
+                {org.name}
+              </a>
+              <span>{org.members?.length ?? 0} members</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+```
+
+## 4. Organization Detail
+
+```tsx filename="src/app/dashboard/organizations/[id]/page.tsx"
+import { gatehouse } from 'towerjs/gatehouse'
+
+export default async function OrgPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const org = await gatehouse.getOrganization(id)
+
+  if (!org) return <p>Organization not found</p>
+
+  return (
+    <div>
+      <h1>{org.name}</h1>
+      <p>Slug: {org.slug}</p>
+
+      <h2>Members</h2>
+      <ul>
+        {org.members?.map(member => (
+          <li key={member.id}>
+            {member.user?.name ?? member.userId} — {member.role}
+          </li>
+        ))}
+      </ul>
+
+      <h2>Invitations</h2>
+      {org.invitations?.map(inv => (
+        <div key={inv.id}>
+          <span>{inv.email}</span>
+          <span>{inv.role}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+## 5. Invite Members
+
+```tsx filename="src/app/actions.ts"
+'use server'
+import { gatehouse } from 'towerjs/gatehouse'
+
+export async function inviteMember(formData: FormData) {
+  const orgId = formData.get('orgId') as string
+  const email = formData.get('email') as string
+  const role = (formData.get('role') as string) || 'member'
+
+  await gatehouse.organizations.invitations.create(orgId, {
+    email,
+    role,
+  })
+}
+```
+
+## 6. Set Active Organization
+
+```tsx filename="src/app/actions.ts"
+export async function switchOrganization(formData: FormData) {
+  const orgId = formData.get('orgId') as string
+  await gatehouse.organizations.setActive(orgId)
+}
+```
+
+The active organization is used for session-scoped operations.
+
+## 7. Permissions
+
+```tsx filename="src/app/actions.ts"
+export async function deleteProject(formData: FormData) {
+  const projectId = formData.get('projectId') as string
+  const orgId = formData.get('orgId') as string
+
+  const allowed = await gatehouse.can({
+    user: session.user,
+    permission: 'delete:project',
+    organizationId: orgId,
+  })
+
+  if (!allowed) throw new Error('Not authorized')
+  // ... delete project
+}
+```

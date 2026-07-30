@@ -1,0 +1,59 @@
+---
+title: "Beacon"
+description: "Beacon is Tower's realtime module. It provides WebSocket-based communication for building live, event-driven features."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Beacon is not yet implemented. This document describes the intended vision.
+
+
+## Vision
+
+Beacon aims to abstract WebSocket connection management, channel-based pub/sub, and internal event broadcasting into a single, framework-friendly API.
+
+## Channels
+
+A **channel** is a named topic that clients can subscribe to. Channels support scoping (e.g. `room:42`, `user:5`) so events are only delivered to relevant clients.
+
+```tsx
+import { channel } from "@towerjs/beacon"
+
+const chat = channel("room:42")
+
+chat.publish("message", { user: "alice", text: "hello" })
+
+chat.subscribe((event) => {
+  console.log("received", event)
+})
+```
+
+## Pub / Sub
+
+Beacon provides a publish/subscribe primitive that works both server-side and client-side. Server code can broadcast events to all connected clients on a channel, and clients can emit events back to the server.
+
+## Internal Events
+
+Beyond WebSocket traffic, Beacon exposes an internal event bus for in-process communication between modules. This allows decoupled integration — for example, Vault could emit a `record:created` event that Beacon forwards to subscribed WebSocket clients.
+
+```tsx
+import { emitter } from "@towerjs/beacon"
+
+emitter.on("vault:created", async (record) => {
+  await channel(`project:${record.projectId}`).publish("item:created", record)
+})
+```
+
+## Broadcasting
+
+Broadcasting sends an event to all connected clients (or all clients on a channel) without requiring individual fan-out logic. The server handles connection tracking and delivery.
+
+## Framework Adapters
+
+Beacon will ship with framework-specific adapters (Next.js route handlers, Hono, etc.) so WebSocket upgrade and message parsing are handled transparently.
+
+## Planned Features
+
+- Automatic reconnection with backoff
+- Presence tracking (who is online)
+- Room-based access control
+- Scalable backends (Redis, Postgres LISTEN/NOTIFY)

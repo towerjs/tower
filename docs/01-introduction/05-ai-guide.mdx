@@ -1,0 +1,34 @@
+---
+title: "AI Development Guide"
+description: "Use AI assistants to build Tower applications faster."
+---
+
+Each page on this site has a **copy button** in the top-right corner of code blocks and in the page header. Use it to paste examples directly into your AI prompt.
+
+## LLMs.txt
+
+Tower provides an `/llms.txt` file that AI assistants can read for context about the framework. Point your AI to:
+
+```
+https://towerjs.org/llms.txt
+```
+
+This file contains a curated summary of Tower's architecture, modules, APIs, and conventions — optimized for LLM context windows.
+
+## Tower Skill (Vercel Skills)
+
+For AI assistants that support [Vercel Skills](https://skills.sh), install the Tower skill:
+
+```bash
+npx skills add tower
+```
+
+Or with pnpm:
+
+```bash
+pnpm dlx skills add tower
+```
+
+The skill provides the AI with up-to-date knowledge about Tower's APIs, configuration patterns, and best practices.
+
+> **Note:** The Tower skill is coming soon. The command above will work once published.

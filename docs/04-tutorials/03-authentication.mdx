@@ -1,0 +1,137 @@
+---
+title: "Authentication with Gatehouse"
+description: "Set up full-featured authentication with email/password, social login, and more."
+---
+
+This tutorial walks through setting up authentication in a Tower + Next.js application.
+
+## 1. Configure Gatehouse
+
+```tsx filename="tower.config.ts"
+import { defineTower } from 'towerjs/blueprint'
+
+export default defineTower({
+  modules: {
+    vault: {},
+    courier: { email: { provider: 'console', from: 'noreply@example.com' } },
+    gatehouse: {
+      provider: 'better-auth',
+      appName: 'My App',
+      baseURL: 'http://localhost:3000',
+      secret: process.env.BETTER_AUTH_SECRET,
+
+      credentials: { enabled: true },
+      emailVerification: { sendOnSignUp: true, autoSignInAfterVerification: true },
+      social: { google: {}, github: {} },
+      magicLinks: true,
+    },
+  },
+})
+```
+
+Courier is auto-wired — Gatehouse uses it for password reset, email verification, and magic link emails automatically.
+
+## 2. Set up Auth Infrastructure
+
+Create the required files:
+
+```tsx filename="src/proxy.ts"
+import { gatehouse } from '@towerjs/gatehouse'
+const { handler } = gatehouse.proxy({
+  public: ['/', '/sign-in', '/sign-up'],
+  redirectIfAuthenticated: ['/sign-in', '/sign-up'],
+  redirectTo: '/sign-in',
+  redirectAfterSignIn: '/dashboard',
+})
+export const proxy = handler
+export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] }
+```
+
+```tsx filename="src/app/api/auth/[...all]/route.ts"
+export { GET, POST } from 'towerjs/gatehouse/next'
+```
+
+```tsx filename="src/app/actions.ts"
+'use server'
+export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
+```
+
+## 3. Run Migrations
+
+```bash
+npx tower migrate
+```
+
+## 4. Sign-In Page
+
+```tsx filename="src/app/sign-in/page.tsx"
+'use client'
+import { signIn } from '@/app/actions'
+
+export default function SignInPage() {
+  return (
+    <form action={signIn}>
+      <input name="email" type="email" placeholder="Email" required />
+      <input name="password" type="password" placeholder="Password" required />
+      <button type="submit">Sign In</button>
+    </form>
+  )
+}
+```
+
+## 5. Protected Dashboard
+
+```tsx filename="src/app/dashboard/page.tsx"
+import { gatehouse } from 'towerjs/gatehouse'
+import { redirect } from 'next/navigation'
+
+export default async function Dashboard() {
+  const session = await gatehouse.getSession()
+  if (!session) redirect('/sign-in')
+
+  return (
+    <div>
+      <h1>Welcome, {session.user.name}</h1>
+      <form action={signOut}>
+        <button type="submit">Sign Out</button>
+      </form>
+    </div>
+  )
+}
+```
+
+## 6. Using Organizations
+
+```tsx filename="src/app/dashboard/organizations/page.tsx"
+import { gatehouse } from 'towerjs/gatehouse'
+
+export default async function OrganizationsPage() {
+  const orgs = await gatehouse.getOrganizations()
+
+  return (
+    <ul>
+      {orgs.map(org => (
+        <li key={org.id}>{org.name} ({org.members?.length ?? 0} members)</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+## 7. Two-Factor Auth
+
+Enable in config:
+
+```tsx
+twoFactor: true,
+```
+
+Then in your app:
+
+```tsx
+import { enableTwoFactor, verifyTwoFactor } from '@/app/actions'
+
+// In a settings page:
+const result = await enableTwoFactor(new FormData()) // shows QR code
+await verifyTwoFactor(new FormData()) // completes setup
+```

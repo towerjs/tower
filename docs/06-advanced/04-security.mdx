@@ -1,0 +1,87 @@
+---
+title: "Security"
+description: "Security best practices for Tower applications."
+---
+
+## Auth Secret
+
+Gatehouse requires a strong secret for session encryption:
+
+```bash
+# Generate a secure secret
+openssl rand -base64 32
+```
+
+Set it as `BETTER_AUTH_SECRET` in your environment. Never commit it to version control.
+
+## Environment Variables
+
+Keep all secrets in environment variables:
+
+```bash
+# .env (never committed)
+DATABASE_URL=postgres://user:pass@localhost:5432/db
+BETTER_AUTH_SECRET=your-256-bit-secret
+RESEND_API_KEY=re_...
+```
+
+## CSRF Protection
+
+Gatehouse uses Better Auth's built-in CSRF protection. Configure trusted origins:
+
+```tsx
+gatehouse: {
+  trustedOrigins: ['https://example.com'],
+}
+```
+
+Disable CSRF check only when necessary:
+
+```tsx
+advanced: { disableCSRFCheck: true }
+```
+
+## Cookies
+
+Configure secure cookies for production:
+
+```tsx
+gatehouse: {
+  advanced: { useSecureCookies: true }
+}
+```
+
+On Vercel/HTTPS deployments, secure cookies are enabled by default.
+
+## HTTPS
+
+Always serve production sites over HTTPS. Vercel provides this automatically. For custom deployments, terminate TLS at the load balancer or reverse proxy.
+
+## Rate Limiting
+
+Better Auth provides built-in rate limiting:
+
+```tsx
+gatehouse: {
+  rateLimit: {
+    enabled: true,
+    window: 60,    // seconds
+    max: 10,       // requests per window
+  }
+}
+```
+
+## CSP Headers
+
+Add Content Security Policy headers in your `next.config.ts`:
+
+```tsx
+headers: async () => [
+  {
+    source: '/(.*)',
+    headers: [
+      { key: 'Content-Security-Policy', value: "default-src 'self'" },
+    ],
+  },
+]
+```

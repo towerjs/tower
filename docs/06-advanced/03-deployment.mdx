@@ -1,0 +1,95 @@
+---
+title: "Deployment"
+description: "Deploying Tower applications to production."
+---
+
+## Environment Variables
+
+Required in production:
+
+```bash
+DATABASE_URL=postgres://user:pass@host:5432/db
+BETTER_AUTH_SECRET=a-long-random-string-at-least-32-characters
+```
+
+Optional:
+
+```bash
+RESEND_API_KEY=re_...              # Courier email (Resend)
+GOOGLE_CLIENT_ID=...               # Gatehouse social auth
+GOOGLE_CLIENT_SECRET=...           # Gatehouse social auth
+GITHUB_CLIENT_ID=...               # Gatehouse social auth
+GITHUB_CLIENT_SECRET=...           # Gatehouse social auth
+TOWER_CONFIG_PATH=/path/to/config  # Custom config file path
+```
+
+## Vercel
+
+### 1. Build Settings
+
+- Framework: Next.js
+- Build command: `pnpm build`
+- Output directory: `.next`
+
+### 2. Database
+
+Use [Neon](https://neon.tech) for PostgreSQL with serverless support:
+
+```tsx
+vault: {
+  connectionString: process.env.DATABASE_URL,
+  // Neon auto-detection configures poolQueryViaFetch automatically
+}
+```
+
+### 3. Edge Runtime
+
+The Gatehouse auth proxy runs on Edge. If using additional Edge functions:
+
+```tsx filename="next.config.ts"
+import { withTowerEdge } from '@towerjs/edge'
+
+export default withTowerEdge({})
+```
+
+### 4. Migrations
+
+Run migrations during deploy (one-off, not in Edge context):
+
+```bash
+npx tower migrate
+```
+
+## Docker
+
+```dockerfile
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY pnpm-lock.yaml package.json ./
+RUN corepack enable && pnpm install
+COPY . .
+RUN pnpm build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+EXPOSE 3000
+CMD ["pnpm", "start"]
+```
+
+## Database Migrations in Production
+
+Migrations should run before the new application version starts serving traffic:
+
+- **Vercel**: Run `npx tower migrate` as a pre-deploy step or via a migration script
+- **Docker**: Run migrations in an init container or entrypoint script
+- **CI/CD**: Include migration step in pipeline before deploy
+
+```bash
+# Pre-deploy migration
+npx tower migrate
+pnpm build
+# Deploy...
+```
