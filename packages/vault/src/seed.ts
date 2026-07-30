@@ -1,7 +1,7 @@
-import type { VaultDb, VaultSeedConfig } from './types.js'
+import type { Vault, VaultSeedConfig } from './types.js'
 
 /** Runs seed files from the configured seed folder. Pass a name to run a single seed file. */
-export async function runSeeds(db: VaultDb, config: VaultSeedConfig, name?: string): Promise<{ applied: string[] }> {
+export async function runSeeds(db: Vault, config: VaultSeedConfig, name?: string): Promise<{ applied: string[] }> {
   let nodeFs: typeof import('node:fs')
   let nodePath: typeof import('node:path')
   try {

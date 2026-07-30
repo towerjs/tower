@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely'
 import type { Migrator } from 'kysely/migration'
 
-export type VaultDb<T = unknown> = Kysely<T>
+export type Vault<T = unknown> = Kysely<T>
 
 export type VaultProvider = 'neon' | 'pg'
 
@@ -31,14 +31,14 @@ export type VaultSeedConfig = {
 }
 
 /**
- * The vault module interface, combining Kysely query builder methods with Tower lifecycle.
+ * The vault module interface, combining database query methods with Tower lifecycle.
  *
- * Use `.db` to access the raw Kysely instance, `.transaction` for transactions,
+ * Use `.db` to access the database handle directly, `.transaction` for transactions,
  * `.migrate` / `.seed` for database management, and `.close` to release the pool.
  */
 export interface VaultModule<TSchema = unknown> extends Omit<Kysely<TSchema>, 'transaction'> {
-  readonly db: VaultDb<TSchema>
-  transaction<T>(fn: (trx: VaultDb<TSchema>) => Promise<T>): Promise<T>
+  readonly db: Vault<TSchema>
+  transaction<T>(fn: (trx: Vault<TSchema>) => Promise<T>): Promise<T>
   migrate(): Promise<void>
   seed(name?: string): Promise<void>
   close(): Promise<void>

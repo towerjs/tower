@@ -1,21 +1,21 @@
 import type { TowerModule, TowerContext } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
 import type { Migrator } from 'kysely/migration'
-import type { VaultConfig, VaultDb, VaultModule, VaultMigrationConfig, VaultSeedConfig } from './types.js'
+import type { VaultConfig, Vault, VaultModule, VaultMigrationConfig, VaultSeedConfig } from './types.js'
 
-export type { VaultConfig, VaultDb, VaultModule, VaultSeedConfig, VaultMigrationConfig } from './types.js'
+export type { VaultConfig, Vault, VaultModule, VaultSeedConfig, VaultMigrationConfig } from './types.js'
 
-export async function createMigrator(db: VaultDb, config: VaultMigrationConfig): Promise<Migrator> {
+export async function createMigrator(db: Vault, config: VaultMigrationConfig): Promise<Migrator> {
   const mod = await import('./migrate.js')
   return mod.createMigrator(db, config)
 }
 
-export async function migrateToLatest(db: VaultDb, config: VaultMigrationConfig): Promise<void> {
+export async function migrateToLatest(db: Vault, config: VaultMigrationConfig): Promise<void> {
   const mod = await import('./migrate.js')
   return mod.migrateToLatest(db, config)
 }
 
-export async function runSeeds(db: VaultDb, config: VaultSeedConfig, name?: string): Promise<{ applied: string[] }> {
+export async function runSeeds(db: Vault, config: VaultSeedConfig, name?: string): Promise<{ applied: string[] }> {
   const mod = await import('./seed.js')
   return mod.runSeeds(db, config, name)
 }
@@ -133,13 +133,13 @@ function buildProxyUnconfigured(): VaultModule {
   })
 }
 
-function buildProxyDb(db: VaultDb, pool: { end(): Promise<void> }): VaultModule {
+function buildProxyDb(db: Vault, pool: { end(): Promise<void> }): VaultModule {
   return new Proxy(db as unknown as VaultModule, {
     get(target, prop) {
       if (prop === 'db') return db
       if (prop === 'close') return () => pool.end()
       if (prop === 'transaction') {
-        return <T>(fn: (trx: VaultDb) => Promise<T>) => db.transaction().execute(fn)
+        return <T>(fn: (trx: Vault) => Promise<T>) => db.transaction().execute(fn)
       }
       if (prop === 'migrate' || prop === 'migrator' || prop === 'seed') {
         return () => {
@@ -154,7 +154,7 @@ function buildProxyDb(db: VaultDb, pool: { end(): Promise<void> }): VaultModule 
 }
 
 function buildProxyConfigured(
-  db: VaultDb,
+  db: Vault,
   pool: { end(): Promise<void> },
   migrationFolder: string,
   seedFolder: string,
@@ -174,7 +174,7 @@ function buildProxyConfigured(
         return () => pool.end()
       }
       if (prop === 'transaction') {
-        return <T>(fn: (trx: VaultDb) => Promise<T>) => db.transaction().execute(fn)
+        return <T>(fn: (trx: Vault) => Promise<T>) => db.transaction().execute(fn)
       }
       return (target as any)[prop]
     },
@@ -229,7 +229,7 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
       }
 
       const { Kysely, PostgresDialect } = await loadKysely()
-      const db: VaultDb = new Kysely({ dialect: new PostgresDialect({ pool }) })
+      const db: Vault = new Kysely({ dialect: new PostgresDialect({ pool }) })
 
       if (isEdge) {
         _vault = buildProxyDb(db, pool)
