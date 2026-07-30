@@ -6,8 +6,23 @@ export type { TowerContextProvider, RequestContext } from './context/index.js'
 export { detectRuntime } from './runtime.js'
 // resolveConfig and registerConfigProvider are deliberately inline (not re-exported from resolve-config.js)
 // to prevent Next.js/Turbopack from tracing the resolve-config module's dynamic import() at bundle time.
-export { registerService, getService } from './registry.js'
 export { resolveDependencyOrder } from './dependency-graph.js'
+
+/**
+ * Register a module-level service so it can be accessed via `getService()`.
+ * Called during tower app initialization. Not typically needed in user code.
+ */
+export { registerService } from './registry.js'
+/**
+ * Retrieve a registered service by name.
+ *
+ * @example
+ * ```ts
+ * import { getService } from 'towerjs/foundation'
+ * const vault = getService('vault')
+ * ```
+ */
+export { getService } from './registry.js'
 export type {
   RuntimeName,
   TowerRuntime,

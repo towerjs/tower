@@ -24,10 +24,14 @@ function detectEdge(): boolean {
 async function loadContext(): Promise<TowerContextProvider> {
   if (detectEdge()) return noop()
 
+  const GLOBAL_KEY = '___tower_context_provider___'
+  const existing = (globalThis as any)[GLOBAL_KEY]
+  if (existing) return existing
+
   try {
     const { AsyncLocalStorage } = await import('node:async_hooks')
     const storage = new AsyncLocalStorage<Record<string, unknown>>()
-    return {
+    const provider = {
       run<T>(data: Record<string, unknown>, handler: () => Promise<T>) {
         return storage.run(data, handler)
       },
@@ -35,6 +39,8 @@ async function loadContext(): Promise<TowerContextProvider> {
         return storage.getStore()?.[key] as T | undefined
       },
     }
+    ;(globalThis as any)[GLOBAL_KEY] = provider
+    return provider
   } catch {
     return noop()
   }
@@ -48,12 +54,12 @@ export interface RequestContext {
 
 type RequestContextResolver = () => Promise<RequestContext>
 
-let _requestContextResolver: RequestContextResolver | null = null
+const RESOLVER_KEY = '___tower_request_context_resolver___'
 
 export function setRequestContextResolver(resolver: RequestContextResolver): void {
-  _requestContextResolver = resolver
+  ;(globalThis as any)[RESOLVER_KEY] = resolver
 }
 
 export function getRequestContextResolver(): RequestContextResolver | null {
-  return _requestContextResolver
+  return (globalThis as any)[RESOLVER_KEY] ?? null
 }
