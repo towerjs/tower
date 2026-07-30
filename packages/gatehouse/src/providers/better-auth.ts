@@ -36,11 +36,13 @@ export class BetterAuthAdapter {
       { magicLink, emailOTP, twoFactor, organization, admin, phoneNumber },
       { passkey },
       { apiKey: apiKeyPlugin },
+      { toNextJsHandler, nextCookies },
     ] = await Promise.all([
       import('better-auth'),
       import('better-auth/plugins'),
       import('@better-auth/passkey'),
       import('@better-auth/api-key'),
+      import('better-auth/next-js'),
     ])
 
     const baseURL =
@@ -105,7 +107,13 @@ export class BetterAuthAdapter {
       allPlugins.push(organization())
     }
 
+    allPlugins.push(nextCookies())
+
     const social = expandSocial(config.social)
+
+    const rateLimit = config.rateLimit
+      ? { storage: 'database', ...config.rateLimit }
+      : undefined
 
     const baOptions: Record<string, unknown> = {
       database: { db, type: 'postgres' },
@@ -124,6 +132,7 @@ export class BetterAuthAdapter {
       session: config.session,
       account: config.account,
       trustedOrigins: config.trustedOrigins,
+      rateLimit,
       advanced: config.advanced,
       plugins: allPlugins,
     }
@@ -135,8 +144,6 @@ export class BetterAuthAdapter {
 
     this.auth = betterAuth(baOptions as any)
     this.api = this.auth.api
-
-    const { toNextJsHandler } = await import('better-auth/next-js')
     this._routes = toNextJsHandler(this.auth) as any
   }
 

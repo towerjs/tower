@@ -497,6 +497,14 @@ export interface GatehouseConfig {
     }
   }
 
+  rateLimit?: {
+    enabled?: boolean
+    window?: number
+    max?: number
+    storage?: 'memory' | 'database' | 'secondary-storage'
+    customRules?: Record<string, { window: number; max: number } | false>
+  }
+
   advanced?: {
     useSecureCookies?: boolean
     disableCSRFCheck?: boolean
@@ -510,7 +518,13 @@ export interface GatehouseConfig {
   passThrough?: Record<string, unknown>
 }
 
-/** Controls which paths the gatehouse proxy protects and where redirects go. */
+/**
+ * Controls which paths the gatehouse proxy protects and where redirects go.
+ *
+ * Set `public` to allow unauthenticated access to certain routes,
+ * `redirectTo` to send unauthenticated users to the sign-in page,
+ * and `redirectAfterSignIn` to send them back after login.
+ */
 export interface ProxyOptions {
   public?: string[]
   redirectIfAuthenticated?: string[]
@@ -643,9 +657,9 @@ export interface GatehouseInstance {
   }
 
   totp: {
-    enable(password: string, issuer?: string): Promise<TwoFactorInfo>
-    disable(password: string): Promise<void>
-    verify(code: string, trustDevice?: boolean): Promise<TwoFactorVerifyResult>
+    enable(password: string | { password: string; issuer?: string }): Promise<TwoFactorInfo>
+    disable(password: string | { password: string }): Promise<void>
+    verify(code: string | { code: string; trustDevice?: boolean }): Promise<TwoFactorVerifyResult>
     uri(password: string): Promise<string>
     otp: {
       send(params?: TwoFactorOtpSendParams): Promise<void>
@@ -654,7 +668,7 @@ export interface GatehouseInstance {
   }
 
   backupCodes: {
-    generate(password: string): Promise<string[]>
+    generate(password: string | { password: string }): Promise<string[]>
     verify(code: string): Promise<TwoFactorVerifyResult>
   }
 

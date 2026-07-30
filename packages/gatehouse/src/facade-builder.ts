@@ -198,7 +198,7 @@ const GET_METHODS = new Set([
 // Wraps the raw Better Auth API to inject headers on every call and
 // route params to query/body based on the HTTP verb convention.
 
-const BA_TOP_LEVEL = new Set(['body', 'query', 'asResponse', 'headers', 'method'])
+const BA_TOP_LEVEL = new Set(['body', 'query', 'asResponse', 'returnHeaders', 'returnStatus', 'headers', 'method'])
 
 /** Wraps a Better Auth API object to auto-inject headers and route params to query/body. */
 export function buildProxiedApi(api: any, headers: Headers) {

@@ -1,11 +1,10 @@
 import { towerContext, setRequestContextResolver } from '@towerjs/foundation'
-import { runWithRequest, getAuth, getRoutes, Gatehouse } from '../index.js'
-import type { GatehouseInstance } from '../types.js'
+import { getRoutes, Gatehouse } from '../index.js'
 
 setRequestContextResolver(async () => {
-  const { unstable_noStore } = await import('next/cache')
+  const { unstable_noStore } = await import('next/cache.js')
   unstable_noStore()
-  const { headers } = await import('next/headers')
+  const { headers } = await import('next/headers.js')
   const h = await headers()
   return { headers: h }
 })
@@ -14,30 +13,17 @@ type NextRouteContext = {
   params: Promise<Record<string, string>>
 }
 
-type GatehouseNextConfig = {
-  sessionCookie?: string
-}
+type ActionResult = { error: string } | { ok: true }
 
-function sessionCookieName(config?: GatehouseNextConfig): string {
-  return config?.sessionCookie ?? 'better-auth.session_token'
-}
-
-function cookieString(token: string, config?: GatehouseNextConfig): string {
-  const secure = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'
-  return [
-    `${sessionCookieName(config)}=${token}`,
-    'HttpOnly',
-    'SameSite=Lax',
-    'Path=/',
-    secure && 'Secure',
-    'Max-Age=' + 60 * 60 * 24 * 7,
-  ]
-    .filter(Boolean)
-    .join('; ')
-}
-
-function clearCookieString(config?: GatehouseNextConfig): string {
-  return `${sessionCookieName(config)}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`
+function withGatehouseContext<TResult, TArgs extends unknown[]>(
+  handler: (...args: TArgs) => Promise<TResult>,
+): (...args: TArgs) => Promise<TResult> {
+  return async (...args: TArgs): Promise<TResult> => {
+    const { headers } = await import('next/headers.js')
+    const h = await headers()
+    const gh = await Gatehouse.from({ headers: h })
+    return towerContext.run({ gatehouse: gh }, () => handler(...args))
+  }
 }
 
 /**
@@ -46,107 +32,76 @@ function clearCookieString(config?: GatehouseNextConfig): string {
  * Inside the handler, use the `gatehouse` proxy (imported from
  * `@towerjs/gatehouse`) — it reads from the request-scoped context.
  *
- * Session cookies are synced automatically on sign-in and sign-out.
+ * Session cookies are synced automatically via better-auth's `nextCookies` plugin.
  *
  * @example
  * ```ts
  * "use server"
  * import { action } from "@towerjs/gatehouse/next"
  * import { gatehouse } from "@towerjs/gatehouse"
- * import { redirect } from "next/navigation"
  *
  * export const signIn = action(async (formData: FormData) => {
  *   await gatehouse.signIn.email({ email: formData.get("email"), password: formData.get("password") })
- *   redirect("/dashboard")
+ * })
+ * ```
+ *
+ * For FormData actions with automatic extraction:
+ * @example
+ * ```ts
+ * export const signUp = action.form(async ({ name, email, password }) => {
+ *   await gatehouse.signUp.email({ name, email, password })
  * })
  * ```
  */
-export function action<TResult, TArgs extends unknown[]>(
-  handler: (...args: TArgs) => Promise<TResult>,
-  config?: GatehouseNextConfig
-): (...args: TArgs) => Promise<TResult> {
-  return async (...args: TArgs): Promise<TResult> => {
-    const { headers } = await import('next/headers')
-    const h = await headers()
-    const gh = await Gatehouse.from({ headers: h })
+type FormActionFn = {
+  (formData: FormData): Promise<void>
+  (prevState: ActionResult | undefined, formData: FormData): Promise<ActionResult>
+}
 
-    let pendingToken: string | null | undefined = undefined
+export const action = withGatehouseContext as typeof withGatehouseContext & {
+  form: (
+    handler: (data: Record<string, string>) => Promise<void>,
+  ) => FormActionFn
+}
 
-    const tracked: GatehouseInstance = {
-      ...gh,
-      signIn: {
-        ...gh.signIn,
-        email: async (params) => {
-          const result = await gh.signIn.email(params as any)
-          if (result?.session?.token) pendingToken = result.session.token
-          return result
-        },
-      },
-      signUp: {
-        ...gh.signUp,
-        email: async (params) => {
-          const result = await gh.signUp.email(params as any)
-          if (result?.session?.token) pendingToken = result.session.token
-          return result
-        },
-      },
-      sessions: {
-        ...gh.sessions,
-        signOut: async () => {
-          await gh.sessions.signOut()
-          pendingToken = null
-        },
-      },
-    } as GatehouseInstance
-
-    const result: TResult = await towerContext.run({ gatehouse: tracked }, () => handler(...args))
-
-    const { cookies } = await import('next/headers')
-    const c = await cookies()
-    const name = sessionCookieName(config)
-    if (pendingToken) {
-      c.set(name, pendingToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      })
-    } else if (pendingToken === null) {
-      c.set(name, '', { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 })
+action.form = (
+  handler: (data: Record<string, string>) => Promise<void>,
+): FormActionFn => {
+  const inner = withGatehouseContext(async (_prevState: unknown, formData: FormData): Promise<ActionResult> => {
+    const data: Record<string, string> = {}
+    for (const [key, value] of formData.entries()) {
+      if (typeof value === 'string') data[key] = value
     }
-    return result
+    await handler(data)
+    return { ok: true } as const
+  })
+
+  const fn = async (arg0: unknown, arg1?: FormData): Promise<ActionResult> => {
+    const formData = arg0 instanceof FormData ? arg0 : arg1 as FormData
+    const prevState = arg0 instanceof FormData ? undefined : arg0 as ActionResult | undefined
+    try {
+      return await inner(prevState, formData)
+    } catch (e) {
+      return { error: (e as Error)?.message ?? 'Action failed' }
+    }
   }
+
+  return fn as FormActionFn
 }
 
 /**
  * Wraps a Next.js route handler with the gatehouse ALS context.
  *
- * Automatically syncs the session cookie on sign-in and sign-out.
+ * Session cookies are synced automatically via better-auth's `nextCookies` plugin.
  * Use this for mutations that change auth state. For read-only
  * routes, use `gatehouse.from({ headers })` directly.
  */
 export function withGatehouse<T extends Response>(
   handler: (request: Request, context: NextRouteContext) => Promise<T>,
-  config?: GatehouseNextConfig
 ): (request: Request, context: NextRouteContext) => Promise<T> {
   return async (request, context) => {
-    const auth = getAuth()
-    const initial = await auth.getSession({ headers: request.headers })
-
-    const response = await runWithRequest(request, () => handler(request, context))
-
-    const current = await auth.getSession({ headers: request.headers })
-
-    const initialToken = initial?.session?.token ?? null
-    const currentToken = current?.session?.token ?? null
-
-    if (currentToken && currentToken !== initialToken) {
-      response.headers.append('Set-Cookie', cookieString(currentToken, config))
-    } else if (!currentToken && initialToken) {
-      response.headers.append('Set-Cookie', clearCookieString(config))
-    }
-
-    return response
+    const gh = await Gatehouse.from({ headers: request.headers })
+    return towerContext.run({ gatehouse: gh }, () => handler(request, context))
   }
 }
 

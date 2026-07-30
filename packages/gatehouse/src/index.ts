@@ -127,18 +127,28 @@ export type {
 }
 export { AuthenticationError, AuthorizationError, ContextRequiredError }
 
-let _adapter: BetterAuthAdapter | undefined
+const GLOBAL_ADAPTER_KEY = '___tower_gatehouse_adapter___'
+let _localAdapter: BetterAuthAdapter | undefined
+
+function getAdapter(): BetterAuthAdapter | undefined {
+  return _localAdapter ?? (globalThis as any)[GLOBAL_ADAPTER_KEY]
+}
+
+function setAdapter(adapter: BetterAuthAdapter | undefined) {
+  _localAdapter = adapter
+  ;(globalThis as any)[GLOBAL_ADAPTER_KEY] = adapter
+}
 
 /** Returns the adapter's getSession method. Useful for server-side session checks. */
 export function getAuth(): { getSession(request: { headers: Headers }): Promise<Session | null> } {
-  if (!_adapter) throw new Error('Gatehouse not initialized')
-  return _adapter
+  if (!getAdapter()) throw new Error('Gatehouse not initialized')
+  return getAdapter()!
 }
 
 /** Returns the adapter's route handlers for the auth API. */
 export function getRoutes(): { GET: (req: Request) => Promise<Response>; POST: (req: Request) => Promise<Response> } {
-  if (!_adapter) throw new Error('Gatehouse not initialized')
-  return _adapter.routes
+  if (!getAdapter()) throw new Error('Gatehouse not initialized')
+  return getAdapter()!.routes
 }
 
 /**
@@ -149,12 +159,12 @@ export function getRoutes(): { GET: (req: Request) => Promise<Response>; POST: (
  */
 export const Gatehouse = {
   from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
-    if (!_adapter) throw new Error('Gatehouse not initialized')
-    return _adapter.from(request)
+    if (!getAdapter()) throw new Error('Gatehouse not initialized')
+    return getAdapter()!.from(request)
   },
   migrate(): Promise<void> {
-    if (!_adapter) throw new Error('Gatehouse not initialized')
-    return _adapter.migrate()
+    if (!getAdapter()) throw new Error('Gatehouse not initialized')
+    return getAdapter()!.migrate()
   },
 }
 
@@ -210,7 +220,7 @@ export async function getOrganizations(): Promise<Organization[]> {
  * Gets a single organization by ID. Returns null if not found.
  */
 export async function getOrganization(id: string): Promise<OrganizationFull | null> {
-  return withRequestContext((instance) => instance.organizations.getFull(id))
+  return withRequestContext((instance) => instance.organizations.getFull({ organizationId: id } as any))
 }
 
 /** Runs a handler within a request-scoped gatehouse context. */
@@ -218,8 +228,8 @@ export async function runWithRequest<T>(
   request: Request | { headers: Headers },
   handler: () => Promise<T>
 ): Promise<T> {
-  if (!_adapter) throw new Error('Gatehouse not initialized')
-  const instance = await _adapter.from(request)
+  if (!getAdapter()) throw new Error('Gatehouse not initialized')
+  const instance = await getAdapter()!.from(request)
   return towerContext.run({ gatehouse: instance }, handler)
 }
 
@@ -240,8 +250,8 @@ async function withRequestContext<T>(fn: (instance: GatehouseInstance) => Promis
   const resolver = getRequestContextResolver()
   if (!resolver) throw new ContextRequiredError('No request context available.')
   const rc = await resolver()
-  if (!_adapter) throw new Error('Gatehouse not initialized')
-  const instance = await _adapter.from(rc)
+  if (!getAdapter()) throw new Error('Gatehouse not initialized')
+  const instance = await getAdapter()!.from(rc)
   return fn(instance)
 }
 
@@ -278,7 +288,7 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
 
     if (prop === 'proxy') {
       return (options?: any) => {
-        if (_adapter) return _adapter!.createProxy(options)
+        if (getAdapter()) return getAdapter()!.createProxy(options)
         return {
           handler: async (_request: Request) => {
             return undefined
@@ -287,11 +297,11 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
       }
     }
 
-    if (_adapter) {
-      if (prop === 'from') return (request: any) => _adapter!.from(request)
-      if (prop === 'migrate') return () => _adapter!.migrate()
-      if (prop === 'provider') return _adapter!.provider
-      if (prop === 'routes') return _adapter!.routes
+    if (getAdapter()) {
+      if (prop === 'from') return (request: any) => getAdapter()!.from(request)
+      if (prop === 'migrate') return () => getAdapter()!.migrate()
+      if (prop === 'provider') return getAdapter()!.provider
+      if (prop === 'routes') return getAdapter()!.routes
 
       if (prop === 'getSession' || prop === 'session') return requestGetSession
       if (prop === 'user') return async () => withRequestContext((instance) => instance.user()).catch(() => null)
@@ -305,10 +315,11 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
           })
       if (prop === 'getOrganizations') return () => withRequestContext((instance) => instance.organizations.list())
       if (prop === 'getOrganization')
-        return (id: string) => withRequestContext((instance) => instance.organizations.getFull(id))
+        return (id: string) => withRequestContext((instance) => instance.organizations.getFull({ organizationId: id } as any))
     }
 
     if (prop === Symbol.toPrimitive) return undefined
+    if (prop === 'then') return undefined
     throw new ContextRequiredError(
       `gatehouse.${String(prop)} requires an active request context. ` +
         `Use inside an action() or withGatehouse() wrapper, ` +
@@ -340,35 +351,36 @@ export function defineGatehouse(
   return {
     name: 'gatehouse',
 
+    register(ctx: TowerContext) {
+      ctx.services.register('gatehouse', this)
+    },
+
     async initialize(ctx: TowerContext) {
       const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
-      if (_adapter) {
-        /* previous adapter discarded on re-init */
-      }
       const vault = ctx.services.get<{ db: Kysely<unknown> }>('vault')
       const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
-      _adapter = new (BaAdapter as any)(withCourierTransport(config, courier), vault.db) as BetterAuthAdapter
-      await (_adapter as any).init()
+      setAdapter(new (BaAdapter as any)(withCourierTransport(config, courier), vault.db) as BetterAuthAdapter)
+      await (getAdapter() as any).init()
     },
 
     get provider() {
-      return _adapter!.provider
+      return getAdapter()!.provider
     },
 
     get routes() {
-      return _adapter!.routes
+      return getAdapter()!.routes
     },
 
     async from(request: Request | { headers: Headers }) {
-      return _adapter!.from(request)
+      return getAdapter()!.from(request)
     },
 
     proxy(options?: ProxyOptions) {
-      return _adapter!.createProxy(options)
+      return getAdapter()!.createProxy(options)
     },
 
     async migrate() {
-      return _adapter!.migrate()
+      return getAdapter()!.migrate()
     },
 
     init(ctx: TowerContext) {

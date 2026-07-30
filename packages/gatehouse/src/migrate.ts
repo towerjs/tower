@@ -7,8 +7,7 @@ import type { Kysely } from 'kysely'
  * internal module resolution at build time.
  */
 export async function runBetterAuthMigrations(authOptions: any, _db: Kysely<unknown>): Promise<void> {
-  // @ts-ignore — better-auth does not export this module
-  const { getMigrations } = (await import('better-auth/dist/db/get-migration.mjs')) as {
+  const { getMigrations } = await import('better-auth/db/migration') as {
     getMigrations: (options: any) => Promise<{ runMigrations: () => Promise<void> }>
   }
   const { runMigrations } = await getMigrations(authOptions)

@@ -2,13 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => {
   const alsStore: Record<string, any> = {}
-  const mockCookiesSet = vi.fn()
-  const mockCookiesGet = vi.fn()
-  const mockCookiesToString = vi.fn(() => '')
-  const mockSignInEmail = vi.fn()
-  const mockSignUpEmail = vi.fn()
-  const mockSignOut = vi.fn()
-  const mockSession = vi.fn()
   const mockGatehouseFrom = vi.fn()
   const mockTowerContextRun = vi.fn(async (ctx: any, handler: () => any) => {
     const prev = { ...alsStore }
@@ -19,35 +12,18 @@ const mocks = vi.hoisted(() => {
       Object.assign(alsStore, prev)
     }
   })
-  const mockGetAuth = vi.fn()
   const mockGetRoutes = vi.fn()
-  const mockRunWithRequest = vi.fn()
 
   return {
     alsStore,
-    mockCookies: vi.fn(() => ({
-      set: mockCookiesSet,
-      get: mockCookiesGet,
-      toString: mockCookiesToString,
-    })),
     mockHeaders: vi.fn(() => new Headers()),
     mockTowerContextRun,
-    mockSignInEmail,
-    mockSignUpEmail,
-    mockSignOut,
-    mockSession,
     mockGatehouseFrom,
-    mockCookiesSet,
-    mockCookiesGet,
-    mockCookiesToString,
-    mockGetAuth,
     mockGetRoutes,
-    mockRunWithRequest,
   }
 })
 
 vi.mock('next/headers', () => ({
-  cookies: mocks.mockCookies,
   headers: mocks.mockHeaders,
 }))
 
@@ -60,25 +36,23 @@ vi.mock('@towerjs/foundation', () => ({
 }))
 
 vi.mock('../index.js', () => ({
-  runWithRequest: mocks.mockRunWithRequest,
-  getAuth: mocks.mockGetAuth,
   getRoutes: mocks.mockGetRoutes,
   Gatehouse: { from: mocks.mockGatehouseFrom },
 }))
+
+function mockGatehouseInstance() {
+  return {
+    signIn: { email: vi.fn() },
+    signUp: { email: vi.fn() },
+    sessions: { signOut: vi.fn() },
+    session: vi.fn(),
+  }
+}
 
 describe('action', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
-
-  function mockGatehouseInstance() {
-    return {
-      signIn: { email: mocks.mockSignInEmail },
-      signUp: { email: mocks.mockSignUpEmail },
-      sessions: { signOut: mocks.mockSignOut },
-      session: mocks.mockSession,
-    }
-  }
 
   it('wraps handler and runs it via towerContext.run', async () => {
     mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
@@ -93,100 +67,20 @@ describe('action', () => {
     expect(handler).toHaveBeenCalledOnce()
   })
 
-  it('does not set cookie when no auth change occurs', async () => {
-    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
+  it('exposes gatehouse instance via ALS context', async () => {
+    const instance = mockGatehouseInstance()
+    mocks.mockGatehouseFrom.mockResolvedValue(instance)
 
     const { action } = await import('./next.js')
-    const handler = vi.fn().mockResolvedValue(undefined)
-    const wrapped = action(handler)
-
-    await wrapped()
-
-    expect(mocks.mockCookiesSet).not.toHaveBeenCalled()
-  })
-
-  it('sets session cookie after signIn.email', async () => {
-    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
-    mocks.mockSignInEmail.mockResolvedValue({
-      user: { id: 'u1', name: 'Alice', email: 'a@b.com' },
-      session: { id: 's1', token: 'tok123' },
-    })
-
-    const { action } = await import('./next.js')
+    let captured: any
     const handler = vi.fn(async () => {
-      const gh = mocks.alsStore.gatehouse
-      await gh.signIn.email({ email: 'a@b.com', password: 'pw' })
+      captured = mocks.alsStore.gatehouse
     })
     const wrapped = action(handler)
 
     await wrapped()
 
-    expect(mocks.mockCookiesSet).toHaveBeenCalledWith(
-      'better-auth.session_token',
-      'tok123',
-      expect.objectContaining({ httpOnly: true, sameSite: 'lax', maxAge: 604800 })
-    )
-  })
-
-  it('sets session cookie after signUp.email', async () => {
-    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
-    mocks.mockSignUpEmail.mockResolvedValue({
-      user: { id: 'u2', name: 'Bob', email: 'b@b.com' },
-      session: { id: 's2', token: 'tok456' },
-    })
-
-    const { action } = await import('./next.js')
-    const handler = vi.fn(async () => {
-      const gh = mocks.alsStore.gatehouse
-      await gh.signUp.email({ name: 'Bob', email: 'b@b.com', password: 'pw' })
-    })
-    const wrapped = action(handler)
-
-    await wrapped()
-
-    expect(mocks.mockCookiesSet).toHaveBeenCalledWith(
-      'better-auth.session_token',
-      'tok456',
-      expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
-    )
-  })
-
-  it('clears session cookie after signOut', async () => {
-    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
-
-    const { action } = await import('./next.js')
-    const handler = vi.fn(async () => {
-      const gh = mocks.alsStore.gatehouse
-      await gh.sessions.signOut()
-    })
-    const wrapped = action(handler)
-
-    await wrapped()
-
-    expect(mocks.mockCookiesSet).toHaveBeenCalledWith(
-      'better-auth.session_token',
-      '',
-      expect.objectContaining({ maxAge: 0 })
-    )
-  })
-
-  it('uses custom session cookie name from config', async () => {
-    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
-    mocks.mockSignInEmail.mockResolvedValue({
-      user: { id: 'u1', name: 'Alice', email: 'a@b.com' },
-      session: { id: 's1', token: 'tok789' },
-    })
-
-    const { action } = await import('./next.js')
-    const handler = vi.fn(async () => {
-      const gh = mocks.alsStore.gatehouse
-      await gh.signIn.email({ email: 'a@b.com', password: 'pw' })
-    })
-    const wrapped = action(handler, { sessionCookie: 'my_app.session' })
-
-    await wrapped()
-
-    expect(mocks.mockCookiesSet).toHaveBeenCalledWith('my_app.session', 'tok789', expect.any(Object))
+    expect(captured).toBe(instance)
   })
 
   it('passes handler arguments through', async () => {
@@ -202,101 +96,85 @@ describe('action', () => {
   })
 })
 
+describe('action.form', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('extracts FormData and passes as object to handler', async () => {
+    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
+
+    const { action } = await import('./next.js')
+    const handler = vi.fn().mockResolvedValue(undefined)
+    const wrapped = action.form(handler)
+
+    const formData = new FormData()
+    formData.append('email', 'a@b.com')
+    formData.append('password', 'secret123')
+    const result = await wrapped(undefined, formData)
+
+    expect(handler).toHaveBeenCalledWith({ email: 'a@b.com', password: 'secret123' })
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('sets up gatehouse context via ALS', async () => {
+    const instance = mockGatehouseInstance()
+    mocks.mockGatehouseFrom.mockResolvedValue(instance)
+
+    const { action } = await import('./next.js')
+    let captured: any
+    const wrapped = action.form(async (_data) => {
+      captured = mocks.alsStore.gatehouse
+    })
+
+    const formData = new FormData()
+    await wrapped(undefined, formData)
+
+    expect(captured).toBe(instance)
+  })
+
+  it('catches handler errors and returns error result', async () => {
+    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
+
+    const { action } = await import('./next.js')
+    const wrapped = action.form(async () => {
+      throw new Error('Email already taken')
+    })
+
+    const formData = new FormData()
+    const result = await wrapped(undefined, formData)
+
+    expect(result).toEqual({ error: 'Email already taken' })
+  })
+
+  it('only includes string values from FormData', async () => {
+    mocks.mockGatehouseFrom.mockResolvedValue(mockGatehouseInstance())
+
+    const { action } = await import('./next.js')
+    const handler = vi.fn()
+    const wrapped = action.form(handler)
+
+    const formData = new FormData()
+    formData.append('name', 'Jane')
+    formData.append('file', new Blob(['data']), 'test.txt')
+    await wrapped(undefined, formData)
+
+    expect(handler).toHaveBeenCalledWith({ name: 'Jane' })
+  })
+})
+
 describe('withGatehouse', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('sets Set-Cookie header when a new session is created', async () => {
-    const mockGetSession = vi
-      .fn()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        user: {
-          id: 'u1',
-          name: 'Alice',
-          email: 'a@b.com',
-          emailVerified: true,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        session: { id: 's1', userId: 'u1', expiresAt: new Date(), token: 'tok123' },
-      })
-    mocks.mockGetAuth.mockReturnValue({ getSession: mockGetSession })
-    mocks.mockRunWithRequest.mockImplementation(async (_req, handler) => handler())
-
-    const { withGatehouse } = await import('./next.js')
-    const handler = vi.fn().mockResolvedValue(new Response())
-    const wrapped = withGatehouse(handler)
-    const req = new Request('https://example.com/api/auth/sign-in')
-    const resp = await wrapped(req, { params: Promise.resolve({}) })
-
-    expect(resp.headers.get('Set-Cookie')).toContain('tok123')
-    expect(resp.headers.get('Set-Cookie')).toContain('HttpOnly')
-    expect(resp.headers.get('Set-Cookie')).toContain('SameSite=Lax')
-    expect(resp.headers.get('Set-Cookie')).toContain('Path=/')
-  })
-
-  it('clears Set-Cookie when session ends', async () => {
-    const mockGetSession = vi
-      .fn()
-      .mockResolvedValueOnce({
-        user: {
-          id: 'u1',
-          name: 'Alice',
-          email: 'a@b.com',
-          emailVerified: true,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        session: { id: 's1', userId: 'u1', expiresAt: new Date(), token: 'tok123' },
-      })
-      .mockResolvedValueOnce(null)
-    mocks.mockGetAuth.mockReturnValue({ getSession: mockGetSession })
-    mocks.mockRunWithRequest.mockImplementation(async (_req, handler) => handler())
-
-    const { withGatehouse } = await import('./next.js')
-    const handler = vi.fn().mockResolvedValue(new Response())
-    const wrapped = withGatehouse(handler)
-    const req = new Request('https://example.com/api/auth/sign-out')
-    const resp = await wrapped(req, { params: Promise.resolve({}) })
-
-    expect(resp.headers.get('Set-Cookie')).toContain('better-auth.session_token=')
-    expect(resp.headers.get('Set-Cookie')).toContain('Max-Age=0')
-  })
-
-  it('does not set Set-Cookie when session is unchanged', async () => {
-    const session = {
-      user: {
-        id: 'u1',
-        name: 'Alice',
-        email: 'a@b.com',
-        emailVerified: true,
-        image: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      session: { id: 's1', userId: 'u1', expiresAt: new Date(), token: 'tok123' },
-    }
-    const mockGetSession = vi.fn().mockResolvedValueOnce(session).mockResolvedValueOnce(session)
-    mocks.mockGetAuth.mockReturnValue({ getSession: mockGetSession })
-    mocks.mockRunWithRequest.mockImplementation(async (_req, handler) => handler())
-
-    const { withGatehouse } = await import('./next.js')
-    const handler = vi.fn().mockResolvedValue(new Response())
-    const wrapped = withGatehouse(handler)
-    const req = new Request('https://example.com/api/protected')
-    const resp = await wrapped(req, { params: Promise.resolve({}) })
-
-    expect(resp.headers.get('Set-Cookie')).toBeNull()
-  })
-
-  it('wraps handler with runWithRequest', async () => {
-    const mockGetSession = vi.fn().mockResolvedValue(null)
-    mocks.mockGetAuth.mockReturnValue({ getSession: mockGetSession })
-    mocks.mockRunWithRequest.mockImplementation(async (_req, handler) => handler())
+  it('wraps handler and runs it via towerContext.run', async () => {
+    mocks.mockGatehouseFrom.mockResolvedValue({
+      signIn: { email: vi.fn() },
+      signUp: { email: vi.fn() },
+      sessions: { signOut: vi.fn() },
+      session: vi.fn(),
+    })
 
     const { withGatehouse } = await import('./next.js')
     const handler = vi.fn().mockResolvedValue(new Response())
@@ -304,35 +182,26 @@ describe('withGatehouse', () => {
     const req = new Request('https://example.com/')
     await wrapped(req, { params: Promise.resolve({}) })
 
-    expect(mocks.mockRunWithRequest).toHaveBeenCalledWith(req, expect.any(Function))
+    expect(mocks.mockTowerContextRun).toHaveBeenCalledOnce()
+    expect(handler).toHaveBeenCalledOnce()
   })
 
-  it('uses custom cookie name in Set-Cookie', async () => {
-    const mockGetSession = vi
-      .fn()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        user: {
-          id: 'u1',
-          name: 'Alice',
-          email: 'a@b.com',
-          emailVerified: true,
-          image: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        session: { id: 's1', userId: 'u1', expiresAt: new Date(), token: 'tok999' },
-      })
-    mocks.mockGetAuth.mockReturnValue({ getSession: mockGetSession })
-    mocks.mockRunWithRequest.mockImplementation(async (_req, handler) => handler())
+  it('creates gatehouse from request headers', async () => {
+    const instance = {
+      signIn: { email: vi.fn() },
+      signUp: { email: vi.fn() },
+      sessions: { signOut: vi.fn() },
+      session: vi.fn(),
+    }
+    mocks.mockGatehouseFrom.mockResolvedValue(instance)
 
     const { withGatehouse } = await import('./next.js')
     const handler = vi.fn().mockResolvedValue(new Response())
-    const wrapped = withGatehouse(handler, { sessionCookie: 'my_custom.session' })
+    const wrapped = withGatehouse(handler)
     const req = new Request('https://example.com/')
-    const resp = await wrapped(req, { params: Promise.resolve({}) })
+    await wrapped(req, { params: Promise.resolve({}) })
 
-    expect(resp.headers.get('Set-Cookie')).toContain('my_custom.session=tok999')
+    expect(mocks.mockGatehouseFrom).toHaveBeenCalledWith({ headers: req.headers })
   })
 })
 

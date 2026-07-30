@@ -47,6 +47,7 @@ vi.mock('better-auth', () => ({
 
 vi.mock('better-auth/next-js', () => ({
   toNextJsHandler: mocks.mockToNextJsHandler,
+  nextCookies: () => ({ id: 'next-cookies', hooks: { before: [], after: [] } }),
 }))
 
 vi.mock('better-auth/plugins', () => ({
@@ -98,6 +99,12 @@ vi.mock('@towerjs/blueprint', () => ({
 // ─── Helpers ────────────────────────────────────────────────────
 
 function setupBetterAuthApi() {
+  const GK = '___tower_gatehouse_adapter___'
+  const RCK = '___tower_request_context_resolver___'
+  const CPK = '___tower_context_provider___'
+  const APK = '___tower_app_promise___'
+  for (const k of [GK, RCK, CPK, APK]) delete (globalThis as any)[k]
+
   const api = {
     getSession: mocks.mockGetSession,
     signInEmail: mocks.mockSignInEmail,
