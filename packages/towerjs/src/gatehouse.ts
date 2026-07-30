@@ -1,4 +1,3 @@
-import { gatehouse as rawGatehouse } from '@towerjs/gatehouse'
 import type { GatehouseModule, GatehouseInstance } from '@towerjs/gatehouse'
 import type {
   Session,
@@ -8,7 +7,7 @@ import type {
   Organization,
   OrganizationFull,
 } from '@towerjs/gatehouse'
-import { getTowerApp } from './runtime'
+import { getTowerApp, importModule } from './runtime'
 
 type GatehouseFacadeMethods = {
   getSession(): Promise<Session | null>
@@ -23,34 +22,42 @@ type GatehouseFacadeMethods = {
 
 type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseFacadeMethods> & GatehouseFacadeMethods
 
-let _ready: Promise<void> | undefined
+let _raw: any
 
-function ensureReady(): Promise<void> {
-  if (!_ready) {
-    _ready = getTowerApp().then(() => {})
+async function raw() {
+  if (!_raw) {
+    if (typeof window !== 'undefined') {
+      const { gatehouse: rawGatehouse } = await import('@towerjs/gatehouse')
+      _raw = rawGatehouse
+    } else {
+      await getTowerApp()
+      _raw = (await importModule('@towerjs/gatehouse')).gatehouse
+    }
   }
-  return _ready
+  return _raw
 }
 
-export const gatehouse: GatehouseAPI = new Proxy(rawGatehouse, {
-  get(target, prop) {
-    if (typeof prop === 'symbol') return undefined
+function createDeepCall(path: string[]) {
+  return new Proxy(
+    (...args: any[]) =>
+      raw().then((r) => {
+        let v = r
+        for (const p of path) v = v[p]
+        if (typeof v === 'function') return v(...args)
+        return v
+      }),
+    {
+      get(_, subProp) {
+        if (typeof subProp === 'symbol' || subProp === 'then') return undefined
+        return createDeepCall([...path, String(subProp)])
+      },
+    },
+  )
+}
 
-    let value: any
-    try {
-      value = (target as any)[prop]
-    } catch {
-      return (...args: any[]) =>
-        ensureReady().then(() => {
-          const v = (target as any)[prop]
-          if (typeof v === 'function') return v(...args)
-          return v
-        })
-    }
-
-    if (typeof value === 'function') {
-      return (...args: any[]) => ensureReady().then(() => value(...args))
-    }
-    return value
+export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
+  get(_target, prop) {
+    if (typeof prop === 'symbol' || prop === 'then') return undefined
+    return createDeepCall([String(prop)])
   },
 }) as GatehouseAPI

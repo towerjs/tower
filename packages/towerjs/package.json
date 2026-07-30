@@ -21,8 +21,12 @@
       "default": "./dist/gatehouse.js"
     },
     "./gatehouse/actions": {
-      "types": "./dist/gatehouse/actions.d.ts",
-      "default": "./dist/gatehouse/actions.js"
+      "types": "./dist/gatehouse/actions/index.d.ts",
+      "default": "./dist/gatehouse/actions/index.js"
+    },
+    "./gatehouse/actions/registry": {
+      "types": "./dist/gatehouse/actions/registry.d.ts",
+      "default": "./dist/gatehouse/actions/registry.js"
     },
     "./gatehouse/next": {
       "types": "./dist/gatehouse/next.d.ts",
@@ -43,6 +47,10 @@
     "./courier": {
       "types": "./dist/courier.d.ts",
       "default": "./dist/courier.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "default": "./dist/runtime.js"
     }
   },
   "bin": {

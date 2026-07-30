@@ -28,4 +28,16 @@ function createLazyCourier(): CourierModule {
   })
 }
 
+/**
+ * Lazy courier proxy.
+ *
+ * First access triggers tower initialization. Delegates to the
+ * initialized `@towerjs/courier` module.
+ *
+ * @example
+ * ```ts
+ * import { courier } from 'towerjs/courier'
+ * await courier.email.send({ to, subject, text })
+ * ```
+ */
 export const courier = createLazyCourier()

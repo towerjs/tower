@@ -109,9 +109,10 @@ export function getModule(app: TowerApp, name: string): CliModule | undefined {
 
 export async function loadApp(configPath?: string): Promise<TowerApp> {
   if (!configPath) configPath = findConfig()
+  const { getModuleFactory } = await import('./runtime.js')
   const jiti = createJiti(import.meta.url, { interopDefault: true })
   const config = await jiti.import(configPath)
-  return createTowerApp(config as any)
+  return createTowerApp((config as any).default ?? config, getModuleFactory)
 }
 
 export async function closeModules(app: TowerApp) {

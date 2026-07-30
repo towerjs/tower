@@ -11,7 +11,7 @@ export function action<TResult, TArgs extends unknown[]>(
     const normalized = args.map(normalizeArg) as TArgs
 
     try {
-      const { headers } = await import('next/headers')
+      const { headers } = await import('next/headers.js')
       const h = await headers()
       const gh = await Gatehouse.from({ headers: h })
       return await towerContext.run({ gatehouse: gh }, () => handler(...normalized))

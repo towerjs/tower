@@ -10,7 +10,9 @@ const MODULE_DEFS: Record<string, { pkg: string; dependsOn: string[]; factoryFn:
   courier: { pkg: '@towerjs/courier', dependsOn: [], factoryFn: 'defineCourier' },
 }
 
-const importModule = Function('f', 'return import(f)') as (f: string) => Promise<any>
+// Function-based import to prevent Next.js/Turbopack from tracing
+// server-only transitive deps (pg, nodemailer, etc.) into client bundles.
+export const importModule = Function('f', 'return import(f)') as (f: string) => Promise<any>
 
 function createModuleFactory(name: string): ModuleFactoryFn {
   const def = MODULE_DEFS[name]
@@ -28,11 +30,11 @@ function createModuleFactory(name: string): ModuleFactoryFn {
   })
 }
 
-function getModuleFactory(name: string) {
+export function getModuleFactory(name: string) {
   return createModuleFactory(name)
 }
 
-let _appPromise: Promise<TowerApp> | undefined
+const APP_PROMISE_KEY = '___tower_app_promise___'
 
 async function getFoundation() {
   return import('@towerjs/foundation')
@@ -47,31 +49,45 @@ async function registerModuleServices(app: TowerApp) {
   }
 }
 
+function setAppPromise(promise: Promise<TowerApp>) {
+  (globalThis as any)[APP_PROMISE_KEY] = promise
+}
+
+function getAppPromise(): Promise<TowerApp> | undefined {
+  return (globalThis as any)[APP_PROMISE_KEY]
+}
+
 export function getTowerApp(): Promise<TowerApp> {
-  if (!_appPromise) {
-    _appPromise = getFoundation().then(async ({ resolveConfig, createTowerApp }) => {
-      const config = await resolveConfig()
-      const app = await createTowerApp(config as TowerConfig, getModuleFactory)
-      await registerModuleServices(app)
-      return app
-    })
-  }
-  return _appPromise
+  const existing = getAppPromise()
+  if (existing) return existing
+
+  const promise = getFoundation().then(async ({ resolveConfig, createTowerApp }) => {
+    const config = await resolveConfig()
+    const app = await createTowerApp(config as TowerConfig, getModuleFactory)
+    await registerModuleServices(app)
+    return app
+  })
+
+  setAppPromise(promise)
+  return promise
 }
 
 export function initTower(config?: TowerBlueprint): Promise<TowerApp> {
-  if (!_appPromise) {
-    _appPromise = getFoundation().then(async ({ createTowerApp, resolveConfig }) => {
-      let app: TowerApp
-      if (config) {
-        app = await createTowerApp(config as unknown as TowerConfig, getModuleFactory)
-      } else {
-        const cfg = await resolveConfig()
-        app = await createTowerApp(cfg as TowerConfig, getModuleFactory)
-      }
-      await registerModuleServices(app)
-      return app
-    })
-  }
-  return _appPromise
+  const existing = getAppPromise()
+  if (existing) return existing
+
+  const promise = getFoundation().then(async ({ createTowerApp, resolveConfig }) => {
+    let app: TowerApp
+    if (config) {
+      app = await createTowerApp(config as unknown as TowerConfig, getModuleFactory)
+    } else {
+      const cfg = await resolveConfig()
+      app = await createTowerApp(cfg as TowerConfig, getModuleFactory)
+    }
+    await registerModuleServices(app)
+    return app
+  })
+
+  setAppPromise(promise)
+  return promise
 }
