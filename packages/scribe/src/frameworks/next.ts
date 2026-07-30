@@ -94,25 +94,78 @@ export const nextAdapter: FrameworkAdapter = {
       const authDir = join(projectDir, 'src', 'app', 'api', 'auth', '[...all]')
       await mkdir(authDir, { recursive: true })
       await writeFile(join(authDir, 'route.ts'), authRoute())
+
+      const actionsDir = join(projectDir, 'src', 'lib', 'auth')
+      await mkdir(actionsDir, { recursive: true })
+      await writeFile(join(actionsDir, 'actions.ts'), actionsFile())
+
       await writeFile(join(projectDir, 'src', 'proxy.ts'), proxyFile())
     }
 
+    await writeFile(join(projectDir, '.prettierrc'), prettierConfig(useTailwind))
+    await writeFile(join(projectDir, 'AGENTS.md'), agentsMd(state))
+
     const towerDeps: string[] = ['towerjs']
     await execa('pnpm', ['add', ...towerDeps], { cwd: projectDir, stdio: 'inherit' })
+
+    const prettierDeps: string[] = ['prettier', 'prettier-plugin-organize-imports']
+    if (useTailwind) {
+      prettierDeps.push('prettier-plugin-tailwindcss', 'prettier-plugin-tailwindcss-canonical-classes')
+    }
+    await execa('pnpm', ['add', '-D', ...prettierDeps], { cwd: projectDir, stdio: 'inherit' })
   },
 }
 
 const CLI_ONLY_KEYS = new Set(['brand'])
 
+function formatValue(v: unknown, indent: number): string {
+  if (v === null || v === undefined) return 'null'
+  if (typeof v === 'string') return JSON.stringify(v)
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+  if (Array.isArray(v)) {
+    if (v.length === 0) return '[]'
+    const items = v.map((e) => `${' '.repeat(indent + 2)}${formatValue(e, indent + 2)},`).join('\n')
+    return `[\n${items}\n${' '.repeat(indent)}]`
+  }
+  if (typeof v === 'object') {
+    const keys = Object.keys(v as Record<string, unknown>)
+    if (keys.length === 0) return '{}'
+    const entries = keys
+      .map((k) => `${' '.repeat(indent + 2)}${k}: ${formatValue((v as Record<string, unknown>)[k], indent + 2)},`)
+      .join('\n')
+    return `{\n${entries}\n${' '.repeat(indent)}}`
+  }
+  return String(v)
+}
+
+function formatConfigLine(k: string, v: unknown, indent: number): string[] {
+  if (v !== null && typeof v === 'object' && !Array.isArray(v) && Object.keys(v as Record<string, unknown>).length > 0) {
+    return [`${' '.repeat(indent)}${k}: {`, ...renderObject(v as Record<string, unknown>, indent + 2), `${' '.repeat(indent)}},`]
+  }
+  return [`${' '.repeat(indent)}${k}: ${formatValue(v, indent)},`]
+}
+
+function renderObject(obj: Record<string, unknown>, indent: number): string[] {
+  return Object.entries(obj).flatMap(([k, v]) => formatConfigLine(k, v, indent))
+}
+
+function moduleConfig(name: string, cfg: Record<string, unknown>): Record<string, unknown> {
+  if (name === 'gatehouse') {
+    return { ...cfg, appName: cfg.appName ?? 'My App' }
+  }
+  return cfg
+}
+
 /** Generates the tower.config.ts content for a new project. */
 export function towerConfig(state: ProjectState): string {
   const modules = Object.entries(state.modules)
     .map(([name, cfg]) => {
-      const entries = Object.entries(cfg ?? {})
+      const resolved = moduleConfig(name, (cfg ?? {}) as Record<string, unknown>)
+      const lines = Object.entries(resolved)
         .filter(([k, v]) => !CLI_ONLY_KEYS.has(k) && v !== undefined)
-        .map(([k, v]) => `    ${k}: ${JSON.stringify(v)},`)
-      if (entries.length === 0) return `    ${name}: {},`
-      return `    ${name}: {\n${entries.join('\n')}\n  },`
+        .flatMap(([k, v]) => formatConfigLine(k, v, 6))
+      if (lines.length === 0) return `    ${name}: {},`
+      return `    ${name}: {\n${lines.join('\n')}\n    },`
     })
     .join('\n')
 
@@ -147,6 +200,17 @@ export const config = {
   matcher: ["/((?!_next/static|favicon.ico|api/auth).*)"],
 };
 `
+}
+
+function courierEnvHints(cfg: Record<string, unknown>): string[] {
+  const email = cfg.email as Record<string, unknown> | undefined
+  if (!email?.provider) return ['# Email — Courier', '# Add a provider in tower.config.ts to get started']
+  const hints: Record<string, string[]> = {
+    resend: ['# Email — Resend', '# RESEND_API_KEY='],
+    smtp: ['# Email — SMTP', '# SMTP_HOST=', '# SMTP_USER=', '# SMTP_PASS='],
+    ses: ['# Email — SES (AWS)', '# AWS_ACCESS_KEY_ID=', '# AWS_SECRET_ACCESS_KEY=', '# AWS_REGION='],
+  }
+  return hints[email.provider as string] ?? ['# Email — Courier']
 }
 
 function vaultEnvHints(brand?: string): string[] {
@@ -185,7 +249,159 @@ export function envExample(state: ProjectState): string {
       vars.push('GATEHOUSE_SECRET=')
       vars.push('GATEHOUSE_URL="http://localhost:3000"')
     }
+    if (name === 'courier') {
+      if (vars.length > 0) vars.push('')
+      vars.push(...courierEnvHints(cfg ?? {}))
+    }
   }
 
   return vars.join('\n') + '\n'
+}
+
+function actionsFile(): string {
+  return `'use server'
+
+export {
+  signIn,
+  signUp,
+  signOut,
+  updateProfile,
+  changePassword,
+} from 'towerjs/gatehouse/actions'
+
+// Add more actions from the registry as needed:
+// createOrganization, updateOrganization, deleteOrganization,
+// inviteMember, removeMember, cancelInvitation, acceptInvitation,
+// revokeSession, revokeOtherSessions,
+// verifyTwoFactor, disableTwoFactor,
+// assignRole, removeRole
+
+// For actions with custom returns, use \`action\` directly:
+// import { action } from 'towerjs/gatehouse/next'
+// import { gatehouse } from 'towerjs/gatehouse'
+//
+// export const enableTwoFactor = action(async (formData: FormData) => {
+//   return gatehouse.totp.enable(formData.get('password') as string)
+// })
+`
+}
+
+function prettierConfig(tailwind: boolean): string {
+  const plugins = ['prettier-plugin-organize-imports']
+  if (tailwind) {
+    plugins.push('prettier-plugin-tailwindcss', 'prettier-plugin-tailwindcss-canonical-classes')
+  }
+  return JSON.stringify(
+    {
+      semi: false,
+      singleQuote: true,
+      trailingComma: 'all',
+      printWidth: 120,
+      tabWidth: 2,
+      plugins,
+    },
+    null,
+    2,
+  ) + '\n'
+}
+
+function agentsMd(state: ProjectState): string {
+  const lines: string[] = [
+    '# Project: ' + state.projectName,
+    '',
+    'This project uses **Tower** — a composable monolithic stack for JavaScript applications.',
+    '',
+    '## Modules',
+    '',
+  ]
+
+  const moduleDescriptions: Record<string, string> = {
+    vault: 'PostgreSQL ORM with Kysely — migrations, seeds, and type-safe queries.',
+    gatehouse: 'Authentication — email/password, social login, magic links, OTP, 2FA, passkeys, orgs, API keys.',
+    courier: 'Multi-channel communication — email, SMS, and push notifications.',
+  }
+
+  for (const [name, cfg] of Object.entries(state.modules)) {
+    const desc = moduleDescriptions[name] ?? ''
+    const provider = cfg?.provider ? ` (provider: \`${cfg.provider}\`)` : ''
+    lines.push(`- **${name}**${provider} — ${desc}`)
+  }
+
+  lines.push(
+    '',
+    '## Getting started',
+    '',
+    '```bash',
+    'pnpm dev        # Start the development server',
+    'pnpm build      # Build for production',
+    'pnpm test       # Run tests',
+    'pnpm typecheck  # Type-check the project',
+    '```',
+    '',
+    '## Import conventions',
+    '',
+    'Import Tower modules from the `towerjs` meta-package:',
+    '',
+    '```ts',
+    "import { defineTower } from 'towerjs/blueprint'",
+    "import { gatehouse } from 'towerjs/gatehouse'",
+    "import { vault } from 'towerjs/vault'",
+    "import { courier } from 'towerjs/courier'",
+    "import { getSession, action } from 'towerjs/gatehouse/next'",
+    '```',
+    '',
+    '## Architecture',
+    '',
+    '- `src/app/` — Next.js App Router pages and API routes',
+    '- `src/lib/` — Shared logic, utilities, and server actions',
+    '- `src/proxy.ts` — Edge middleware (runs before every request)',
+    '- `tower.config.ts` — Tower module configuration',
+    '',
+    'Tower modules are initialized lazily on first use. There is no global setup step.',
+    '',
+    '## Server actions',
+    '',
+    'Common auth actions are available from `towerjs/gatehouse/actions`:',
+    '',
+    '```ts',
+    "'use server'",
+    '',
+    'export {',
+    '  signIn, signUp, signOut,',
+    '  updateProfile, changePassword,',
+    '  createOrganization, updateOrganization, deleteOrganization,',
+    '  inviteMember, removeMember, cancelInvitation, acceptInvitation,',
+    '  revokeSession, revokeOtherSessions,',
+    '  verifyTwoFactor, disableTwoFactor,',
+    '  assignRole, removeRole,',
+    "} from 'towerjs/gatehouse/actions'",
+    '```',
+    '',
+    'For actions with custom returns (e.g. `enableTwoFactor`, `generateBackupCodes`)',
+    'or custom logic, use `action` from `towerjs/gatehouse/next`:',
+    '',
+    '```ts',
+    "'use server'",
+    '',
+    "import { action } from 'towerjs/gatehouse/next'",
+    "import { gatehouse } from 'towerjs/gatehouse'",
+    '',
+    "export const enableTwoFactor = action(async (formData: FormData) => {",
+    "  return gatehouse.totp.enable(formData.get('password') as string)",
+    '})',
+    '```',
+    '',
+    '`action.form` handles FormData extraction automatically so you can destructure',
+    'instead of calling `.get()`. Context and cookies are handled for you.',
+    '',
+    '## Formatting',
+    '',
+    'This project uses Prettier with plugins for import organization and Tailwind CSS class sorting.',
+    '```bash',
+    'pnpm format  # Format all files',
+    '```',
+    '',
+  )
+
+  return lines.join('\n')
 }

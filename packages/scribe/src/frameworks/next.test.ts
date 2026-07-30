@@ -6,7 +6,6 @@ const baseState: ProjectState = {
   projectName: 'my-app',
   framework: 'next',
   modules: {},
-  deployment: 'vercel',
   frameworkAnswers: { typescript: true, tailwind: true },
 }
 
@@ -44,7 +43,8 @@ describe('towerConfig', () => {
     }
     const result = towerConfig(state)
 
-    expect(result).toContain('gatehouse: {}')
+    expect(result).toContain('gatehouse:')
+    expect(result).toContain('appName: "My App"')
   })
 
   it('generates config with multiple modules', () => {
@@ -75,6 +75,17 @@ describe('towerConfig', () => {
 
     expect(result).toContain('credentials: true')
     expect(result).toContain('google')
+  })
+
+  it('generates courier config with provider', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { courier: { email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' } } },
+    }
+    const result = towerConfig(state)
+
+    expect(result).toContain('provider: "resend"')
+    expect(result).toContain('onboarding@resend.dev')
   })
 })
 
@@ -138,6 +149,38 @@ describe('envExample', () => {
     expect(result).toContain('GATEHOUSE_SECRET')
     expect(result).toContain('GATEHOUSE_URL')
   })
+
+  it('shows courier hint when no provider configured', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { courier: {} },
+    }
+    const result = envExample(state)
+
+    expect(result).toContain('Add a provider in tower.config.ts')
+  })
+
+  it('shows Resend env vars when resend is configured', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { courier: { email: { provider: 'resend' } } },
+    }
+    const result = envExample(state)
+
+    expect(result).toContain('RESEND_API_KEY')
+    expect(result).not.toContain('SMTP_HOST')
+  })
+
+  it('shows SMTP env vars when smtp is configured', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { courier: { email: { provider: 'smtp' } } },
+    }
+    const result = envExample(state)
+
+    expect(result).toContain('SMTP_HOST')
+    expect(result).not.toContain('AWS_ACCESS_KEY_ID')
+  })
 })
 
 // ─── nextAdapter.prompt and generate need separate mocks ───────────
@@ -183,7 +226,6 @@ describe('nextAdapter.generate', () => {
     projectName: 'my-app',
     framework: 'next',
     modules: {},
-    deployment: 'vercel',
     frameworkAnswers: { typescript: true, tailwind: true },
   }
 
@@ -239,6 +281,55 @@ describe('nextAdapter.generate', () => {
     expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('proxy.ts'), expect.any(String))
   })
 
+  it('creates actions.ts when gatehouse is selected', async () => {
+    const stateWithGatehouse: ProjectState = {
+      ...state,
+      modules: { gatehouse: { provider: 'better-auth' } },
+    }
+
+    await nextAdapter.generate(stateWithGatehouse, '/target')
+
+    expect(mkdir).toHaveBeenCalledWith(expect.stringContaining('lib/auth'), { recursive: true })
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('actions.ts'), expect.stringContaining("from 'towerjs/gatehouse/actions'"))
+  })
+
+  it('does not create actions.ts when gatehouse is not selected', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    expect(writeFile).not.toHaveBeenCalledWith(expect.stringContaining('actions.ts'), expect.any(String))
+  })
+
+  it('writes .prettierrc for all projects', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('.prettierrc'), expect.any(String))
+  })
+
+  it('writes AGENTS.md for all projects', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('AGENTS.md'), expect.any(String))
+  })
+
+  it('AGENTS.md contains project name and module info', async () => {
+    const stateWithModules: ProjectState = {
+      ...state,
+      modules: {
+        vault: { provider: 'neon' },
+        gatehouse: { provider: 'better-auth' },
+      },
+    }
+
+    await nextAdapter.generate(stateWithModules, '/target')
+
+    const [, agentsContent] = vi.mocked(writeFile).mock.calls.find(
+      ([path]) => typeof path === 'string' && path.includes('AGENTS.md'),
+    ) ?? ['']
+    expect(agentsContent).toContain('my-app')
+    expect(agentsContent).toContain('gatehouse')
+    expect(agentsContent).toContain('vault')
+  })
+
   it('installs towerjs dependency', async () => {
     await nextAdapter.generate(state, '/target')
 
@@ -246,5 +337,38 @@ describe('nextAdapter.generate', () => {
       cwd: expect.stringContaining('my-app'),
       stdio: 'inherit',
     })
+  })
+
+  it('installs prettier and prettier-plugin-organize-imports', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const prettierCalls = vi.mocked(execa).mock.calls.filter(
+      ([, args]) => Array.isArray(args) && args.includes('prettier-plugin-organize-imports'),
+    )
+    expect(prettierCalls.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('installs tailwind prettier plugins when tailwind is selected', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const tailwindCall = vi.mocked(execa).mock.calls.find(
+      ([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'),
+    )
+    expect(tailwindCall).toBeDefined()
+    expect(tailwindCall![1]).toContain('prettier-plugin-tailwindcss-canonical-classes')
+  })
+
+  it('does not install tailwind prettier plugins without tailwind', async () => {
+    const stateWithoutTailwind: ProjectState = {
+      ...state,
+      frameworkAnswers: { typescript: true, tailwind: false },
+    }
+
+    await nextAdapter.generate(stateWithoutTailwind, '/target')
+
+    const tailwindCall = vi.mocked(execa).mock.calls.find(
+      ([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'),
+    )
+    expect(tailwindCall).toBeUndefined()
   })
 })

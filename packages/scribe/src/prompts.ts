@@ -2,14 +2,9 @@ import { input, select, checkbox } from '@inquirer/prompts'
 import type { Framework, ProjectState, ProviderMap } from './state.js'
 
 const MODULE_CHOICES = [
-  { name: 'Vault', value: 'vault' },
-  { name: 'Gatehouse', value: 'gatehouse' },
-  { name: 'Archive', value: 'archive' },
-  { name: 'Beacon', value: 'beacon' },
-  { name: 'Crane', value: 'crane' },
-  { name: 'Courier', value: 'courier' },
-  { name: 'Treasury', value: 'treasury' },
-  { name: 'Observatory', value: 'observatory' },
+  { name: 'Vault — Database ORM (Postgres, Neon)', value: 'vault' },
+  { name: 'Gatehouse — Authentication (Better Auth)', value: 'gatehouse' },
+  { name: 'Courier — Email, SMS, Push', value: 'courier' },
 ]
 
 const VAULT_BRAND_CHOICES = [
@@ -21,21 +16,9 @@ const VAULT_BRAND_CHOICES = [
 
 const GATEHOUSE_PROVIDER_CHOICES = [
   { name: 'Better Auth', value: 'better-auth' as const },
-  { name: 'Clerk', value: 'clerk' as const },
-]
-
-const BEACON_PROVIDER_CHOICES = [
-  { name: 'Ably', value: 'ably' as const },
-  { name: 'Pusher', value: 'pusher' as const },
 ]
 
 const FRAMEWORK_CHOICES: { name: string; value: Framework }[] = [{ name: 'Next.js', value: 'next' }]
-
-const DEPLOYMENT_CHOICES = [
-  { name: 'Vercel', value: 'vercel' as const },
-  { name: 'Fly.io', value: 'fly' as const },
-  { name: 'AWS', value: 'aws' as const },
-]
 
 function resolveVaultProvider(brand: string): { provider: 'neon' | 'pg'; brand: string } {
   if (brand === 'neon') return { provider: 'neon', brand: 'neon' }
@@ -76,7 +59,7 @@ async function promptVaultProvider(): Promise<{ provider: 'neon' | 'pg'; brand: 
   return resolveVaultProvider(brand)
 }
 
-async function promptGatehouseProvider(): Promise<'better-auth' | 'clerk'> {
+async function promptGatehouseProvider(): Promise<'better-auth'> {
   return select({
     message: 'Authentication provider',
     choices: GATEHOUSE_PROVIDER_CHOICES,
@@ -111,18 +94,18 @@ async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
   return cfg
 }
 
-async function promptBeaconProvider(): Promise<'ably' | 'pusher'> {
-  return select({
-    message: 'Realtime provider',
-    choices: BEACON_PROVIDER_CHOICES,
+async function promptCourierEmailProvider(): Promise<Record<string, unknown> | undefined> {
+  const provider = await select({
+    message: 'Email provider',
+    choices: [
+      { name: 'Resend', value: 'resend' },
+      { name: 'SMTP', value: 'smtp' },
+      { name: 'SES (AWS)', value: 'ses' },
+      { name: "I'll configure later", value: 'skip' },
+    ],
   })
-}
-
-async function promptDeployment(): Promise<'vercel' | 'fly' | 'aws' | undefined> {
-  return select({
-    message: 'Deployment platform',
-    choices: DEPLOYMENT_CHOICES,
-  })
+  if (provider === 'skip') return undefined
+  return { email: { provider, from: 'My App <onboarding@resend.dev>' } }
 }
 
 async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
@@ -140,9 +123,11 @@ async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
         modules.gatehouse = { provider: await promptGatehouseProvider(), ...features }
         break
       }
-      case 'beacon':
-        modules.beacon = { provider: await promptBeaconProvider() }
+      case 'courier': {
+        const cfg = await promptCourierEmailProvider()
+        if (cfg) modules.courier = cfg
         break
+      }
       default:
         modules[name] = {}
     }
@@ -159,15 +144,12 @@ export async function collectProjectState(): Promise<ProjectState> {
   const framework = await promptFramework()
   const selected = await promptModules()
   const modules = selected.length > 0 ? await promptModuleProviders(selected) : {}
-  const deployment = await promptDeployment()
-
   console.log('')
 
   return {
     projectName,
     framework,
     modules,
-    deployment,
     frameworkAnswers: {},
   }
 }

@@ -14,13 +14,12 @@ describe('collectProjectState', () => {
     vi.clearAllMocks()
   })
 
-  it('collects project name, framework, modules, and deployment', async () => {
+  it('collects project name, framework, and modules', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
     vi.mocked(select)
       .mockResolvedValueOnce('next')
       .mockResolvedValueOnce('neon')
       .mockResolvedValueOnce('better-auth')
-      .mockResolvedValueOnce('vercel')
     vi.mocked(checkbox).mockResolvedValueOnce(['vault', 'gatehouse']).mockResolvedValueOnce(['credentials', 'social'])
 
     const state = await collectProjectState()
@@ -29,12 +28,11 @@ describe('collectProjectState', () => {
     expect(state.framework).toBe('next')
     expect(state.modules.vault).toEqual({ provider: 'neon', brand: 'neon' })
     expect(state.modules.gatehouse).toMatchObject({ provider: 'better-auth', credentials: true })
-    expect(state.deployment).toBe('vercel')
   })
 
   it('skips module providers when no modules selected', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce('next')
     vi.mocked(checkbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -44,7 +42,7 @@ describe('collectProjectState', () => {
 
   it('validates project name', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce('next')
     vi.mocked(checkbox).mockResolvedValueOnce([])
 
     await collectProjectState()
@@ -58,7 +56,7 @@ describe('collectProjectState', () => {
 
   it('maps vault provider to pg for non-neon', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('supabase').mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('supabase')
     vi.mocked(checkbox).mockResolvedValueOnce(['vault'])
 
     const state = await collectProjectState()
@@ -66,23 +64,23 @@ describe('collectProjectState', () => {
     expect(state.modules.vault).toEqual({ provider: 'pg', brand: 'supabase' })
   })
 
-  it('maps beacon provider', async () => {
+  it('prompts for courier email provider when courier is selected', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('ably').mockResolvedValueOnce('vercel')
-    vi.mocked(checkbox).mockResolvedValueOnce(['beacon'])
-
-    const state = await collectProjectState()
-
-    expect(state.modules.beacon).toEqual({ provider: 'ably' })
-  })
-
-  it('defaults module to empty object for unknown modules', async () => {
-    vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('resend')
     vi.mocked(checkbox).mockResolvedValueOnce(['courier'])
 
     const state = await collectProjectState()
 
-    expect(state.modules.courier).toEqual({})
+    expect(state.modules.courier).toEqual({ email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' } })
+  })
+
+  it('skips courier config when user defers provider choice', async () => {
+    vi.mocked(input).mockResolvedValueOnce('my-app')
+    vi.mocked(select).mockResolvedValueOnce('next').mockResolvedValueOnce('skip')
+    vi.mocked(checkbox).mockResolvedValueOnce(['courier'])
+
+    const state = await collectProjectState()
+
+    expect(state.modules.courier).toBeUndefined()
   })
 })

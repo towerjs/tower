@@ -56,7 +56,7 @@ describe('scaffolding — real file output', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('writes tower.config.ts and .env.example for vault + gatehouse', async () => {
+  it('writes all scaffold files for vault + gatehouse', async () => {
     const state: ProjectState = {
       ...baseState,
       modules: {
@@ -71,6 +71,9 @@ describe('scaffolding — real file output', () => {
     expect(existsSync(join(projectDir, '.env'))).toBe(true)
     expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'))).toBe(true)
     expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(true)
+    expect(existsSync(join(projectDir, 'src', 'lib', 'auth', 'actions.ts'))).toBe(true)
+    expect(existsSync(join(projectDir, '.prettierrc'))).toBe(true)
+    expect(existsSync(join(projectDir, 'AGENTS.md'))).toBe(true)
 
     const config = readFileSync(join(projectDir, 'tower.config.ts'), 'utf-8')
     expect(config).toContain('defineTower')
@@ -87,6 +90,22 @@ describe('scaffolding — real file output', () => {
     const env = readFileSync(join(projectDir, '.env'), 'utf-8')
     expect(env).toContain('GATEHOUSE_SECRET')
     expect(env).toContain('DATABASE_URL')
+
+    const actions = readFileSync(join(projectDir, 'src', 'lib', 'auth', 'actions.ts'), 'utf-8')
+    expect(actions).toContain('signIn')
+    expect(actions).toContain('signUp')
+    expect(actions).toContain('signOut')
+    expect(actions).toContain('towerjs/gatehouse/actions')
+
+    const agents = readFileSync(join(projectDir, 'AGENTS.md'), 'utf-8')
+    expect(agents).toContain('my-tower-app')
+    expect(agents).toContain('gatehouse')
+    expect(agents).toContain('vault')
+
+    const prettier = readFileSync(join(projectDir, '.prettierrc'), 'utf-8')
+    expect(prettier).toContain('prettier-plugin-organize-imports')
+    expect(prettier).toContain('prettier-plugin-tailwindcss')
+    expect(prettier).toContain('semi')
   })
 
   it('writes .env with DATABASE_URL when only vault is enabled', async () => {
@@ -124,7 +143,7 @@ describe('scaffolding — real file output', () => {
 
   it('installs towerjs dependency', async () => {
     await nextAdapter.generate(baseState, tmpDir)
-    expect(execa).toHaveBeenLastCalledWith(
+    expect(execa).toHaveBeenCalledWith(
       'pnpm',
       ['add', 'towerjs'],
       expect.objectContaining({
