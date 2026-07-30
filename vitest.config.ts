@@ -12,6 +12,8 @@ export default defineConfig({
       { find: /^@towerjs\/vault$/, replacement: resolve('packages/vault/src/index.ts') },
       { find: /^@towerjs\/gatehouse$/, replacement: resolve('packages/gatehouse/src/index.ts') },
       { find: /^@towerjs\/courier$/, replacement: resolve('packages/courier/src/index.ts') },
+      { find: /^@towerjs\/edge$/, replacement: resolve('packages/edge/src/index.ts') },
+      { find: /^towerjs$/, replacement: resolve('packages/towerjs/src/index.ts') },
     ],
   },
   test: {

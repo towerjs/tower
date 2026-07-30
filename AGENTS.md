@@ -135,8 +135,72 @@ When adding a new framework (e.g., Express, Hono), create a new adapter file in 
 
 - Unit tests: `packages/*/src/**/*.test.ts` — run via `pnpm test`
 - Acceptance tests: `tests/*.test.ts` — boot test, build test
+- E2E tests: `examples/with-nextjs/e2e/` — run via `pnpm test:e2e` (requires Docker Postgres)
 - Tests should NOT require external services unless tagged with `{ skip }` when unavailable
 - Database-dependent tests check for `DATABASE_URL` and skip gracefully
+
+### E2E testing patterns (Playwright)
+
+E2E tests live in `examples/with-nextjs/e2e/` and use Playwright against the demo Next.js app.
+
+**Core auth flows tested:**
+
+```
+auth.spec.ts
+  ✓ unauthenticated user redirected to sign in
+  ✓ user can sign up
+  ✓ email is verified after sign up
+  ✓ user can sign out
+  ✓ user can sign in after sign out
+  ✓ session persists after reload
+
+auth-extended.spec.ts
+  ✓ incorrect sign-in shows error message
+  ✓ update profile name with success feedback
+  ✓ change password then sign in with new and old passwords
+  ✓ create organization, invite member, cancel invitation
+  ✓ revoke all other sessions from security page
+  ✓ two-factor enable flow shows QR code
+```
+
+**Running E2E tests:**
+
+```bash
+# Start Postgres (root or examples/with-nextjs)
+docker compose up postgres
+
+# Run tests (auto-starts Next.js dev server via Playwright webServer)
+pnpm test:e2e
+```
+
+**Database:** Reset between runs with `docker compose down -v && docker compose up postgres`.
+
+**Email provider:** The demo app uses Courier's `console` provider (`provider: "console"`), which logs emails to stdout. No external credentials needed for development.
+
+**OAuth:** OAuth tests (`e2e/oauth.spec.ts`) are skipped unless `GOOGLE_CLIENT_ID` / `GITHUB_CLIENT_ID` env vars are set. This keeps the default test suite dependency-free.
+
+**Test isolation:** Each test generates a unique email (`test-${Date.now()}@example.com`) to avoid database state conflicts. No database cleanup is needed between tests.
+
+**Adding new E2E tests:**
+1. Add `*.spec.ts` to `examples/with-nextjs/e2e/`
+2. Use unique test data (timestamps, random values)
+3. Add `test.skip()` for provider-dependent tests
+4. Verify with `pnpm test:e2e`
+
+## Commit style
+
+Use conventional commits with the package name as scope:
+
+```
+feat(gatehouse): add passkey update action
+fix(vault): handle pool close on shutdown
+refactor(towerjs): extract facade builder
+chore(deps): upgrade vitest
+```
+
+Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README).
+
+Human contributors and the `commit` skill should both follow this format. Changeset summaries are written in plain English, not conventional commit format.
 
 ## Linting
 

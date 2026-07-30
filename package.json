@@ -10,6 +10,7 @@
     "clean": "rm -rf packages/*/dist",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "pnpm --filter @towerjs/with-nextjs test:e2e",
     "check:deps": "npx tsx scripts/check-dependencies.ts",
     "changeset": "changeset",
     "version": "changeset version",

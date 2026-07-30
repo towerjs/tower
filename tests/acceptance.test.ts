@@ -1,16 +1,14 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { getModuleFactory } from '@towerjs/blueprint'
+import { createTowerApp } from '@towerjs/foundation'
 import '@towerjs/vault'
 import '@towerjs/gatehouse'
 import '@towerjs/courier'
 
-const __filename = fileURLToPath(import.meta.url)
-const ROOT = resolve(dirname(__filename), '..', '..', '..')
-const { createTowerApp } = await import(resolve(dirname(__filename), './app.ts'))
+const ROOT = resolve(import.meta.dirname, '..')
 const COMPOSE_FILE = resolve(ROOT, 'docker-compose.yml')
 const TEST_DB_URL = 'postgres://tower:tower@localhost:5432/tower'
 
