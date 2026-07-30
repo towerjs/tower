@@ -6,23 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "towerjs": "workspace:*",
-    "@towerjs/edge": "workspace:*",
-    "@towerjs/vault": "workspace:*",
-    "@towerjs/gatehouse": "workspace:*",
     "@towerjs/courier": "workspace:*",
+    "@towerjs/edge": "workspace:*",
+    "@towerjs/gatehouse": "workspace:*",
+    "@towerjs/vault": "workspace:*",
     "next": "16.2.11",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "towerjs": "workspace:*"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^26",
+    "@types/pg": "^8.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "pg": "^8.22",
     "tailwindcss": "^4",
     "typescript": "~5.9.3"
   }

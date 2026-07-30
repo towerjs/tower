@@ -1,16 +1,27 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useActionState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { signUp } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 export function SignUpForm() {
-  const [pending, setPending] = useState(false)
+  const router = useRouter()
+  const [state, action, pending] = useActionState(signUp, undefined)
+
+  useEffect(() => {
+    if ((state as any)?.ok) router.push('/dashboard')
+  }, [state, router])
 
   return (
-    <form action={signUp} onSubmit={() => setPending(true)} className="space-y-4">
+    <form action={action} className="space-y-4">
+      {(state as any)?.error && (
+        <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+          {(state as any).error}
+        </div>
+      )}
       <Input id="name" name="name" type="text" label="Name" placeholder="Jane Doe" required />
       <Input id="email" name="email" type="email" label="Email" placeholder="you@example.com" required />
       <Input

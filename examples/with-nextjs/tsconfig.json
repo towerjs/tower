@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,14 +23,37 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@towerjs/foundation": ["../../packages/foundation/dist/index"],
-      "@towerjs/blueprint": ["../../packages/blueprint/dist/index"],
-      "@towerjs/vault": ["../../packages/vault/dist/index"],
-      "@towerjs/gatehouse": ["../../packages/gatehouse/dist/index"],
-      "@towerjs/gatehouse/next": ["../../packages/gatehouse/dist/frameworks/next"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@towerjs/foundation": [
+        "../../packages/foundation/dist/index"
+      ],
+      "@towerjs/blueprint": [
+        "../../packages/blueprint/dist/index"
+      ],
+      "@towerjs/vault": [
+        "../../packages/vault/dist/index"
+      ],
+      "@towerjs/gatehouse": [
+        "../../packages/gatehouse/dist/index"
+      ],
+      "@towerjs/gatehouse/next": [
+        "../../packages/gatehouse/dist/frameworks/next"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "**/*.mts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }

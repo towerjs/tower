@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { signIn } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,12 +14,22 @@ const TABS = [
 ] as const
 
 export function SignInForm() {
+  const router = useRouter()
   const [tab, setTab] = useState<string>('password')
   const [otpSent, setOtpSent] = useState(false)
-  const [pending, setPending] = useState(false)
+  const [state, action, pending] = useActionState(signIn, undefined)
+
+  useEffect(() => {
+    if ((state as any)?.ok) router.push('/dashboard')
+  }, [state, router])
 
   return (
-    <form action={signIn} onSubmit={() => setPending(true)}>
+    <form action={action}>
+      {(state as any)?.error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+          {(state as any).error}
+        </div>
+      )}
       <input type="hidden" name="_method" value={tab} />
 
       <div className="mb-6 flex rounded-lg border border-neutral-200 p-0.5 dark:border-neutral-800">

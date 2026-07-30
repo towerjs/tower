@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { gatehouse } from 'towerjs/gatehouse'
-import { signOut } from '@/app/actions'
+import { SignOutButton } from '@/components/sign-out-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,9 @@ const NAV_ITEMS = [
 ]
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = await gatehouse.requireUser()
+  const session = await gatehouse.getSession()
+  if (!session) redirect('/sign-in')
+  const { user } = session
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -36,14 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-neutral-500 dark:text-neutral-400 md:block">{user.email}</span>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-            >
-              Sign out
-            </button>
-          </form>
+          <SignOutButton />
         </div>
       </header>
 

@@ -6,7 +6,7 @@ export default defineTower({
 
     courier: {
       email: {
-        provider: 'resend',
+        provider: 'console',
         from: 'Tower <no-reply@example.com>',
       },
     },
@@ -23,6 +23,7 @@ export default defineTower({
 
       emailVerification: {
         sendOnSignUp: true,
+        autoSignInAfterVerification: true,
       },
 
       social: {
