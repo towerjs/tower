@@ -7,7 +7,7 @@ This project uses [conventional commits](https://www.conventionalcommits.org/) w
 ```
 feat(gatehouse): add passkey update action
 fix(vault): handle pool close on shutdown
-refactor(towerjs): extract facade builder
+refactor(gatehouse): extract api builder
 chore(deps): upgrade vitest
 docs(vault): document kysely-neon provider
 docs(root): update README

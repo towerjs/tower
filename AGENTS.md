@@ -194,7 +194,7 @@ Use conventional commits with the package name as scope:
 ```
 feat(gatehouse): add passkey update action
 fix(vault): handle pool close on shutdown
-refactor(towerjs): extract facade builder
+refactor(gatehouse): extract api builder
 chore(deps): upgrade vitest
 docs(vault): document kysely-neon provider
 ```

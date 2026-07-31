@@ -177,11 +177,11 @@ describe('getCurrentGatehouse', () => {
   })
 })
 
-// ─── facade-builder ─────────────────────────────────────────
+// ─── api-builder ─────────────────────────────────────────────
 
 describe('buildProxiedApi', () => {
   it('wraps method to inject headers', async () => {
-    const { buildProxiedApi } = await import('./facade-builder.js')
+    const { buildProxiedApi } = await import('./api-builder.js')
     const headers = new Headers({ authorization: 'Bearer x' })
     const inner = vi.fn().mockResolvedValue('ok')
     const api = { someMethod: inner }
@@ -192,7 +192,7 @@ describe('buildProxiedApi', () => {
   })
 
   it('passes GET-method params as query', async () => {
-    const { buildProxiedApi } = await import('./facade-builder.js')
+    const { buildProxiedApi } = await import('./api-builder.js')
     const headers = new Headers()
     const inner = vi.fn().mockResolvedValue([])
     const api = { listSessions: inner }
@@ -203,7 +203,7 @@ describe('buildProxiedApi', () => {
   })
 
   it('allows raw params via body/query/headers keys', async () => {
-    const { buildProxiedApi } = await import('./facade-builder.js')
+    const { buildProxiedApi } = await import('./api-builder.js')
     const headers = new Headers()
     const inner = vi.fn().mockResolvedValue('ok')
     const api = { someMethod: inner }
@@ -214,62 +214,62 @@ describe('buildProxiedApi', () => {
   })
 
   it('passes non-function properties through', async () => {
-    const { buildProxiedApi } = await import('./facade-builder.js')
+    const { buildProxiedApi } = await import('./api-builder.js')
     const api = { staticVal: 42 }
     const proxied = buildProxiedApi(api, new Headers())
     expect(proxied.staticVal).toBe(42)
   })
 })
 
-describe('buildFacade', () => {
+describe('buildApi', () => {
   it('maps API methods to nested paths', async () => {
-    const { buildFacade } = await import('./facade-builder.js')
-    const api = {
+    const { buildApi } = await import('./api-builder.js')
+    const source = {
       signInEmail: vi.fn(),
       signOut: vi.fn(),
       listSessions: vi.fn(),
       createOrganization: vi.fn(),
     }
 
-    const facade = buildFacade(api as any)
-    expect(typeof facade.signIn?.email).toBe('function')
-    expect(typeof facade.sessions?.signOut).toBe('function')
-    expect(typeof facade.sessions?.list).toBe('function')
-    expect(typeof facade.organizations?.create).toBe('function')
+    const gatehouse = buildApi(source as any)
+    expect(typeof gatehouse.signIn?.email).toBe('function')
+    expect(typeof gatehouse.sessions?.signOut).toBe('function')
+    expect(typeof gatehouse.sessions?.list).toBe('function')
+    expect(typeof gatehouse.organizations?.create).toBe('function')
   })
 
   it('collects unmapped methods in api passthrough', async () => {
-    const { buildFacade } = await import('./facade-builder.js')
-    const api = { customPlugin: vi.fn(), signInEmail: vi.fn() }
-    const facade = buildFacade(api as any)
-    expect(typeof facade.api?.customPlugin).toBe('function')
+    const { buildApi } = await import('./api-builder.js')
+    const source = { customPlugin: vi.fn(), signInEmail: vi.fn() }
+    const gatehouse = buildApi(source as any)
+    expect(typeof gatehouse.api?.customPlugin).toBe('function')
   })
 
   it('excludes SKIP_INTERNAL from passthrough', async () => {
-    const { buildFacade } = await import('./facade-builder.js')
-    const api = { getSession: vi.fn(), callbackOAuth: vi.fn(), randomFn: vi.fn() }
-    const facade = buildFacade(api as any)
-    expect(facade.api?.getSession).toBeUndefined()
-    expect(facade.api?.callbackOAuth).toBeUndefined()
-    expect(typeof facade.api?.randomFn).toBe('function')
+    const { buildApi } = await import('./api-builder.js')
+    const source = { getSession: vi.fn(), callbackOAuth: vi.fn(), randomFn: vi.fn() }
+    const gatehouse = buildApi(source as any)
+    expect(gatehouse.api?.getSession).toBeUndefined()
+    expect(gatehouse.api?.callbackOAuth).toBeUndefined()
+    expect(typeof gatehouse.api?.randomFn).toBe('function')
   })
 
   it('calls original function with same args', async () => {
-    const { buildFacade } = await import('./facade-builder.js')
+    const { buildApi } = await import('./api-builder.js')
     const inner = vi.fn().mockResolvedValue('ok')
-    const api = { signInEmail: inner }
-    const facade = buildFacade(api as any)
+    const source = { signInEmail: inner }
+    const gatehouse = buildApi(source as any)
 
-    const result = await facade.signIn.email('a', 'b')
+    const result = await gatehouse.signIn.email('a', 'b')
     expect(result).toBe('ok')
     expect(inner).toHaveBeenCalledWith('a', 'b')
   })
 
   it('skips mappings for undefined methods', async () => {
-    const { buildFacade } = await import('./facade-builder.js')
-    const api = { signInEmail: undefined }
-    const facade = buildFacade(api as any)
-    expect(facade.signIn).toBeUndefined()
+    const { buildApi } = await import('./api-builder.js')
+    const source = { signInEmail: undefined }
+    const gatehouse = buildApi(source as any)
+    expect(gatehouse.signIn).toBeUndefined()
   })
 })
 

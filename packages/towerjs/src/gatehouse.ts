@@ -9,7 +9,7 @@ import type {
 } from '@towerjs/gatehouse'
 import { getTowerApp, importModule } from './runtime'
 
-type GatehouseFacadeMethods = {
+type GatehouseApiMethods = {
   getSession(): Promise<Session | null>
   session(): Promise<Session | null>
   user(): Promise<GatehouseUser | null>
@@ -20,7 +20,7 @@ type GatehouseFacadeMethods = {
   getOrganization(id: string): Promise<OrganizationFull | null>
 }
 
-type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseFacadeMethods> & GatehouseFacadeMethods
+type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
 
 let _raw: any
 

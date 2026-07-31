@@ -9,7 +9,7 @@ import type {
   ProxyResult,
 } from '../types.js'
 import { AuthenticationError } from '../types.js'
-import { buildProxiedApi, buildFacade } from '../facade-builder.js'
+import { buildProxiedApi, buildApi } from '../api-builder.js'
 
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
@@ -176,8 +176,8 @@ export class BetterAuthAdapter {
   async from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
     const headers = request instanceof Request ? request.headers : request.headers
     const session = await this.getSession({ headers })
-    const api = buildProxiedApi(this.api, headers)
-    const built = buildFacade(api)
+    const proxied = buildProxiedApi(this.api, headers)
+    const api = buildApi(proxied)
 
     return {
       session: async () => session,
@@ -197,7 +197,7 @@ export class BetterAuthAdapter {
       },
 
       can: (params) => this.checkPermission(params),
-      ...built,
+      ...api,
     } as GatehouseInstance
   }
 

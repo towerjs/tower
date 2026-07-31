@@ -222,13 +222,13 @@ export function buildProxiedApi(api: any, headers: Headers) {
   })
 }
 
-// ─── Facade builder ───────────────────────────────────────────────
-// Takes a proxied Better Auth API and returns a nested facade object
+// ─── API builder ─────────────────────────────────────────────────
+// Takes a proxied Better Auth API and returns a nested API object
 // that maps BA method names to Gatehouse paths.
 
-/** Builds a nested facade object from a Better Auth API, mapping method names to dot-separated paths. */
-export function buildFacade(api: Record<string, Function>): Record<string, any> {
-  const facade: Record<string, any> = {}
+/** Builds a nested API object from a Better Auth API, mapping method names to dot-separated paths. */
+export function buildApi(api: Record<string, Function>): Record<string, any> {
+  const built: Record<string, any> = {}
 
   for (const [source, targetPath] of Object.entries(MAPPINGS)) {
     const fn = api[source]
@@ -236,7 +236,7 @@ export function buildFacade(api: Record<string, Function>): Record<string, any> 
 
     const segments = targetPath.split('.')
     const key = segments.pop()!
-    let current = facade
+    let current = built
 
     for (const seg of segments) {
       current[seg] ??= {}
@@ -254,8 +254,8 @@ export function buildFacade(api: Record<string, Function>): Record<string, any> 
     passthrough[key] = (...args: any[]) => api[key](...args)
   }
   if (Object.keys(passthrough).length > 0) {
-    facade.api = passthrough
+    built.api = passthrough
   }
 
-  return facade
+  return built
 }

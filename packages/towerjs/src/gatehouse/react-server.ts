@@ -10,7 +10,7 @@ import type {
 import { setRequestContextResolver } from '@towerjs/foundation'
 import { getTowerApp, importModule } from '../runtime'
 
-type GatehouseFacadeMethods = {
+type GatehouseApiMethods = {
   getSession(): Promise<Session | null>
   session(): Promise<Session | null>
   user(): Promise<GatehouseUser | null>
@@ -21,7 +21,7 @@ type GatehouseFacadeMethods = {
   getOrganization(id: string): Promise<OrganizationFull | null>
 }
 
-type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseFacadeMethods> & GatehouseFacadeMethods
+type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
 
 setRequestContextResolver(async () => {
   const { headers } = await import('next/headers')

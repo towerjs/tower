@@ -233,7 +233,7 @@ export async function runWithRequest<T>(
   return towerContext.run({ gatehouse: instance }, handler)
 }
 
-type GatehouseFacadeMethods = {
+type GatehouseApiMethods = {
   getSession(): Promise<Session | null>
   session(): Promise<Session | null>
   user(): Promise<GatehouseUser | null>
@@ -244,7 +244,7 @@ type GatehouseFacadeMethods = {
   getOrganization(id: string): Promise<OrganizationFull | null>
 }
 
-type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseFacadeMethods> & GatehouseFacadeMethods
+type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
 
 async function withRequestContext<T>(fn: (instance: GatehouseInstance) => Promise<T>): Promise<T> {
   const resolver = getRequestContextResolver()
