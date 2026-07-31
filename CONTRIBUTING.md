@@ -9,6 +9,7 @@ feat(gatehouse): add passkey update action
 fix(vault): handle pool close on shutdown
 refactor(towerjs): extract facade builder
 chore(deps): upgrade vitest
+docs(vault): document kysely-neon provider
 docs(root): update README
 ```
 
@@ -35,7 +36,7 @@ Scopes match package directory names:
 - `fix` — bug fix
 - `refactor` — code change that neither fixes a bug nor adds a feature
 - `chore` — maintenance tasks, dependency updates, tooling
-- `docs` — documentation only
+- `docs` — documentation only (READMEs, module docs, guides). Scope is the package the docs describe: `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
 - `test` — adding or fixing tests
 - `style` — formatting, linting (no logic change)
 

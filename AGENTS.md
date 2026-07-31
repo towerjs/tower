@@ -196,9 +196,10 @@ feat(gatehouse): add passkey update action
 fix(vault): handle pool close on shutdown
 refactor(towerjs): extract facade builder
 chore(deps): upgrade vitest
+docs(vault): document kysely-neon provider
 ```
 
-Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README).
+Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation — e.g. `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
 
 Human contributors and the `commit` skill should both follow this format. Changeset summaries are written in plain English, not conventional commit format.
 
