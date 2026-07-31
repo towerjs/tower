@@ -17,6 +17,10 @@
       "default": "./dist/foundation.js"
     },
     "./gatehouse": {
+      "react-server": {
+        "types": "./dist/gatehouse/react-server.d.ts",
+        "default": "./dist/gatehouse/react-server.js"
+      },
       "types": "./dist/gatehouse.d.ts",
       "default": "./dist/gatehouse.js"
     },

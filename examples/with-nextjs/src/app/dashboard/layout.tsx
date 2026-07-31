@@ -3,8 +3,6 @@ import { redirect } from 'next/navigation'
 import { gatehouse } from 'towerjs/gatehouse'
 import { SignOutButton } from '@/components/sign-out-button'
 
-export const dynamic = 'force-dynamic'
-
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home' },
   { href: '/dashboard/settings', label: 'Settings' },
