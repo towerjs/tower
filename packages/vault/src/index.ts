@@ -23,6 +23,8 @@ export async function runSeeds(db: Vault, config: VaultSeedConfig, name?: string
 let _vault: VaultModule | undefined
 let _pool: { end(): Promise<void> } | undefined
 
+const NOOP_POOL: { end(): Promise<void> } = { end: async () => {} }
+
 function resolveConnectionString(config?: VaultConfig): string {
   return config?.connectionString ?? (typeof process !== 'undefined' ? process.env.DATABASE_URL : undefined) ?? ''
 }
@@ -47,7 +49,7 @@ function resolveSsl(
 }
 
 async function loadKysely(): Promise<{
-  Kysely: new (config: { dialect: import('kysely').PostgresDialect }) => import('kysely').Kysely<any>
+  Kysely: new (config: { dialect: import('kysely').Dialect }) => import('kysely').Kysely<any>
   PostgresDialect: new (config: { pool: any }) => import('kysely').PostgresDialect
 }> {
   return import('kysely')
@@ -55,7 +57,6 @@ async function loadKysely(): Promise<{
 
 async function createPool(
   connectionString: string,
-  provider: 'neon' | 'pg',
   poolConfig?: VaultConfig['pool'],
   runtime?: { name: string; isServerless: boolean }
 ): Promise<any> {
@@ -68,17 +69,6 @@ async function createPool(
 
   const isEdge = runtime?.name === 'edge'
   const ssl = resolveSsl(poolConfig, connectionString)
-
-  if (provider === 'neon') {
-    const { Pool, neonConfig } = await import('@neondatabase/serverless')
-    neonConfig.fetchConnectionCache = true
-    if (isEdge) neonConfig.poolQueryViaFetch = true
-    const neonPool = ssl !== undefined ? new Pool({ ...config, ssl }) : new Pool(config)
-    neonPool.on('error', () => {
-      /* Neon pool errors are handled by query timeouts */
-    })
-    return neonPool
-  }
 
   if (isEdge) {
     throw new Error(
@@ -97,7 +87,7 @@ async function createPool(
   return pool
 }
 
-async function validateConnection(pool: any, _provider: 'neon' | 'pg'): Promise<void> {
+async function validateConnection(pool: any): Promise<void> {
   const client = await pool.connect()
   try {
     await client.query('SELECT 1')
@@ -181,6 +171,20 @@ function buildProxyConfigured(
   })
 }
 
+async function buildProxyForRuntime(
+  db: Vault,
+  pool: { end(): Promise<void> },
+  isEdge: boolean,
+  options?: VaultConfig
+): Promise<VaultModule> {
+  if (isEdge) return buildProxyDb(db, pool)
+
+  const migrationFolder = options?.migrations?.folder ?? './src/vault/migrations'
+  const seedFolder = options?.seeds?.folder ?? './src/vault/seeds'
+  const migrator = await createMigrator(db, { folder: migrationFolder })
+  return buildProxyConfigured(db, pool, migrationFolder, seedFolder, migrator)
+}
+
 /**
  * Creates a Tower module that registers the vault database service.
  *
@@ -214,12 +218,29 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
       const provider = resolveProvider(options)
       const isEdge = ctx.runtime.name === 'edge'
       await _pool?.end().catch(() => {})
-      const pool = await createPool(connectionString, provider, options?.pool, ctx.runtime)
+
+      // Neon: use the HTTP dialect directly, bypassing any connection pool.
+      if (provider === 'neon') {
+        const { Kysely } = await loadKysely()
+        const [{ NeonDialect }, { neon }] = await Promise.all([
+          import('kysely-neon'),
+          import('@neondatabase/serverless'),
+        ])
+        const db: Vault = new Kysely({
+          dialect: new NeonDialect({ neon: neon(connectionString) }),
+        })
+        _pool = NOOP_POOL
+        _vault = await buildProxyForRuntime(db, NOOP_POOL, isEdge, options)
+        ctx.services.register('vault', _vault)
+        return
+      }
+
+      const pool = await createPool(connectionString, options?.pool, ctx.runtime)
       _pool = pool
 
       if (!isEdge) {
         try {
-          await validateConnection(pool, provider)
+          await validateConnection(pool)
         } catch (err) {
           await pool.end().catch(() => {})
           throw new Error(
@@ -231,14 +252,7 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
       const { Kysely, PostgresDialect } = await loadKysely()
       const db: Vault = new Kysely({ dialect: new PostgresDialect({ pool }) })
 
-      if (isEdge) {
-        _vault = buildProxyDb(db, pool)
-      } else {
-        const migrationFolder = options?.migrations?.folder ?? './src/vault/migrations'
-        const seedFolder = options?.seeds?.folder ?? './src/vault/seeds'
-        const migrator = await createMigrator(db, { folder: migrationFolder })
-        _vault = buildProxyConfigured(db, pool, migrationFolder, seedFolder, migrator)
-      }
+      _vault = await buildProxyForRuntime(db, pool, isEdge, options)
 
       ctx.services.register('vault', _vault)
     },

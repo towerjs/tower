@@ -19,6 +19,7 @@
     "@neondatabase/serverless": "^1.1.0",
     "@towerjs/blueprint": "workspace:*",
     "kysely": "^0.29.4",
+    "kysely-neon": "^3.0.0",
     "pg": "^8.22.0"
   },
   "devDependencies": {

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => {
   const mockQuery = vi.fn()
   const mockMigrateToLatest = vi.fn()
   const mockRunSeeds = vi.fn()
+  const mockNeonQuery = vi.fn()
   let kyselyInstance: any = {}
   const setKyselyInstance = (inst: any) => {
     kyselyInstance = inst
@@ -16,9 +17,11 @@ const mocks = vi.hoisted(() => {
 
   const pgPoolArgs: any[] = []
   const neonPoolArgs: any[] = []
+  const neonDialectArgs: any[] = []
   const clearPoolArgs = () => {
     pgPoolArgs.length = 0
     neonPoolArgs.length = 0
+    neonDialectArgs.length = 0
   }
 
   return {
@@ -26,12 +29,14 @@ const mocks = vi.hoisted(() => {
     mockEnd,
     mockOn,
     mockQuery,
+    mockNeonQuery,
     mockMigrateToLatest,
     mockRunSeeds,
     kyselyInstance,
     setKyselyInstance,
     pgPoolArgs,
     neonPoolArgs,
+    neonDialectArgs,
     clearPoolArgs,
   }
 })
@@ -61,7 +66,14 @@ vi.mock('@neondatabase/serverless', () => {
       query: mocks.mockQuery,
     }
   }
-  return { Pool, neonConfig: { fetchConnectionCache: false } }
+  return { Pool, neon: vi.fn(() => mocks.mockNeonQuery), neonConfig: { fetchConnectionCache: false } }
+})
+
+vi.mock('kysely-neon', () => {
+  function NeonDialect(this: any, opts: any) {
+    mocks.neonDialectArgs.push(opts)
+  }
+  return { NeonDialect }
 })
 
 vi.mock('kysely', () => {
@@ -342,15 +354,17 @@ describe('provider detection', () => {
     expect(mocks.pgPoolArgs.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('uses neon for neon.tech URLs', async () => {
+  it('uses kysely-neon for neon.tech URLs', async () => {
     await initWithUrl('postgres://u:p@db.neon.tech/db')
-    expect(mocks.neonPoolArgs.length).toBeGreaterThanOrEqual(1)
+    expect(mocks.neonDialectArgs).toHaveLength(1)
+    expect(mocks.pgPoolArgs).toHaveLength(0)
+    expect(mocks.neonDialectArgs[0].neon).toEqual(expect.any(Function))
   })
 
   it('honours explicit provider config over URL detection', async () => {
     await initWithUrl('postgres://u:p@db.neon.tech/db', 'pg')
     expect(mocks.pgPoolArgs.length).toBeGreaterThanOrEqual(1)
-    expect(mocks.neonPoolArgs.length).toBe(0)
+    expect(mocks.neonDialectArgs).toHaveLength(0)
   })
 })
 
@@ -471,10 +485,10 @@ describe('multiple init calls', () => {
   })
 })
 
-// ─── Neon side-effect ──────────────────────────────────────────────
+// ─── Neon ──────────────────────────────────────────────────────────
 
-describe('neon side-effect', () => {
-  it('sets fetchConnectionCache for neon provider', async () => {
+describe('neon', () => {
+  it('uses the kysely-neon HTTP dialect without a connection pool', async () => {
     mocks.mockConnect.mockResolvedValue({
       query: vi.fn().mockResolvedValue(undefined),
       release: vi.fn(),
@@ -483,33 +497,29 @@ describe('neon side-effect', () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
     await mod.init!(mockCtx())
 
-    const { neonConfig } = await import('@neondatabase/serverless')
-    expect(neonConfig.fetchConnectionCache).toBe(true)
+    expect(mocks.neonDialectArgs).toHaveLength(1)
+    expect(mocks.neonPoolArgs).toHaveLength(0)
+    expect(mocks.pgPoolArgs).toHaveLength(0)
+    expect(mocks.neonDialectArgs[0].neon).toEqual(expect.any(Function))
+    expect(mocks.mockConnect).not.toHaveBeenCalled()
   })
 })
 
 // ─── Edge Runtime ─────────────────────────────────────────────────
 
 describe('edge runtime', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
     mocks.clearPoolArgs()
-    const { neonConfig } = await import('@neondatabase/serverless')
-    neonConfig.fetchConnectionCache = false
-    delete (neonConfig as any).poolQueryViaFetch
   })
 
-  it('enables poolQueryViaFetch for neon on edge', async () => {
-    mocks.mockConnect.mockResolvedValueOnce({
-      query: vi.fn().mockResolvedValueOnce(undefined),
-      release: vi.fn(),
-    })
-
+  it('uses the Neon HTTP dialect for neon on edge', async () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
     await mod.init!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))
 
-    const { neonConfig } = await import('@neondatabase/serverless')
-    expect(neonConfig.poolQueryViaFetch).toBe(true)
+    expect(mocks.neonDialectArgs).toHaveLength(1)
+    expect(mocks.neonPoolArgs).toHaveLength(0)
+    expect(mocks.neonDialectArgs[0].neon).toEqual(expect.any(Function))
   })
 
   it('skips connection validation on edge', async () => {

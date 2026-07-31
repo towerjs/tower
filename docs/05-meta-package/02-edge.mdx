@@ -27,7 +27,7 @@ export default withTowerEdge({
 
 On Vercel Edge, runtime detection returns `{ name: 'edge', isServerless: true }`. This affects:
 
-- **Vault**: Uses Neon's serverless driver with `poolQueryViaFetch`. No filesystem access — migrations and seeds throw if called in edge context.
+- **Vault**: Uses the Neon HTTP dialect (`kysely-neon`) — no connection pool. No filesystem access — migrations and seeds throw if called in edge context.
 - **AsyncLocalStorage**: Replaced with a no-op context provider (Edge doesn't support ALS).
 - **Lazy initialization**: Still works the same way — first access triggers init.
 
@@ -44,9 +44,7 @@ await vault.seed()    // Error: seeds unavailable on Edge
 
 ### Neon Serverless
 
-When using Neon, Vault automatically configures:
-- `poolQueryViaFetch = true`
-- SSL defaults to `true` in production
+When using Neon, Vault uses the HTTP dialect from `kysely-neon` on every runtime — including Node.js serverless. No WebSocket pool is involved, which avoids dangling connection issues. SSL defaults to `true` in production.
 
 ## When to Use Edge
 

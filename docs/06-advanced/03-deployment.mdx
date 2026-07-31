@@ -38,7 +38,7 @@ Use [Neon](https://neon.tech) for PostgreSQL with serverless support:
 ```tsx
 vault: {
   connectionString: process.env.DATABASE_URL,
-  // Neon auto-detection configures poolQueryViaFetch automatically
+  // Neon is auto-detected and uses the kysely-neon HTTP dialect
 }
 ```
 

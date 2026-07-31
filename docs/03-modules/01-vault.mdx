@@ -129,7 +129,7 @@ const result = await vault.db
 
 ## Edge Runtime
 
-On Edge (Vercel Edge, Cloudflare Workers), Vault uses Neon's serverless driver with `poolQueryViaFetch`. Migrations and seeds are unavailable on Edge (filesystem-dependent).
+On Edge (Vercel Edge, Cloudflare Workers), Vault uses the same Neon HTTP dialect (`kysely-neon`) as everywhere else — no connection pool is involved. Migrations and seeds are unavailable on Edge (filesystem-dependent).
 
 ```tsx
 // vault.migrate()  // throws on Edge (filesystem unavailable)

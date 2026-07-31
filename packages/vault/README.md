@@ -81,7 +81,7 @@ tower seed
 
 | Provider | Connection                                                  |
 | -------- | ----------------------------------------------------------- |
-| Neon     | Serverless connection via `@neondatabase/serverless`        |
+| Neon     | HTTP dialect via `kysely-neon` (`@neondatabase/serverless`) |
 | pg       | Standard PostgreSQL via `pg` (Supabase, Railway, RDS, etc.) |
 
 ## Configuration
