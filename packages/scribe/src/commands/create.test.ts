@@ -36,6 +36,8 @@ describe('createCommand', () => {
   })
 
   it('logs the project name and dev command on success', async () => {
+    const originalUserAgent = process.env.npm_config_user_agent
+    process.env.npm_config_user_agent = 'pnpm/10.0.0'
     mocks.mockCollectProjectState.mockResolvedValue({
       projectName: 'my-app',
       framework: 'next',
@@ -51,6 +53,11 @@ describe('createCommand', () => {
     expect(consoleLog).toHaveBeenCalledWith(expect.stringContaining('pnpm dev'))
 
     consoleLog.mockRestore()
+    if (originalUserAgent === undefined) {
+      delete process.env.npm_config_user_agent
+    } else {
+      process.env.npm_config_user_agent = originalUserAgent
+    }
   })
 
   it('re-throws errors from generateProject', async () => {

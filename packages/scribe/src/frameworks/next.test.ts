@@ -7,6 +7,8 @@ const baseState: ProjectState = {
   framework: 'next',
   modules: {},
   frameworkAnswers: { typescript: true, tailwind: true },
+  deployment: 'vercel',
+  runtime: 'node',
 }
 
 describe('capitalize', () => {
@@ -52,7 +54,7 @@ describe('towerConfig', () => {
       ...baseState,
       modules: {
         vault: { provider: 'neon', brand: 'neon' },
-        gatehouse: { provider: 'better-auth' },
+        gatehouse: { credentials: true },
       },
     }
     const result = towerConfig(state)
@@ -60,7 +62,7 @@ describe('towerConfig', () => {
     expect(result).toContain('vault:')
     expect(result).toContain('gatehouse:')
     expect(result).toContain('provider: "neon"')
-    expect(result).toContain('provider: "better-auth"')
+    expect(result).toContain('credentials: true')
     expect(result).not.toContain('brand')
   })
 
@@ -68,7 +70,7 @@ describe('towerConfig', () => {
     const state: ProjectState = {
       ...baseState,
       modules: {
-        gatehouse: { provider: 'better-auth', credentials: true, social: { google: {} } },
+        gatehouse: { credentials: true, social: { google: {} } },
       },
     }
     const result = towerConfig(state)
@@ -142,7 +144,7 @@ describe('envExample', () => {
   it('includes gatehouse env vars', () => {
     const state: ProjectState = {
       ...baseState,
-      modules: { gatehouse: { provider: 'better-auth' } },
+      modules: { gatehouse: {} },
     }
     const result = envExample(state)
 
@@ -183,11 +185,7 @@ describe('envExample', () => {
   })
 })
 
-// ─── nextAdapter.prompt and generate need separate mocks ───────────
-
-vi.mock('@inquirer/prompts', () => ({
-  select: vi.fn(),
-}))
+// ─── nextAdapter.generate needs separate mocks ───────────
 
 vi.mock('execa', () => ({
   execa: vi.fn(),
@@ -196,30 +194,18 @@ vi.mock('execa', () => ({
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
   writeFile: vi.fn().mockResolvedValue(undefined),
+  readFile: vi.fn().mockResolvedValue('# Next.js project\n'),
+}))
+
+vi.mock('../package-manager.js', () => ({
+  detectPackageManager: vi.fn(() => 'pnpm'),
+  nextAppFlag: vi.fn((pm: string) => `--use-${pm}`),
+  addCommand: vi.fn((pm: string, dev = false) => [pm, 'add', ...(dev ? ['-D'] : [])]),
 }))
 
 import { nextAdapter } from './next.js'
-import { select } from '@inquirer/prompts'
 import { execa } from 'execa'
 import { mkdir, writeFile } from 'node:fs/promises'
-
-describe('nextAdapter.prompt', () => {
-  it('returns typescript and tailwind choices', async () => {
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce(true)
-
-    const answers = await nextAdapter.prompt()
-
-    expect(answers).toEqual({ typescript: true, tailwind: true })
-  })
-
-  it('allows opting out of typescript and tailwind', async () => {
-    vi.mocked(select).mockResolvedValueOnce(false).mockResolvedValueOnce(false)
-
-    const answers = await nextAdapter.prompt()
-
-    expect(answers).toEqual({ typescript: false, tailwind: false })
-  })
-})
 
 describe('nextAdapter.generate', () => {
   const state: ProjectState = {
@@ -227,6 +213,8 @@ describe('nextAdapter.generate', () => {
     framework: 'next',
     modules: {},
     frameworkAnswers: { typescript: true, tailwind: true },
+    deployment: 'vercel',
+    runtime: 'node',
   }
 
   beforeEach(() => {
@@ -241,10 +229,11 @@ describe('nextAdapter.generate', () => {
       expect.arrayContaining([
         'create-next-app@latest',
         'my-app',
-        '--typescript',
+        '--ts',
         '--tailwind',
-        '--no-turbopack',
         '--src-dir',
+        '--no-react-compiler',
+        '--agents-md',
       ]),
       { cwd: '/target', stdio: 'inherit' }
     )
@@ -271,7 +260,7 @@ describe('nextAdapter.generate', () => {
   it('creates auth route and proxy file for gatehouse', async () => {
     const stateWithGatehouse: ProjectState = {
       ...state,
-      modules: { gatehouse: { provider: 'better-auth' } },
+      modules: { gatehouse: { credentials: true } },
     }
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
@@ -284,7 +273,7 @@ describe('nextAdapter.generate', () => {
   it('creates actions.ts when gatehouse is selected', async () => {
     const stateWithGatehouse: ProjectState = {
       ...state,
-      modules: { gatehouse: { provider: 'better-auth' } },
+      modules: { gatehouse: { credentials: true } },
     }
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
@@ -316,7 +305,7 @@ describe('nextAdapter.generate', () => {
       ...state,
       modules: {
         vault: { provider: 'neon' },
-        gatehouse: { provider: 'better-auth' },
+        gatehouse: { credentials: true },
       },
     }
 
@@ -330,6 +319,17 @@ describe('nextAdapter.generate', () => {
     expect(agentsContent).toContain('vault')
   })
 
+  it('AGENTS.md appends Tower content after the generated Next.js content', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const [, agentsContent] = vi.mocked(writeFile).mock.calls.find(
+      ([path]) => typeof path === 'string' && path.includes('AGENTS.md'),
+    ) ?? ['']
+    expect(agentsContent).toContain('# Next.js project')
+    expect(agentsContent).toContain('\n\n# Project:')
+    expect(agentsContent).toContain('composable monolithic stack')
+  })
+
   it('installs towerjs dependency', async () => {
     await nextAdapter.generate(state, '/target')
 
@@ -337,6 +337,104 @@ describe('nextAdapter.generate', () => {
       cwd: expect.stringContaining('my-app'),
       stdio: 'inherit',
     })
+  })
+
+  it('installs @towerjs/gatehouse when gatehouse is selected', async () => {
+    const stateWithGatehouse: ProjectState = {
+      ...state,
+      modules: { gatehouse: { credentials: true } },
+    }
+
+    await nextAdapter.generate(stateWithGatehouse, '/target')
+
+    expect(execa).toHaveBeenCalledWith(
+      'pnpm',
+      ['add', 'towerjs', '@towerjs/gatehouse'],
+      {
+        cwd: expect.stringContaining('my-app'),
+        stdio: 'inherit',
+      }
+    )
+  })
+
+  it('does not install @towerjs/gatehouse without gatehouse', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const gatehouseAdd = vi.mocked(execa).mock.calls.find(
+      ([, args]) => Array.isArray(args) && args.includes('@towerjs/gatehouse'),
+    )
+    expect(gatehouseAdd).toBeUndefined()
+  })
+
+  it('does not install @towerjs/edge on node runtime', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const edgeAdd = vi.mocked(execa).mock.calls.find(
+      ([, args]) => Array.isArray(args) && args.includes('@towerjs/edge'),
+    )
+    expect(edgeAdd).toBeUndefined()
+  })
+
+  it('does not write next.config.ts with withTowerEdge on node runtime', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const nextConfigCall = vi.mocked(writeFile).mock.calls.find(
+      ([path]) => typeof path === 'string' && path.includes('next.config.ts'),
+    )
+    expect(nextConfigCall).toBeUndefined()
+  })
+
+  it('installs @towerjs/edge as a dev dependency on edge runtime', async () => {
+    const edgeState: ProjectState = {
+      ...state,
+      runtime: 'edge',
+    }
+
+    await nextAdapter.generate(edgeState, '/target')
+
+    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '-D', '@towerjs/edge'], {
+      cwd: expect.stringContaining('my-app'),
+      stdio: 'inherit',
+    })
+  })
+
+  it('writes next.config.ts with withTowerEdge on edge runtime', async () => {
+    const edgeState: ProjectState = {
+      ...state,
+      runtime: 'edge',
+    }
+
+    await nextAdapter.generate(edgeState, '/target')
+
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('next.config.ts'),
+      expect.stringContaining('withTowerEdge'),
+    )
+  })
+
+  it('writes .prettierrc with tailwind plugins when tailwind is selected', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const [, prettierContent] = vi.mocked(writeFile).mock.calls.find(
+      ([path]) => typeof path === 'string' && path.includes('.prettierrc'),
+    ) ?? ['']
+    expect(prettierContent).toContain('prettier-plugin-tailwindcss')
+    expect(prettierContent).toContain('prettier-plugin-tailwindcss-canonical-classes')
+  })
+
+  it('writes .prettierrc without tailwind plugins when tailwind is not selected', async () => {
+    const stateWithoutTailwind: ProjectState = {
+      ...state,
+      frameworkAnswers: { typescript: true, tailwind: false },
+    }
+
+    await nextAdapter.generate(stateWithoutTailwind, '/target')
+
+    const [, prettierContent] = vi.mocked(writeFile).mock.calls.find(
+      ([path]) => typeof path === 'string' && path.includes('.prettierrc'),
+    ) ?? ['']
+    expect(prettierContent).toContain('prettier-plugin-organize-imports')
+    expect(prettierContent).not.toContain('prettier-plugin-tailwindcss')
   })
 
   it('installs prettier and prettier-plugin-organize-imports', async () => {

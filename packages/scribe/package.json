@@ -23,8 +23,15 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@inquirer/core": "^11.2.1",
     "@inquirer/prompts": "^8.5.2",
-    "execa": "^10.0.0"
+    "@inquirer/type": "^4.0.7",
+    "@towerjs/courier": "workspace:*",
+    "@towerjs/foundation": "workspace:*",
+    "@towerjs/gatehouse": "workspace:*",
+    "@towerjs/vault": "workspace:*",
+    "execa": "^10.0.0",
+    "jiti": "^2.4.2"
   },
   "devDependencies": {
     "@types/node": "^26"

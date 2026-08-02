@@ -1,5 +1,6 @@
-import { input, select, checkbox } from '@inquirer/prompts'
-import type { Framework, ProjectState, ProviderMap } from './state.js'
+import { input, select, checkbox as featureCheckbox } from '@inquirer/prompts'
+import { checkbox as modulesCheckbox } from './checkbox.js'
+import type { Framework, ProjectState, ProviderMap, DeploymentTarget, Runtime } from './state.js'
 
 const MODULE_CHOICES = [
   { name: 'Vault — Database ORM (Postgres, Neon)', value: 'vault' },
@@ -14,11 +15,39 @@ const VAULT_BRAND_CHOICES = [
   { name: 'Other PostgreSQL provider', value: 'other' as const },
 ]
 
-const GATEHOUSE_PROVIDER_CHOICES = [
-  { name: 'Better Auth', value: 'better-auth' as const },
+const GATEHOUSE_FEATURE_CHOICES = [
+  { name: 'Email/password', value: 'credentials', checked: true },
+  { name: 'Social login (Google, GitHub, etc.)', value: 'social' },
+  { name: 'Magic link (passwordless email)', value: 'magicLinks' },
+  { name: 'Two-factor authentication (TOTP + backup codes)', value: 'twoFactor' },
+  { name: 'Organizations (teams, invitations, roles)', value: 'organization' },
+  { name: 'Phone number authentication', value: 'phoneNumber' },
+]
+
+const EMAIL_PROVIDER_CHOICES = [
+  { name: 'Resend', value: 'resend' },
+  { name: 'SMTP', value: 'smtp' },
+  { name: 'SES (AWS)', value: 'ses' },
+  { name: "I'll configure later", value: 'skip' },
+]
+
+const SMS_PROVIDER_CHOICES = [
+  { name: 'Twilio', value: 'twilio' },
+  { name: "I'll configure later", value: 'skip' },
 ]
 
 const FRAMEWORK_CHOICES: { name: string; value: Framework }[] = [{ name: 'Next.js', value: 'next' }]
+
+const DEPLOYMENT_CHOICES: { name: string; value: DeploymentTarget }[] = [
+  { name: 'Vercel', value: 'vercel' },
+  { name: 'Cloudflare Workers', value: 'cloudflare' },
+  { name: 'Other / self-hosted', value: 'other' },
+]
+
+const RUNTIME_CHOICES: { name: string; value: Runtime }[] = [
+  { name: 'Serverless Node.js (recommended)', value: 'node' },
+  { name: 'Serverless Vercel Edge', value: 'edge' },
+]
 
 function resolveVaultProvider(brand: string): { provider: 'neon' | 'pg'; brand: string } {
   if (brand === 'neon') return { provider: 'neon', brand: 'neon' }
@@ -44,10 +73,48 @@ async function promptFramework(): Promise<Framework> {
   })
 }
 
+async function promptTypeScript(): Promise<boolean> {
+  return select({
+    message: 'TypeScript?',
+    choices: [
+      { name: 'Yes', value: true },
+      { name: 'No', value: false },
+    ],
+  })
+}
+
+async function promptTailwind(): Promise<boolean> {
+  return select({
+    message: 'Tailwind CSS?',
+    choices: [
+      { name: 'Yes', value: true },
+      { name: 'No', value: false },
+    ],
+  })
+}
+
+async function promptDeployment(): Promise<DeploymentTarget> {
+  return select({
+    message: 'Deployment target',
+    choices: DEPLOYMENT_CHOICES,
+  })
+}
+
+async function promptRuntime(deployment: DeploymentTarget): Promise<Runtime> {
+  if (deployment === 'cloudflare') return 'edge'
+  if (deployment === 'other') return 'node'
+
+  return select({
+    message: 'Runtime',
+    choices: RUNTIME_CHOICES,
+  })
+}
+
 async function promptModules(): Promise<string[]> {
-  return checkbox({
+  return modulesCheckbox({
     message: 'Which Tower modules do you want?',
     choices: MODULE_CHOICES,
+    link: { gatehouse: ['courier'] },
   })
 }
 
@@ -59,57 +126,53 @@ async function promptVaultProvider(): Promise<{ provider: 'neon' | 'pg'; brand: 
   return resolveVaultProvider(brand)
 }
 
-async function promptGatehouseProvider(): Promise<'better-auth'> {
-  return select({
-    message: 'Authentication provider',
-    choices: GATEHOUSE_PROVIDER_CHOICES,
-  })
-}
-
 async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
-  const features = await checkbox({
+  const features = await featureCheckbox({
     message: 'Auth features to enable',
-    choices: [
-      { name: 'Email/password', value: 'credentials', checked: true },
-      { name: 'Social login (Google, GitHub, etc.)', value: 'social' },
-      { name: 'Magic link (passwordless email)', value: 'magicLinks' },
-      { name: 'Email OTP', value: 'emailOtp' },
-      { name: 'Two-factor authentication (TOTP + backup codes)', value: 'twoFactor' },
-      { name: 'Organizations (teams, invitations, roles)', value: 'organization' },
-      { name: 'Passkeys (biometric/hardware key login)', value: 'passkeys' },
-      { name: 'Phone number authentication', value: 'phoneNumber' },
-      { name: 'Admin panel (user management)', value: 'admin' },
-      { name: 'API key authentication', value: 'apiKey' },
-    ],
+    choices: GATEHOUSE_FEATURE_CHOICES,
   })
   const cfg: Record<string, unknown> = {}
   for (const f of features) {
     if (f === 'credentials') cfg[f] = true
     else if (f === 'social') cfg[f] = { google: {}, github: {} }
     else if (f === 'phoneNumber') cfg[f] = true
-    else if (f === 'admin') cfg[f] = true
-    else if (f === 'apiKey') cfg[f] = true
     else cfg[f] = true
   }
   return cfg
 }
 
-async function promptCourierEmailProvider(): Promise<Record<string, unknown> | undefined> {
-  const provider = await select({
+async function promptCourierProvider(needsSms: boolean): Promise<Record<string, unknown> | undefined> {
+  const cfg: Record<string, unknown> = {}
+
+  const email = await select({
     message: 'Email provider',
-    choices: [
-      { name: 'Resend', value: 'resend' },
-      { name: 'SMTP', value: 'smtp' },
-      { name: 'SES (AWS)', value: 'ses' },
-      { name: "I'll configure later", value: 'skip' },
-    ],
+    choices: EMAIL_PROVIDER_CHOICES,
   })
-  if (provider === 'skip') return undefined
-  return { email: { provider, from: 'My App <onboarding@resend.dev>' } }
+  if (email !== 'skip') {
+    cfg.email = { provider: email, from: 'My App <onboarding@resend.dev>' }
+  }
+
+  if (needsSms) {
+    const sms = await select({
+      message: 'SMS provider',
+      choices: SMS_PROVIDER_CHOICES,
+    })
+    if (sms !== 'skip') {
+      cfg.sms = { provider: sms }
+    }
+  }
+
+  return Object.keys(cfg).length > 0 ? cfg : undefined
 }
 
 async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
   const modules: ProviderMap = {}
+
+  let gatehouseFeatures: Record<string, unknown> | undefined
+  if (enabled.includes('gatehouse')) {
+    gatehouseFeatures = await promptGatehouseFeatures()
+    modules.gatehouse = gatehouseFeatures
+  }
 
   for (const name of enabled) {
     switch (name) {
@@ -118,16 +181,14 @@ async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
         modules.vault = { provider, brand }
         break
       }
-      case 'gatehouse': {
-        const features = await promptGatehouseFeatures()
-        modules.gatehouse = { provider: await promptGatehouseProvider(), ...features }
-        break
-      }
       case 'courier': {
-        const cfg = await promptCourierEmailProvider()
+        const needsSms = gatehouseFeatures?.phoneNumber === true
+        const cfg = await promptCourierProvider(needsSms)
         if (cfg) modules.courier = cfg
         break
       }
+      case 'gatehouse':
+        break
       default:
         modules[name] = {}
     }
@@ -142,6 +203,10 @@ export async function collectProjectState(): Promise<ProjectState> {
 
   const projectName = await promptProjectName()
   const framework = await promptFramework()
+  const typescript = await promptTypeScript()
+  const tailwind = await promptTailwind()
+  const deployment = await promptDeployment()
+  const runtime = await promptRuntime(deployment)
   const selected = await promptModules()
   const modules = selected.length > 0 ? await promptModuleProviders(selected) : {}
   console.log('')
@@ -150,6 +215,8 @@ export async function collectProjectState(): Promise<ProjectState> {
     projectName,
     framework,
     modules,
-    frameworkAnswers: {},
+    frameworkAnswers: { typescript, tailwind },
+    deployment,
+    runtime,
   }
 }

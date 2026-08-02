@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   mockNextAdapter: {
-    prompt: vi.fn().mockResolvedValue({}),
     generate: vi.fn().mockResolvedValue(undefined),
   },
 }))
@@ -28,7 +27,6 @@ describe('generateProject', () => {
 
     await generateProject(state, '/target')
 
-    expect(mocks.mockNextAdapter.prompt).toHaveBeenCalledOnce()
     expect(mocks.mockNextAdapter.generate).toHaveBeenCalledWith(state, '/target')
   })
 
@@ -41,21 +39,5 @@ describe('generateProject', () => {
     }
 
     await expect(generateProject(state, '/target')).rejects.toThrow('Unsupported framework: "unknown"')
-  })
-
-  it('stores framework answers on the state', async () => {
-    const expectedAnswers = { useSrcDir: true }
-    mocks.mockNextAdapter.prompt.mockResolvedValue(expectedAnswers)
-
-    const state = {
-      projectName: 'my-app',
-      framework: 'next' as const,
-      modules: {},
-      frameworkAnswers: {},
-    }
-
-    await generateProject(state, '/target')
-
-    expect(state.frameworkAnswers).toEqual(expectedAnswers)
   })
 })

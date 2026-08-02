@@ -23,14 +23,17 @@ const baseState: ProjectState = {
   modules: {},
   deployment: 'vercel',
   frameworkAnswers: { typescript: true, tailwind: true },
+  runtime: 'node',
 }
 
 describe('scaffolding — real file output', () => {
   let tmpDir: string
   let projectDir: string
+  const originalUserAgent = process.env.npm_config_user_agent
 
   beforeEach(() => {
     vi.clearAllMocks()
+    process.env.npm_config_user_agent = 'pnpm/10.0.0'
     tmpDir = mkdtempSync(join(tmpdir(), 'tower-e2e-'))
 
     vi.mocked(execa).mockImplementation(async (bin: string) => {
@@ -53,6 +56,11 @@ describe('scaffolding — real file output', () => {
   })
 
   afterEach(() => {
+    if (originalUserAgent === undefined) {
+      delete process.env.npm_config_user_agent
+    } else {
+      process.env.npm_config_user_agent = originalUserAgent
+    }
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
@@ -61,7 +69,7 @@ describe('scaffolding — real file output', () => {
       ...baseState,
       modules: {
         vault: { provider: 'neon', brand: 'neon' },
-        gatehouse: { provider: 'better-auth', credentials: true, social: { google: {}, github: {} } },
+        gatehouse: { credentials: true, social: { google: {}, github: {} } },
       },
     }
     await nextAdapter.generate(state, tmpDir)
@@ -125,7 +133,7 @@ describe('scaffolding — real file output', () => {
   it('writes auth route and proxy for gatehouse', async () => {
     const state: ProjectState = {
       ...baseState,
-      modules: { gatehouse: { provider: 'better-auth', credentials: true } },
+      modules: { gatehouse: { credentials: true } },
     }
     await nextAdapter.generate(state, tmpDir)
 
@@ -141,11 +149,18 @@ describe('scaffolding — real file output', () => {
     expect(proxy).toContain('/sign-in')
   })
 
-  it('installs towerjs dependency', async () => {
+  it('installs towerjs and the tower CLI', async () => {
     await nextAdapter.generate(baseState, tmpDir)
     expect(execa).toHaveBeenCalledWith(
       'pnpm',
       ['add', 'towerjs'],
+      expect.objectContaining({
+        cwd: projectDir,
+      })
+    )
+    expect(execa).toHaveBeenCalledWith(
+      'pnpm',
+      ['add', '-D', '@towerjs/scribe'],
       expect.objectContaining({
         cwd: projectDir,
       })
@@ -156,8 +171,8 @@ describe('scaffolding — real file output', () => {
     const combos: [string, Partial<ProjectState['modules']>][] = [
       ['no modules', {}],
       ['vault only', { vault: { provider: 'neon', brand: 'neon' } }],
-      ['gatehouse only', { gatehouse: { provider: 'better-auth', credentials: true } }],
-      ['vault + gatehouse', { vault: { provider: 'pg', brand: 'supabase' }, gatehouse: { provider: 'better-auth' } }],
+      ['gatehouse only', { gatehouse: { credentials: true } }],
+      ['vault + gatehouse', { vault: { provider: 'pg', brand: 'supabase' }, gatehouse: { credentials: true } }],
     ]
 
     for (const [, modules] of combos) {
@@ -172,6 +187,91 @@ describe('scaffolding — real file output', () => {
       expect(config).toMatch(/export default defineTower\(/)
       expect(config).toMatch(/}\);?\s*$/)
       rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
+  it('writes consistent output for every typescript/tailwind/module/runtime combination', async () => {
+    const moduleCombos: Partial<ProjectState['modules']>[] = [
+      {},
+      { vault: { provider: 'neon', brand: 'neon' } },
+      { gatehouse: { credentials: true } },
+      {
+        vault: { provider: 'neon', brand: 'neon' },
+        gatehouse: { credentials: true },
+        courier: { email: { provider: 'resend', from: 'a@b.com' } },
+      },
+    ]
+    const tsChoices = [true, false]
+    const tailwindChoices = [true, false]
+    const runtimeChoices = ['node', 'edge'] as const
+
+    for (const useTs of tsChoices) {
+      for (const useTailwind of tailwindChoices) {
+        for (const runtime of runtimeChoices) {
+          for (const modules of moduleCombos) {
+            const state: ProjectState = {
+              ...baseState,
+              modules,
+              frameworkAnswers: { typescript: useTs, tailwind: useTailwind },
+              runtime,
+            }
+            await nextAdapter.generate(state, tmpDir)
+
+            expect(existsSync(join(projectDir, 'tower.config.ts'))).toBe(true)
+            expect(existsSync(join(projectDir, '.env.example'))).toBe(true)
+
+            const isEdge = runtime === 'edge'
+            const nextConfig = readFileSync(join(projectDir, 'next.config.ts'), 'utf-8')
+            if (isEdge) {
+              expect(nextConfig).toContain('withTowerEdge')
+            } else {
+              expect(nextConfig).not.toContain('withTowerEdge')
+            }
+
+            const prettier = readFileSync(join(projectDir, '.prettierrc'), 'utf-8')
+            expect(prettier).toContain('prettier-plugin-organize-imports')
+            if (useTailwind) {
+              expect(prettier).toContain('prettier-plugin-tailwindcss')
+              expect(prettier).toContain('prettier-plugin-tailwindcss-canonical-classes')
+            } else {
+              expect(prettier).not.toContain('prettier-plugin-tailwindcss')
+              expect(prettier).not.toContain('tailwindcss-canonical')
+            }
+
+            const hasGatehouse = Boolean(modules.gatehouse)
+            expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(hasGatehouse)
+            expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'))).toBe(hasGatehouse)
+            expect(existsSync(join(projectDir, 'src', 'lib', 'auth', 'actions.ts'))).toBe(hasGatehouse)
+
+            const towerAddCalls = vi.mocked(execa).mock.calls.filter(
+              ([bin, args]) => bin === 'pnpm' && Array.isArray(args) && args[0] === 'add',
+            )
+            const gatehouseDirectDep = towerAddCalls.some(([, args]) =>
+              (args as string[]).includes('@towerjs/gatehouse'),
+            )
+            expect(gatehouseDirectDep).toBe(hasGatehouse)
+
+            const edgeDevDep = towerAddCalls.some(
+              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/edge'),
+            )
+            expect(edgeDevDep).toBe(isEdge)
+
+            const scribeDevDep = towerAddCalls.some(
+              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/scribe'),
+            )
+            expect(scribeDevDep).toBe(true)
+
+            const tailwindPluginInstall = vi.mocked(execa).mock.calls.some(
+              ([bin, args]) =>
+                bin === 'pnpm' && Array.isArray(args) && (args as string[]).includes('prettier-plugin-tailwindcss'),
+            )
+            expect(tailwindPluginInstall).toBe(useTailwind)
+
+            rmSync(projectDir, { recursive: true, force: true })
+            vi.clearAllMocks()
+          }
+        }
+      }
     }
   })
 })

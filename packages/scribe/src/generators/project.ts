@@ -14,8 +14,5 @@ export async function generateProject(state: ProjectState, targetDir: string): P
     throw new Error(`Unsupported framework: "${state.framework}". ` + 'Only Next.js is supported in this version.')
   }
 
-  const frameworkAnswers = await adapter.prompt()
-  state.frameworkAnswers = frameworkAnswers
-
   await adapter.generate(state, targetDir)
 }

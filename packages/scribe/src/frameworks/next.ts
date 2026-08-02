@@ -1,10 +1,10 @@
 import { randomBytes } from 'node:crypto'
-import { select } from '@inquirer/prompts'
 import { execa } from 'execa'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { FrameworkAdapter } from './adapter.js'
 import type { ProjectState } from '../state.js'
+import { detectPackageManager, nextAppFlag, addCommand } from '../package-manager.js'
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -13,30 +13,12 @@ export function capitalize(s: string): string {
 export const nextAdapter: FrameworkAdapter = {
   name: 'next',
 
-  async prompt() {
-    const typescript = await select<boolean>({
-      message: 'TypeScript?',
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-    })
-
-    const tailwind = await select<boolean>({
-      message: 'Tailwind CSS?',
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-    })
-
-    return { typescript, tailwind }
-  },
-
   async generate(state: ProjectState, targetDir: string) {
     const answers = state.frameworkAnswers as { typescript?: boolean; tailwind?: boolean }
     const useTs = answers.typescript !== false
     const useTailwind = answers.tailwind === true
+    const isEdge = state.runtime === 'edge'
+    const pm = detectPackageManager()
 
     const flags: string[] = [
       state.projectName,
@@ -45,14 +27,15 @@ export const nextAdapter: FrameworkAdapter = {
       '--src-dir',
       '--import-alias',
       '@/*',
-      '--use-pnpm',
-      '--no-turbopack',
+      '--no-react-compiler',
+      '--agents-md',
+      nextAppFlag(pm),
     ]
 
     if (useTs) {
-      flags.push('--typescript')
+      flags.push('--ts')
     } else {
-      flags.push('--javascript')
+      flags.push('--js')
     }
 
     if (useTailwind) {
@@ -69,6 +52,9 @@ export const nextAdapter: FrameworkAdapter = {
     const projectDir = join(targetDir, state.projectName)
 
     await writeFile(join(projectDir, 'tower.config.ts'), towerConfig(state))
+    if (isEdge) {
+      await writeFile(join(projectDir, 'next.config.ts'), nextConfig())
+    }
     await writeFile(join(projectDir, '.env.example'), envExample(state))
     if (state.modules.gatehouse || state.modules.vault) {
       const envLines: string[] = []
@@ -103,16 +89,30 @@ export const nextAdapter: FrameworkAdapter = {
     }
 
     await writeFile(join(projectDir, '.prettierrc'), prettierConfig(useTailwind))
-    await writeFile(join(projectDir, 'AGENTS.md'), agentsMd(state))
+
+    const agentsPath = join(projectDir, 'AGENTS.md')
+    const generated = await readFile(agentsPath, 'utf8').catch(() => '')
+    const towerSection = agentsMd(state)
+    await writeFile(agentsPath, generated + '\n\n' + towerSection)
 
     const towerDeps: string[] = ['towerjs']
-    await execa('pnpm', ['add', ...towerDeps], { cwd: projectDir, stdio: 'inherit' })
+    if (state.modules.gatehouse) {
+      towerDeps.push('@towerjs/gatehouse')
+    }
+    await execa(pm, [...addCommand(pm).slice(1), ...towerDeps], { cwd: projectDir, stdio: 'inherit' })
+
+    const cliDevDeps: string[] = ['@towerjs/scribe']
+    await execa(pm, [...addCommand(pm, true).slice(1), ...cliDevDeps], { cwd: projectDir, stdio: 'inherit' })
+
+    if (isEdge) {
+      await execa(pm, [...addCommand(pm, true).slice(1), '@towerjs/edge'], { cwd: projectDir, stdio: 'inherit' })
+    }
 
     const prettierDeps: string[] = ['prettier', 'prettier-plugin-organize-imports']
     if (useTailwind) {
       prettierDeps.push('prettier-plugin-tailwindcss', 'prettier-plugin-tailwindcss-canonical-classes')
     }
-    await execa('pnpm', ['add', '-D', ...prettierDeps], { cwd: projectDir, stdio: 'inherit' })
+    await execa(pm, [...addCommand(pm, true).slice(1), ...prettierDeps], { cwd: projectDir, stdio: 'inherit' })
   },
 }
 
@@ -181,6 +181,13 @@ ${modules}
 
 function authRoute(): string {
   return `export { GET, POST } from "towerjs/gatehouse/next";
+`
+}
+
+function nextConfig(): string {
+  return `import { withTowerEdge } from "@towerjs/edge";
+
+export default withTowerEdge({});
 `
 }
 

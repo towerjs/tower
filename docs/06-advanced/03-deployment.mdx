@@ -42,9 +42,9 @@ vault: {
 }
 ```
 
-### 3. Edge Runtime
+### 3. Edge Runtime (optional)
 
-The Gatehouse auth proxy runs on Edge. If using additional Edge functions:
+Only needed if you deploy to an edge runtime (Vercel Edge, Cloudflare Workers). The Node.js runtime needs no extra config. For edge deployments, bundle the Tower config for Edge functions:
 
 ```tsx filename="next.config.ts"
 import { withTowerEdge } from '@towerjs/edge'

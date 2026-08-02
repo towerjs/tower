@@ -43,29 +43,36 @@ Add Tower to an existing Next.js project:
 <CodeTabs>
   <CodeTab title="pnpm">
   ```bash
-  pnpm add towerjs
-  pnpm add -D @towerjs/edge
+  pnpm add towerjs @towerjs/gatehouse
   ```
   </CodeTab>
   <CodeTab title="npm">
   ```bash
-  npm install towerjs
-  npm install -D @towerjs/edge
+  npm install towerjs @towerjs/gatehouse
   ```
   </CodeTab>
   <CodeTab title="yarn">
   ```bash
-  yarn add towerjs
-  yarn add -D @towerjs/edge
+  yarn add towerjs @towerjs/gatehouse
   ```
   </CodeTab>
   <CodeTab title="bun">
   ```bash
-  bun add towerjs
-  bun add -D @towerjs/edge
+  bun add towerjs @towerjs/gatehouse
   ```
   </CodeTab>
 </CodeTabs>
+
+> **Edge runtime only** — `@towerjs/edge` is only needed if you deploy to an edge runtime (Vercel Edge, Cloudflare Workers). Most apps run on the Node.js runtime and can skip it. If you do use an edge runtime, install it and wrap `next.config.ts`:
+>
+> ```bash
+> pnpm add -D @towerjs/edge
+> ```
+>
+> ```tsx filename="next.config.ts"
+> import { withTowerEdge } from '@towerjs/edge'
+> export default withTowerEdge({})
+> ```
 
 ### 1. Configure tower.config.ts
 
@@ -87,15 +94,7 @@ export default defineTower({
 })
 ```
 
-### 2. Configure next.config.ts
-
-```tsx filename="next.config.ts"
-import { withTowerEdge } from '@towerjs/edge'
-
-export default withTowerEdge({})
-```
-
-### 3. Set up auth middleware
+### 2. Set up auth middleware
 
 ```tsx filename="src/proxy.ts"
 import { gatehouse } from '@towerjs/gatehouse'
@@ -111,13 +110,13 @@ export const proxy = handler
 export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] }
 ```
 
-### 4. Add auth route handler
+### 3. Add auth route handler
 
 ```tsx filename="src/app/api/auth/[...all]/route.ts"
 export { GET, POST } from 'towerjs/gatehouse/next'
 ```
 
-### 5. Create server actions
+### 4. Create server actions
 
 ```tsx filename="src/app/actions.ts"
 'use server'
@@ -129,7 +128,7 @@ export {
 } from 'towerjs/gatehouse/actions'
 ```
 
-### 6. Run migrations
+### 5. Run migrations
 
 ```bash
 npx tower migrate
@@ -137,7 +136,7 @@ npx tower migrate
 
 This creates all auth tables (users, sessions, accounts, organizations, etc.).
 
-### 7. Use in server components
+### 6. Use in server components
 
 ```tsx
 import { gatehouse } from 'towerjs/gatehouse'
@@ -145,6 +144,7 @@ import { gatehouse } from 'towerjs/gatehouse'
 export default async function Dashboard() {
   const session = await gatehouse.getSession()
   if (!session) return <p>Not signed in</p>
+
   return <p>Welcome {session.user.name}</p>
 }
 ```

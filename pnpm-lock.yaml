@@ -197,12 +197,33 @@ importers:
 
   packages/scribe:
     dependencies:
+      '@inquirer/core':
+        specifier: ^11.2.1
+        version: 11.2.1(@types/node@26.1.1)
       '@inquirer/prompts':
         specifier: ^8.5.2
         version: 8.5.2(@types/node@26.1.1)
+      '@inquirer/type':
+        specifier: ^4.0.7
+        version: 4.0.7(@types/node@26.1.1)
+      '@towerjs/courier':
+        specifier: workspace:*
+        version: link:../courier
+      '@towerjs/foundation':
+        specifier: workspace:*
+        version: link:../foundation
+      '@towerjs/gatehouse':
+        specifier: workspace:*
+        version: link:../gatehouse
+      '@towerjs/vault':
+        specifier: workspace:*
+        version: link:../vault
       execa:
         specifier: ^10.0.0
         version: 10.0.0
+      jiti:
+        specifier: ^2.4.2
+        version: 2.7.0
     devDependencies:
       '@types/node':
         specifier: ^26
@@ -225,9 +246,6 @@ importers:
       '@towerjs/vault':
         specifier: workspace:*
         version: link:../vault
-      jiti:
-        specifier: ^2.4.2
-        version: 2.7.0
     devDependencies:
       '@types/node':
         specifier: ^26.1.1
