@@ -1,0 +1,139 @@
+---
+title: "Agents"
+description: "AI agents with tools, Tower service access, and conversation memory."
+---
+
+Agents are configured AI entities with instructions, tools, and a model. Unlike a bare `chat` call, an agent carries a system persona and can act on the application through tools.
+
+## Defining an Agent
+
+```tsx
+import { agent, tool } from "towerjs/sorcerer"
+
+const supportAgent = agent({
+  name: "support",
+
+  model: "anthropic:claude-sonnet-4",
+
+  instructions: `
+    You are a helpful customer support agent.
+    Always check the customer's account before creating a ticket.
+  `,
+
+  tools: {
+    searchDocs: tool({
+      description: "Search documentation",
+      execute: async (query: string) => {
+        return searchDocs(query)
+      },
+    }),
+
+    createTicket: tool({
+      description: "Create a support ticket",
+
+      execute: async ({
+        subject,
+        body,
+      }) => {
+        return createTicket({
+          subject,
+          body,
+        })
+      },
+    }),
+  },
+})
+```
+
+Agents provide:
+
+* tool access
+* instructions
+* model configuration
+* conversation handling
+* application context
+
+## Running an Agent
+
+```tsx
+const response = await supportAgent.run({
+  input: "Why was I charged twice?",
+})
+```
+
+Agents can also stream responses:
+
+```tsx
+const stream = await supportAgent.stream({
+  input: "Explain how authentication works",
+})
+```
+
+## Application Context
+
+This is where Sorcerer differs from using the AI SDK directly.
+
+An agent can integrate with Tower services through the application container.
+
+```tsx
+const projectAgent = agent({
+  name: "project-assistant",
+
+  tools: {
+    projects: vault.tool("projects"),
+
+    users: gatehouse.tool("users"),
+
+    files: archive.tool("files"),
+
+    events: beacon.tool("emit"),
+  },
+})
+```
+
+This allows agents to become native parts of the application instead of isolated AI integrations.
+
+A Tower agent can understand:
+
+* the current user
+* application permissions
+* database access
+* stored files
+* realtime events
+* application workflows
+
+## Conversations
+
+Agents can maintain conversation state:
+
+```tsx
+const conversation = supportAgent.conversation()
+
+await conversation.send(
+  "What is my current subscription?"
+)
+
+await conversation.send(
+  "Can I upgrade?"
+)
+
+const summary = conversation.summary()
+```
+
+Conversation storage can be configured with different memory backends.
+
+```tsx
+import { memory } from "towerjs/sorcerer"
+
+const supportAgent = agent({
+  memory: memory.inMemory(),
+
+  // memory: memory.vault(),
+})
+```
+
+Available memory providers:
+
+* in-memory sessions
+* Vault database storage
+* external storage providers

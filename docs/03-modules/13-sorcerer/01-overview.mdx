@@ -1,0 +1,158 @@
+---
+title: "Sorcerer"
+description: "AI application layer for agents, chat, streaming, and intelligent features."
+badge: "Coming Soon"
+---
+
+> **Status: Planned** — Sorcerer is not yet implemented. This document describes the intended vision.
+
+## Vision
+
+Sorcerer is Tower's AI application layer.
+
+Sorcerer abstracts AI application architecture, not AI providers. The AI SDK already solved the provider problem — Sorcerer builds the Tower architecture on top of it: agents with access to Tower services, typed AI workflows, conversation management, and headless React primitives for building AI interfaces.
+
+> Models are referenced directly. Sorcerer does not abstract providers; it abstracts how AI is integrated into a Tower application.
+
+It is to AI what Vault is to databases — the opinionated Tower way of building AI features. Vault does not replace Postgres, and Sorcerer does not replace model providers. The replaceable engine underneath is not a single AI provider; it is the AI SDK runtime.
+
+Sorcerer adds the application-level conventions that make AI features feel like native parts of a Tower application without inventing a second model registry.
+
+## Architecture
+
+```
+Sorcerer
+  |
+  +-- Tower AI API
+  |     +-- generate
+  |     +-- chat
+  |     +-- agent
+  |     +-- workflow
+  |     +-- tools
+  |
+  +-- Tower Integration
+  |     +-- Vault
+  |     +-- Gatehouse
+  |     +-- Archive
+  |     +-- Beacon
+  |     +-- Crane
+  |     +-- Watchtower
+  |
+  +-- Headless React
+  |     +-- Chat primitives
+  |     +-- Message primitives
+  |     +-- Prompt input
+  |     +-- Streamdown
+  |
+  +-- AI SDK runtime
+        +-- Model providers
+        +-- Streaming
+        +-- Tool calling
+        +-- Tool execution
+```
+
+The AI SDK is the underlying runtime — an implementation detail, not the product. Sorcerer adds Tower-specific concepts like application context, service access, persistence, observability, and reusable AI interface primitives. Models are referenced directly through the AI SDK's provider ecosystem, never through a Tower-specific naming system.
+
+## Environment
+
+Sorcerer uses the Vercel AI SDK internally to connect to AI providers.
+
+Configure providers using their standard environment variables:
+
+```env
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+OPENROUTER_API_KEY=
+```
+
+Then reference models directly:
+
+```tsx
+const response = await generate({
+  model: "openai:gpt-5",
+  prompt: "Write a summary",
+})
+```
+
+Sorcerer does not define its own provider system. Any provider supported by the AI SDK can be used directly. Model names like `openai:gpt-5`, `anthropic:claude-sonnet-4`, and `openrouter:deepseek-chat` are already the ecosystem standard — Sorcerer does not invent a second model registry.
+
+Applications that want to avoid repeating model strings can define their own constants in application code:
+
+```ts
+const models = {
+  support: "anthropic:claude-sonnet-4",
+  fast: "openai:gpt-5-mini",
+}
+
+const supportAgent = agent({
+  model: models.support,
+})
+```
+
+But that is application code, not Tower config. Sorcerer does not decide what "smart" means — the application does.
+
+## Guides
+
+* [Chat](/docs/sorcerer/chat) — conversations, streaming, and one-shot generation
+* [Agents](/docs/sorcerer/agents) — agents with tools, application context, and memory
+* [Workflows](/docs/sorcerer/workflows) — structured multi-step AI processes
+* [Headless AI UI](/docs/sorcerer/headless-ui) — React primitives for building AI interfaces
+
+## Integration with Tower
+
+| Module          | Integration                                                                   |
+| --------------- | ----------------------------------------------------------------------------- |
+| **Vault**       | Persist conversations, provide database-backed tools, store AI-generated data |
+| **Gatehouse**   | Provide user identity, permissions, and authorization-aware tools             |
+| **Archive**     | Provide file attachments, document retrieval, and RAG sources                 |
+| **Beacon**      | Stream AI events and realtime responses                                       |
+| **Crane**       | Run long-running AI workflows as background jobs                              |
+| **Messenger**   | Send AI-generated emails, SMS, and notifications                              |
+| **Observatory** | Trace agent runs, tool calls, latency, and evaluations                        |
+| **Watchtower**  | Monitor AI usage, failures, and performance                                   |
+
+## Planned Features
+
+* **Multi-agent orchestration** — agents that delegate tasks to other agents
+* **Human-in-the-loop** — pause workflows for approval before continuing
+* **Embeddings and RAG** — native retrieval workflows with Vault integration
+* **Rate limiting** — token and request limits per application or agent
+* **Agent observability** — full traces of reasoning, tools, and execution
+* **Evaluations** — test agents and AI workflows automatically
+* **Voice interfaces** — realtime voice input and output support
+
+## Philosophy
+
+Sorcerer follows the same principle as the rest of Tower:
+
+> Provide the Tower way of building applications while allowing the underlying technology to evolve.
+
+Sorcerer abstracts AI application architecture, not AI providers:
+
+> Models are referenced directly. Sorcerer does not abstract providers; it abstracts how AI is integrated into a Tower application.
+
+The Vercel AI SDK handles the rapidly changing AI ecosystem. Sorcerer provides the stable application architecture around it, without inventing a Tower-specific model registry.
+
+Just as Vault does not replace Postgres, Sorcerer does not replace OpenAI, Anthropic, or Google:
+
+```text
+Application
+    ↓
+Sorcerer
+    ↓
+Vercel AI SDK
+    ↓
+OpenAI / Anthropic / OpenRouter / Google
+```
+
+The replaceable engine underneath is the AI SDK runtime, not the AI provider.
+
+Instead of every application inventing its own:
+
+* agent architecture
+* conversation storage
+* AI UI patterns
+* tool integration
+* application context
+
+Sorcerer provides a consistent way to build AI-powered Tower applications.

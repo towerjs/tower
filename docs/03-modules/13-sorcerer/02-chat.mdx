@@ -1,0 +1,76 @@
+---
+title: "Chat"
+description: "Conversational AI with one-shot generation, streaming, and realtime responses."
+---
+
+Chat covers the core conversational APIs in Sorcerer: one-shot generation with `generate`, conversation turns with `chat`, and streaming responses.
+
+## Generate
+
+For one-shot AI generation without conversations or tools:
+
+```tsx
+import { generate } from "towerjs/sorcerer"
+
+const { text } = await generate({
+  model: "openai:gpt-5",
+  prompt: "Write a haiku about databases",
+})
+```
+
+Generate is the simplest Sorcerer API for AI-powered features.
+
+Use it for:
+
+* text generation
+* summarization
+* classification
+* extraction
+* structured output
+
+## Chat
+
+For conversational AI experiences:
+
+```tsx
+import { chat } from "towerjs/sorcerer"
+
+const response = await chat({
+  model: "openai:gpt-5",
+  messages: [
+    {
+      role: "user",
+      content: "Summarize this document",
+    },
+  ],
+})
+```
+
+Chat provides the foundation for building:
+
+* chat interfaces
+* assistants
+* copilots
+* AI-powered features inside applications
+
+## Streaming
+
+Sorcerer provides streaming APIs built on top of the AI SDK.
+
+```tsx
+const stream = await chat.stream({
+  model: "anthropic:claude-sonnet-4",
+  messages,
+})
+
+return new Response(stream)
+```
+
+Streaming works with Tower's application architecture, allowing responses to be integrated with:
+
+* React interfaces
+* Beacon realtime communication
+* Watchtower observability
+* application-specific workflows
+
+For the React side of chat — message state, prompt input, and streaming-aware rendering — see [Headless AI UI](/docs/sorcerer/headless-ui).
