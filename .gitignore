@@ -6,6 +6,7 @@ dist
 *.tsbuildinfo
 .env
 package-lock.json
+.playwright-mcp
 
 # Build artifacts in source directories
 *.js
