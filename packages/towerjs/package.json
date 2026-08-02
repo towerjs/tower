@@ -57,9 +57,6 @@
       "default": "./dist/runtime.js"
     }
   },
-  "bin": {
-    "tower": "./dist/cli.js"
-  },
   "files": [
     "dist"
   ],
@@ -78,7 +75,6 @@
     "@towerjs/vault": "workspace:*",
     "@towerjs/gatehouse": "workspace:*",
     "@towerjs/courier": "workspace:*",
-    "@towerjs/blueprint": "workspace:*",
-    "jiti": "^2.4.2"
+    "@towerjs/blueprint": "workspace:*"
   }
 }
