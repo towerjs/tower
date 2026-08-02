@@ -1,0 +1,92 @@
+---
+title: "Social Login"
+description: "Sign in with Google, GitHub, and other OAuth providers — plus account linking."
+---
+
+Social login lets users authenticate with their existing Google or GitHub account. The provider does the heavy lifting; Gatehouse creates the session when the OAuth callback completes.
+
+## Enable
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  appName: 'My App',
+  social: { google: {}, github: {} },
+}
+```
+
+Credentials resolve automatically from environment variables:
+
+```bash
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+```
+
+## Add the sign-in buttons
+
+```tsx filename="app/sign-in/social-buttons.tsx"
+'use client'
+
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+
+export function SocialButtons() {
+  return (
+    <div>
+      <button onClick={() => gatehouseClient.signIn.social({ provider: 'google' })}>
+        Continue with Google
+      </button>
+      <button onClick={() => gatehouseClient.signIn.social({ provider: 'github' })}>
+        Continue with GitHub
+      </button>
+    </div>
+  )
+}
+```
+
+The callback is handled by the mounted auth API at `/api/auth/callback/google` (and `/api/auth/callback/github`) — no extra route setup required.
+
+## After sign-in
+
+With the [proxy](/docs/gatehouse/protected-routes), `redirectAfterSignIn` controls where new sessions land:
+
+```tsx filename="src/proxy.ts"
+proxy({
+  redirectIfAuthenticated: '/dashboard',
+  redirectAfterSignIn: '/dashboard',
+})
+```
+
+## Provider options
+
+```tsx
+social: {
+  google: {
+    disableSignUp: true,          // only existing accounts
+    scope: ['openid', 'profile', 'email'],
+    overrideUserInfoOnSignIn: true, // refresh name/avatar each sign-in
+    redirectURI: 'https://app.example.com/api/auth/callback/google',
+  },
+},
+```
+
+Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disableSignUp`, `disableImplicitSignUp`, `overrideUserInfoOnSignIn`, `prompt`, `responseMode`.
+
+## Linking accounts
+
+Users can connect providers to their existing account so the same identity works everywhere:
+
+```tsx
+await gatehouse.identities.list()          // connected providers
+await gatehouse.identities.link('github')  // start linking flow
+await gatehouse.identities.unlink(id)      // disconnect
+```
+
+The `unlinkAccount` action takes `providerId` + `accountId`.
+
+## Notes
+
+- Social sign-in happens in the browser — it needs `gatehouseClient`, not a server action
+- New users get a fresh account with `emailVerified: true`; existing emails are matched by verified email
+- `disableSignUp` turns the provider into an invite-only sign-in method

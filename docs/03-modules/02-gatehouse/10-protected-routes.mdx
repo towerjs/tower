@@ -1,0 +1,84 @@
+---
+title: "Protected Routes"
+description: "Gate access with the proxy middleware; read the session in pages with requireUser() and getSession()."
+---
+
+Access control and session reads are two separate layers:
+
+- **The proxy middleware** gates access — it runs on every request, checks the session cookie, and redirects before anything renders.
+- **`requireUser()` / `getSession()`** read the session once the request is inside.
+
+## The proxy
+
+Access control belongs in the proxy middleware, not on individual pages or layouts. Pages render; the proxy decides who gets to see them.
+
+```tsx filename="src/proxy.ts"
+import { proxy } from 'towerjs/gatehouse/proxy'
+
+export default proxy({
+  public: ['/', '/sign-in', '/sign-up', '/docs'],
+  redirectIfAuthenticated: ['/sign-in', '/sign-up'],
+  redirectTo: '/sign-in',
+  redirectAfterSignIn: '/dashboard',
+})
+
+export const config = {
+  matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'],
+}
+```
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `public` | `string[]` | `['/']` | Paths reachable without a session (globs supported) |
+| `redirectIfAuthenticated` | `string \| string[]` | — | Paths that redirect to `redirectAfterSignIn` when signed in |
+| `redirectTo` | `string` | — | Where signed-out users go (default: allow through) |
+| `redirectAfterSignIn` | `string` | — | Where signed-in users land after a new sign-in |
+
+The proxy inspects the session cookie — it doesn't hit the database, so it stays fast on the edge.
+
+## Reading the session in pages
+
+Once the proxy has let a request through, pages read the session without any redirect logic — the proxy already handled it:
+
+```tsx filename="app/dashboard/page.tsx"
+import { gatehouse } from 'towerjs/gatehouse'
+
+export default async function Dashboard() {
+  const user = await gatehouse.requireUser() // signed in — the proxy made sure of it
+
+  return <h1>Welcome, {user.name}</h1>
+}
+```
+
+Pages that render both states use `getSession()`:
+
+```tsx
+const session = await gatehouse.getSession()
+const user = session?.user ?? null // null when signed out
+```
+
+Routes the proxy doesn't redirect are public by default.
+
+## Route handlers
+
+API routes sit outside page rendering — check per request:
+
+```tsx filename="app/api/me/route.ts"
+import { Gatehouse } from '@towerjs/gatehouse'
+
+export async function GET(request: Request) {
+  const gh = await Gatehouse.from(request)
+  const user = await gh.user()
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
+  return Response.json({ user })
+}
+```
+
+## Division of responsibility
+
+| Concern | Where it lives |
+| --- | --- |
+| Who can reach a route | The proxy middleware |
+| Who the current user is | `requireUser()` / `getSession()` in pages |
+| What a user may do | `can()` in server actions and route handlers — see [Authorization](/docs/gatehouse/authorization) |

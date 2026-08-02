@@ -1,0 +1,59 @@
+---
+title: "Passkeys"
+description: "Passwordless WebAuthn sign-in with device-bound keys."
+---
+
+Passkeys replace passwords with WebAuthn credentials stored on the user's device — Touch ID, Face ID, Windows Hello, or a security key. There's nothing to remember and nothing to phish.
+
+## Enable
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  appName: 'My App',
+  passkeys: true,
+}
+```
+
+## Register a passkey
+
+Passkey registration is a browser operation — it needs `gatehouseClient` and a signed-in user:
+
+```tsx filename="app/settings/passkeys/passkey-register.tsx"
+'use client'
+
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+
+export function RegisterPasskey() {
+  return (
+    <button onClick={() => gatehouseClient.passkey.addPasskey({ name: 'My MacBook' })}>
+      Add passkey
+    </button>
+  )
+}
+```
+
+## Sign in with a passkey
+
+```tsx
+await gatehouseClient.signIn.passkey()
+```
+
+The browser prompts for the device credential and the session is created on success.
+
+## Manage passkeys
+
+List, rename, and remove from the server:
+
+```tsx
+await gatehouse.passkeys.list()       // [{ id, name, createdAt }]
+await gatehouse.passkeys.update(id, { name })
+await gatehouse.passkeys.remove(id)
+```
+
+Actions: `updatePasskey` (`id`, `name`), `removePasskey` (`id`).
+
+## Notes
+
+- Users must already have a session to register a passkey — pair with email/password or magic links for first sign-in
+- Passkeys are device-bound, not syncable — users should register more than one

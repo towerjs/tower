@@ -1,0 +1,108 @@
+---
+title: "Authorization"
+description: "Permission checks with can(), roles, and ownership — scoped to users or organizations."
+---
+
+Authentication answers *who you are*; authorization answers *what you can do*. Gatehouse gives you `can()` for permission checks, plus roles for users and organizations.
+
+## `can()`
+
+The one function for permission checks:
+
+```tsx
+await gatehouse.can({ user, permission: 'project.update' })
+// boolean
+```
+
+- `user` — the user to check (from `getSession().user` or `requireUser()`)
+- `permission` — a `string` or `string[]`; an array is **any-of** (checks that the user has at least one)
+- `organizationId` — optional; when given, the check is scoped to the user's membership in that organization
+
+```tsx
+const user = await gatehouse.requireUser()
+
+if (await gatehouse.can({ user, permission: 'project.update' })) {
+  // ...
+}
+```
+
+For the signed-in user in their current context, the `userHasPermission` action takes `permission` and optional `organizationId`.
+
+## Where permissions come from
+
+A user's permissions are the union of:
+
+1. **User roles** — via `assignRole(userId, role)` (admin API), with `gatehouse.role`-style permissions
+2. **Organization roles** — the user's role inside the organization being checked, when `organizationId` is provided
+3. **Ad-hoc grants** — plugin-defined permissions evaluated by the adapter
+
+## A `requireCan` helper
+
+```tsx
+import { AuthorizationError } from '@towerjs/gatehouse'
+
+export async function requireCan(params) {
+  if (!(await gatehouse.can(params))) throw new AuthorizationError('Insufficient permissions')
+}
+```
+
+```tsx
+await requireCan({ user, permission: 'project.update' })
+```
+
+## Organization-scoped checks
+
+Combine with [organizations](/docs/gatehouse/organizations): check the user's role *inside* a specific organization.
+
+```tsx
+const canEdit = await gatehouse.can({
+  user,
+  permission: ['project.update', 'project.delete'],
+  organizationId: 'org_id',
+})
+```
+
+Create custom roles with permission maps and assign them via invites or members:
+
+```tsx
+await gatehouse.organizations.roles.create({
+  role: 'editor',
+  permission: { 'project': ['update'] },
+})
+
+await gatehouse.organizations.invitations.create('org_id', {
+  email: 'ada@example.com',
+  role: 'editor',
+})
+```
+
+Built-in organization roles: `owner`, `admin`, `member` — `owner` and `admin` imply all permissions in that organization.
+
+## User roles (admin)
+
+```tsx
+await gatehouse.admin.setRole({ userId, role: 'admin' })  // or any custom role
+await gatehouse.admin.hasPermission({ role: 'admin', permissions: ['user.delete'] })
+```
+
+Actions: `assignRole` (`userId`, `role`), `removeRole` (`userId`).
+
+## Ownership checks
+
+Role checks don't cover "is this *their* record". Check ownership separately:
+
+```tsx
+const project = await getProject(id)
+if (project.ownerId !== user.id) throw new AuthorizationError()
+```
+
+## Enforcement points
+
+| Where | How |
+| --- | --- |
+| Server actions | `await requireCan({ user, permission })` first line |
+| Route handlers | `Gatehouse.from(request)` then `can()` |
+| API keys | `apiKeys.verify()` with a permission map |
+| Pages | Render what the session allows — access is gated by the proxy, so pages don't redirect for auth |
+
+Fail closed: `can()` returns `false` on unknown permissions, and throw `AuthorizationError` (→ 403) rather than rendering partial UI.

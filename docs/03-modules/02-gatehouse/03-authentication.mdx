@@ -1,0 +1,50 @@
+---
+title: "Authentication"
+description: "The sign-in methods Gatehouse supports and how to wire each one into your app."
+---
+
+Gatehouse supports six ways to authenticate. Every method shares the same shape — enable it in `tower.config.ts`, then call it from a server action (for forms) or `gatehouseClient` (for client code).
+
+| Method | Config | Server call |
+| --- | --- | --- |
+| [Email & password](/docs/gatehouse/email-password) | `credentials` | `gatehouse.signIn.email()` |
+| [Social login](/docs/gatehouse/social-login) | `social` | `gatehouseClient.signIn.social()` |
+| [Magic links](/docs/gatehouse/magic-links) | `magicLinks` | `gatehouse.signIn.magicLink()` |
+| [Email OTP](/docs/gatehouse/email-password) | `emailVerification` (`method: 'otp'`) | `gatehouse.signIn.emailOtp()` |
+| [Phone OTP](/docs/gatehouse/magic-links) | `phoneNumber` | `gatehouse.signIn.phone()` |
+| [Passkeys](/docs/gatehouse/passkeys) | `passkeys` | `gatehouseClient.passkey.addPasskey()` |
+| [Two-factor](/docs/gatehouse/two-factor) | `twoFactor` | `gatehouse.totp.verify()` |
+
+## Two call styles
+
+**Forms** — the pre-built actions run on the server, take plain form fields, and return `{ ok }` or `{ error }`:
+
+```tsx filename="app/actions.ts"
+'use server'
+
+export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
+```
+
+See [Actions](/docs/gatehouse/api-reference/actions) for the full list.
+
+**Client code** — OAuth redirects, passkey registration, and session-aware UI need the browser:
+
+```tsx
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+
+const { data, error } = await gatehouseClient.signIn.email({ email, password })
+```
+
+## The flow
+
+1. User submits credentials
+2. Gatehouse verifies against the database, sends an email, or initiates an OAuth redirect
+3. On success a session cookie is set — `requireUser()` and `getSession()` now return the user
+4. On failure you get `{ error }` to render in the form
+
+Most methods are combinable — email/password plus two-factor plus passkeys can all be enabled at once.
+
+## Next steps
+
+- [Setup](/docs/gatehouse/setup) — if you haven't enabled the module yet
+- [Sessions](/docs/gatehouse/sessions) — what happens after sign-in

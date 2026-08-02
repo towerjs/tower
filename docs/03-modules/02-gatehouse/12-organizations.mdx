@@ -1,0 +1,119 @@
+---
+title: "Organizations"
+description: "Multi-tenant auth: organizations, invites, members, roles, and permission checks."
+---
+
+Organizations let users belong to multiple workspaces, each with its own members, roles, and permissions.
+
+## Enable
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  appName: 'My App',
+  organization: true,
+}
+```
+
+## The lifecycle
+
+**Create** — the creator becomes the owner:
+
+```tsx
+await gatehouse.organizations.create({ name: 'Acme', slug: 'acme' })
+```
+
+Action: `createOrganization` (`name`, `slug`).
+
+**Invite** — email invites with a role:
+
+```tsx
+await gatehouse.organizations.invitations.create('org_id', {
+  email: 'ada@example.com',
+  role: 'member',
+})
+```
+
+Action: `inviteMember` (`orgId`, `email`, `role`).
+
+**Accept** — the invitee accepts (or rejects) and joins:
+
+```tsx
+await gatehouse.organizations.invitations.accept(invitationId)
+await gatehouse.organizations.invitations.reject(invitationId)
+await gatehouse.organizations.invitations.cancel(invitationId)
+```
+
+Actions: `acceptInvitation` / `rejectInvitation` (`invitationId`), `cancelInvitation`.
+
+**Switch** — users work in one organization at a time:
+
+```tsx
+await gatehouse.organizations.setActive(organizationId)
+```
+
+Action: `setActiveOrganization` (`organizationId`).
+
+**Check** — `requireUser()` is per-user; query the active org for context:
+
+```tsx
+const orgs = await gatehouse.getOrganizations()      // memberships
+const org = await gatehouse.getOrganization(orgId)   // full: members + invitations
+```
+
+## Members
+
+```tsx
+await gatehouse.organizations.members.add(organizationId, userId, 'member')
+await gatehouse.organizations.members.update(organizationId, memberId, 'admin')
+await gatehouse.organizations.members.remove(organizationId, memberId)
+```
+
+Actions: `addMember` (`organizationId`, `email`, `role`), `updateMemberRole` (`memberId`, `role`), `removeMember` (`orgId`, `memberId`).
+
+## Custom roles
+
+```tsx
+await gatehouse.organizations.roles.create({
+  role: 'editor',
+  permission: { 'project': ['update'] },
+})
+```
+
+```tsx
+await gatehouse.organizations.roles.list(organizationId?)
+await gatehouse.organizations.roles.get(organizationId, 'editor')
+await gatehouse.organizations.roles.update(organizationId, 'editor', params)
+await gatehouse.organizations.roles.delete(organizationId, 'editor')
+```
+
+Actions: `createOrgRole` (`name`, `permissions`), `updateOrgRole` (`id`, `name`, `permissions`), `deleteOrgRole` (`id`).
+
+Built-in roles: `owner`, `admin`, `member` — see [Authorization](/docs/gatehouse/authorization) for permission semantics.
+
+## Permission checks
+
+```tsx
+await gatehouse.can({
+  user,
+  permission: 'project.update',
+  organizationId: 'org_id',   // scope the check to an org
+})
+```
+
+For the signed-in user in their active organization, the `userHasPermission` action takes `permission` + optional `organizationId`.
+
+## Invitation fields
+
+`OrganizationInvitation` carries `email`, `role`, `status` (`pending` / `accepted` / `rejected` / `canceled`), `inviterId`, `expiresAt`. List and inspect before rendering invite UI:
+
+```tsx
+await gatehouse.organizations.invitations.list(organizationId)
+await gatehouse.organizations.invitations.get(invitationId)
+```
+
+## Notes
+
+- Organization membership is separate from authentication — a signed-in user may belong to zero or many organizations
+- The active organization is per-user; remember it and pass `organizationId` explicitly for scoped operations
+- Deleting an organization removes memberships, invitations, and roles

@@ -1,0 +1,64 @@
+---
+title: "Two-Factor Authentication"
+description: "TOTP codes and backup codes for a second authentication step."
+---
+
+Add a second factor: after the password, users must enter a TOTP code from their authenticator app — or a backup code when they don't have the device.
+
+## Enable
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  appName: 'My App',
+  twoFactor: true,
+}
+```
+
+## Enabling 2FA for a user
+
+```tsx
+const { data } = await gatehouse.totp.enable(password)
+// data.totpURI    — feed to an authenticator app (QR code or manual entry)
+// data.backupCodes — one-time recovery codes, show them once
+```
+
+The `enableTwoFactor` action takes `password` and returns both in its response.
+
+## Sign-in
+
+Two steps on the server:
+
+```tsx
+await gatehouse.totp.verify({ code, trustDevice })
+```
+
+- `trustDevice` — skip 2FA for `trustedDevices` on this device
+- Untrusted or unverified sessions stay blocked from `requireUser()` until the code is verified
+
+Action: `verifyTwoFactor` (`code`, `trustDevice`).
+
+## Backup codes
+
+Users who lose their authenticator can fall back to recovery codes:
+
+```tsx
+await gatehouse.backupCodes.generate(password)  // new codes
+await gatehouse.backupCodes.verify(code)        // code is consumed on use
+```
+
+Actions: `generateBackupCodes` (`password`), `verifyBackupCode` (`code`).
+
+## Disabling 2FA
+
+```tsx
+await gatehouse.totp.disable(password)
+```
+
+Action: `disableTwoFactor` (`password`).
+
+## Notes
+
+- Check `user.twoFactorEnabled` to conditionally show 2FA UI in settings
+- `trustDevice` requires the `twoFactor.trustedDevices` configuration to persist
+- Backup codes are single-use — verify consumes them

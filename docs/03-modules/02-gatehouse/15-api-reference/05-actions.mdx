@@ -1,0 +1,180 @@
+---
+title: "Actions"
+description: "50+ pre-built server actions: wire auth straight into forms with no client code."
+---
+
+Gatehouse ships pre-built server actions for every auth operation. They run in an authenticated request context, take plain form fields, and return `{ ok: true }` or `{ error: string }` — ready for `useActionState`.
+
+## Usage
+
+Re-export them from your app's actions module:
+
+```tsx filename="app/actions.ts"
+'use server'
+
+export {
+  signIn, signUp, signOut,
+  updateProfile, changePassword,
+  createOrganization, inviteMember,
+  // ...any of the actions below
+} from 'towerjs/gatehouse/actions'
+```
+
+```tsx filename="app/sign-in/sign-in-form.tsx"
+'use client'
+
+import { useActionState } from 'react'
+import { signIn } from '@/app/actions'
+
+export function SignInForm() {
+  const [state, action, pending] = useActionState(signIn, undefined)
+
+  return (
+    <form action={action}>
+      {state?.error && <p role="alert">{state.error}</p>}
+      <input name="email" type="email" required />
+      <input name="password" type="password" required />
+      <button type="submit" disabled={pending}>Sign in</button>
+    </form>
+  )
+}
+```
+
+Field names map directly to `<input name="...">` attributes.
+
+## Sign in / sign up
+
+| Action | Form fields |
+| --- | --- |
+| `signIn` | `email`, `password` |
+| `signUp` | `name`, `email`, `password` |
+| `signOut` | — |
+| `refreshSession` | `refreshToken` |
+| `signInWithOTP` | `email` |
+| `signInWithPhone` | `phoneNumber` |
+| `requestMagicLink` | `email` |
+
+## Sessions
+
+| Action | Form fields |
+| --- | --- |
+| `revokeSession` | `token` |
+| `revokeOtherSessions` | — |
+| `revokeAllSessions` | — |
+
+## Account & password
+
+| Action | Form fields |
+| --- | --- |
+| `updateProfile` | `name` |
+| `deleteAccount` | `password` |
+| `setPassword` | `newPassword`, `currentPassword` |
+| `changeEmail` | `newEmail` |
+| `changePassword` | `currentPassword`, `newPassword` |
+| `verifyPassword` | `password` |
+| `requestPasswordReset` | `email` |
+| `resetPassword` | `newPassword`, `token` |
+
+## Email verification & OTP
+
+| Action | Form fields |
+| --- | --- |
+| `sendVerificationEmail` | `email` |
+| `verifyEmail` | `token` |
+| `sendVerificationOTP` | `email`, `type` |
+| `verifyVerificationOTP` | `email`, `otp` |
+| `verifyEmailOTP` | `email`, `otp` |
+| `forgotPasswordOTP` | `email` |
+| `resetPasswordOTP` | `email`, `otp`, `newPassword` |
+| `requestEmailChangeOTP` | `email`, `newEmail` |
+| `confirmEmailChangeOTP` | `email`, `newEmail`, `otp` |
+
+## Phone OTP
+
+| Action | Form fields |
+| --- | --- |
+| `sendPhoneOTP` | `phoneNumber` |
+| `verifyPhoneOTP` | `phoneNumber`, `otp` |
+| `requestPasswordResetPhoneOTP` | `phoneNumber` |
+| `resetPasswordPhoneOTP` | `phoneNumber`, `otp`, `newPassword` |
+
+## Two-factor
+
+| Action | Form fields |
+| --- | --- |
+| `enableTwoFactor` | `password` — returns `{ totpURI, backupCodes }` |
+| `verifyTwoFactor` | `code`, `trustDevice` |
+| `disableTwoFactor` | `password` |
+| `generateBackupCodes` | `password` — returns new codes |
+| `verifyBackupCode` | `code` |
+
+## Passkeys
+
+| Action | Form fields |
+| --- | --- |
+| `updatePasskey` | `id`, `name` |
+| `removePasskey` | `id` |
+
+## Admin
+
+| Action | Form fields |
+| --- | --- |
+| `createUser` | `name`, `email`, `password` |
+| `removeUser` | `userId` |
+| `adminUpdateUser` | `userId`, `name`, `email`, `role` |
+| `setUserPassword` | `userId`, `newPassword` |
+| `setRole` | `userId`, `role` |
+| `banUser` | `userId`, `banReason`, `banExpiresIn` |
+| `unbanUser` | `userId` |
+| `impersonateUser` | `userId` |
+| `stopImpersonating` | — |
+| `revokeUserSessions` | `userId` |
+| `userHasPermission` | `userId`, `permission`, `organizationId` |
+
+## Roles & permissions
+
+| Action | Form fields |
+| --- | --- |
+| `assignRole` | `userId`, `role` |
+| `removeRole` | `userId` |
+| `hasPermission` | `userId`, `permission`, `organizationId` |
+
+## API keys
+
+| Action | Form fields |
+| --- | --- |
+| `createApiKey` | `name`, `expiresIn` — returns the key once |
+| `updateApiKey` | `id`, `name` |
+| `deleteApiKey` | `id` |
+| `verifyApiKey` | `key` |
+| `deleteExpiredApiKeys` | — |
+
+## Organizations
+
+| Action | Form fields |
+| --- | --- |
+| `createOrganization` | `name`, `slug` |
+| `updateOrganization` | `id`, `name`, `slug` |
+| `deleteOrganization` | `id` |
+| `setActiveOrganization` | `organizationId` |
+| `leaveOrganization` | `organizationId` |
+| `createOrgRole` | `name`, `permissions` |
+| `updateOrgRole` | `id`, `name`, `permissions` |
+| `deleteOrgRole` | `id` |
+| `addMember` | `organizationId`, `email`, `role` |
+| `updateMemberRole` | `memberId`, `role` |
+| `removeMember` | `orgId`, `memberId` |
+| `inviteMember` | `orgId`, `email`, `role` |
+| `cancelInvitation` | `invitationId` |
+| `acceptInvitation` | `invitationId` |
+| `rejectInvitation` | `invitationId` |
+
+## Identities
+
+| Action | Form fields |
+| --- | --- |
+| `unlinkAccount` | `providerId`, `accountId` |
+
+## Error handling
+
+Actions return `{ error: string }` on failure and `{ ok: true }` on success (actions that return data — `enableTwoFactor`, `createApiKey`, `generateBackupCodes` — include it in the response). Render `state.error` in the form; no try/catch needed.

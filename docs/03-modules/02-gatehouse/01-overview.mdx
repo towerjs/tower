@@ -1,0 +1,55 @@
+---
+title: "Gatehouse"
+description: "Authentication module powered by Better Auth. Handles sign-in, sign-up, sessions, organizations, API keys, and more."
+---
+
+Gatehouse provides full-featured authentication with email/password, social login, passkeys, OTP, magic links, two-factor auth, organizations, and API keys.
+
+## What you get
+
+- **Multiple sign-in methods** — email/password, social (Google, GitHub), magic links, email OTP, phone OTP, and passkeys
+- **Sessions** — cookie sessions with sliding expiry, multi-device listing, and revocation
+- **Organizations** — multi-tenancy with invites, members, and custom roles
+- **Authorization** — `can()` permission checks for user, role, and organization scopes
+- **API keys** — scoped keys for programmatic access
+- **Admin** — user management, banning, impersonation
+- **Pre-built actions** — 50+ server actions wired straight into forms
+
+## How you use it
+
+The module surfaces on three layers:
+
+1. **The `gatehouse` singleton** — server-side access to sessions, users, and every operation:
+
+```tsx
+import { gatehouse } from 'towerjs/gatehouse'
+
+const user = await gatehouse.requireUser() // throws unless signed in
+const session = await gatehouse.getSession()
+```
+
+2. **Pre-built server actions** — ready-made `'use server'` actions for forms, re-exported from your app's actions module:
+
+```tsx filename="app/actions.ts"
+'use server'
+
+export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
+```
+
+3. **`gatehouseClient`** — a typed client for browser code (OAuth buttons, passkeys, `useSession`):
+
+```tsx
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+
+await gatehouseClient.signIn.social({ provider: 'google' })
+```
+
+## Where to go next
+
+- [Getting Started](/docs/gatehouse/setup) — install, configure, and sign in your first user
+- [Authentication](/docs/gatehouse/authentication) — the sign-in methods
+- [Protected Routes](/docs/gatehouse/protected-routes) — the proxy middleware gates access before pages render
+- [Sessions](/docs/gatehouse/sessions) — sessions, revocation, and the request context
+- [Organizations](/docs/gatehouse/organizations) — multi-tenant auth
+- [Authorization](/docs/gatehouse/authorization) — permission checks
+- [API Reference](/docs/gatehouse/api-reference) — the full module surface

@@ -1,0 +1,79 @@
+---
+title: "Magic Links"
+description: "Passwordless sign-in via emailed links — plus email and phone OTP."
+---
+
+Passwordless auth: users request a link, click it, and they're signed in. No passwords to manage.
+
+## Enable
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  appName: 'My App',
+  magicLinks: true,
+}
+```
+
+The email goes through [Courier](/docs/courier) when configured — no callback setup needed. Links are single-use and expire.
+
+## Request the link
+
+```tsx filename="app/sign-in/magic-link-form.tsx"
+'use client'
+
+import { useActionState } from 'react'
+import { requestMagicLink } from '@/app/actions'
+
+export function MagicLinkForm() {
+  const [state, action, pending] = useActionState(requestMagicLink, undefined)
+
+  return (
+    <form action={action}>
+      {state?.ok ? (
+        <p>Check your email for the sign-in link.</p>
+      ) : (
+        <>
+          {state?.error && <p role="alert">{state.error}</p>}
+          <input name="email" type="email" required placeholder="Email" />
+          <button type="submit" disabled={pending}>Email me a link</button>
+        </>
+      )}
+    </form>
+  )
+}
+```
+
+## Custom callback URL
+
+The `requestMagicLink` action defaults to the current page. To send users somewhere specific, call the server API directly:
+
+```tsx
+await gatehouse.signIn.magicLink({
+  email: 'ada@example.com',
+  callbackURL: '/dashboard',
+})
+```
+
+## Email & phone OTP
+
+Magic-link-adjacent: six-digit codes instead of links. Email codes live under `emailVerification` (see [Email & password](/docs/gatehouse/email-password)); setting `method: 'otp'` also enables one-time-code sign-in:
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  emailVerification: { method: 'otp' },
+  phoneNumber: true,
+}
+```
+
+```tsx
+await gatehouse.signIn.emailOtp({ email, code })     // email OTP sign-in
+await gatehouse.signIn.phone({ phoneNumber, code })  // phone OTP sign-in
+```
+
+Actions: `signInWithOTP` (`email`), `signInWithPhone` (`phoneNumber`). OTP emails and SMS route through Courier; codes are single-use and expire.
+
+## Notes
+
+- Magic links are email-first: if no account exists for the email, one is created on first sign-in (configurable)
+- Combine with [two-factor](/docs/gatehouse/two-factor) for a second step

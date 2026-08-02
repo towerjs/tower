@@ -1,0 +1,110 @@
+---
+title: "Setup"
+description: "Install Gatehouse, mount the auth API, run migrations, and sign in your first user."
+---
+
+Get authentication running end to end: enable the module, mount the API, migrate, and sign in your first user.
+
+## 1. Enable the module
+
+Add `gatehouse` to `tower.config.ts`. Credentials and email verification are good defaults to start with:
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  appName: 'My App',
+  credentials: { enabled: true },
+  emailVerification: { sendOnSignUp: true, autoSignInAfterVerification: true },
+}
+```
+
+## 2. Set environment variables
+
+```bash
+# Required — your app's base URL
+baseURL=http://localhost:3000
+
+# Required — signs session cookies. Generate with:
+# openssl rand -base64 32
+BETTER_AUTH_SECRET=your-secret
+```
+
+Social provider credentials (`GOOGLE_CLIENT_ID`, `GITHUB_CLIENT_ID`, etc.) are picked up automatically from the environment when you enable social login.
+
+## 3. Mount the auth API
+
+The framework adapter ships the route handlers — mount them where your framework expects:
+
+```tsx filename="app/api/auth/[...all]/route.ts"
+import { GET, POST } from 'towerjs/gatehouse/next'
+
+export { GET, POST }
+```
+
+This mounts the full Better Auth API under `/api/auth` — the `gatehouseClient` in your browser code talks to it.
+
+## 4. Run migrations
+
+The auth tables (users, sessions, accounts, organizations, ...) live in the Vault database:
+
+```tsx filename="scripts/migrate.ts"
+import { initTower } from 'towerjs/runtime'
+import { Gatehouse } from '@towerjs/gatehouse'
+
+async function main() {
+  const tower = await initTower()
+  await Gatehouse.migrate()
+  await tower.close()
+}
+
+main()
+```
+
+```bash
+npx tsx scripts/migrate.ts
+```
+
+## 5. Create your first user
+
+Sign up through the client — or from the server:
+
+```tsx
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+
+await gatehouseClient.signUp.email({
+  name: 'Ada',
+  email: 'ada@example.com',
+  password: 'password123',
+})
+```
+
+## 6. Protect routes and verify
+
+Route access belongs in the proxy middleware — see [Protected Routes](/docs/gatehouse/protected-routes):
+
+```tsx filename="src/proxy.ts"
+import { proxy } from 'towerjs/gatehouse/proxy'
+
+export default proxy({
+  public: ['/', '/sign-in', '/sign-up'],
+  redirectTo: '/sign-in',
+})
+```
+
+Signed-out visitors are redirected to `/sign-in` before any page renders. The session read in your dashboard then just works:
+
+```tsx filename="app/dashboard/page.tsx"
+import { gatehouse } from 'towerjs/gatehouse'
+
+export default async function Dashboard() {
+  const user = await gatehouse.requireUser()
+
+  return <h1>Welcome, {user.name}</h1>
+}
+```
+
+## Next steps
+
+- [Authentication flows](/docs/gatehouse/authentication) — add social login, magic links, passkeys, 2FA
+- [Protected routes](/docs/gatehouse/protected-routes) — the proxy middleware
+- [Organizations](/docs/gatehouse/organizations) — multi-tenant auth

@@ -1,0 +1,103 @@
+---
+title: "Client API"
+description: "gatehouseClient for browser code: sign-in, sign-up, session hooks, passkeys, and OAuth."
+---
+
+The client API is a typed Better Auth client for browser code. Import it from the client entry:
+
+```tsx
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+```
+
+It talks to the auth API mounted at `/api/auth` and keeps a session cache on the client.
+
+## Sign in / up
+
+```tsx
+await gatehouseClient.signUp.email({
+  name: 'Jasper',
+  email: 'jasper@example.com',
+  password: 'password123',
+})
+
+await gatehouseClient.signIn.email({ email, password })
+await gatehouseClient.signIn.social({ provider: 'google' })
+await gatehouseClient.signIn.magicLink({ email })
+await gatehouseClient.signOut()
+```
+
+Results follow Better Auth's shape — `{ data, error }`:
+
+```tsx
+const { data, error } = await gatehouseClient.signIn.email({ email, password })
+
+if (error) {
+  console.error(error.message)
+} else {
+  console.log(data.user) // GatehouseUser
+}
+```
+
+## Session hook
+
+`useSession()` subscribes to the session cache for client components:
+
+```tsx
+'use client'
+
+import { gatehouseClient } from 'towerjs/gatehouse/client'
+
+function ProfileButton() {
+  const { data: session, isPending } = gatehouseClient.useSession()
+
+  if (isPending) return null
+  if (!session) return <a href="/sign-in">Sign in</a>
+
+  return <button>{session.user.name}</button>
+}
+```
+
+Use `useSession` for presentational decisions. For authoritative checks (redirects, permissions), read the session on the server with [`getSession()`](/docs/gatehouse/sessions).
+
+## Passkeys
+
+Passkey registration and sign-in are browser operations:
+
+```tsx
+await gatehouseClient.passkey.addPasskey({ name: 'My MacBook' })
+await gatehouseClient.signIn.passkey()
+```
+
+See [Passkeys](/docs/gatehouse/passkeys).
+
+## Two-factor
+
+```tsx
+const { data, error } = await gatehouseClient.twoFactor.enable({ password })
+// data.totpURI, data.backupCodes
+
+await gatehouseClient.twoFactor.verify({ code, trustDevice })
+await gatehouseClient.twoFactor.disable({ password })
+```
+
+See [Two-Factor Auth](/docs/gatehouse/two-factor).
+
+## OTP and phone
+
+```tsx
+await gatehouseClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' })
+await gatehouseClient.emailOtp.verifyVerificationOtp({ email, otp })
+
+await gatehouseClient.phoneNumber.sendOtp({ phoneNumber })
+await gatehouseClient.phoneNumber.verifyOtp({ phoneNumber, otp })
+```
+
+## When to use the client vs server actions
+
+| Use case | API |
+| --- | --- |
+| Forms (sign-in, sign-up, settings) | [Pre-built actions](/docs/gatehouse/api-reference/actions) — server-side, no client code |
+| Buttons and redirects (OAuth, magic link) | `gatehouseClient` |
+| Passkey registration | `gatehouseClient` (needs the browser) |
+| Session-driven UI | `gatehouseClient.useSession()` |
+| Authoritative checks | `gatehouse` on the server |

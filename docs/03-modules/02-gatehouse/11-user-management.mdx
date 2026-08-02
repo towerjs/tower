@@ -1,0 +1,106 @@
+---
+title: "User Management"
+description: "Profile updates, email changes, account deletion, and the admin API."
+---
+
+Users manage their own profile from the account API; admins manage everyone from the admin API.
+
+## Profile
+
+```tsx
+await gatehouse.account.update({ name, image })
+await gatehouse.user()               // updated user
+```
+
+Action: `updateProfile` (`name`).
+
+## Change email
+
+```tsx
+await gatehouse.account.changeEmail(newEmail)
+```
+
+With `user.changeEmail.enabled`, the new address must be confirmed before it takes effect.
+
+## Change password
+
+```tsx
+await gatehouse.password.change({ currentPassword, newPassword })
+await gatehouse.password.confirm({ password })   // boolean — verify before sensitive actions
+```
+
+Actions: `changePassword` (`currentPassword`, `newPassword`), `verifyPassword` (`password`).
+
+## Delete account
+
+```tsx
+await gatehouse.account.delete()
+```
+
+The `deleteAccount` action requires the current `password` — destructive operations re-authenticate first. Configure cleanup hooks:
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  user: {
+    deleteUser: {
+      beforeDelete: async (user) => { await deleteUserAssets(user.id) },
+      afterDelete: async (user) => { await audit.log('user.deleted', user.id) },
+    },
+  },
+}
+```
+
+## Admin API
+
+Enable it, then manage users from your admin UI:
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  admin: true,
+}
+```
+
+```tsx
+await gatehouse.admin.listUsers({ searchField: 'email', searchValue: 'ada@' })
+// { users, total }
+
+await gatehouse.admin.getUser(userId)
+await gatehouse.admin.updateUser(userId, { name, role })
+await gatehouse.admin.removeUser(userId)
+await gatehouse.admin.setUserPassword(userId, newPassword)
+await gatehouse.admin.setRole({ userId, role })
+```
+
+### Banning
+
+```tsx
+await gatehouse.admin.banUser(userId, {
+  banReason: 'Spam',
+  banExpiresIn: 7 * 86400,   // seconds; omit for permanent
+})
+await gatehouse.admin.unbanUser(userId)
+```
+
+Banned users are blocked at sign-in and lose their sessions. `user.banned` / `user.banReason` / `user.banExpiresAt` surface the state.
+
+### Impersonation
+
+```tsx
+await gatehouse.admin.impersonateUser(userId)
+await gatehouse.admin.stopImpersonating()
+```
+
+Inspect `user.role === 'impersonating'` or use the impersonation result to show a banner in your UI.
+
+### Sessions & permissions
+
+```tsx
+await gatehouse.admin.listUserSessions(userId)
+await gatehouse.admin.revokeUserSession(userId, sessionToken)
+await gatehouse.admin.revokeUserSessions(userId)
+await gatehouse.admin.hasPermission({ role: 'admin', permissions: ['user.delete'] })
+```
+
+## User fields
+
+`GatehouseUser` carries: `id`, `name`, `email`, `emailVerified`, `image`, `createdAt`, `updatedAt`, plus `twoFactorEnabled`, `banned` / `banReason` / `banExpiresAt`, and `role` when enabled. Add your own columns with `user.additionalFields`.

@@ -1,0 +1,148 @@
+---
+title: "Configuration"
+description: "Every Gatehouse option in tower.config.ts: features, credentials, sessions, and provider details."
+---
+
+Gatehouse is configured under the `gatehouse` key in `tower.config.ts`. Features are opt-in — omit a feature to disable it.
+
+```tsx filename="tower.config.ts"
+gatehouse: {
+  provider: 'better-auth',
+  appName: 'My App',
+  baseURL: 'http://localhost:3000',
+  secret: process.env.BETTER_AUTH_SECRET,
+
+  // Enable auth methods
+  credentials: { enabled: true },
+  emailVerification: { method: 'link', sendOnSignUp: true, autoSignInAfterVerification: true },
+  social: { google: {}, github: {} },
+  magicLinks: true,
+  phoneNumber: true,
+  passkeys: true,
+  twoFactor: true,
+  organization: true,
+  admin: true,
+  apiKey: true,
+}
+```
+
+## Core
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `provider` | `'better-auth'` | The auth provider backend |
+| `appName` | `string` | App name used in auth emails and TOTP labels |
+| `baseURL` | `string \| object` | Canonical app URL; object form accepts `allowedHosts`, `protocol`, `fallback` |
+| `secret` | `string` | Signs session cookies — use `BETTER_AUTH_SECRET` from env |
+| `trustedOrigins` | `string[]` | Additional trusted origins for cross-origin auth |
+| `plugins` | `BetterAuthPlugin[]` | Extra Better Auth plugins |
+
+## credentials
+
+Email/password auth. `true` enables it with defaults; an object configures behavior:
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | — | Enable credentials auth |
+| `disableSignUp` | `boolean` | `false` | Email/password sign-up off (invite-only apps) |
+| `requireEmailVerification` | `boolean` | `false` | Deprecated — moved to `emailVerification.required` |
+| `minPasswordLength` | `number` | `8` | Minimum password length |
+| `maxPasswordLength` | `number` | — | Maximum password length |
+| `autoSignIn` | `boolean` | `true` | Create a session immediately after sign-up |
+| `revokeSessionsOnPasswordReset` | `boolean` | `true` | Sign out all devices after a reset |
+| `resetPasswordTokenExpiresIn` | `number` | — | Reset token lifetime in seconds |
+| `sendResetPassword` | `fn` | courier | Custom password-reset email handler |
+| `password.hash` / `password.verify` | `fn` | scrypt | Custom password hashing |
+
+## emailVerification
+
+How users prove they own their email. `true` enables it with default behavior (link method, not required); an object configures it:
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | — | Enable email verification |
+| `method` | `'link' \| 'otp'` | `'link'` | Verify by clicking a link, or by entering a one-time code. `'otp'` also enables one-time-code sign-in (`gatehouse.signIn.emailOtp`) |
+| `required` | `boolean` | `false` | Block sign-in until the email is verified (unless signed in via OTP, which proves ownership) |
+| `sendOnSignUp` | `boolean` | `false` | Send the verification link/code at sign-up |
+| `autoSignInAfterVerification` | `boolean` | `true` | Create a session when the email is verified |
+| `expiresIn` | `number` | — | Verification token/code lifetime in seconds |
+| `sendVerificationEmail` | `fn` | courier | Custom verification link handler (`method: 'link'`) |
+| `sendVerificationOTP` | `fn` | courier | Custom verification code handler (`method: 'otp'`) |
+
+`sendVerificationOTP` receives `{ email, otp, type }` where `type` is `'sign-in'`, `'email-verification'`, `'forget-password'`, or `'change-email'`.
+
+## social
+
+Provider list or map. Credentials resolve from env vars (`GOOGLE_CLIENT_ID`, etc.):
+
+```tsx
+social: ['google', 'github'],
+// or
+social: {
+  google: {
+    disableSignUp: true,
+    scope: ['openid', 'profile', 'email'],
+  },
+},
+```
+
+Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disableSignUp`, `disableImplicitSignUp`, `overrideUserInfoOnSignIn`, `prompt`, `responseMode`.
+
+## magicLinks
+
+`true` enables it. Options: `sendMagicLink` (defaults to Courier), `callbackURL`, link expiry.
+
+## phoneNumber
+
+`true` enables it. Options: `sendOTP` (defaults to Courier SMS), OTP expiry.
+
+## passkeys
+
+`true` enables WebAuthn. Object form passes options to the Better Auth passkey plugin (relying party config, etc.).
+
+## twoFactor
+
+`true` enables TOTP. Options map to the Better Auth 2FA plugin (OTP delivery, trusted-device behavior).
+
+## organization
+
+`true` enables organizations. Options map to the Better Auth organization plugin (permissions, creator roles).
+
+## admin
+
+`true` enables the admin API. Options map to the Better Auth admin plugin.
+
+## apiKey
+
+`true` enables API keys. Options map to the `@better-auth/api-key` plugin (default expiry, hashing).
+
+## session
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `expiresIn` | `number` | `604800` | Session lifetime in seconds (7 days) |
+| `updateAge` | `number` | — | Refresh the cookie after this age, extending expiry |
+| `disableSessionRefresh` | `boolean` | `false` | Turn off sliding expiry |
+| `deferSessionRefresh` | `boolean` | `false` | Refresh on the next request instead of inline |
+| `storeSessionInDatabase` | `boolean` | `true` | Persist sessions (disable for stateless) |
+| `additionalFields` | `object` | — | Extra columns on the session model |
+
+## user
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `additionalFields` | `object` | Extra columns on the user model |
+| `changeEmail.enabled` | `boolean` | Require confirmation before email changes take effect |
+| `changeEmail.sendChangeEmailConfirmation` | `fn` | Custom confirmation email |
+| `deleteUser.enabled` | `boolean` | Allow account deletion |
+| `deleteUser.beforeDelete` / `afterDelete` | `fn` | Cleanup hooks around account deletion |
+
+## Courier auto-wiring
+
+When both `gatehouse` and `courier` are configured, auth emails go through Courier automatically — no callback configuration needed:
+
+- Password reset emails (`credentials.sendResetPassword`)
+- Email verification link (`emailVerification.sendVerificationEmail`)
+- Email verification code (`emailVerification.sendVerificationOTP`, when `method: 'otp'`)
+- Magic links (`magicLinks.sendMagicLink`)
+- Phone OTP (`phoneNumber.sendOTP`)

@@ -1,0 +1,242 @@
+---
+title: "Server API"
+description: "The gatehouse singleton, the per-request instance, errors, and module-level helpers."
+---
+
+The server API has two shapes:
+
+- **`gatehouse`** — the module singleton. Request-scoped calls work anywhere inside an `action()` or `withGatehouse` context, and on the framework adapter's request context.
+- **`Gatehouse.from(request)`** — a per-request instance for route handlers and other contexts.
+
+## The `gatehouse` singleton
+
+```tsx
+import { gatehouse } from 'towerjs/gatehouse'
+```
+
+### Session access
+
+| Method | Returns | Notes |
+| --- | --- | --- |
+| `getSession()` | `Session \| null` | `{ user, session }` or null |
+| `session()` | `Session \| null` | Alias of `getSession()` |
+| `user()` | `GatehouseUser \| null` | User only |
+| `requireUser()` | `GatehouseUser` | Throws `AuthenticationError` |
+| `getUserSessions()` | `GatehouseSession[]` | All sessions for the current user |
+| `getApiKeys(userId)` | `ApiKeyInfo[]` | Keys for a user |
+| `getOrganizations()` | `Organization[]` | Organizations the user belongs to |
+| `getOrganization(id)` | `OrganizationFull \| null` | Org with members + invitations |
+
+### Module surface
+
+| Member | Description |
+| --- | --- |
+| `proxy(options?)` | Creates the proxy middleware — see [Protected Routes](/docs/gatehouse/protected-routes) |
+| `from(request)` | Creates a per-request instance |
+| `migrate()` | Runs the auth schema migration |
+| `provider` | The underlying Better Auth adapter |
+| `routes` | Raw `GET` / `POST` route handlers |
+
+## The per-request instance
+
+```tsx
+import { Gatehouse } from '@towerjs/gatehouse'
+
+const gh = await Gatehouse.from(request)
+```
+
+Every method is bound to the request's session. The instance exposes the full operation surface:
+
+### Sign in / up / out
+
+```tsx
+await gh.signIn.email({ email, password })
+await gh.signIn.emailOtp({ email, code })
+await gh.signIn.magicLink({ email, callbackURL })
+await gh.signIn.phone({ phoneNumber, code })
+await gh.signIn.social({ provider, callbackURL })
+await gh.signUp.email({ name, email, password })
+await gh.session()                    // current session
+await gh.user()                       // current user
+await gh.requireUser()                // session or AuthenticationError
+```
+
+### Sessions
+
+```tsx
+await gh.sessions.list()
+await gh.sessions.revoke(token)
+await gh.sessions.revokeOther()
+await gh.sessions.signOut()
+```
+
+### Account
+
+```tsx
+await gh.account.update({ name, image })
+await gh.account.delete()
+await gh.account.setPassword(newPassword)
+await gh.account.changeEmail(newEmail)
+```
+
+### Password
+
+```tsx
+await gh.password.forgot({ email })
+await gh.password.reset({ newPassword, token })
+await gh.password.change({ currentPassword, newPassword })
+await gh.password.confirm({ password })   // boolean
+```
+
+### Email & phone
+
+```tsx
+await gh.email.sendVerification({ email })
+await gh.email.verify({ token })
+await gh.email.otp.send({ email, type })  // 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
+await gh.email.otp.confirm({ email, code })
+await gh.phone.otp.send({ phoneNumber })
+await gh.phone.otp.confirm({ phoneNumber, code })
+```
+
+### Users, roles, identities
+
+```tsx
+await gh.users.get(userId)
+await gh.users.findByEmail(email)
+await gh.roles.assign(userId, role)
+await gh.roles.remove(userId)
+await gh.identities.list()
+await gh.identities.unlink(id)
+await gh.identities.link('github')
+await gh.identities.getAccessToken(provider)
+```
+
+### Passkeys
+
+```tsx
+await gh.passkeys.add({ name })
+await gh.passkeys.list()
+await gh.passkeys.update(id, { name })
+await gh.passkeys.remove(id)
+```
+
+### Two-factor
+
+```tsx
+await gh.totp.enable(password)                    // { totpURI, backupCodes }
+await gh.totp.uri(password)                       // TOTP URI only
+await gh.totp.verify({ code, trustDevice })
+await gh.totp.disable(password)
+await gh.totp.otp.send({ trustDevice })
+await gh.totp.otp.verify({ code, trustDevice })
+await gh.backupCodes.generate(password)
+await gh.backupCodes.verify(code)
+```
+
+### Organizations
+
+```tsx
+await gh.organizations.create({ name, slug })
+await gh.organizations.list()
+await gh.organizations.get(id)
+await gh.organizations.getFull(id)                // includes members + invitations
+await gh.organizations.setActive(organizationId)
+await gh.organizations.update(id, params)
+await gh.organizations.delete(id)
+
+await gh.organizations.members.list(organizationId)
+await gh.organizations.members.add(organizationId, userId, role?)
+await gh.organizations.members.update(organizationId, memberId, role)
+await gh.organizations.members.remove(organizationId, memberId)
+
+await gh.organizations.invitations.create(organizationId, { email, role })
+await gh.organizations.invitations.list(organizationId)
+await gh.organizations.invitations.get(invitationId)
+await gh.organizations.invitations.accept(invitationId)
+await gh.organizations.invitations.reject(invitationId)
+await gh.organizations.invitations.cancel(invitationId)
+
+await gh.organizations.roles.create({ role, permission })
+await gh.organizations.roles.list(organizationId?)
+await gh.organizations.roles.get(organizationId, roleName)
+await gh.organizations.roles.update(organizationId, roleName, params)
+await gh.organizations.roles.delete(organizationId, roleName)
+```
+
+### API keys
+
+```tsx
+await gh.apiKeys.create({ name, userId, expiresIn?, permissions? })
+await gh.apiKeys.list(userId, options?)
+await gh.apiKeys.get(keyId)
+await gh.apiKeys.update(id, params)
+await gh.apiKeys.delete(id)
+await gh.apiKeys.verify({ key })
+await gh.apiKeys.deleteAllExpired()
+```
+
+### Admin
+
+```tsx
+await gh.admin.createUser({ name, email, password, role? })
+await gh.admin.updateUser(userId, params)
+await gh.admin.getUser(userId)
+await gh.admin.listUsers(options?)               // { users, total? }
+await gh.admin.removeUser(userId)
+await gh.admin.setUserPassword(userId, newPassword)
+await gh.admin.setRole({ userId, role })
+await gh.admin.banUser(userId, { banReason?, banExpiresIn? })
+await gh.admin.unbanUser(userId)
+await gh.admin.impersonateUser(userId)
+await gh.admin.stopImpersonating()
+await gh.admin.listUserSessions(userId)
+await gh.admin.revokeUserSession(userId, sessionToken)
+await gh.admin.revokeUserSessions(userId)
+await gh.admin.hasPermission({ userId?, role?, permissions })
+```
+
+### Authorization
+
+```tsx
+await gh.can({ user, permission, organizationId? })   // boolean
+```
+
+`can()` is the recommended permission check — see [Authorization](/docs/gatehouse/authorization).
+
+## Errors
+
+| Error | When |
+| --- | --- |
+| `AuthenticationError` | No session where one is required (`requireUser`) |
+| `AuthorizationError` | Permission check failed |
+| `ContextRequiredError` | A `gatehouse.*` request method called outside a request context |
+
+```tsx
+import { AuthenticationError, AuthorizationError } from '@towerjs/gatehouse'
+```
+
+## Running outside a context
+
+`runWithRequest` provides the request context so the `gatehouse` singleton works in plain handlers:
+
+```tsx
+import { runWithRequest } from '@towerjs/gatehouse'
+
+export async function GET(request: Request) {
+  return runWithRequest(request, async () => {
+    const user = await gatehouse.user()
+
+    return Response.json({ user })
+  })
+}
+```
+
+## Raw access
+
+```tsx
+import { getAuth, getRoutes } from '@towerjs/gatehouse'
+
+const auth = getAuth()          // { getSession(request) }
+const routes = getRoutes()      // { GET, POST } — the mounted auth API
+```
