@@ -26,7 +26,7 @@ tower/
 │   ├── towerjs/          # Meta-package that bundles all modules for convenient access
 │   │   └── gatehouse/    # Re-exports for gatehouse subpaths (actions, next, client)
 │   ├── edge/             # Edge runtime integration (Vercel Edge, etc.)
-│   ├── scribe/           # CLI for scaffolding Tower applications
+│   ├── scribe/           # CLI: scaffolding (create), migrations and seeding (migrate/seed)
 │   └── create-tower/     # `pnpm create tower` entry point
 ├── examples/
 │   └── with-nextjs/      # Reference Next.js application using all modules
