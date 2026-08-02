@@ -36,7 +36,6 @@ const url = await storage.signedUrl("reports/q3.pdf", { expiresIn: 3600 })
 A **disk** is a named storage configuration. You can define multiple disks and use different ones per environment.
 
 ```tsx filename="tower.config.ts"
-// tower.config.ts
 import { defineConfig } from "@towerjs/keep"
 
 export default defineConfig({

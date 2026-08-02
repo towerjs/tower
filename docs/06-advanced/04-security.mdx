@@ -18,8 +18,8 @@ Set it as `BETTER_AUTH_SECRET` in your environment. Never commit it to version c
 
 Keep all secrets in environment variables:
 
-```bash
-# .env (never committed)
+```bash filename=".env.local"
+# never committed
 DATABASE_URL=postgres://user:pass@localhost:5432/db
 BETTER_AUTH_SECRET=your-256-bit-secret
 RESEND_API_KEY=re_...

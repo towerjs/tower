@@ -53,6 +53,7 @@ export { GET, POST } from 'towerjs/gatehouse/next'
 
 ```tsx filename="src/app/actions.ts"
 'use server'
+
 export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
 ```
 
@@ -66,6 +67,7 @@ npx tower migrate
 
 ```tsx filename="src/app/sign-in/page.tsx"
 'use client'
+
 import { signIn } from '@/app/actions'
 
 export default function SignInPage() {

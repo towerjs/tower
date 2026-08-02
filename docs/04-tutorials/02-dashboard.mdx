@@ -112,6 +112,7 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
 
 ```tsx filename="src/app/actions.ts"
 'use server'
+
 import { gatehouse } from 'towerjs/gatehouse'
 
 export async function inviteMember(formData: FormData) {

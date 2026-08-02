@@ -7,8 +7,7 @@ Vault wraps [Kysely](https://kysely.dev) with connection pooling, migrations, se
 
 ## Setup
 
-```tsx
-// tower.config.ts
+```tsx filename="tower.config.ts"
 vault: {
   connectionString: process.env.DATABASE_URL,   // defaults to DATABASE_URL
   pool: {
