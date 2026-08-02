@@ -316,7 +316,6 @@ export interface OrganizationInviteParams {
 
 import type {
   MagicLinkOptions as BetterAuthMagicLinkOptions,
-  EmailOTPOptions as BetterAuthEmailOTPOptions,
   PhoneNumberOptions as BetterAuthPhoneNumberOptions,
   TwoFactorOptions as BetterAuthTwoFactorOptions,
   OrganizationOptions as BetterAuthOrganizationOptions,
@@ -328,8 +327,40 @@ import type { ApiKeyOptions as BetterAuthApiKeyOptions } from '@better-auth/api-
 
 /** Options for magic-link authentication. Maps to the better-auth magic link plugin. */
 export type GatehouseMagicLinkOptions = BetterAuthMagicLinkOptions
-/** Options for email OTP authentication. Maps to the better-auth email OTP plugin. */
-export type GatehouseEmailOTPOptions = BetterAuthEmailOTPOptions
+/** How users prove ownership of their email address. */
+export type GatehouseEmailVerificationMethod = 'link' | 'otp'
+
+/**
+ * Configuration for email ownership verification.
+ *
+ * - `method: 'link'` (default) — a verification link is emailed to the user.
+ * - `method: 'otp'` — a one-time code is emailed to the user.
+ *
+ * `required` gates password sign-in until the email is verified. `sendOnSignUp`
+ * sends the verification (link or code) automatically at sign-up.
+ */
+export interface GatehouseEmailVerificationConfig {
+  enabled?: boolean
+  method?: GatehouseEmailVerificationMethod
+  /** Block password sign-in until the email is verified. */
+  required?: boolean
+  /** Send the verification (link or OTP code) automatically at sign-up. */
+  sendOnSignUp?: boolean
+  /** Create a session when a link is verified. Applies to the `link` method. */
+  autoSignInAfterVerification?: boolean
+  /** Verification token/code lifetime in seconds. */
+  expiresIn?: number
+  /** Custom verification-link email handler. Overrides Courier. */
+  sendVerificationEmail?: (
+    data: { user: { id: string; email: string; name: string }; url: string; token: string },
+    request?: Request
+  ) => void | Promise<void>
+  /** Custom OTP email handler. Overrides Courier. Applies to the `otp` method. */
+  sendVerificationOTP?: (
+    data: { email: string; otp: string; type: string },
+    ctx?: unknown
+  ) => void | Promise<void>
+}
 /** Options for phone number OTP authentication. Maps to the better-auth phone number plugin. */
 export type GatehousePhoneNumberOptions = BetterAuthPhoneNumberOptions
 /** Options for two-factor authentication. Maps to the better-auth 2FA plugin. */
@@ -405,20 +436,11 @@ export interface GatehouseConfig {
         }
       }
 
-  emailVerification?: {
-    sendVerificationEmail?: (
-      data: { user: { id: string; email: string; name: string }; url: string; token: string },
-      request?: Request
-    ) => void | Promise<void>
-    sendOnSignUp?: boolean
-    autoSignInAfterVerification?: boolean
-    expiresIn?: number
-  }
+  emailVerification?: boolean | GatehouseEmailVerificationConfig
 
   social?: GatehouseSocialConfig
   passkeys?: boolean | GatehousePasskeyOptions
   magicLinks?: boolean | Partial<GatehouseMagicLinkOptions>
-  emailOtp?: boolean | Partial<GatehouseEmailOTPOptions>
   phoneNumber?: boolean | Partial<GatehousePhoneNumberOptions>
   twoFactor?: boolean | GatehouseTwoFactorOptions
   organization?: boolean | GatehouseOrganizationOptions

@@ -46,7 +46,7 @@ if (session) {
 | Email / password | `credentials`  | Sign in with email and password |
 | Social login     | `social`       | Google, GitHub, and more        |
 | Magic links      | `magicLinks`   | Passwordless email sign-in      |
-| Email OTP        | `emailOtp`     | One-time password via email     |
+| Email verification | `emailVerification` | Verify email by link or OTP code |
 | Phone auth       | `phoneNumber`  | SMS verification                |
 | Passkeys         | `passkeys`     | Biometric / hardware key login  |
 | Two-factor auth  | `twoFactor`    | TOTP + backup codes             |

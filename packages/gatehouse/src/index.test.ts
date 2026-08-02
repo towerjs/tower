@@ -296,7 +296,7 @@ describe('BetterAuthAdapter', () => {
       {
         provider: 'better-auth',
         magicLinks: { sendMagicLink: vi.fn() },
-        emailOtp: { sendVerificationOTP: vi.fn() },
+        emailVerification: { method: 'otp', sendVerificationOTP: vi.fn() },
         phoneNumber: { sendOTP: vi.fn() },
         passkeys: true,
         apiKey: true,
@@ -580,29 +580,37 @@ describe('defineGatehouse', () => {
       appName: 'Tower App',
       credentials: true,
       magicLinks: true,
-      emailOtp: true,
-      phoneNumber: true,
       emailVerification: { sendOnSignUp: true },
+      phoneNumber: true,
     } as any).init!(ctx)
 
-    const opts = mocks.mockBetterAuth.mock.calls[0][0]
-    await opts.emailAndPassword.sendResetPassword({
+    await defineGatehouse({
+      provider: 'better-auth',
+      appName: 'Tower App',
+      emailVerification: { method: 'otp', required: true },
+    } as any).init!(ctx)
+
+    const linkOpts = mocks.mockBetterAuth.mock.calls[0][0]
+    await linkOpts.emailAndPassword.sendResetPassword({
       user: { email: 'a@example.com', name: 'A' },
       url: 'https://app.example.com/reset',
       token: 'token',
     })
-    await opts.emailVerification.sendVerificationEmail({
+    await linkOpts.emailVerification.sendVerificationEmail({
       user: { email: 'b@example.com', name: 'B' },
       url: 'https://app.example.com/verify',
       token: 'token',
     })
 
-    const magicPlugin = opts.plugins.find((p: any) => p.id === 'magic-link')
-    const emailOtpPlugin = opts.plugins.find((p: any) => p.id === 'email-otp')
-    const phonePlugin = opts.plugins.find((p: any) => p.id === 'phone-number')
+    const magicPlugin = linkOpts.plugins.find((p: any) => p.id === 'magic-link')
+    const phonePlugin = linkOpts.plugins.find((p: any) => p.id === 'phone-number')
     await magicPlugin.sendMagicLink({ email: 'c@example.com', url: 'https://app.example.com/magic' })
-    await emailOtpPlugin.sendVerificationOTP({ email: 'd@example.com', otp: '123456', type: 'sign-in' })
     await phonePlugin.sendOTP({ phoneNumber: '+15551234567', code: '654321' })
+
+    const otpOpts = mocks.mockBetterAuth.mock.calls[1][0]
+    const emailOtpPlugin = otpOpts.plugins.find((p: any) => p.id === 'email-otp')
+    expect(emailOtpPlugin).toBeDefined()
+    await emailOtpPlugin.sendVerificationOTP({ email: 'd@example.com', otp: '123456', type: 'sign-in' })
 
     expect(emailSend).toHaveBeenCalledTimes(4)
     expect(smsSend).toHaveBeenCalledTimes(1)
@@ -614,7 +622,6 @@ describe('defineGatehouse', () => {
     const magic = vi.fn().mockResolvedValue(undefined)
     const emailOtp = vi.fn().mockResolvedValue(undefined)
     const phoneOtp = vi.fn().mockResolvedValue(undefined)
-    const verify = vi.fn().mockResolvedValue(undefined)
 
     const ctx = mockCtx({
       services: {
@@ -633,17 +640,41 @@ describe('defineGatehouse', () => {
       provider: 'better-auth',
       credentials: { sendResetPassword: reset },
       magicLinks: { sendMagicLink: magic },
-      emailOtp: { sendVerificationOTP: emailOtp },
       phoneNumber: { sendOTP: phoneOtp },
-      emailVerification: { sendVerificationEmail: verify, sendOnSignUp: true },
+      emailVerification: { method: 'otp', sendVerificationOTP: emailOtp, sendOnSignUp: true },
     } as any).init!(ctx)
 
     const opts = mocks.mockBetterAuth.mock.calls[0][0]
     expect(opts.emailAndPassword.sendResetPassword).toBe(reset)
-    expect(opts.emailVerification.sendVerificationEmail).toBe(verify)
     expect(opts.plugins.find((p: any) => p.id === 'magic-link').sendMagicLink).toBe(magic)
-    expect(opts.plugins.find((p: any) => p.id === 'email-otp').sendVerificationOTP).toBe(emailOtp)
     expect(opts.plugins.find((p: any) => p.id === 'phone-number').sendOTP).toBe(phoneOtp)
+    expect(opts.plugins.find((p: any) => p.id === 'email-otp').sendVerificationOTP).toBe(emailOtp)
+  })
+
+  it('does not override an explicit OTP callback', async () => {
+    const { defineGatehouse } = await import('./index.js')
+    const emailOtp = vi.fn().mockResolvedValue(undefined)
+
+    const ctx = mockCtx({
+      services: {
+        register: vi.fn(),
+        registerFactory: vi.fn(),
+        has: vi.fn((name: string) => name === 'courier'),
+        get: vi.fn((name: string) => {
+          if (name === 'vault') return { db: { selectFrom: vi.fn() } }
+          if (name === 'courier') return { email: { send: vi.fn() }, sms: { send: vi.fn() } }
+          return undefined
+        }),
+      },
+    })
+
+    await defineGatehouse({
+      provider: 'better-auth',
+      emailVerification: { method: 'otp', sendVerificationOTP: emailOtp },
+    } as any).init!(ctx)
+
+    const opts = mocks.mockBetterAuth.mock.calls[0][0]
+    expect(opts.plugins.find((p: any) => p.id === 'email-otp').sendVerificationOTP).toBe(emailOtp)
   })
 })
 

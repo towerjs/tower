@@ -8,6 +8,7 @@ import type {
   ProxyOptions,
   ProxyResult,
 } from '../types.js'
+import type { EmailOTPOptions } from 'better-auth/plugins'
 import { AuthenticationError } from '../types.js'
 import { buildProxiedApi, buildApi } from '../api-builder.js'
 
@@ -51,12 +52,24 @@ export class BetterAuthAdapter {
       process.env.BETTER_AUTH_URL ||
       (process.env.NODE_ENV !== 'production' ? 'http://localhost:3000' : undefined)
 
+    const emailVerification =
+      config.emailVerification === true
+        ? { enabled: true }
+        : config.emailVerification
+          ? { enabled: true, ...config.emailVerification }
+          : undefined
+    const emailVerificationEnabled = !!emailVerification
+
     const creds =
       config.credentials === true
         ? { enabled: true }
         : config.credentials
           ? { enabled: true, ...config.credentials }
           : undefined
+
+    if (emailVerification?.required !== undefined && creds) {
+      creds.requireEmailVerification = emailVerification.required
+    }
 
     const allPlugins = [...(config.plugins || [])]
 
@@ -71,16 +84,22 @@ export class BetterAuthAdapter {
             }
       allPlugins.push(magicLink({ sendMagicLink }))
     }
-    if (config.emailOtp) {
+    if (emailVerificationEnabled && emailVerification.method === 'otp') {
       const sendVerificationOTP =
-        typeof config.emailOtp === 'object' && config.emailOtp.sendVerificationOTP
-          ? config.emailOtp.sendVerificationOTP
-          : async (_params: { email: string; otp: string; type: string }) => {
-              throw new Error(
-                `sendVerificationOTP not implemented — provide a sendVerificationOTP callback in the emailOtp config`
-              )
-            }
-      allPlugins.push(emailOTP({ sendVerificationOTP }))
+        emailVerification.sendVerificationOTP ??
+        (async (_params: { email: string; otp: string; type: string }) => {
+          throw new Error(
+            `sendVerificationOTP not implemented — provide a sendVerificationOTP callback in the emailVerification config`
+          )
+        })
+      allPlugins.push(
+        emailOTP({
+          sendVerificationOTP: sendVerificationOTP as EmailOTPOptions['sendVerificationOTP'],
+          sendVerificationOnSignUp: emailVerification.sendOnSignUp,
+          expiresIn: emailVerification.expiresIn,
+          overrideDefaultEmailVerification: true,
+        })
+      )
     }
     if (config.phoneNumber) {
       const sendOTP =
@@ -126,7 +145,16 @@ export class BetterAuthAdapter {
       basePath: config.passThrough?.basePath,
       appName: config.appName,
       emailAndPassword: creds,
-      emailVerification: config.emailVerification,
+      emailVerification:
+        emailVerificationEnabled && emailVerification.method !== 'otp'
+          ? {
+              sendOnSignUp: emailVerification.sendOnSignUp,
+              autoSignInAfterVerification: emailVerification.autoSignInAfterVerification,
+              expiresIn: emailVerification.expiresIn,
+              sendVerificationEmail: emailVerification.sendVerificationEmail,
+              requireEmailVerification: emailVerification.required ?? creds?.requireEmailVerification,
+            }
+          : undefined,
       socialProviders: social,
       user: config.user,
       session: config.session,

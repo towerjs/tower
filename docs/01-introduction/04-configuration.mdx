@@ -65,13 +65,13 @@ gatehouse: {
   provider: 'better-auth'
 
   // Auth methods
-  credentials?: boolean | { enabled, disableSignUp, requireEmailVerification,
-    minPasswordLength, maxPasswordLength, autoSignIn }
-  emailVerification?: { sendVerificationEmail, sendOnSignUp, autoSignInAfterVerification, expiresIn }
+  credentials?: boolean | { enabled, disableSignUp, minPasswordLength,
+    maxPasswordLength, autoSignIn }
+  emailVerification?: boolean | { enabled, method: 'link' | 'otp', required,
+    sendOnSignUp, autoSignInAfterVerification, expiresIn, sendVerificationEmail, sendVerificationOTP }
   social?: string[] | Record<string, SocialProviderEntry | true>
   passkeys?: boolean | GatehousePasskeyOptions
   magicLinks?: boolean | Partial<GatehouseMagicLinkOptions>
-  emailOtp?: boolean | Partial<GatehouseEmailOTPOptions>
   phoneNumber?: boolean | Partial<GatehousePhoneNumberOptions>
   twoFactor?: boolean | GatehouseTwoFactorOptions
   organization?: boolean | GatehouseOrganizationOptions

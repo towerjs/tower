@@ -76,7 +76,8 @@ export type {
 
 export type {
   GatehouseMagicLinkOptions,
-  GatehouseEmailOTPOptions,
+  GatehouseEmailVerificationConfig,
+  GatehouseEmailVerificationMethod,
   GatehousePhoneNumberOptions,
   GatehouseTwoFactorOptions,
   GatehouseOrganizationOptions,
@@ -423,8 +424,29 @@ function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): G
   }
 
   if (config.emailVerification) {
-    const emailVerification = { ...config.emailVerification }
-    if (!emailVerification.sendVerificationEmail) {
+    const emailVerification = config.emailVerification === true ? { enabled: true } : { ...config.emailVerification }
+
+    if (emailVerification.method === 'otp') {
+      if (!emailVerification.sendVerificationOTP) {
+        emailVerification.sendVerificationOTP = async ({
+          email,
+          otp,
+          type,
+        }: {
+          email: string
+          otp: string
+          type: string
+        }) => {
+          const subject = type === 'forget-password' ? `${appName} password reset code` : `${appName} verification code`
+          await courier.email.send({
+            to: email,
+            subject,
+            text: `${appName} verification code: ${otp}`,
+            html: `<p>${appName} verification code: <strong>${otp}</strong></p>`,
+          })
+        }
+      }
+    } else if (!emailVerification.sendVerificationEmail) {
       emailVerification.sendVerificationEmail = async ({ user, url }) => {
         await courier.email.send(
           buildAuthEmail({
@@ -458,30 +480,6 @@ function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): G
       }
     }
     next.magicLinks = magicLinks
-  }
-
-  if (config.emailOtp) {
-    const emailOtp = config.emailOtp === true ? {} : { ...config.emailOtp }
-    if (!(emailOtp as any).sendVerificationOTP) {
-      ;(emailOtp as any).sendVerificationOTP = async ({
-        email,
-        otp,
-        type,
-      }: {
-        email: string
-        otp: string
-        type: string
-      }) => {
-        const subject = type === 'forget-password' ? `${appName} password reset code` : `${appName} verification code`
-        await courier.email.send({
-          to: email,
-          subject,
-          text: `${appName} verification code: ${otp}`,
-          html: `<p>${appName} verification code: <strong>${otp}</strong></p>`,
-        })
-      }
-    }
-    next.emailOtp = emailOtp
   }
 
   if (config.phoneNumber) {
