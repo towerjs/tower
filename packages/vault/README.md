@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@towerjs/vault?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/vault)
 
-Database and ORM layer for Tower. Built on [Kysely](https://kysely.dev) with support for PostgreSQL providers including Neon, Supabase, and Railway. Provides migrations, seeds, and connection management.
+Database and ORM layer for Tower. Built on [Kysely](https://kysely.dev) with PostgreSQL providers for Neon (HTTP) and standard `pg` connections. Provides migrations, seeds, and connection management.
 
 ## Installation
 
@@ -66,7 +66,7 @@ Or programmatically:
 
 ```ts
 import { migrateToLatest } from '@towerjs/vault'
-await migrateToLatest(tower.vault)
+await migrateToLatest(tower.vault, { folder: 'src/vault/migrations' })
 ```
 
 ## Seeds
@@ -86,13 +86,14 @@ tower seed
 
 ## Configuration
 
-| Option             | Default            | Description              |
-| ------------------ | ------------------ | ------------------------ |
-| `provider`         | auto-detect        | `"pg"` or `"neon"`       |
-| `connectionString` | `DATABASE_URL` env | Full connection string   |
-| `pool.min`         | `0`                | Minimum pool connections |
-| `pool.max`         | `10`               | Maximum pool connections |
-| `pool.ssl`         | auto               | SSL configuration        |
+| Option                         | Default            | Description                 |
+| ------------------------------ | ------------------ | --------------------------- |
+| `provider`                     | auto-detect        | `"pg"` or `"neon"`          |
+| `connectionString`             | `DATABASE_URL` env | Full connection string      |
+| `pool.max`                     | `10`               | Maximum pool connections    |
+| `pool.idleTimeoutMillis`       | —                  | Idle connection timeout     |
+| `pool.connectionTimeoutMillis` | —                  | Connection attempt timeout  |
+| `pool.ssl`                     | auto               | SSL configuration           |
 
 ## CLI
 
@@ -100,6 +101,10 @@ tower seed
 tower migrate    — Run pending migrations
 tower seed       — Execute seed files
 ```
+
+## Edge Runtime
+
+On Edge Runtime, the `pg` provider is unavailable (no TCP connections) — use the `neon` provider instead. Migrations and seeds are not available on Edge; run them locally or in a Node.js environment.
 
 ## Included in
 

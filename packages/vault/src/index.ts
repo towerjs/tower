@@ -2,6 +2,7 @@ import type { TowerModule, TowerContext } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
 import type { Migrator } from 'kysely/migration'
 import type { VaultConfig, Vault, VaultModule, VaultMigrationConfig, VaultSeedConfig } from './types.js'
+import { parseVaultConfig } from './schemas.js'
 
 export type { VaultConfig, Vault, VaultModule, VaultSeedConfig, VaultMigrationConfig } from './types.js'
 
@@ -41,8 +42,11 @@ function resolveSsl(
   connectionString: string
 ): boolean | { rejectUnauthorized?: boolean } | undefined {
   if (poolConfig?.ssl !== undefined) return poolConfig.ssl
-  if (connectionString.includes('sslmode=require') || connectionString.includes('sslmode=no-verify')) {
-    return connectionString.includes('sslmode=no-verify') ? { rejectUnauthorized: false } : true
+  const sslmode = /[?&]sslmode=([^&]+)/.exec(connectionString)?.[1]
+  if (sslmode) {
+    if (sslmode === 'disable' || sslmode === 'prefer') return false
+    if (sslmode === 'no-verify') return { rejectUnauthorized: false }
+    return true
   }
   if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') return true
   return undefined
@@ -198,6 +202,8 @@ async function buildProxyForRuntime(
  * ```
  */
 export function createVaultModule(options?: VaultConfig): TowerModule & { init: (ctx: TowerContext) => Promise<void> } {
+  parseVaultConfig(options)
+
   return {
     name: 'vault',
 

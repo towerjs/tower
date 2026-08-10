@@ -407,6 +407,12 @@ describe('SSL resolution', () => {
     expect(args.ssl).toEqual({ rejectUnauthorized: false })
   })
 
+  it('no SSL from sslmode=disable even in production', async () => {
+    process.env.NODE_ENV = 'production'
+    const args = await initWithUrl('postgres://localhost/db?sslmode=disable')
+    expect(args.ssl).toBe(false)
+  })
+
   it('explicit pool.ssl overrides everything', async () => {
     process.env.NODE_ENV = 'production'
     const args = await initWithUrl('postgres://localhost/db?sslmode=require', { ssl: false })
