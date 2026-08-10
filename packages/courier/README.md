@@ -51,6 +51,7 @@ await tower.courier.sms.send({
 
 | Provider | Package                 | Config value |
 | -------- | ----------------------- | ------------ |
+| Console  | (built-in)              | `"console"`  |
 | Resend   | `resend`                | `"resend"`   |
 | AWS SES  | `@aws-sdk/client-sesv2` | `"ses"`      |
 | SMTP     | `nodemailer`            | `"smtp"`     |
@@ -69,16 +70,15 @@ await tower.courier.sms.send({
 
 ## React email
 
-Courier supports rendering React email templates:
+Courier renders React email templates natively:
 
 ```tsx
-import { render } from '@react-email/render'
 import WelcomeEmail from './emails/welcome.tsx'
 
 await tower.courier.email.send({
   to: 'user@example.com',
   subject: 'Welcome!',
-  html: render(<WelcomeEmail name="Alice" />),
+  react: <WelcomeEmail name="Alice" />,
 })
 ```
 

@@ -10,6 +10,8 @@ import type {
   SmsConfig,
   SmsService,
 } from './types.js'
+import { z } from 'zod'
+import { parseCourierConfig, parseSendParams, emailSendSchema, pushSendSchema, smsSendSchema } from './schemas.js'
 
 export type {
   ConsoleEmailConfig,
@@ -79,6 +81,8 @@ export const courier: CourierModule = new Proxy({} as CourierModule, {
 export function defineCourier(
   config: CourierConfig
 ): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
+  parseCourierConfig(config)
+
   return {
     name: 'courier',
 
@@ -111,10 +115,23 @@ async function createCourier(config: CourierConfig): Promise<CourierModule> {
   const pushProvider = config.push ? await createPushService(config.push) : undefined
 
   return {
-    email: emailProvider ?? unconfiguredChannel('email'),
-    sms: smsProvider ?? unconfiguredChannel('sms'),
-    push: pushProvider ?? unconfiguredChannel('push'),
+    email: emailProvider ? validateChannel('email', emailProvider) : unconfiguredChannel('email'),
+    sms: smsProvider ? validateChannel('sms', smsProvider) : unconfiguredChannel('sms'),
+    push: pushProvider ? validateChannel('push', pushProvider) : unconfiguredChannel('push'),
   }
+}
+
+type SendService = { send(params: unknown): Promise<unknown> }
+
+function validateChannel<T extends SendService>(channel: 'email' | 'sms' | 'push', service: T): T {
+  const schema =
+    channel === 'email' ? emailSendSchema : channel === 'sms' ? smsSendSchema : pushSendSchema
+  return {
+    ...service,
+    async send(params: unknown) {
+      return service.send(parseSendParams(schema as z.ZodType<unknown>, channel, params))
+    },
+  } as T
 }
 
 function requireCourier(): CourierModule {

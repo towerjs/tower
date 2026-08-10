@@ -126,9 +126,8 @@ describe('email provider resolution', () => {
     expect(mod.email.send).toBeDefined()
   })
 
-  it('throws during init for unsupported email provider', async () => {
-    const { mod, ctx } = initAndGetModule({ email: { provider: 'mailgun' as any } })
-    await expect(mod.init?.(ctx as any)).rejects.toThrow('Unsupported courier email provider')
+  it('rejects an unsupported email provider in config', () => {
+    expect(() => defineCourier({ email: { provider: 'mailgun' as any } })).toThrow(/Invalid configuration/)
   })
 })
 
@@ -140,9 +139,8 @@ describe('sms provider resolution', () => {
     expect(mod.sms.send).toBeDefined()
   })
 
-  it('throws during init for unsupported sms provider', async () => {
-    const { mod, ctx } = initAndGetModule({ sms: { provider: 'vonage' as any } })
-    await expect(mod.init?.(ctx as any)).rejects.toThrow('Unsupported courier sms provider')
+  it('rejects an unsupported sms provider in config', () => {
+    expect(() => defineCourier({ sms: { provider: 'vonage' as any } })).toThrow(/Invalid configuration/)
   })
 })
 
@@ -154,9 +152,8 @@ describe('push provider resolution', () => {
     expect(mod.push.send).toBeDefined()
   })
 
-  it('throws during init for unsupported push provider', async () => {
-    const { mod, ctx } = initAndGetModule({ push: { provider: 'firebase' as any } })
-    await expect(mod.init?.(ctx as any)).rejects.toThrow('Unsupported courier push provider')
+  it('rejects an unsupported push provider in config', () => {
+    expect(() => defineCourier({ push: { provider: 'firebase' as any } })).toThrow(/Invalid configuration/)
   })
 })
 
