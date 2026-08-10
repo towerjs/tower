@@ -49,3 +49,31 @@ describe('gatehouseClient', () => {
     expect(typeof mod.gatehouseClient.signOut).toBe('function')
   })
 })
+
+describe('runtime module factories', () => {
+  it('orders gatehouse after courier when both are configured', async () => {
+    const { getModuleFactoryForConfig } = await import('./runtime.js')
+    const config = { modules: { vault: {}, gatehouse: {}, courier: {} } }
+    const factory = getModuleFactoryForConfig(config as any)
+
+    const gatehouse = factory('gatehouse')!({})
+    const courier = factory('courier')!({})
+    const vault = factory('vault')!({})
+
+    expect(gatehouse.name).toBe('gatehouse')
+    expect(courier.name).toBe('courier')
+    expect(vault.name).toBe('vault')
+    expect(gatehouse.dependsOn).toContain('courier')
+    expect(gatehouse.dependsOn).toContain('vault')
+    expect(courier.dependsOn).toEqual([])
+  })
+
+  it('does not require courier when only gatehouse is configured', async () => {
+    const { getModuleFactoryForConfig } = await import('./runtime.js')
+    const config = { modules: { vault: {}, gatehouse: {} } }
+    const factory = getModuleFactoryForConfig(config as any)
+
+    const gatehouse = factory('gatehouse')!({})
+    expect(gatehouse.dependsOn).toEqual(['vault'])
+  })
+})

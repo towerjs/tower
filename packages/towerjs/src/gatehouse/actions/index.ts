@@ -19,6 +19,11 @@ for (const def of authActions) {
       const fn = resolve(def.path)
       await fn()
     })
+  } else if (def.positional) {
+    built[def.name] = action.form(async (data: Record<string, string>) => {
+      const fn = resolve(def.path)
+      await fn(...def.fields!.map((f) => data[f]))
+    })
   } else if (def.idFirst) {
     built[def.name] = action.form(async (data: Record<string, string>) => {
       const fn = resolve(def.path)
@@ -29,26 +34,6 @@ for (const def of authActions) {
       } else {
         await fn(id, rest)
       }
-    })
-  } else if (def.fieldMap) {
-    built[def.name] = action.form(async (data: Record<string, string>) => {
-      const fn = resolve(def.path)
-      const params: Record<string, any> = {}
-      for (const key of Object.keys(data)) {
-        if (!(key in def.fieldMap!)) {
-          params[key] = data[key]
-        }
-      }
-      for (const [formKey, targetPath] of Object.entries(def.fieldMap!)) {
-        const parts = targetPath.split('.')
-        let current = params
-        for (let i = 0; i < parts.length - 1; i++) {
-          current[parts[i]] ??= {}
-          current = current[parts[i]]
-        }
-        current[parts[parts.length - 1]] = data[formKey]
-      }
-      await fn(params)
     })
   } else {
     built[def.name] = action.form(async (data: Record<string, string>) => {
@@ -63,7 +48,6 @@ export const {
   signIn,
   signUp,
   signOut,
-  refreshSession,
   signInWithOTP,
   signInWithPhone,
   requestMagicLink,
@@ -71,8 +55,6 @@ export const {
   // Sessions
   revokeSession,
   revokeOtherSessions,
-  revokeAllSessions,
-  updateSession,
 
   // Account
   updateProfile,
@@ -93,31 +75,18 @@ export const {
   // Email OTP
   sendVerificationOTP,
   verifyVerificationOTP,
-  verifyEmailOTP,
-  checkVerificationOTP,
-  createVerificationOTP,
-  forgotPasswordOTP,
-  requestEmailChangeOTP,
-  confirmEmailChangeOTP,
-  requestPasswordResetOTP,
-  resetPasswordOTP,
 
   // Phone OTP
   sendPhoneOTP,
   verifyPhoneOTP,
-  verifyPhone,
-  requestPasswordResetPhoneOTP,
-  resetPasswordPhoneOTP,
 
   // Passkeys
   updatePasskey,
-  removePasskey,
   deletePasskey,
 
   // Admin
   createUser,
   removeUser,
-  adminUpdateUser,
   setUserPassword,
   setRole,
   banUser,
@@ -126,7 +95,6 @@ export const {
   stopImpersonating,
   revokeUserSession,
   revokeUserSessions,
-  userHasPermission,
 
   // API Keys
   createApiKey,
@@ -152,12 +120,6 @@ export const {
   updateOrganization,
   deleteOrganization,
   setActiveOrganization,
-  leaveOrganization,
-
-  // Organization roles
-  createOrgRole,
-  updateOrgRole,
-  deleteOrgRole,
 
   // Members
   addMember,
@@ -169,9 +131,6 @@ export const {
   cancelInvitation,
   acceptInvitation,
   rejectInvitation,
-
-  // Permissions
-  hasPermission,
 } = built as { [key: string]: any }
 
 export const verifyTwoFactor = action.form(async ({ code, trustDevice }: Record<string, string>) => {
