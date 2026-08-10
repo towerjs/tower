@@ -7,6 +7,9 @@ import {
   signIn as _signIn,
   signUp as _signUp,
   signOut as _signOut,
+  requestMagicLink as _requestMagicLink,
+  sendVerificationOTP as _sendVerificationOTP,
+  signInWithOTP as _signInWithOTP,
   updateProfile as _updateProfile,
   changePassword as _changePassword,
   createOrganization as _createOrganization,
@@ -29,6 +32,9 @@ import {
 export const signIn = _signIn
 export const signUp = _signUp
 export const signOut = _signOut
+export const requestMagicLink = _requestMagicLink
+export const sendVerificationOTP = _sendVerificationOTP
+export const signInWithOTP = _signInWithOTP
 export const updateProfile = _updateProfile
 export const changePassword = _changePassword
 export const createOrganization = _createOrganization

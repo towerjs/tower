@@ -21,7 +21,10 @@ export default defineTower({
         autoSignIn: true,
       },
 
+      magicLinks: true,
+
       emailVerification: {
+        method: 'otp',
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
       },
