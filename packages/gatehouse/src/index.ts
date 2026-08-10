@@ -11,16 +11,13 @@ import type {
   PhoneOtpSendParams,
   PhoneOtpConfirmParams,
   PasskeyInfo,
-  PasskeyCreateParams,
   PasskeyUpdateParams,
   AdminUserCreateParams,
-  AdminUpdateUserParams,
   AdminUserBanParams,
   AdminSetRoleParams,
   AdminListUsersOptions,
   AdminImpersonationResult,
   AdminUserSession,
-  AdminCheckPermissionParams,
   ApiKeyInfo,
   ApiKeyCreateParams,
   ApiKeyUpdateParams,
@@ -50,6 +47,7 @@ import type { GatehouseUser } from './types.js'
 import { AuthenticationError, AuthorizationError } from './types.js'
 import type { BetterAuthAdapter } from './providers/better-auth.js'
 import { ContextRequiredError } from './context.js'
+import { parseGatehouseConfig } from './schemas.js'
 interface EmailService {
   send(params: { to: string; subject: string; text?: string; html?: string }): Promise<{ id: string; provider: string }>
 }
@@ -92,16 +90,13 @@ export type {
   PhoneOtpSendParams,
   PhoneOtpConfirmParams,
   PasskeyInfo,
-  PasskeyCreateParams,
   PasskeyUpdateParams,
   AdminUserCreateParams,
-  AdminUpdateUserParams,
   AdminUserBanParams,
   AdminSetRoleParams,
   AdminListUsersOptions,
   AdminImpersonationResult,
   AdminUserSession,
-  AdminCheckPermissionParams,
   ApiKeyInfo,
   ApiKeyCreateParams,
   ApiKeyUpdateParams,
@@ -221,7 +216,7 @@ export async function getOrganizations(): Promise<Organization[]> {
  * Gets a single organization by ID. Returns null if not found.
  */
 export async function getOrganization(id: string): Promise<OrganizationFull | null> {
-  return withRequestContext((instance) => instance.organizations.getFull({ organizationId: id } as any))
+  return withRequestContext((instance) => instance.organizations.getFull(id))
 }
 
 /** Runs a handler within a request-scoped gatehouse context. */
@@ -316,7 +311,7 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
           })
       if (prop === 'getOrganizations') return () => withRequestContext((instance) => instance.organizations.list())
       if (prop === 'getOrganization')
-        return (id: string) => withRequestContext((instance) => instance.organizations.getFull({ organizationId: id } as any))
+        return (id: string) => withRequestContext((instance) => instance.organizations.getFull(id))
     }
 
     if (prop === Symbol.toPrimitive) return undefined
@@ -349,6 +344,8 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
 export function defineGatehouse(
   config: GatehouseConfig
 ): TowerModule & GatehouseModule & { init: (ctx: TowerContext) => Promise<void> } {
+  parseGatehouseConfig(config as unknown as Record<string, unknown>)
+
   return {
     name: 'gatehouse',
 

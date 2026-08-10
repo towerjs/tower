@@ -1,160 +1,199 @@
 // ─── Mapping: Better Auth method → Gatehouse path ─────────────────
 // Every path is a dot-separated sequence of object keys.
-// Methods not in this table or SKIP_INTERNAL are exposed via
-// gatehouse.api[methodName]().
+//
+// Each entry declares the source better-auth method, the HTTP verb
+// better-auth expects (which decides whether params go in `body` or
+// `query`), and an optional `build` function that shapes positional or
+// string arguments into the exact better-auth request payload.
+//
+// Methods whose source does not exist on the running better-auth API are
+// skipped at build time, so the exposed surface only ever contains
+// working methods.
 
-const MAPPINGS: Record<string, string> = {
-  // ── Sign In / Sign Up / Sign Out ────────────────────────────────
-  signInEmail: 'signIn.email',
-  signUpEmail: 'signUp.email',
-  signOut: 'sessions.signOut',
-  refreshToken: 'sessions.refresh',
-  signInEmailOTP: 'signIn.emailOtp',
-  signInPhoneNumber: 'signIn.phone',
-  signInSocial: 'signIn.social',
-  signInMagicLink: 'signIn.magicLink',
+type Verb = 'GET' | 'POST'
 
-  // ── Sessions ────────────────────────────────────────────────────
-  listSessions: 'sessions.list',
-  revokeSession: 'sessions.revoke',
-  revokeOtherSessions: 'sessions.revokeOther',
-  revokeSessions: 'sessions.revokeAll',
-  updateSession: 'sessions.update',
+type PayloadBuilder = (headers: Headers, ...args: any[]) => Record<string, unknown>
 
-  // ── Account (self-service) ──────────────────────────────────────
-  accountInfo: 'account.info',
-  updateUser: 'account.update',
-  deleteUser: 'account.delete',
-  setPassword: 'account.setPassword',
-  changeEmail: 'account.changeEmail',
-
-  // ── Password ────────────────────────────────────────────────────
-  changePassword: 'password.change',
-  verifyPassword: 'password.confirm',
-  requestPasswordReset: 'password.forgot',
-  resetPassword: 'password.reset',
-
-  // ── Email ────────────────────────────────────────────────────────
-  sendVerificationEmail: 'email.sendVerification',
-  verifyEmail: 'email.verify',
-
-  // ── Email OTP ───────────────────────────────────────────────────
-  sendVerificationOTP: 'email.otp.send',
-  verifyVerificationOTP: 'email.otp.confirm',
-  verifyEmailOTP: 'email.otp.verifyEmail',
-  checkVerificationOTP: 'email.otp.check',
-  createVerificationOTP: 'email.otp.create',
-  getVerificationOTP: 'email.otp.get',
-  forgetPasswordEmailOTP: 'email.otp.forgotPassword',
-  requestEmailChangeEmailOTP: 'email.otp.requestChange',
-  changeEmailEmailOTP: 'email.otp.confirmChange',
-  requestPasswordResetEmailOTP: 'email.otp.requestReset',
-  resetPasswordEmailOTP: 'email.otp.resetPassword',
-
-  // ── Phone OTP ───────────────────────────────────────────────────
-  sendPhoneNumberOTP: 'phone.otp.send',
-  verifyPhoneNumberOTP: 'phone.otp.confirm',
-  verifyPhoneNumber: 'phone.verify',
-  requestPasswordResetPhoneNumber: 'phone.otp.requestReset',
-  resetPasswordPhoneNumber: 'phone.otp.resetPassword',
-
-  // ── Passkeys ────────────────────────────────────────────────────
-  listPasskeys: 'passkeys.list',
-  addPasskey: 'passkeys.add',
-  updatePasskey: 'passkeys.update',
-  removePasskey: 'passkeys.remove',
-  deletePasskey: 'passkeys.delete',
-  generatePasskeyAuthenticationOptions: 'passkeys.authOptions',
-  generatePasskeyRegistrationOptions: 'passkeys.regOptions',
-  verifyPasskeyAuthentication: 'passkeys.verifyAuth',
-  verifyPasskeyRegistration: 'passkeys.verifyReg',
-
-  // ── Admin ───────────────────────────────────────────────────────
-  createUser: 'admin.createUser',
-  listUsers: 'admin.listUsers',
-  getUser: 'admin.getUser',
-  removeUser: 'admin.removeUser',
-  adminUpdateUser: 'admin.updateUser',
-  setUserPassword: 'admin.setUserPassword',
-  setRole: 'admin.setRole',
-  banUser: 'admin.banUser',
-  unbanUser: 'admin.unbanUser',
-  impersonateUser: 'admin.impersonateUser',
-  stopImpersonating: 'admin.stopImpersonating',
-  listUserSessions: 'admin.listUserSessions',
-  revokeUserSession: 'admin.revokeUserSession',
-  revokeUserSessions: 'admin.revokeUserSessions',
-  userHasPermission: 'admin.checkPermission',
-
-  // ── API Keys ────────────────────────────────────────────────────
-  createApiKey: 'apiKeys.create',
-  listApiKeys: 'apiKeys.list',
-  getApiKey: 'apiKeys.get',
-  updateApiKey: 'apiKeys.update',
-  deleteApiKey: 'apiKeys.delete',
-  verifyApiKey: 'apiKeys.verify',
-  deleteAllExpiredApiKeys: 'apiKeys.removeExpired',
-
-  // ── Identities (social providers) ───────────────────────────────
-  listUserAccounts: 'identities.list',
-  unlinkAccount: 'identities.unlink',
-  linkSocialAccount: 'identities.link',
-  getAccessToken: 'identities.getToken',
-
-  // ── TOTP ────────────────────────────────────────────────────────
-  enableTwoFactor: 'totp.enable',
-  disableTwoFactor: 'totp.disable',
-  generateTOTP: 'totp.generate',
-  verifyTOTP: 'totp.verify',
-  getTOTPURI: 'totp.uri',
-  sendTwoFactorOTP: 'totp.otp.send',
-  verifyTwoFactorOTP: 'totp.otp.verify',
-
-  // ── Backup codes ────────────────────────────────────────────────
-  generateBackupCodes: 'backupCodes.generate',
-  verifyBackupCode: 'backupCodes.verify',
-  viewBackupCodes: 'backupCodes.view',
-
-  // ── Organizations ───────────────────────────────────────────────
-  createOrganization: 'organizations.create',
-  listOrganizations: 'organizations.list',
-  getOrganization: 'organizations.get',
-  getFullOrganization: 'organizations.getFull',
-  updateOrganization: 'organizations.update',
-  deleteOrganization: 'organizations.delete',
-  setActiveOrganization: 'organizations.setActive',
-  checkOrganizationSlug: 'organizations.checkSlug',
-  leaveOrganization: 'organizations.leave',
-
-  // Organization roles
-  createOrgRole: 'organizations.roles.create',
-  listOrgRoles: 'organizations.roles.list',
-  getOrgRole: 'organizations.roles.get',
-  updateOrgRole: 'organizations.roles.update',
-  deleteOrgRole: 'organizations.roles.delete',
-
-  // Members
-  addMember: 'organizations.members.add',
-  listMembers: 'organizations.members.list',
-  updateMemberRole: 'organizations.members.update',
-  removeMember: 'organizations.members.remove',
-  getActiveMember: 'organizations.members.active',
-  getActiveMemberRole: 'organizations.members.activeRole',
-
-  // Invitations
-  createInvitation: 'organizations.invitations.create',
-  listInvitations: 'organizations.invitations.list',
-  getInvitation: 'organizations.invitations.get',
-  acceptInvitation: 'organizations.invitations.accept',
-  rejectInvitation: 'organizations.invitations.reject',
-  cancelInvitation: 'organizations.invitations.cancel',
-  listUserInvitations: 'organizations.invitations.userList',
-
-  // Permissions
-  hasPermission: 'organizations.checkPermission',
+interface Mapping {
+  path: string
+  source: string
+  verb: Verb
+  build?: PayloadBuilder
 }
 
-// Methods used internally by Tier 2 — not user-facing.
+const body = (headers: Headers, payload: Record<string, unknown>): Record<string, unknown> => ({
+  headers,
+  body: payload,
+})
+
+const query = (headers: Headers, params: Record<string, unknown>): Record<string, unknown> => ({
+  headers,
+  query: params,
+})
+
+const MAPPINGS: Mapping[] = [
+  // ── Sign In / Sign Up / Sign Out ────────────────────────────────
+  { path: 'signIn.email', source: 'signInEmail', verb: 'POST' },
+  { path: 'signIn.emailOtp', source: 'signInEmailOTP', verb: 'POST' },
+  { path: 'signIn.magicLink', source: 'signInMagicLink', verb: 'POST' },
+  { path: 'signIn.phone', source: 'signInPhoneNumber', verb: 'POST' },
+  { path: 'signIn.social', source: 'signInSocial', verb: 'POST' },
+  { path: 'signUp.email', source: 'signUpEmail', verb: 'POST' },
+  { path: 'sessions.signOut', source: 'signOut', verb: 'POST' },
+
+  // ── Sessions ────────────────────────────────────────────────────
+  { path: 'sessions.list', source: 'listSessions', verb: 'GET' },
+  { path: 'sessions.revoke', source: 'revokeSession', verb: 'POST', build: (h, token) => body(h, { token }) },
+  { path: 'sessions.revokeOther', source: 'revokeOtherSessions', verb: 'POST' },
+  { path: 'sessions.revokeAll', source: 'revokeSessions', verb: 'POST' },
+  { path: 'sessions.update', source: 'updateSession', verb: 'POST' },
+
+  // ── Account (self-service) ──────────────────────────────────────
+  { path: 'account.update', source: 'updateUser', verb: 'POST' },
+  { path: 'account.delete', source: 'deleteUser', verb: 'POST' },
+  { path: 'account.setPassword', source: 'setPassword', verb: 'POST', build: (h, newPassword) => body(h, { newPassword }) },
+  { path: 'account.changeEmail', source: 'changeEmail', verb: 'POST', build: (h, newEmail) => body(h, { newEmail }) },
+
+  // ── Password ────────────────────────────────────────────────────
+  { path: 'password.change', source: 'changePassword', verb: 'POST' },
+  { path: 'password.confirm', source: 'verifyPassword', verb: 'POST' },
+  { path: 'password.forgot', source: 'requestPasswordReset', verb: 'POST' },
+  { path: 'password.reset', source: 'resetPassword', verb: 'POST' },
+
+  // ── Email ────────────────────────────────────────────────────────
+  { path: 'email.sendVerification', source: 'sendVerificationEmail', verb: 'POST' },
+  { path: 'email.verify', source: 'verifyEmail', verb: 'POST' },
+
+  // ── Email OTP ───────────────────────────────────────────────────
+  { path: 'email.otp.send', source: 'sendVerificationOTP', verb: 'POST' },
+  { path: 'email.otp.confirm', source: 'verifyEmailOTP', verb: 'POST' },
+  { path: 'email.otp.verifyEmail', source: 'verifyEmailOTP', verb: 'POST' },
+  { path: 'email.otp.check', source: 'checkVerificationOTP', verb: 'POST' },
+  { path: 'email.otp.forgotPassword', source: 'forgetPasswordEmailOTP', verb: 'POST' },
+  { path: 'email.otp.requestChange', source: 'requestEmailChangeEmailOTP', verb: 'POST' },
+  { path: 'email.otp.confirmChange', source: 'changeEmailEmailOTP', verb: 'POST' },
+  { path: 'email.otp.requestReset', source: 'requestPasswordResetEmailOTP', verb: 'POST' },
+  { path: 'email.otp.resetPassword', source: 'resetPasswordEmailOTP', verb: 'POST' },
+
+  // ── Phone OTP ───────────────────────────────────────────────────
+  { path: 'phone.otp.send', source: 'sendPhoneNumberOTP', verb: 'POST' },
+  { path: 'phone.otp.confirm', source: 'verifyPhoneNumber', verb: 'POST' },
+  { path: 'phone.verify', source: 'verifyPhoneNumber', verb: 'POST' },
+  { path: 'phone.otp.requestReset', source: 'requestPasswordResetPhoneNumber', verb: 'POST' },
+  { path: 'phone.otp.resetPassword', source: 'resetPasswordPhoneNumber', verb: 'POST' },
+
+  // ── Passkeys ────────────────────────────────────────────────────
+  { path: 'passkeys.list', source: 'listPasskeys', verb: 'GET' },
+  {
+    path: 'passkeys.update',
+    source: 'updatePasskey',
+    verb: 'POST',
+    build: (h, id, params) => body(h, { id, ...(params) }),
+  },
+  { path: 'passkeys.delete', source: 'deletePasskey', verb: 'POST', build: (h, id) => body(h, { id }) },
+  // ── Admin ───────────────────────────────────────────────────────
+  { path: 'admin.createUser', source: 'createUser', verb: 'POST' },
+  { path: 'admin.getUser', source: 'getUser', verb: 'GET', build: (h, userId) => query(h, { id: userId }) },
+  { path: 'admin.listUsers', source: 'listUsers', verb: 'GET' },
+  { path: 'admin.removeUser', source: 'removeUser', verb: 'POST', build: (h, userId) => body(h, { userId }) },
+  {
+    path: 'admin.setUserPassword',
+    source: 'setUserPassword',
+    verb: 'POST',
+    build: (h, userId, newPassword) => body(h, { userId, newPassword }),
+  },
+  { path: 'admin.setRole', source: 'setRole', verb: 'POST' },
+  {
+    path: 'admin.banUser',
+    source: 'banUser',
+    verb: 'POST',
+    build: (h, userId, params) => body(h, { userId, ...(params) }),
+  },
+  { path: 'admin.unbanUser', source: 'unbanUser', verb: 'POST', build: (h, userId) => body(h, { userId }) },
+  { path: 'admin.impersonateUser', source: 'impersonateUser', verb: 'POST', build: (h, userId) => body(h, { userId }) },
+  { path: 'admin.stopImpersonating', source: 'stopImpersonating', verb: 'POST' },
+  { path: 'admin.listUserSessions', source: 'listUserSessions', verb: 'POST', build: (h, userId) => body(h, { userId }) },
+  {
+    path: 'admin.revokeUserSession',
+    source: 'revokeUserSession',
+    verb: 'POST',
+    build: (h, sessionToken) => body(h, { sessionToken }),
+  },
+  { path: 'admin.revokeUserSessions', source: 'revokeUserSessions', verb: 'POST', build: (h, userId) => body(h, { userId }) },
+
+  // ── API Keys ────────────────────────────────────────────────────
+  { path: 'apiKeys.create', source: 'createApiKey', verb: 'POST' },
+  {
+    path: 'apiKeys.list',
+    source: 'listApiKeys',
+    verb: 'GET',
+    build: (h, userId, options) => query(h, { userId, ...(options) }),
+  },
+  { path: 'apiKeys.get', source: 'getApiKey', verb: 'GET', build: (h, id) => query(h, { id }) },
+  { path: 'apiKeys.update', source: 'updateApiKey', verb: 'POST', build: (h, id, params) => body(h, { keyId: id, ...(params) }) },
+  { path: 'apiKeys.delete', source: 'deleteApiKey', verb: 'POST', build: (h, id) => body(h, { keyId: id }) },
+  { path: 'apiKeys.verify', source: 'verifyApiKey', verb: 'POST' },
+  { path: 'apiKeys.deleteAllExpired', source: 'deleteAllExpiredApiKeys', verb: 'POST' },
+
+  // ── Identities (social providers) ───────────────────────────────
+  { path: 'identities.list', source: 'listUserAccounts', verb: 'GET' },
+  { path: 'identities.unlink', source: 'unlinkAccount', verb: 'POST' },
+  { path: 'identities.link', source: 'linkSocialAccount', verb: 'POST' },
+  { path: 'identities.getAccessToken', source: 'getAccessToken', verb: 'POST', build: (h, providerId) => body(h, { providerId }) },
+
+  // ── TOTP ────────────────────────────────────────────────────────
+  { path: 'totp.enable', source: 'enableTwoFactor', verb: 'POST', build: (h, p) => body(h, typeof p === 'string' ? { password: p } : (p ?? {})) },
+  { path: 'totp.disable', source: 'disableTwoFactor', verb: 'POST', build: (h, p) => body(h, typeof p === 'string' ? { password: p } : p) },
+  { path: 'totp.verify', source: 'verifyTOTP', verb: 'POST', build: (h, p) => body(h, typeof p === 'string' ? { code: p } : (p ?? {})) },
+  { path: 'totp.uri', source: 'getTOTPURI', verb: 'POST', build: (h, password) => body(h, { password }) },
+  { path: 'totp.otp.send', source: 'sendTwoFactorOTP', verb: 'POST' },
+  { path: 'totp.otp.verify', source: 'verifyTwoFactorOTP', verb: 'POST' },
+
+  // ── Backup codes ────────────────────────────────────────────────
+  { path: 'backupCodes.generate', source: 'generateBackupCodes', verb: 'POST', build: (h, password) => body(h, typeof password === 'string' ? { password } : (password ?? {})) },
+  { path: 'backupCodes.verify', source: 'verifyBackupCode', verb: 'POST', build: (h, code) => body(h, { code }) },
+  { path: 'backupCodes.view', source: 'viewBackupCodes', verb: 'POST' },
+
+  // ── Organizations ───────────────────────────────────────────────
+  { path: 'organizations.create', source: 'createOrganization', verb: 'POST' },
+  { path: 'organizations.list', source: 'listOrganizations', verb: 'GET' },
+  { path: 'organizations.getFull', source: 'getFullOrganization', verb: 'GET', build: (h, id) => query(h, { organizationId: id }) },
+  { path: 'organizations.setActive', source: 'setActiveOrganization', verb: 'POST', build: (h, organizationId) => body(h, { organizationId }) },
+  { path: 'organizations.update', source: 'updateOrganization', verb: 'POST', build: (h, id, params) => body(h, { organizationId: id, data: params ?? {} }) },
+  { path: 'organizations.delete', source: 'deleteOrganization', verb: 'POST', build: (h, id) => body(h, { organizationId: id }) },
+  { path: 'organizations.checkSlug', source: 'checkOrganizationSlug', verb: 'POST' },
+
+  // Members
+  { path: 'organizations.members.list', source: 'listMembers', verb: 'GET', build: (h, organizationId) => query(h, { organizationId }) },
+  { path: 'organizations.members.add', source: 'addMember', verb: 'POST', build: (h, organizationId, userId, role) => body(h, { organizationId, userId, ...(role ? { role } : {}) }) },
+  {
+    path: 'organizations.members.update',
+    source: 'updateMemberRole',
+    verb: 'POST',
+    build: (h, memberId, role, organizationId) => body(h, { memberId, role, ...(organizationId ? { organizationId } : {}) }),
+  },
+  { path: 'organizations.members.remove', source: 'removeMember', verb: 'POST', build: (h, orgId, memberId) => body(h, { memberIdOrEmail: memberId, organizationId: orgId }) },
+
+  // Invitations
+  { path: 'organizations.invitations.create', source: 'createInvitation', verb: 'POST', build: (h, orgId, params) => body(h, { organizationId: orgId, ...(params) }) },
+  { path: 'organizations.invitations.list', source: 'listInvitations', verb: 'GET', build: (h, organizationId) => query(h, { organizationId }) },
+  { path: 'organizations.invitations.get', source: 'getInvitation', verb: 'GET', build: (h, invitationId) => query(h, { invitationId }) },
+  { path: 'organizations.invitations.accept', source: 'acceptInvitation', verb: 'POST', build: (h, invitationId) => body(h, { invitationId }) },
+  { path: 'organizations.invitations.reject', source: 'rejectInvitation', verb: 'POST', build: (h, invitationId) => body(h, { invitationId }) },
+  { path: 'organizations.invitations.cancel', source: 'cancelInvitation', verb: 'POST', build: (h, invitationId) => body(h, { invitationId }) },
+
+  // Organization roles
+  { path: 'organizations.roles.create', source: 'createOrgRole', verb: 'POST' },
+  { path: 'organizations.roles.list', source: 'listOrgRoles', verb: 'GET', build: (h, organizationId) => query(h, organizationId ? { organizationId } : {}) },
+  { path: 'organizations.roles.get', source: 'getOrgRole', verb: 'GET' },
+  { path: 'organizations.roles.update', source: 'updateOrgRole', verb: 'POST', build: (h, roleId, params) => body(h, { roleId, data: params ?? {} }) },
+  { path: 'organizations.roles.delete', source: 'deleteOrgRole', verb: 'POST' },
+
+  // Permissions
+  { path: 'organizations.checkPermission', source: 'hasPermission', verb: 'POST' },
+]
+
+// Methods used internally by their wrappers — not user-facing.
 const SKIP_INTERNAL = new Set([
   'getSession',
   'callbackOAuth',
@@ -164,7 +203,7 @@ const SKIP_INTERNAL = new Set([
   'ok',
 ])
 
-// Better Auth methods that use query params instead of body.
+// Better Auth methods that use query params instead of body (raw passthrough only).
 const GET_METHODS = new Set([
   'getSession',
   'listSessions',
@@ -175,9 +214,9 @@ const GET_METHODS = new Set([
   'listOrgRoles',
   'listUsers',
   'getUser',
-  'getOrganization',
   'getFullOrganization',
   'getInvitation',
+  'getOrganization',
   'getOrgRole',
   'getApiKey',
   'listApiKeys',
@@ -194,13 +233,13 @@ const GET_METHODS = new Set([
   'checkOrganizationSlug',
 ])
 
-// ─── Proxied API ──────────────────────────────────────────────────
-// Wraps the raw Better Auth API to inject headers on every call and
-// route params to query/body based on the HTTP verb convention.
-
 const BA_TOP_LEVEL = new Set(['body', 'query', 'asResponse', 'returnHeaders', 'returnStatus', 'headers', 'method'])
 
-/** Wraps a Better Auth API object to auto-inject headers and route params to query/body. */
+/**
+ * Wraps a Better Auth API object to auto-inject headers and route raw params
+ * to query/body based on the HTTP verb convention. Used for the passthrough
+ * `gatehouse.api` surface, where callers provide verb-level params directly.
+ */
 export function buildProxiedApi(api: any, headers: Headers) {
   return new Proxy(api, {
     get(target: any, prop: string) {
@@ -208,7 +247,7 @@ export function buildProxiedApi(api: any, headers: Headers) {
       const useQuery = GET_METHODS.has(prop)
       return (params?: Record<string, unknown>) => {
         const callParams: Record<string, unknown> = { headers }
-        if (params) {
+        if (params && typeof params === 'object' && !Array.isArray(params)) {
           const hasRaw = Object.keys(params).some((k) => BA_TOP_LEVEL.has(k))
           if (hasRaw) {
             Object.assign(callParams, params)
@@ -222,19 +261,22 @@ export function buildProxiedApi(api: any, headers: Headers) {
   })
 }
 
-// ─── API builder ─────────────────────────────────────────────────
-// Takes a proxied Better Auth API and returns a nested API object
-// that maps BA method names to Gatehouse paths.
-
-/** Builds a nested API object from a Better Auth API, mapping method names to dot-separated paths. */
-export function buildApi(api: Record<string, Function>): Record<string, any> {
+/**
+ * Builds the nested, typed Gatehouse API from a Better Auth API object.
+ *
+ * Methods are matched against the mapping table above. Each exposed method
+ * sends the exact request payload better-auth expects: a single params object
+ * becomes `query` (GET) or `body` (POST), and methods with positional or
+ * string arguments are shaped by their `build` function.
+ */
+export function buildApi(api: Record<string, Function>, headers: Headers): Record<string, any> {
   const built: Record<string, any> = {}
 
-  for (const [source, targetPath] of Object.entries(MAPPINGS)) {
-    const fn = api[source]
+  for (const mapping of MAPPINGS) {
+    const fn = api[mapping.source]
     if (typeof fn !== 'function') continue
 
-    const segments = targetPath.split('.')
+    const segments = mapping.path.split('.')
     const key = segments.pop()!
     let current = built
 
@@ -243,15 +285,21 @@ export function buildApi(api: Record<string, Function>): Record<string, any> {
       current = current[seg]
     }
 
-    current[key] = (...args: any[]) => fn(...args)
+    if (mapping.build) {
+      current[key] = (...args: any[]) => fn(mapping.build!(headers, ...args))
+    } else {
+      const putIn = mapping.verb === 'GET' ? 'query' : 'body'
+      current[key] = (params?: Record<string, unknown>) => fn({ headers, [putIn]: params ?? {} })
+    }
   }
 
+  const proxied = buildProxiedApi(api, headers)
   const passthrough: Record<string, any> = {}
   for (const key of Object.keys(api)) {
     if (typeof api[key] !== 'function') continue
-    if (key in MAPPINGS) continue
+    if (MAPPINGS.some((m) => m.source === key)) continue
     if (SKIP_INTERNAL.has(key)) continue
-    passthrough[key] = (...args: any[]) => api[key](...args)
+    passthrough[key] = (...args: any[]) => proxied[key](...args)
   }
   if (Object.keys(passthrough).length > 0) {
     built.api = passthrough

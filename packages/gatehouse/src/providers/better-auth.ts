@@ -10,7 +10,7 @@ import type {
 } from '../types.js'
 import type { EmailOTPOptions } from 'better-auth/plugins'
 import { AuthenticationError } from '../types.js'
-import { buildProxiedApi, buildApi } from '../api-builder.js'
+import { buildApi } from '../api-builder.js'
 
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
@@ -96,8 +96,10 @@ export class BetterAuthAdapter {
         emailOTP({
           sendVerificationOTP: sendVerificationOTP as EmailOTPOptions['sendVerificationOTP'],
           sendVerificationOnSignUp: emailVerification.sendOnSignUp,
-          expiresIn: emailVerification.expiresIn,
           overrideDefaultEmailVerification: true,
+          // Only forward expiresIn when explicitly set — otherwise omit it so
+          // better-auth's default (300s) applies instead of new Date(NaN).
+          ...(emailVerification.expiresIn !== undefined ? { expiresIn: emailVerification.expiresIn } : {}),
         })
       )
     }
@@ -204,8 +206,7 @@ export class BetterAuthAdapter {
   async from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
     const headers = request instanceof Request ? request.headers : request.headers
     const session = await this.getSession({ headers })
-    const proxied = buildProxiedApi(this.api, headers)
-    const api = buildApi(proxied)
+    const api = buildApi(this.api, headers)
 
     return {
       session: async () => session,
@@ -329,7 +330,7 @@ export class BetterAuthAdapter {
         })
         return result.hasPermission === true
       }
-      return true
+      return false
     } catch {
       return false
     }

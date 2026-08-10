@@ -95,8 +95,8 @@ export interface OrganizationRoleCreateParams {
 
 export interface OrganizationRoleUpdateParams {
   organizationId?: string
-  permission?: Record<string, string[]>
   roleName?: string
+  permission?: Record<string, string[]>
 }
 
 /** TOTP setup data returned after enabling two-factor auth. */
@@ -131,11 +131,6 @@ export interface PasskeyInfo {
   createdAt: Date
 }
 
-export interface PasskeyCreateParams {
-  name?: string
-  domain?: string
-}
-
 export interface PasskeyUpdateParams {
   name?: string
 }
@@ -155,20 +150,6 @@ export interface AdminUserBanParams {
   banExpiresIn?: number
 }
 
-export interface AdminCheckPermissionParams {
-  userId?: string
-  role?: string
-  permissions: Record<string, string[]>
-}
-
-export interface AdminUpdateUserParams {
-  name?: string
-  email?: string
-  role?: string
-  data?: Record<string, unknown>
-}
-
-/** Options for the admin user listing endpoint. */
 export interface AdminListUsersOptions {
   searchField?: string
   searchOperator?: 'eq' | 'ne' | 'starts_with' | 'ends_with' | 'contains'
@@ -266,8 +247,7 @@ export interface EmailOtpSendParams {
 
 export interface EmailOtpConfirmParams {
   email: string
-  code: string
-  type?: 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
+  otp: string
 }
 
 export interface TwoFactorEnableParams {
@@ -579,7 +559,7 @@ export interface GatehouseInstance {
 
   signIn: {
     email(params: { email: string; password: string }): Promise<Session>
-    emailOtp(params: { email: string; code: string; type?: string }): Promise<Session>
+    emailOtp(params: { email: string; otp: string }): Promise<Session>
     magicLink(params: { email: string; callbackURL?: string }): Promise<void>
     phone(params: { phoneNumber: string; code: string }): Promise<Session>
     social(params: { provider: string; callbackURL?: string; disableRedirect?: boolean }): Promise<Session>
@@ -637,15 +617,13 @@ export interface GatehouseInstance {
   }
 
   passkeys: {
-    add(params?: PasskeyCreateParams): Promise<PasskeyInfo>
     list(): Promise<PasskeyInfo[]>
     update(id: string, params: PasskeyUpdateParams): Promise<PasskeyInfo>
-    remove(id: string): Promise<void>
+    delete(id: string): Promise<void>
   }
 
   admin: {
     createUser(params: AdminUserCreateParams): Promise<GatehouseUser>
-    updateUser(userId: string, params: AdminUpdateUserParams): Promise<GatehouseUser>
     getUser(userId: string): Promise<GatehouseUser | null>
     listUsers(options?: AdminListUsersOptions): Promise<{ users: GatehouseUser[]; total?: number }>
     removeUser(userId: string): Promise<void>
@@ -656,9 +634,8 @@ export interface GatehouseInstance {
     impersonateUser(userId: string): Promise<AdminImpersonationResult>
     stopImpersonating(): Promise<void>
     listUserSessions(userId: string): Promise<AdminUserSession[]>
-    revokeUserSession(userId: string, sessionToken: string): Promise<void>
+    revokeUserSession(sessionToken: string): Promise<void>
     revokeUserSessions(userId: string): Promise<void>
-    hasPermission(params: AdminCheckPermissionParams): Promise<boolean>
   }
 
   apiKeys: {
@@ -673,9 +650,9 @@ export interface GatehouseInstance {
 
   identities: {
     list(): Promise<Identity[]>
-    unlink(id: string): Promise<void>
+    unlink(params: { providerId: string; accountId: string }): Promise<void>
     link(input: string | { provider: string; redirect?: string }): Promise<void>
-    getAccessToken(provider: string): Promise<AccessToken>
+    getAccessToken(providerId: string): Promise<AccessToken>
   }
 
   totp: {
@@ -697,7 +674,6 @@ export interface GatehouseInstance {
   organizations: {
     create(params: OrganizationCreateParams): Promise<Organization>
     list(): Promise<Organization[]>
-    get(id: string): Promise<Organization | null>
     getFull(id: string): Promise<OrganizationFull | null>
     setActive(organizationId: string): Promise<void>
     update(id: string, params: OrganizationUpdateParams): Promise<Organization>
@@ -705,7 +681,7 @@ export interface GatehouseInstance {
     members: {
       list(organizationId: string): Promise<OrganizationMember[]>
       add(organizationId: string, userId: string, role?: string): Promise<OrganizationMember>
-      update(organizationId: string, memberId: string, role: string): Promise<OrganizationMember>
+      update(memberId: string, role: string, organizationId?: string): Promise<OrganizationMember>
       remove(organizationId: string, memberId: string): Promise<void>
     }
     invitations: {
@@ -719,9 +695,9 @@ export interface GatehouseInstance {
     roles: {
       create(params: OrganizationRoleCreateParams): Promise<OrganizationRole>
       list(organizationId?: string): Promise<OrganizationRole[]>
-      get(organizationId: string, roleName: string): Promise<OrganizationRole | null>
-      update(organizationId: string, roleName: string, params: OrganizationRoleUpdateParams): Promise<OrganizationRole>
-      delete(organizationId: string, roleName: string): Promise<void>
+      get(params: { roleName: string; organizationId?: string }): Promise<OrganizationRole | null>
+      update(roleId: string, params: OrganizationRoleUpdateParams): Promise<OrganizationRole>
+      delete(params: { roleId?: string; roleName?: string; organizationId?: string }): Promise<void>
     }
   }
 

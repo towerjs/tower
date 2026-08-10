@@ -60,10 +60,22 @@ Gatehouse provides a framework-specific export for Next.js:
 
 ```ts
 // src/app/api/auth/[...all]/route.ts
-export { GET, POST } from '@towerjs/gatehouse/next-js'
+export { GET, POST } from '@towerjs/gatehouse/next'
 ```
 
-And a proxy middleware:
+`@towerjs/gatehouse/next` also exports `action` and `withGatehouse` wrappers for server actions and route handlers.
+
+## Client
+
+For the browser, use the pre-configured client:
+
+```ts
+import { gatehouseClient } from '@towerjs/gatehouse/client'
+
+await gatehouseClient.signIn.email({ email, password })
+```
+
+## Proxy middleware
 
 ```ts
 // src/proxy.ts

@@ -29,7 +29,8 @@
     "@towerjs/blueprint": "workspace:*",
     "@towerjs/foundation": "workspace:*",
     "better-auth": "^1.6.25",
-    "kysely": "^0.29.4"
+    "kysely": "^0.29.4",
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "next": "^16"

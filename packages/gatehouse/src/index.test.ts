@@ -224,6 +224,7 @@ describe('buildProxiedApi', () => {
 describe('buildApi', () => {
   it('maps API methods to nested paths', async () => {
     const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
     const source = {
       signInEmail: vi.fn(),
       signOut: vi.fn(),
@@ -231,44 +232,90 @@ describe('buildApi', () => {
       createOrganization: vi.fn(),
     }
 
-    const gatehouse = buildApi(source as any)
+    const gatehouse = buildApi(source as any, headers)
     expect(typeof gatehouse.signIn?.email).toBe('function')
     expect(typeof gatehouse.sessions?.signOut).toBe('function')
     expect(typeof gatehouse.sessions?.list).toBe('function')
     expect(typeof gatehouse.organizations?.create).toBe('function')
   })
 
+  it('sends single object params as body for POST methods', async () => {
+    const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers({ cookie: 'x' })
+    const inner = vi.fn().mockResolvedValue({ ok: true })
+    const gatehouse = buildApi({ signInEmail: inner } as any, headers)
+
+    await gatehouse.signIn.email({ email: 'a@b.com', password: 'pw' })
+    expect(inner).toHaveBeenCalledWith({ headers, body: { email: 'a@b.com', password: 'pw' } })
+  })
+
+  it('sends single object params as query for GET methods', async () => {
+    const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
+    const inner = vi.fn().mockResolvedValue([])
+    const gatehouse = buildApi({ listSessions: inner } as any, headers)
+
+    await gatehouse.sessions.list()
+    expect(inner).toHaveBeenCalledWith({ headers, query: {} })
+  })
+
+  it('shapes positional id arguments for revoke', async () => {
+    const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
+    const inner = vi.fn().mockResolvedValue(undefined)
+    const gatehouse = buildApi({ revokeSession: inner } as any, headers)
+
+    await gatehouse.sessions.revoke('token-1')
+    expect(inner).toHaveBeenCalledWith({ headers, body: { token: 'token-1' } })
+  })
+
+  it('shapes string TOTP arguments into body objects', async () => {
+    const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
+    const enable = vi.fn().mockResolvedValue(undefined)
+    const verify = vi.fn().mockResolvedValue(undefined)
+    const gatehouse = buildApi({ enableTwoFactor: enable, verifyTOTP: verify } as any, headers)
+
+    await gatehouse.totp.enable('secret-pw')
+    expect(enable).toHaveBeenCalledWith({ headers, body: { password: 'secret-pw' } })
+
+    await gatehouse.totp.verify({ code: '123456', trustDevice: true })
+    expect(verify).toHaveBeenCalledWith({ headers, body: { code: '123456', trustDevice: true } })
+  })
+
+  it('shapes API key update with keyId body', async () => {
+    const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
+    const inner = vi.fn().mockResolvedValue(undefined)
+    const gatehouse = buildApi({ updateApiKey: inner } as any, headers)
+
+    await gatehouse.apiKeys.update('key-1', { name: 'renamed' })
+    expect(inner).toHaveBeenCalledWith({ headers, body: { keyId: 'key-1', name: 'renamed' } })
+  })
+
   it('collects unmapped methods in api passthrough', async () => {
     const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
     const source = { customPlugin: vi.fn(), signInEmail: vi.fn() }
-    const gatehouse = buildApi(source as any)
+    const gatehouse = buildApi(source as any, headers)
     expect(typeof gatehouse.api?.customPlugin).toBe('function')
   })
 
   it('excludes SKIP_INTERNAL from passthrough', async () => {
     const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
     const source = { getSession: vi.fn(), callbackOAuth: vi.fn(), randomFn: vi.fn() }
-    const gatehouse = buildApi(source as any)
+    const gatehouse = buildApi(source as any, headers)
     expect(gatehouse.api?.getSession).toBeUndefined()
     expect(gatehouse.api?.callbackOAuth).toBeUndefined()
     expect(typeof gatehouse.api?.randomFn).toBe('function')
   })
 
-  it('calls original function with same args', async () => {
-    const { buildApi } = await import('./api-builder.js')
-    const inner = vi.fn().mockResolvedValue('ok')
-    const source = { signInEmail: inner }
-    const gatehouse = buildApi(source as any)
-
-    const result = await gatehouse.signIn.email('a', 'b')
-    expect(result).toBe('ok')
-    expect(inner).toHaveBeenCalledWith('a', 'b')
-  })
-
   it('skips mappings for undefined methods', async () => {
     const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
     const source = { signInEmail: undefined }
-    const gatehouse = buildApi(source as any)
+    const gatehouse = buildApi(source as any, headers)
     expect(gatehouse.signIn).toBeUndefined()
   })
 })
