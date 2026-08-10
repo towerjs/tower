@@ -46,7 +46,9 @@ export function OrgDetailContent({ org, id }: OrgDetailContentProps) {
           )}
           <Input id="edit-name" name="name" label="Name" defaultValue={org.name} required />
           <Input id="edit-slug" name="slug" label="Slug" defaultValue={org.slug} required />
-          <Button type="submit" pending={updatePending}>Save</Button>
+          <Button type="submit" pending={updatePending}>
+            Save
+          </Button>
         </form>
         <form action={deleteAction} className="mt-4">
           <input type="hidden" name="id" value={id} />
@@ -70,9 +72,14 @@ export function OrgDetailContent({ org, id }: OrgDetailContentProps) {
         </CardHeader>
         <div className="space-y-3">
           {(org.members ?? []).map((member: any) => (
-            <div key={member.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+            <div
+              key={member.id}
+              className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
+            >
               <div>
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{member.user?.name ?? 'Unknown'}</p>
+                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                  {member.user?.name ?? 'Unknown'}
+                </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   {member.role} &middot; {member.user?.email ?? ''}
                 </p>
@@ -80,9 +87,7 @@ export function OrgDetailContent({ org, id }: OrgDetailContentProps) {
               <form action={removeAction}>
                 <input type="hidden" name="orgId" value={id} />
                 <input type="hidden" name="memberId" value={member.id} />
-                {(removeState as any)?.ok && (
-                  <span className="text-xs text-green-600 mr-2">Removed</span>
-                )}
+                {(removeState as any)?.ok && <span className="text-xs text-green-600 mr-2">Removed</span>}
                 <Button type="submit" variant="ghost" size="sm">
                   Remove
                 </Button>
@@ -118,7 +123,10 @@ export function OrgDetailContent({ org, id }: OrgDetailContentProps) {
             required
           />
           <div>
-            <label htmlFor="invite-role" className="block text-sm font-medium text-neutral-700 mb-1.5 dark:text-neutral-300">
+            <label
+              htmlFor="invite-role"
+              className="block text-sm font-medium text-neutral-700 mb-1.5 dark:text-neutral-300"
+            >
               Role
             </label>
             <select
@@ -130,7 +138,9 @@ export function OrgDetailContent({ org, id }: OrgDetailContentProps) {
               <option value="admin">Admin</option>
             </select>
           </div>
-          <Button type="submit" pending={invitePending}>Send invitation</Button>
+          <Button type="submit" pending={invitePending}>
+            Send invitation
+          </Button>
         </form>
       </Card>
 
@@ -141,20 +151,25 @@ export function OrgDetailContent({ org, id }: OrgDetailContentProps) {
             <CardDescription>Invitations that have been sent but not yet accepted</CardDescription>
           </CardHeader>
           <div className="space-y-3">
-            {org.invitations.filter((inv: any) => inv.status === 'pending').map((inv: any) => (
-              <div key={inv.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
-                <div>
-                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{inv.email}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Role: {inv.role}</p>
+            {org.invitations
+              .filter((inv: any) => inv.status === 'pending')
+              .map((inv: any) => (
+                <div
+                  key={inv.id}
+                  className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{inv.email}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Role: {inv.role}</p>
+                  </div>
+                  <form action={cancelAction}>
+                    <input type="hidden" name="invitationId" value={inv.id} />
+                    <Button type="submit" variant="ghost" size="sm">
+                      Cancel
+                    </Button>
+                  </form>
                 </div>
-                <form action={cancelAction}>
-                  <input type="hidden" name="invitationId" value={inv.id} />
-                  <Button type="submit" variant="ghost" size="sm">
-                    Cancel
-                  </Button>
-                </form>
-              </div>
-            ))}
+              ))}
           </div>
         </Card>
       )}

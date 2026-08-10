@@ -1,6 +1,6 @@
 ---
-title: "Magic Links"
-description: "Passwordless sign-in via emailed links — plus email and phone OTP."
+title: 'Magic Links'
+description: 'Passwordless sign-in via emailed links — plus email and phone OTP.'
 ---
 
 Passwordless auth: users request a link, click it, and they're signed in. No passwords to manage.
@@ -36,7 +36,9 @@ export function MagicLinkForm() {
         <>
           {state?.error && <p role="alert">{state.error}</p>}
           <input name="email" type="email" required placeholder="Email" />
-          <button type="submit" disabled={pending}>Email me a link</button>
+          <button type="submit" disabled={pending}>
+            Email me a link
+          </button>
         </>
       )}
     </form>
@@ -67,8 +69,8 @@ gatehouse: {
 ```
 
 ```tsx
-await gatehouse.signIn.emailOtp({ email, otp })     // email OTP sign-in
-await gatehouse.signIn.phone({ phoneNumber, code })  // phone OTP sign-in
+await gatehouse.signIn.emailOtp({ email, otp }) // email OTP sign-in
+await gatehouse.signIn.phone({ phoneNumber, code }) // phone OTP sign-in
 ```
 
 Actions: `signInWithOTP` (`email`), `signInWithPhone` (`phoneNumber`). OTP emails and SMS route through Courier; codes are single-use and expire.

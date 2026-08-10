@@ -24,10 +24,14 @@ function withReady<T extends (...args: any[]) => any>(fn: T): T {
 }
 
 export const action: {
-  <TResult, TArgs extends unknown[]>(handler: (...args: TArgs) => Promise<TResult>): (...args: TArgs) => Promise<TResult>
+  <TResult, TArgs extends unknown[]>(
+    handler: (...args: TArgs) => Promise<TResult>
+  ): (...args: TArgs) => Promise<TResult>
   form: (handler: (data: Record<string, string>) => Promise<void>) => FormActionFn
 } = Object.assign(
-  <TResult, TArgs extends unknown[]>(handler: (...args: TArgs) => Promise<TResult>): (...args: TArgs) => Promise<TResult> => {
+  <TResult, TArgs extends unknown[]>(
+    handler: (...args: TArgs) => Promise<TResult>
+  ): ((...args: TArgs) => Promise<TResult>) => {
     const wrapped = realAction(handler)
     return withReady(wrapped)
   },
@@ -38,7 +42,7 @@ export const action: {
         return ensureReady().then(() => (formAction as any)(arg0, arg1))
       }) as FormActionFn
     },
-  },
+  }
 )
 
 export const withGatehouse: typeof realWithGatehouse = ((handler: any) => {

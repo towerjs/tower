@@ -41,15 +41,15 @@ await app.shutdown()
 
 ## Exports
 
-| Export        | Description                                                          |
-| ------------- | -------------------------------------------------------------------- |
-| `tower`       | Lazy `TowerApp` proxy — exposes `config`, `container`, `runtime`     |
-| `initTower`   | Programmatic initialization (with optional config)                   |
-| `getTowerApp` | Async access to the initialized `TowerApp`                           |
-| `createTower` | Initialization helper from `@towerjs/foundation`                     |
-| `createTowerApp` | Low-level app builder from `@towerjs/foundation`                   |
-| `defineTower` | Configuration helper from `@towerjs/blueprint`                       |
-| `TowerApp`    | Type for the initialized Tower object                                |
+| Export           | Description                                                      |
+| ---------------- | ---------------------------------------------------------------- |
+| `tower`          | Lazy `TowerApp` proxy — exposes `config`, `container`, `runtime` |
+| `initTower`      | Programmatic initialization (with optional config)               |
+| `getTowerApp`    | Async access to the initialized `TowerApp`                       |
+| `createTower`    | Initialization helper from `@towerjs/foundation`                 |
+| `createTowerApp` | Low-level app builder from `@towerjs/foundation`                 |
+| `defineTower`    | Configuration helper from `@towerjs/blueprint`                   |
+| `TowerApp`       | Type for the initialized Tower object                            |
 
 `tower` is a lazy proxy — the app (and its `tower.config.ts` discovery) initializes on first use. For async initialization, await `getTowerApp()` first.
 
@@ -57,18 +57,18 @@ await app.shutdown()
 
 Import individual modules directly:
 
-| Subpath                         | Exports                                  |
-| ------------------------------- | ---------------------------------------- |
-| `towerjs/blueprint`             | `defineTower`, types                     |
-| `towerjs/foundation`            | `createTower`, `createTowerApp`, `initTower`, `getTowerApp` |
-| `towerjs/gatehouse`             | `gatehouse` (incl. `getSession`, `user`, `requireUser`) |
-| `towerjs/gatehouse/actions`     | Pre-built auth server actions            |
-| `towerjs/gatehouse/next`        | Next.js integration (`action`, `withGatehouse`, `GET`, `POST`) |
-| `towerjs/gatehouse/client`      | `gatehouseClient` for the browser        |
-| `towerjs/gatehouse/react-server` | Gatehouse for React Server Components    |
-| `towerjs/vault`                 | `vault` (incl. `db`, `migrate`, `seed`), types |
-| `towerjs/courier`               | `courier` (incl. `email`, `sms`)         |
-| `towerjs/runtime`               | `initTower`, `getTowerApp`, `getModuleFactory` |
+| Subpath                          | Exports                                                        |
+| -------------------------------- | -------------------------------------------------------------- |
+| `towerjs/blueprint`              | `defineTower`, types                                           |
+| `towerjs/foundation`             | `createTower`, `createTowerApp`, `initTower`, `getTowerApp`    |
+| `towerjs/gatehouse`              | `gatehouse` (incl. `getSession`, `user`, `requireUser`)        |
+| `towerjs/gatehouse/actions`      | Pre-built auth server actions                                  |
+| `towerjs/gatehouse/next`         | Next.js integration (`action`, `withGatehouse`, `GET`, `POST`) |
+| `towerjs/gatehouse/client`       | `gatehouseClient` for the browser                              |
+| `towerjs/gatehouse/react-server` | Gatehouse for React Server Components                          |
+| `towerjs/vault`                  | `vault` (incl. `db`, `migrate`, `seed`), types                 |
+| `towerjs/courier`                | `courier` (incl. `email`, `sms`)                               |
+| `towerjs/runtime`                | `initTower`, `getTowerApp`, `getModuleFactory`                 |
 
 ## What's included
 

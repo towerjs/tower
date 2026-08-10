@@ -41,18 +41,18 @@ if (session) {
 
 ## Features
 
-| Feature          | Config key     | Description                     |
-| ---------------- | -------------- | ------------------------------- |
-| Email / password | `credentials`  | Sign in with email and password |
-| Social login     | `social`       | Google, GitHub, and more        |
-| Magic links      | `magicLinks`   | Passwordless email sign-in      |
+| Feature            | Config key          | Description                      |
+| ------------------ | ------------------- | -------------------------------- |
+| Email / password   | `credentials`       | Sign in with email and password  |
+| Social login       | `social`            | Google, GitHub, and more         |
+| Magic links        | `magicLinks`        | Passwordless email sign-in       |
 | Email verification | `emailVerification` | Verify email by link or OTP code |
-| Phone auth       | `phoneNumber`  | SMS verification                |
-| Passkeys         | `passkeys`     | Biometric / hardware key login  |
-| Two-factor auth  | `twoFactor`    | TOTP + backup codes             |
-| Organizations    | `organization` | Teams, invitations, roles       |
-| API keys         | `apiKey`       | Programmatic access             |
-| Admin panel      | `admin`        | User management dashboard       |
+| Phone auth         | `phoneNumber`       | SMS verification                 |
+| Passkeys           | `passkeys`          | Biometric / hardware key login   |
+| Two-factor auth    | `twoFactor`         | TOTP + backup codes              |
+| Organizations      | `organization`      | Teams, invitations, roles        |
+| API keys           | `apiKey`            | Programmatic access              |
+| Admin panel        | `admin`             | User management dashboard        |
 
 ## Next.js integration
 

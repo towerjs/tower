@@ -1,6 +1,6 @@
 ---
-title: "Dashboard with Organizations"
-description: "Build a multi-tenant dashboard using Gatehouse organizations."
+title: 'Dashboard with Organizations'
+description: 'Build a multi-tenant dashboard using Gatehouse organizations.'
 ---
 
 This tutorial builds a dashboard application with organization support — members can join organizations, each with their own data.
@@ -55,11 +55,9 @@ export default async function DashboardPage() {
         <p>You don't belong to any organizations yet.</p>
       ) : (
         <ul>
-          {orgs.map(org => (
+          {orgs.map((org) => (
             <li key={org.id}>
-              <a href={`/dashboard/organizations/${org.id}`}>
-                {org.name}
-              </a>
+              <a href={`/dashboard/organizations/${org.id}`}>{org.name}</a>
             </li>
           ))}
         </ul>
@@ -87,7 +85,7 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
 
       <h2>Members</h2>
       <ul>
-        {org.members?.map(member => (
+        {org.members?.map((member) => (
           <li key={member.id}>
             {member.user?.name ?? member.userId} — {member.role}
           </li>
@@ -95,7 +93,7 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
       </ul>
 
       <h2>Invitations</h2>
-      {org.invitations?.map(inv => (
+      {org.invitations?.map((inv) => (
         <div key={inv.id}>
           <span>{inv.email}</span>
           <span>{inv.role}</span>

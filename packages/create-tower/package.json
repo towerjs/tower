@@ -16,6 +16,6 @@
     "@towerjs/scribe": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^26"
+    "@types/node": "^26.2.0"
   }
 }

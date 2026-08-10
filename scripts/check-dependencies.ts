@@ -23,7 +23,13 @@ const ALLOWED_DEPENDENCIES: Record<string, string[]> = {
   '@towerjs/treasury': ['@towerjs/foundation', '@towerjs/blueprint'],
   '@towerjs/observatory': ['@towerjs/foundation', '@towerjs/blueprint'],
   '@towerjs/watchtower': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/scribe': [],
+  '@towerjs/scribe': [
+    '@towerjs/foundation',
+    '@towerjs/blueprint',
+    '@towerjs/vault',
+    '@towerjs/gatehouse',
+    '@towerjs/courier',
+  ],
   '@towerjs/towerjs': [
     '@towerjs/foundation',
     '@towerjs/blueprint',

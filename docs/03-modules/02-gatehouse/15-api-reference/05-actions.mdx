@@ -1,6 +1,6 @@
 ---
-title: "Actions"
-description: "Pre-built server actions: wire auth straight into forms with no client code."
+title: 'Actions'
+description: 'Pre-built server actions: wire auth straight into forms with no client code.'
 ---
 
 Gatehouse ships pre-built server actions for common auth operations. They run in an authenticated request context, take plain form fields, and return `{ ok: true }` or `{ error: string }` — ready for `useActionState`.
@@ -13,9 +13,13 @@ Re-export them from your app's actions module:
 'use server'
 
 export {
-  signIn, signUp, signOut,
-  updateProfile, changePassword,
-  createOrganization, inviteMember,
+  signIn,
+  signUp,
+  signOut,
+  updateProfile,
+  changePassword,
+  createOrganization,
+  inviteMember,
   // ...any of the actions below
 } from 'towerjs/gatehouse/actions'
 ```
@@ -34,7 +38,9 @@ export function SignInForm() {
       {state?.error && <p role="alert">{state.error}</p>}
       <input name="email" type="email" required />
       <input name="password" type="password" required />
-      <button type="submit" disabled={pending}>Sign in</button>
+      <button type="submit" disabled={pending}>
+        Sign in
+      </button>
     </form>
   )
 }
@@ -44,123 +50,123 @@ Field names map directly to `<input name="...">` attributes.
 
 ## Sign in / sign up
 
-| Action | Form fields |
-| --- | --- |
-| `signIn` | `email`, `password` |
-| `signUp` | `name`, `email`, `password` |
-| `signOut` | — |
-| `signInWithOTP` | `email`, `otp` |
-| `signInWithPhone` | `phoneNumber`, `code` |
-| `requestMagicLink` | `email` |
+| Action             | Form fields                 |
+| ------------------ | --------------------------- |
+| `signIn`           | `email`, `password`         |
+| `signUp`           | `name`, `email`, `password` |
+| `signOut`          | —                           |
+| `signInWithOTP`    | `email`, `otp`              |
+| `signInWithPhone`  | `phoneNumber`, `code`       |
+| `requestMagicLink` | `email`                     |
 
 ## Sessions
 
-| Action | Form fields |
-| --- | --- |
-| `revokeSession` | `token` |
-| `revokeOtherSessions` | — |
+| Action                | Form fields |
+| --------------------- | ----------- |
+| `revokeSession`       | `token`     |
+| `revokeOtherSessions` | —           |
 
 ## Account & password
 
-| Action | Form fields |
-| --- | --- |
-| `updateProfile` | `name`, `image` |
-| `deleteAccount` | `password` |
-| `setPassword` | `newPassword` |
-| `changeEmail` | `newEmail` |
-| `changePassword` | `currentPassword`, `newPassword` |
-| `verifyPassword` | `password` |
-| `requestPasswordReset` | `email` |
-| `resetPassword` | `newPassword`, `token` |
+| Action                 | Form fields                      |
+| ---------------------- | -------------------------------- |
+| `updateProfile`        | `name`, `image`                  |
+| `deleteAccount`        | `password`                       |
+| `setPassword`          | `newPassword`                    |
+| `changeEmail`          | `newEmail`                       |
+| `changePassword`       | `currentPassword`, `newPassword` |
+| `verifyPassword`       | `password`                       |
+| `requestPasswordReset` | `email`                          |
+| `resetPassword`        | `newPassword`, `token`           |
 
 ## Email verification & OTP
 
-| Action | Form fields |
-| --- | --- |
-| `sendVerificationEmail` | `email` |
-| `verifyEmail` | `token` |
-| `sendVerificationOTP` | `email`, `type` |
-| `verifyVerificationOTP` | `email`, `otp` |
+| Action                  | Form fields     |
+| ----------------------- | --------------- |
+| `sendVerificationEmail` | `email`         |
+| `verifyEmail`           | `token`         |
+| `sendVerificationOTP`   | `email`, `type` |
+| `verifyVerificationOTP` | `email`, `otp`  |
 
 ## Phone OTP
 
-| Action | Form fields |
-| --- | --- |
-| `sendPhoneOTP` | `phoneNumber` |
+| Action           | Form fields           |
+| ---------------- | --------------------- |
+| `sendPhoneOTP`   | `phoneNumber`         |
 | `verifyPhoneOTP` | `phoneNumber`, `code` |
 
 ## Two-factor
 
-| Action | Form fields |
-| --- | --- |
-| `enableTwoFactor` | `password` — returns `{ totpURI, backupCodes }` directly |
-| `verifyTwoFactor` | `code`, `trustDevice` |
-| `disableTwoFactor` | `password` |
-| `generateTOTP` | `password` |
-| `sendTwoFactorOTP` | `trustDevice` |
-| `verifyTwoFactorOTP` | `code`, `trustDevice` |
-| `generateBackupCodes` | `password` — returns new codes directly |
-| `verifyBackupCode` | `code` |
+| Action                | Form fields                                              |
+| --------------------- | -------------------------------------------------------- |
+| `enableTwoFactor`     | `password` — returns `{ totpURI, backupCodes }` directly |
+| `verifyTwoFactor`     | `code`, `trustDevice`                                    |
+| `disableTwoFactor`    | `password`                                               |
+| `generateTOTP`        | `password`                                               |
+| `sendTwoFactorOTP`    | `trustDevice`                                            |
+| `verifyTwoFactorOTP`  | `code`, `trustDevice`                                    |
+| `generateBackupCodes` | `password` — returns new codes directly                  |
+| `verifyBackupCode`    | `code`                                                   |
 
 ## Passkeys
 
-| Action | Form fields |
-| --- | --- |
+| Action          | Form fields  |
+| --------------- | ------------ |
 | `updatePasskey` | `id`, `name` |
-| `deletePasskey` | `id` |
+| `deletePasskey` | `id`         |
 
 ## Admin
 
-| Action | Form fields |
-| --- | --- |
-| `createUser` | `name`, `email`, `password` |
-| `removeUser` | `userId` |
-| `setUserPassword` | `userId`, `newPassword` |
-| `setRole` | `userId`, `role` |
-| `banUser` | `userId`, `banReason`, `banExpiresIn` |
-| `unbanUser` | `userId` |
-| `impersonateUser` | `userId` |
-| `stopImpersonating` | — |
-| `revokeUserSession` | `sessionToken` |
-| `revokeUserSessions` | `userId` |
+| Action               | Form fields                           |
+| -------------------- | ------------------------------------- |
+| `createUser`         | `name`, `email`, `password`           |
+| `removeUser`         | `userId`                              |
+| `setUserPassword`    | `userId`, `newPassword`               |
+| `setRole`            | `userId`, `role`                      |
+| `banUser`            | `userId`, `banReason`, `banExpiresIn` |
+| `unbanUser`          | `userId`                              |
+| `impersonateUser`    | `userId`                              |
+| `stopImpersonating`  | —                                     |
+| `revokeUserSession`  | `sessionToken`                        |
+| `revokeUserSessions` | `userId`                              |
 
 ## Roles
 
-| Action | Form fields |
-| --- | --- |
+| Action       | Form fields      |
+| ------------ | ---------------- |
 | `assignRole` | `userId`, `role` |
-| `removeRole` | `userId` |
+| `removeRole` | `userId`         |
 
 ## API keys
 
-| Action | Form fields |
-| --- | --- |
-| `createApiKey` | `name`, `expiresIn` — returns `{ ok: true }`, not the key |
-| `updateApiKey` | `id`, `name` |
-| `deleteApiKey` | `id` |
-| `verifyApiKey` | `key` |
-| `deleteExpiredApiKeys` | — |
+| Action                 | Form fields                                               |
+| ---------------------- | --------------------------------------------------------- |
+| `createApiKey`         | `name`, `expiresIn` — returns `{ ok: true }`, not the key |
+| `updateApiKey`         | `id`, `name`                                              |
+| `deleteApiKey`         | `id`                                                      |
+| `verifyApiKey`         | `key`                                                     |
+| `deleteExpiredApiKeys` | —                                                         |
 
 ## Organizations
 
-| Action | Form fields |
-| --- | --- |
-| `createOrganization` | `name`, `slug` |
-| `updateOrganization` | `id`, `name`, `slug` |
-| `deleteOrganization` | `id` |
-| `setActiveOrganization` | `organizationId` |
-| `addMember` | `organizationId`, `userId`, `role` |
-| `updateMemberRole` | `memberId`, `role`, `organizationId` |
-| `removeMember` | `orgId`, `memberId` |
-| `inviteMember` | `orgId`, `email`, `role` |
-| `cancelInvitation` | `invitationId` |
-| `acceptInvitation` | `invitationId` |
-| `rejectInvitation` | `invitationId` |
+| Action                  | Form fields                          |
+| ----------------------- | ------------------------------------ |
+| `createOrganization`    | `name`, `slug`                       |
+| `updateOrganization`    | `id`, `name`, `slug`                 |
+| `deleteOrganization`    | `id`                                 |
+| `setActiveOrganization` | `organizationId`                     |
+| `addMember`             | `organizationId`, `userId`, `role`   |
+| `updateMemberRole`      | `memberId`, `role`, `organizationId` |
+| `removeMember`          | `orgId`, `memberId`                  |
+| `inviteMember`          | `orgId`, `email`, `role`             |
+| `cancelInvitation`      | `invitationId`                       |
+| `acceptInvitation`      | `invitationId`                       |
+| `rejectInvitation`      | `invitationId`                       |
 
 ## Identities
 
-| Action | Form fields |
-| --- | --- |
+| Action          | Form fields               |
+| --------------- | ------------------------- |
 | `unlinkAccount` | `providerId`, `accountId` |
 
 ## Error handling

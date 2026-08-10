@@ -8,7 +8,10 @@ export default function Home() {
           Tower
         </Link>
         <nav className="flex items-center gap-4 text-sm">
-            <Link href="/sign-in" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
+          <Link
+            href="/sign-in"
+            className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+          >
             Sign in
           </Link>
           <Link
@@ -67,7 +70,9 @@ export default function Home() {
             ].map((item) => (
               <div key={item.title} className="rounded-lg border border-neutral-200 p-6 dark:border-neutral-800">
                 <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{item.description}</p>
+                <p className="mt-2 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
+                  {item.description}
+                </p>
               </div>
             ))}
           </div>

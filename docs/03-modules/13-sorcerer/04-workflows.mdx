@@ -1,6 +1,6 @@
 ---
-title: "Workflows"
-description: "Structured multi-step AI processes with typed steps and output."
+title: 'Workflows'
+description: 'Structured multi-step AI processes with typed steps and output.'
 ---
 
 Workflows provide structured multi-step AI processes. Each step can combine application logic, tool calls, and model prompts, with the result of one step available to the next.
@@ -9,35 +9,31 @@ Workflows provide structured multi-step AI processes. Each step can combine appl
 const summaryWorkflow = workflow({
   steps: [
     {
-      name: "extract",
+      name: 'extract',
 
-      execute: async ({
-        url,
-      }) => {
+      execute: async ({ url }) => {
         return extractContent(url)
       },
     },
 
     {
-      name: "summarize",
+      name: 'summarize',
 
-      model: "anthropic:claude-sonnet-4",
+      model: 'anthropic:claude-sonnet-4',
 
-      prompt:
-        "Summarize the following: {extract.content}",
+      prompt: 'Summarize the following: {extract.content}',
     },
 
     {
-      name: "translate",
+      name: 'translate',
 
-      model: "openai:gpt-5-mini",
+      model: 'openai:gpt-5-mini',
 
-      prompt:
-        "Translate to French: {summarize.text}",
+      prompt: 'Translate to French: {summarize.text}',
     },
   ],
 
-  output: "translate.text",
+  output: 'translate.text',
 })
 ```
 
@@ -45,9 +41,9 @@ Steps reference each other's results with `{stepName.field}` templates. The `out
 
 Workflows are designed for:
 
-* document processing
-* automation
-* background AI tasks
-* multi-step business processes
+- document processing
+- automation
+- background AI tasks
+- multi-step business processes
 
 For long-running workflows that should continue after the request ends, see the [Crane](/docs/crane) integration.

@@ -31,17 +31,17 @@ Currently supports **Next.js** with more frameworks coming.
 
 ### On the roadmap
 
-| Module      | Description                                              | Providers                          |
-| ----------- | -------------------------------------------------------- | ---------------------------------- |
-| Beacon      | Realtime channels and events                             | Postgres (built-in), Redis, Ably, Pusher |
-| Crane       | Background jobs and queues                               | Postgres (built-in), Redis         |
-| Keep        | File storage and assets                                  | Local (built-in), S3, Cloudflare R2 |
-| Treasury    | Billing and payments                                     | Stripe                             |
+| Module      | Description                                              | Providers                                   |
+| ----------- | -------------------------------------------------------- | ------------------------------------------- |
+| Beacon      | Realtime channels and events                             | Postgres (built-in), Redis, Ably, Pusher    |
+| Crane       | Background jobs and queues                               | Postgres (built-in), Redis                  |
+| Keep        | File storage and assets                                  | Local (built-in), S3, Cloudflare R2         |
+| Treasury    | Billing and payments                                     | Stripe                                      |
 | Compass     | Search and indexing                                      | Postgres (built-in), Meilisearch, Typesense |
-| Observatory | Logs, metrics, tracing, health checks                    | Console (built-in)                 |
-| Atlas       | File-based routing for frameworks that don't provide it  | —                                  |
-| Forge       | Build and deployment for environments and infrastructure | —                                  |
-| Sorcerer    | AI application layer — agents, chat, workflows           | Vercel AI SDK (any model provider) |
+| Observatory | Logs, metrics, tracing, health checks                    | Console (built-in)                          |
+| Atlas       | File-based routing for frameworks that don't provide it  | —                                           |
+| Forge       | Build and deployment for environments and infrastructure | —                                           |
+| Sorcerer    | AI application layer — agents, chat, workflows           | Vercel AI SDK (any model provider)          |
 
 ## Why Tower?
 

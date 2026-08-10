@@ -16,23 +16,12 @@ export const vaultConfigSchema: z.ZodType<VaultConfig> = z
         max: z.number().int().nonnegative().optional(),
         idleTimeoutMillis: z.number().int().nonnegative().optional(),
         connectionTimeoutMillis: z.number().int().nonnegative().optional(),
-        ssl: z
-          .union([
-            z.boolean(),
-            z.object({ rejectUnauthorized: z.boolean().optional() }).strict(),
-          ])
-          .optional(),
+        ssl: z.union([z.boolean(), z.object({ rejectUnauthorized: z.boolean().optional() }).strict()]).optional(),
       })
       .strict()
       .optional(),
-    migrations: z
-      .object({ folder: z.string() })
-      .strict()
-      .optional(),
-    seeds: z
-      .object({ folder: z.string() })
-      .strict()
-      .optional(),
+    migrations: z.object({ folder: z.string() }).strict().optional(),
+    seeds: z.object({ folder: z.string() }).strict().optional(),
   })
   .strict()
 

@@ -40,7 +40,10 @@ export function SignUpForm() {
 
       <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
         Already have an account?{' '}
-        <Link href="/sign-in" className="font-medium text-neutral-900 underline underline-offset-2 dark:text-neutral-100">
+        <Link
+          href="/sign-in"
+          className="font-medium text-neutral-900 underline underline-offset-2 dark:text-neutral-100"
+        >
           Sign in
         </Link>
       </p>

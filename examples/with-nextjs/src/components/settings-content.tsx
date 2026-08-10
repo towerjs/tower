@@ -42,7 +42,9 @@ export function SettingsContent({ user }: SettingsContentProps) {
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Email</label>
             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{user.email}</p>
           </div>
-          <Button type="submit" pending={profilePending}>Save changes</Button>
+          <Button type="submit" pending={profilePending}>
+            Save changes
+          </Button>
         </form>
       </Card>
 
@@ -64,7 +66,9 @@ export function SettingsContent({ user }: SettingsContentProps) {
           )}
           <Input id="currentPassword" name="currentPassword" type="password" label="Current password" required />
           <Input id="newPassword" name="newPassword" type="password" label="New password" required minLength={8} />
-          <Button type="submit" pending={passwordPending}>Update password</Button>
+          <Button type="submit" pending={passwordPending}>
+            Update password
+          </Button>
         </form>
       </Card>
     </div>

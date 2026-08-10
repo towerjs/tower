@@ -1,7 +1,7 @@
 ---
-title: "Crane"
-description: "Background jobs, queues, and cron schedules — persisted, retried, and processed in-process."
-badge: "Coming Soon"
+title: 'Crane'
+description: 'Background jobs, queues, and cron schedules — persisted, retried, and processed in-process.'
+badge: 'Coming Soon'
 ---
 
 > **Status: Planned** — Crane is not yet implemented. This document describes the target API.
@@ -61,8 +61,8 @@ crane.cron('daily-report', '0 6 * * *', async () => {
 Crane polls for due jobs in-process — no separate worker process:
 
 ```tsx
-await crane.start()  // start processing
-await crane.stop()   // finish in-flight jobs, then exit
+await crane.start() // start processing
+await crane.stop() // finish in-flight jobs, then exit
 ```
 
 ## Failures

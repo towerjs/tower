@@ -51,9 +51,9 @@ describe('gatehouse config validation', () => {
   })
 
   it('rejects an invalid email verification method', () => {
-    expect(() =>
-      parseGatehouseConfig({ provider: 'better-auth', emailVerification: { method: 'sms' } })
-    ).toThrow(/Invalid configuration/)
+    expect(() => parseGatehouseConfig({ provider: 'better-auth', emailVerification: { method: 'sms' } })).toThrow(
+      /Invalid configuration/
+    )
   })
 
   it('rejects social as a plain string', () => {
@@ -73,8 +73,8 @@ describe('gatehouse config validation', () => {
   })
 
   it('rejects a negative rate limit window', () => {
-    expect(() =>
-      parseGatehouseConfig({ provider: 'better-auth', rateLimit: { window: -1 } as any })
-    ).toThrow(/Invalid configuration/)
+    expect(() => parseGatehouseConfig({ provider: 'better-auth', rateLimit: { window: -1 } as any })).toThrow(
+      /Invalid configuration/
+    )
   })
 })

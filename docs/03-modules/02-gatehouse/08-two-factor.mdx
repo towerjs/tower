@@ -1,6 +1,6 @@
 ---
-title: "Two-Factor Authentication"
-description: "TOTP codes and backup codes for a second authentication step."
+title: 'Two-Factor Authentication'
+description: 'TOTP codes and backup codes for a second authentication step.'
 ---
 
 Add a second factor: after the password, users must enter a TOTP code from their authenticator app — or a backup code when they don't have the device.
@@ -43,8 +43,8 @@ Action: `verifyTwoFactor` (`code`, `trustDevice`).
 Users who lose their authenticator can fall back to recovery codes:
 
 ```tsx
-await gatehouse.backupCodes.generate(password)  // new codes
-await gatehouse.backupCodes.verify(code)        // code is consumed on use
+await gatehouse.backupCodes.generate(password) // new codes
+await gatehouse.backupCodes.verify(code) // code is consumed on use
 ```
 
 Actions: `generateBackupCodes` (`password`), `verifyBackupCode` (`code`).

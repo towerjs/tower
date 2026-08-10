@@ -44,7 +44,9 @@ export async function resolveConfig(): Promise<TowerConfig> {
 }
 
 /** @internal Lazily-loads registerConfigProvider to avoid bundler tracing of dynamic import(). */
-export async function registerConfigProvider(provider: (config?: TowerConfig) => Promise<TowerConfig | undefined>): Promise<void> {
+export async function registerConfigProvider(
+  provider: (config?: TowerConfig) => Promise<TowerConfig | undefined>
+): Promise<void> {
   const mod = await import('./resolve-config.js')
   mod.registerConfigProvider(provider)
 }

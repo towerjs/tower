@@ -158,11 +158,7 @@ export function parseCourierConfig(config: CourierConfig): CourierConfig {
 }
 
 /** Validates send params for a single channel, prefixing errors with the channel. */
-export function parseSendParams<T>(
-  schema: z.ZodType<T>,
-  channel: 'email' | 'sms' | 'push',
-  params: unknown
-): T {
+export function parseSendParams<T>(schema: z.ZodType<T>, channel: 'email' | 'sms' | 'push', params: unknown): T {
   const result = schema.safeParse(params)
   if (!result.success) {
     const detail = result.error.issues

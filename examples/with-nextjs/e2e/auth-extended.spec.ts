@@ -112,9 +112,7 @@ test.describe('Extended auth flows', () => {
     await expect(page.getByText(inviteEmail)).toBeVisible()
 
     await page.click('button:has-text("Cancel")')
-    await page.waitForResponse(
-      (r) => r.request().method() === 'POST' && r.url().includes('/dashboard/organizations/')
-    )
+    await page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/dashboard/organizations/'))
 
     await page.reload()
     await page.waitForLoadState('networkidle')

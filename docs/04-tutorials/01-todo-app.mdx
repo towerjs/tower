@@ -1,6 +1,6 @@
 ---
-title: "Building a Todo App"
-description: "Build a todo application with Vault for database access, Courier for email notifications."
+title: 'Building a Todo App'
+description: 'Build a todo application with Vault for database access, Courier for email notifications.'
 ---
 
 This tutorial walks through building a todo application with Tower.
@@ -46,33 +46,19 @@ export async function addTodo(formData: FormData) {
   if (!session) throw new Error('Not authenticated')
 
   const title = formData.get('title') as string
-  await vault
-    .insertInto('todos')
-    .values({ title, user_id: session.user.id })
-    .execute()
+  await vault.insertInto('todos').values({ title, user_id: session.user.id }).execute()
 }
 
 export async function toggleTodo(formData: FormData) {
   const id = formData.get('id') as string
-  const todo = await vault
-    .selectFrom('todos')
-    .select('completed')
-    .where('id', '=', id)
-    .executeTakeFirst()
+  const todo = await vault.selectFrom('todos').select('completed').where('id', '=', id).executeTakeFirst()
 
-  await vault
-    .updateTable('todos')
-    .set({ completed: !todo?.completed })
-    .where('id', '=', id)
-    .execute()
+  await vault.updateTable('todos').set({ completed: !todo?.completed }).where('id', '=', id).execute()
 }
 
 export async function deleteTodo(formData: FormData) {
   const id = formData.get('id') as string
-  await vault
-    .deleteFrom('todos')
-    .where('id', '=', id)
-    .execute()
+  await vault.deleteFrom('todos').where('id', '=', id).execute()
 }
 ```
 
@@ -102,17 +88,13 @@ export default async function TodosPage() {
       </form>
 
       <ul>
-        {todos.map(todo => (
+        {todos.map((todo) => (
           <li key={todo.id}>
             <form action={toggleTodo} style={{ display: 'inline' }}>
               <input type="hidden" name="id" value={todo.id} />
-              <button type="submit">
-                {todo.completed ? '☑' : '○'}
-              </button>
+              <button type="submit">{todo.completed ? '☑' : '○'}</button>
             </form>
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-              {todo.title}
-            </span>
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>{todo.title}</span>
             <form action={deleteTodo} style={{ display: 'inline' }}>
               <input type="hidden" name="id" value={todo.id} />
               <button type="submit">✕</button>

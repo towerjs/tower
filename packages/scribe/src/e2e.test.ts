@@ -243,28 +243,30 @@ describe('scaffolding — real file output', () => {
             expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'))).toBe(hasGatehouse)
             expect(existsSync(join(projectDir, 'src', 'lib', 'auth', 'actions.ts'))).toBe(hasGatehouse)
 
-            const towerAddCalls = vi.mocked(execa).mock.calls.filter(
-              ([bin, args]) => bin === 'pnpm' && Array.isArray(args) && args[0] === 'add',
-            )
+            const towerAddCalls = vi
+              .mocked(execa)
+              .mock.calls.filter(([bin, args]) => bin === 'pnpm' && Array.isArray(args) && args[0] === 'add')
             const gatehouseDirectDep = towerAddCalls.some(([, args]) =>
-              (args as string[]).includes('@towerjs/gatehouse'),
+              (args as string[]).includes('@towerjs/gatehouse')
             )
             expect(gatehouseDirectDep).toBe(hasGatehouse)
 
             const edgeDevDep = towerAddCalls.some(
-              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/edge'),
+              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/edge')
             )
             expect(edgeDevDep).toBe(isEdge)
 
             const scribeDevDep = towerAddCalls.some(
-              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/scribe'),
+              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/scribe')
             )
             expect(scribeDevDep).toBe(true)
 
-            const tailwindPluginInstall = vi.mocked(execa).mock.calls.some(
-              ([bin, args]) =>
-                bin === 'pnpm' && Array.isArray(args) && (args as string[]).includes('prettier-plugin-tailwindcss'),
-            )
+            const tailwindPluginInstall = vi
+              .mocked(execa)
+              .mock.calls.some(
+                ([bin, args]) =>
+                  bin === 'pnpm' && Array.isArray(args) && (args as string[]).includes('prettier-plugin-tailwindcss')
+              )
             expect(tailwindPluginInstall).toBe(useTailwind)
 
             rmSync(projectDir, { recursive: true, force: true })

@@ -16,7 +16,7 @@ type NextRouteContext = {
 type ActionResult = { error: string } | { ok: true }
 
 function withGatehouseContext<TResult, TArgs extends unknown[]>(
-  handler: (...args: TArgs) => Promise<TResult>,
+  handler: (...args: TArgs) => Promise<TResult>
 ): (...args: TArgs) => Promise<TResult> {
   return async (...args: TArgs): Promise<TResult> => {
     const { headers } = await import('next/headers.js')
@@ -59,14 +59,10 @@ type FormActionFn = {
 }
 
 export const action = withGatehouseContext as typeof withGatehouseContext & {
-  form: (
-    handler: (data: Record<string, string>) => Promise<void>,
-  ) => FormActionFn
+  form: (handler: (data: Record<string, string>) => Promise<void>) => FormActionFn
 }
 
-action.form = (
-  handler: (data: Record<string, string>) => Promise<void>,
-): FormActionFn => {
+action.form = (handler: (data: Record<string, string>) => Promise<void>): FormActionFn => {
   const inner = withGatehouseContext(async (_prevState: unknown, formData: FormData): Promise<ActionResult> => {
     const data: Record<string, string> = {}
     for (const [key, value] of formData.entries()) {
@@ -77,8 +73,8 @@ action.form = (
   })
 
   const fn = async (arg0: unknown, arg1?: FormData): Promise<ActionResult> => {
-    const formData = arg0 instanceof FormData ? arg0 : arg1 as FormData
-    const prevState = arg0 instanceof FormData ? undefined : arg0 as ActionResult | undefined
+    const formData = arg0 instanceof FormData ? arg0 : (arg1 as FormData)
+    const prevState = arg0 instanceof FormData ? undefined : (arg0 as ActionResult | undefined)
     try {
       return await inner(prevState, formData)
     } catch (e) {
@@ -97,7 +93,7 @@ action.form = (
  * routes, use `gatehouse.from({ headers })` directly.
  */
 export function withGatehouse<T extends Response>(
-  handler: (request: Request, context: NextRouteContext) => Promise<T>,
+  handler: (request: Request, context: NextRouteContext) => Promise<T>
 ): (request: Request, context: NextRouteContext) => Promise<T> {
   return async (request, context) => {
     const gh = await Gatehouse.from({ headers: request.headers })

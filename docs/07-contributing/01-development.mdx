@@ -1,6 +1,6 @@
 ---
-title: "Development Guide"
-description: "Setting up the Tower monorepo for local development and contributing."
+title: 'Development Guide'
+description: 'Setting up the Tower monorepo for local development and contributing.'
 ---
 
 ## Repository Structure
@@ -102,14 +102,14 @@ Scopes: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `c
 
 ## Dependency Rules
 
-| Package | Can depend on | Cannot depend on |
-|---|---|---|
-| `foundation` | (nothing) | any `@towerjs/*` |
-| `blueprint` | `foundation` | vault, gatehouse, courier, edge, scribe |
-| `vault` | `blueprint`, `foundation` | gatehouse, courier |
-| `courier` | `blueprint`, `foundation` | vault, gatehouse |
-| `gatehouse` | `blueprint`, `foundation`, `courier` | vault |
-| `towerjs` | anything | — |
+| Package      | Can depend on                        | Cannot depend on                        |
+| ------------ | ------------------------------------ | --------------------------------------- |
+| `foundation` | (nothing)                            | any `@towerjs/*`                        |
+| `blueprint`  | `foundation`                         | vault, gatehouse, courier, edge, scribe |
+| `vault`      | `blueprint`, `foundation`            | gatehouse, courier                      |
+| `courier`    | `blueprint`, `foundation`            | vault, gatehouse                        |
+| `gatehouse`  | `blueprint`, `foundation`, `courier` | vault                                   |
+| `towerjs`    | anything                             | —                                       |
 
 No circular dependencies. Enforced by `tests/dependency-rules.test.ts`.
 

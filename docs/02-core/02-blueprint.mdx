@@ -1,6 +1,6 @@
 ---
-title: "Blueprint"
-description: "Module registration system, app definition, and dependency validation."
+title: 'Blueprint'
+description: 'Module registration system, app definition, and dependency validation.'
 ---
 
 Blueprint provides the module system that ties all Tower packages together.
@@ -28,9 +28,9 @@ export default defineTower({
 Modules self-register at import time:
 
 ```tsx
-import '@towerjs/vault'    // registers 'vault' module
+import '@towerjs/vault' // registers 'vault' module
 import '@towerjs/gatehouse' // registers 'gatehouse' module
-import '@towerjs/courier'  // registers 'courier' module
+import '@towerjs/courier' // registers 'courier' module
 ```
 
 Each registration includes a name, dependency list, and factory function:

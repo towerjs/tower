@@ -1,7 +1,7 @@
 ---
-title: "Keep"
-description: "File storage — upload, retrieve, and delete files across local disk and S3-compatible backends."
-badge: "Coming Soon"
+title: 'Keep'
+description: 'File storage — upload, retrieve, and delete files across local disk and S3-compatible backends.'
+badge: 'Coming Soon'
 ---
 
 > **Status: Planned** — Keep is not yet implemented. This document describes the target API.
@@ -45,7 +45,7 @@ const file = await keep.storage.put('avatars/user-42.png', buffer, {
   contentType: 'image/png',
 })
 
-const data = await keep.storage.get('avatars/user-42.png')  // Buffer or stream
+const data = await keep.storage.get('avatars/user-42.png') // Buffer or stream
 await keep.storage.delete('avatars/user-42.png')
 
 // Public URL (requires publicUrl on the disk)
@@ -67,10 +67,10 @@ await keep.storage.disk('prod').put('backups/db.sql', buffer)
 
 ## Providers
 
-| Driver   | Backends                                            |
-| -------- | --------------------------------------------------- |
-| `local`  | Local disk (development)                            |
-| `s3`     | AWS S3, Cloudflare R2, MinIO, Garage, Backblaze B2  |
+| Driver  | Backends                                           |
+| ------- | -------------------------------------------------- |
+| `local` | Local disk (development)                           |
+| `s3`    | AWS S3, Cloudflare R2, MinIO, Garage, Backblaze B2 |
 
 ## Planned features
 

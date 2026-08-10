@@ -1,6 +1,6 @@
 ---
-title: "Performance"
-description: "Performance considerations for Tower applications."
+title: 'Performance'
+description: 'Performance considerations for Tower applications.'
 ---
 
 ## Lazy Initialization
@@ -34,6 +34,7 @@ vault: {
 ```
 
 Guidelines:
+
 - **Serverless (Vercel)**: Lower pool max (5-10) since each function instance shares the pool
 - **Node server**: Higher pool max (20-50) for concurrent request handling
 - **Neon**: Use Neon's serverless driver for optimal connection management

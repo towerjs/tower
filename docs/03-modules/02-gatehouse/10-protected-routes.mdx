@@ -1,6 +1,6 @@
 ---
-title: "Protected Routes"
-description: "Gate access with the proxy middleware; read the session in pages with requireUser() and getSession()."
+title: 'Protected Routes'
+description: 'Gate access with the proxy middleware; read the session in pages with requireUser() and getSession().'
 ---
 
 Access control and session reads are two separate layers:
@@ -29,12 +29,12 @@ export const config = {
 }
 ```
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `public` | `string[]` | `[]` | Paths reachable without a session (globs supported) |
-| `redirectIfAuthenticated` | `string[]` | — | Paths that redirect to `redirectAfterSignIn` when signed in |
-| `redirectTo` | `string` | `'/sign-in'` | Where signed-out users go |
-| `redirectAfterSignIn` | `string` | `'/'` | Where signed-in users land after a new sign-in |
+| Option                    | Type       | Default      | Description                                                 |
+| ------------------------- | ---------- | ------------ | ----------------------------------------------------------- |
+| `public`                  | `string[]` | `[]`         | Paths reachable without a session (globs supported)         |
+| `redirectIfAuthenticated` | `string[]` | —            | Paths that redirect to `redirectAfterSignIn` when signed in |
+| `redirectTo`              | `string`   | `'/sign-in'` | Where signed-out users go                                   |
+| `redirectAfterSignIn`     | `string`   | `'/'`        | Where signed-in users land after a new sign-in              |
 
 The proxy resolves the session with `getSession()` — database-backed — and redirects before anything renders.
 
@@ -79,8 +79,8 @@ export async function GET(request: Request) {
 
 ## Division of responsibility
 
-| Concern | Where it lives |
-| --- | --- |
-| Who can reach a route | The proxy middleware |
-| Who the current user is | `requireUser()` / `getSession()` in pages |
-| What a user may do | `can()` in server actions and route handlers — see [Authorization](/docs/gatehouse/authorization) |
+| Concern                 | Where it lives                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| Who can reach a route   | The proxy middleware                                                                              |
+| Who the current user is | `requireUser()` / `getSession()` in pages                                                         |
+| What a user may do      | `can()` in server actions and route handlers — see [Authorization](/docs/gatehouse/authorization) |

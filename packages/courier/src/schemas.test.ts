@@ -114,13 +114,17 @@ describe('email send param validation', () => {
 
 describe('sms send param validation', () => {
   it('accepts valid sms params', async () => {
-    const mod = defineCourier({ sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' } })
+    const mod = defineCourier({
+      sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' },
+    })
     await mod.init!(mockCtx() as any)
     await expect(courier.sms.send({ to: '+1234567890', body: 'hello' })).resolves.toBeDefined()
   })
 
   it('rejects sms without a body', async () => {
-    const mod = defineCourier({ sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' } })
+    const mod = defineCourier({
+      sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' },
+    })
     await mod.init!(mockCtx() as any)
     await expect(courier.sms.send({ to: '+1234567890' } as any)).rejects.toThrow(
       /\[courier\.sms\] Invalid send params — body:/

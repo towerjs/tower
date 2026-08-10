@@ -73,10 +73,7 @@ export const gatehouseConfigSchema = z
         max: z.number().int().nonnegative().optional(),
         storage: z.enum(['memory', 'database', 'secondary-storage']).optional(),
         customRules: z
-          .record(
-            z.string(),
-            z.union([z.object({ window: z.number(), max: z.number() }), z.boolean()])
-          )
+          .record(z.string(), z.union([z.object({ window: z.number(), max: z.number() }), z.boolean()]))
           .optional(),
       })
       .passthrough()

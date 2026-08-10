@@ -1,6 +1,6 @@
 ---
-title: "Social Login"
-description: "Sign in with Google, GitHub, and other OAuth providers — plus account linking."
+title: 'Social Login'
+description: 'Sign in with Google, GitHub, and other OAuth providers — plus account linking.'
 ---
 
 Social login lets users authenticate with their existing Google or GitHub account. The provider does the heavy lifting; Gatehouse creates the session when the OAuth callback completes.
@@ -34,12 +34,8 @@ import { gatehouseClient } from 'towerjs/gatehouse/client'
 export function SocialButtons() {
   return (
     <div>
-      <button onClick={() => gatehouseClient.signIn.social({ provider: 'google' })}>
-        Continue with Google
-      </button>
-      <button onClick={() => gatehouseClient.signIn.social({ provider: 'github' })}>
-        Continue with GitHub
-      </button>
+      <button onClick={() => gatehouseClient.signIn.social({ provider: 'google' })}>Continue with Google</button>
+      <button onClick={() => gatehouseClient.signIn.social({ provider: 'github' })}>Continue with GitHub</button>
     </div>
   )
 }
@@ -78,9 +74,9 @@ Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disab
 Users can connect providers to their existing account so the same identity works everywhere:
 
 ```tsx
-await gatehouse.identities.list()          // connected providers
-await gatehouse.identities.link('github')  // start linking flow
-await gatehouse.identities.unlink({ providerId, accountId })   // disconnect
+await gatehouse.identities.list() // connected providers
+await gatehouse.identities.link('github') // start linking flow
+await gatehouse.identities.unlink({ providerId, accountId }) // disconnect
 ```
 
 The `unlinkAccount` action takes `providerId` + `accountId`.

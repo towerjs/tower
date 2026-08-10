@@ -86,14 +86,14 @@ tower seed
 
 ## Configuration
 
-| Option                         | Default            | Description                 |
-| ------------------------------ | ------------------ | --------------------------- |
-| `provider`                     | auto-detect        | `"pg"` or `"neon"`          |
-| `connectionString`             | `DATABASE_URL` env | Full connection string      |
-| `pool.max`                     | `10`               | Maximum pool connections    |
-| `pool.idleTimeoutMillis`       | —                  | Idle connection timeout     |
-| `pool.connectionTimeoutMillis` | —                  | Connection attempt timeout  |
-| `pool.ssl`                     | auto               | SSL configuration           |
+| Option                         | Default            | Description                |
+| ------------------------------ | ------------------ | -------------------------- |
+| `provider`                     | auto-detect        | `"pg"` or `"neon"`         |
+| `connectionString`             | `DATABASE_URL` env | Full connection string     |
+| `pool.max`                     | `10`               | Maximum pool connections   |
+| `pool.idleTimeoutMillis`       | —                  | Idle connection timeout    |
+| `pool.connectionTimeoutMillis` | —                  | Connection attempt timeout |
+| `pool.ssl`                     | auto               | SSL configuration          |
 
 ## CLI
 

@@ -14,7 +14,7 @@ pnpm add @towerjs/edge
 
 ```ts
 // next.config.ts
-import { withTowerEdge } from "@towerjs/edge"
+import { withTowerEdge } from '@towerjs/edge'
 
 export default withTowerEdge({})
 ```

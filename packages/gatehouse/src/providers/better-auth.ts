@@ -132,9 +132,7 @@ export class BetterAuthAdapter {
 
     const social = expandSocial(config.social)
 
-    const rateLimit = config.rateLimit
-      ? { storage: 'database', ...config.rateLimit }
-      : undefined
+    const rateLimit = config.rateLimit ? { storage: 'database', ...config.rateLimit } : undefined
 
     const baOptions: Record<string, unknown> = {
       database: { db, type: 'postgres' },

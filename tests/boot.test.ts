@@ -37,7 +37,7 @@ describe('Tower boot', () => {
 
     const app = await createTowerApp(
       { modules: { vault: { connectionString: process.env.DATABASE_URL } } },
-      getModuleFactory,
+      getModuleFactory
     )
     expect(app).toBeDefined()
     expect(app.container.has('vault')).toBe(true)

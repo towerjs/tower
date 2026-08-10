@@ -22,15 +22,14 @@ export type GatehouseClientOptions = BetterAuthClientOptions & {
   ]
 }
 
-export const gatehouseClient: ReactAuthClient<GatehouseClientOptions> =
-  createAuthClient({
-    baseURL: typeof window !== 'undefined' ? window.location.origin : undefined,
-    plugins: [
-      adminClient(),
-      emailOTPClient(),
-      magicLinkClient(),
-      organizationClient(),
-      phoneNumberClient(),
-      twoFactorClient(),
-    ],
-  })
+export const gatehouseClient: ReactAuthClient<GatehouseClientOptions> = createAuthClient({
+  baseURL: typeof window !== 'undefined' ? window.location.origin : undefined,
+  plugins: [
+    adminClient(),
+    emailOTPClient(),
+    magicLinkClient(),
+    organizationClient(),
+    phoneNumberClient(),
+    twoFactorClient(),
+  ],
+})

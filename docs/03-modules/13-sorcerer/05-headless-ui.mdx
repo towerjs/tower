@@ -1,6 +1,6 @@
 ---
-title: "Headless AI UI"
-description: "Behavior-first React primitives for building AI interfaces."
+title: 'Headless AI UI'
+description: 'Behavior-first React primitives for building AI interfaces.'
 ---
 
 Sorcerer provides headless React primitives for building AI interfaces.
@@ -8,13 +8,7 @@ Sorcerer provides headless React primitives for building AI interfaces.
 The primitives provide behavior, state management, and accessibility while leaving styling completely to the application.
 
 ```tsx
-import {
-  Conversation,
-  Message,
-  PromptInput,
-  PromptInputTextarea,
-  PromptInputSubmit,
-} from "towerjs/sorcerer/react"
+import { Conversation, Message, PromptInput, PromptInputTextarea, PromptInputSubmit } from 'towerjs/sorcerer/react'
 ```
 
 A complete chat interface can be composed from primitives:
@@ -37,10 +31,10 @@ function Chat() {
 
 Sorcerer does not provide a visual design system. Components can be styled with any approach:
 
-* Tailwind CSS
-* CSS modules
-* styled-components
-* custom design systems
+- Tailwind CSS
+- CSS modules
+- styled-components
+- custom design systems
 
 Every primitive accepts an `asChild` prop. With `asChild`, the primitive does not render its own element — it clones the child and merges in the behavior, state, and accessibility props, so existing components from any component library can be used directly.
 
@@ -66,13 +60,13 @@ The prompt input handles common AI interaction patterns.
 
 Prompt input primitives support:
 
-* message submission
-* attachments
-* file uploads
-* model selection
-* loading states
-* streaming states
-* keyboard interactions
+- message submission
+- attachments
+- file uploads
+- model selection
+- loading states
+- streaming states
+- keyboard interactions
 
 ## Messages
 
@@ -88,13 +82,13 @@ AI messages are structured content, not just text.
 
 Messages can contain:
 
-* text
-* markdown
-* tool calls
-* tool results
-* reasoning
-* sources
-* attachments
+- text
+- markdown
+- tool calls
+- tool results
+- reasoning
+- sources
+- attachments
 
 Example:
 
@@ -127,9 +121,9 @@ Applications can expose model selection through headless primitives.
 `ModelSelector` wraps Headless UI's `Listbox`, so the API follows the same compound-component pattern:
 
 ```tsx
-import { ModelSelector } from "towerjs/sorcerer/react"
+import { ModelSelector } from 'towerjs/sorcerer/react'
 
-<ModelSelector value={selectedModel} onChange={setSelectedModel}>
+;<ModelSelector value={selectedModel} onChange={setSelectedModel}>
   <ModelSelectorButton>{selectedModel}</ModelSelectorButton>
 
   <ModelSelectorOptions anchor="bottom">
@@ -151,9 +145,9 @@ Every ModelSelector element supports `asChild`, so it can compose with an existi
 With `asChild`, Sorcerer does not render its own markup. It clones the child and merges in the props that drive selection behavior, accessibility, and state — the same contract as Headless UI and Radix.
 
 ```tsx
-import { Button, Dropdown } from "@/components/ui"
+import { Button, Dropdown } from '@/components/ui'
 
-<ModelSelector value={selectedModel} onChange={setSelectedModel}>
+;<ModelSelector value={selectedModel} onChange={setSelectedModel}>
   <ModelSelectorButton asChild>
     <Button variant="outline">{selectedModel}</Button>
   </ModelSelectorButton>

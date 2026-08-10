@@ -1,7 +1,7 @@
 ---
-title: "Beacon"
-description: "Realtime channels and events — WebSocket pub/sub, presence, and an internal event bus."
-badge: "Coming Soon"
+title: 'Beacon'
+description: 'Realtime channels and events — WebSocket pub/sub, presence, and an internal event bus.'
+badge: 'Coming Soon'
 ---
 
 > **Status: Planned** — Beacon is not yet implemented. This document describes the target API.
@@ -20,12 +20,12 @@ beacon: {
 
 ## Providers
 
-| Provider   | Transport                       | Use case                    |
-| ---------- | ------------------------------- | --------------------------- |
+| Provider   | Transport                        | Use case                   |
+| ---------- | -------------------------------- | -------------------------- |
 | `postgres` | Vault connection (LISTEN/NOTIFY) | Development and small apps |
-| `redis`    | Redis Pub/Sub                   | Multi-instance deployments  |
-| `ably`     | Ably hosted service             | Global edge delivery        |
-| `pusher`   | Pusher hosted service           | Global edge delivery        |
+| `redis`    | Redis Pub/Sub                    | Multi-instance deployments |
+| `ably`     | Ably hosted service              | Global edge delivery       |
+| `pusher`   | Pusher hosted service            | Global edge delivery       |
 
 ## Channels
 
@@ -67,8 +67,8 @@ beacon.on('vault:record:created', async ({ table, id }) => {
 ```tsx filename="app/api/beacon/route.ts"
 import { beacon } from 'towerjs/beacon/next'
 
-export const GET = beacon.GET    // WebSocket upgrade and message handling
-export const POST = beacon.POST  // client-to-server events
+export const GET = beacon.GET // WebSocket upgrade and message handling
+export const POST = beacon.POST // client-to-server events
 ```
 
 ## Integration with Tower

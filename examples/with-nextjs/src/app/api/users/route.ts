@@ -10,9 +10,10 @@ interface Project {
 }
 
 export async function GET() {
-  const projects = await (
-    vault.db as unknown as Vault<{ projects: Project }>
-  ).selectFrom('projects').selectAll().execute()
+  const projects = await (vault.db as unknown as Vault<{ projects: Project }>)
+    .selectFrom('projects')
+    .selectAll()
+    .execute()
 
   return Response.json({ projects })
 }

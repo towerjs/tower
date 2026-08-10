@@ -1,6 +1,6 @@
 ---
-title: "Passkeys"
-description: "Passwordless WebAuthn sign-in with device-bound keys."
+title: 'Passkeys'
+description: 'Passwordless WebAuthn sign-in with device-bound keys.'
 ---
 
 Passkeys replace passwords with WebAuthn credentials stored on the user's device — Touch ID, Face ID, Windows Hello, or a security key. There's nothing to remember and nothing to phish.
@@ -53,7 +53,7 @@ Passkey sign-in runs the WebAuthn ceremony in the browser via `gatehouse.api.gen
 List, rename, and remove from the server:
 
 ```tsx
-await gatehouse.passkeys.list()       // [{ id, name, createdAt }]
+await gatehouse.passkeys.list() // [{ id, name, createdAt }]
 await gatehouse.passkeys.update(id, { name })
 await gatehouse.passkeys.delete(id)
 ```

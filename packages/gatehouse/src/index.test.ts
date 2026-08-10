@@ -71,8 +71,6 @@ vi.mock('better-auth/db/migration', () => ({
   getMigrations: mocks.mockGetMigrations,
 }))
 
-
-
 const mockTowerContext = {
   get: vi.fn((key: string) => mocks.alsStore[key]),
   run: vi.fn(async (ctx: any, handler: () => any) => {

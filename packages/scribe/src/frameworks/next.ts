@@ -156,8 +156,17 @@ function formatValue(v: unknown, indent: number): string {
 }
 
 function formatConfigLine(k: string, v: unknown, indent: number): string[] {
-  if (v !== null && typeof v === 'object' && !Array.isArray(v) && Object.keys(v as Record<string, unknown>).length > 0) {
-    return [`${' '.repeat(indent)}${k}: {`, ...renderObject(v as Record<string, unknown>, indent + 2), `${' '.repeat(indent)}},`]
+  if (
+    v !== null &&
+    typeof v === 'object' &&
+    !Array.isArray(v) &&
+    Object.keys(v as Record<string, unknown>).length > 0
+  ) {
+    return [
+      `${' '.repeat(indent)}${k}: {`,
+      ...renderObject(v as Record<string, unknown>, indent + 2),
+      `${' '.repeat(indent)}},`,
+    ]
   }
   return [`${' '.repeat(indent)}${k}: ${formatValue(v, indent)},`]
 }
@@ -204,7 +213,9 @@ export function towerConfig(state: ProjectState): string {
       const lines = Object.entries(resolved)
         .filter(([k, v]) => !CLI_ONLY_KEYS.has(k) && v !== undefined)
         .flatMap(([k, v]) =>
-          k === 'social' && v && typeof v === 'object' ? formatSocialConfig(v as Record<string, unknown>, 6) : formatConfigLine(k, v, 6),
+          k === 'social' && v && typeof v === 'object'
+            ? formatSocialConfig(v as Record<string, unknown>, 6)
+            : formatConfigLine(k, v, 6)
         )
       if (lines.length === 0) return `    ${name}: {},`
       return `    ${name}: {\n${lines.join('\n')}\n    },`
@@ -297,9 +308,7 @@ export function envExample(state: ProjectState): string {
       vars.push('# Authentication')
       vars.push('GATEHOUSE_SECRET=')
       vars.push('GATEHOUSE_URL="http://localhost:3000"')
-      const social = (cfg as Record<string, unknown> | undefined)?.social as
-        | Record<string, unknown>
-        | undefined
+      const social = (cfg as Record<string, unknown> | undefined)?.social as Record<string, unknown> | undefined
       if (social && Object.keys(social).length > 0) {
         for (const provider of Object.keys(social)) {
           const key = provider.toUpperCase().replace(/-/g, '_')
@@ -481,18 +490,20 @@ function prettierConfig(tailwind: boolean): string {
   if (tailwind) {
     plugins.push('prettier-plugin-tailwindcss', 'prettier-plugin-tailwindcss-canonical-classes')
   }
-  return JSON.stringify(
-    {
-      semi: false,
-      singleQuote: true,
-      trailingComma: 'all',
-      printWidth: 120,
-      tabWidth: 2,
-      plugins,
-    },
-    null,
-    2,
-  ) + '\n'
+  return (
+    JSON.stringify(
+      {
+        semi: false,
+        singleQuote: true,
+        trailingComma: 'all',
+        printWidth: 120,
+        tabWidth: 2,
+        plugins,
+      },
+      null,
+      2
+    ) + '\n'
+  )
 }
 
 function agentsMd(state: ProjectState): string {
@@ -575,7 +586,7 @@ function agentsMd(state: ProjectState): string {
     "import { action } from 'towerjs/gatehouse/next'",
     "import { gatehouse } from 'towerjs/gatehouse'",
     '',
-    "export const enableTwoFactor = action(async (formData: FormData) => {",
+    'export const enableTwoFactor = action(async (formData: FormData) => {',
     "  return gatehouse.totp.enable(formData.get('password') as string)",
     '})',
     '```',
@@ -589,7 +600,7 @@ function agentsMd(state: ProjectState): string {
     '```bash',
     'pnpm exec prettier --write .  # Format all files',
     '```',
-    '',
+    ''
   )
 
   return lines.join('\n')

@@ -1,6 +1,6 @@
 ---
-title: "Getting Started"
-description: "Create a new Tower application or add Tower to an existing Next.js project."
+title: 'Getting Started'
+description: 'Create a new Tower application or add Tower to an existing Next.js project.'
 ---
 
 import { CreateTower } from '@/components/create-tower'
@@ -38,30 +38,10 @@ Add Tower to an existing Next.js project:
 ### Install
 
 <CodeTabs>
-  <CodeTab title="pnpm">
-  ```bash
-  pnpm add towerjs @towerjs/gatehouse
-  pnpm add -D @towerjs/scribe
-  ```
-  </CodeTab>
-  <CodeTab title="npm">
-  ```bash
-  npm install towerjs @towerjs/gatehouse
-  npm install -D @towerjs/scribe
-  ```
-  </CodeTab>
-  <CodeTab title="yarn">
-  ```bash
-  yarn add towerjs @towerjs/gatehouse
-  yarn add -D @towerjs/scribe
-  ```
-  </CodeTab>
-  <CodeTab title="bun">
-  ```bash
-  bun add towerjs @towerjs/gatehouse
-  bun add -D @towerjs/scribe
-  ```
-  </CodeTab>
+  <CodeTab title="pnpm">```bash pnpm add towerjs @towerjs/gatehouse pnpm add -D @towerjs/scribe ```</CodeTab>
+  <CodeTab title="npm">```bash npm install towerjs @towerjs/gatehouse npm install -D @towerjs/scribe ```</CodeTab>
+  <CodeTab title="yarn">```bash yarn add towerjs @towerjs/gatehouse yarn add -D @towerjs/scribe ```</CodeTab>
+  <CodeTab title="bun">```bash bun add towerjs @towerjs/gatehouse bun add -D @towerjs/scribe ```</CodeTab>
 </CodeTabs>
 
 `@towerjs/scribe` provides the `tower` CLI (`tower migrate`, `tower seed`) — install it as a dev dependency.
@@ -123,11 +103,7 @@ export { GET, POST } from 'towerjs/gatehouse/next'
 ```tsx filename="src/app/actions.ts"
 'use server'
 
-export {
-  signIn,
-  signUp,
-  signOut,
-} from 'towerjs/gatehouse/actions'
+export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
 ```
 
 ### 5. Run migrations

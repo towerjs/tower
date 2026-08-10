@@ -1,4 +1,15 @@
-import { createPrompt, useState, useKeypress, usePrefix, usePagination, makeTheme, isUpKey, isDownKey, isSpaceKey, isEnterKey } from '@inquirer/core'
+import {
+  createPrompt,
+  useState,
+  useKeypress,
+  usePrefix,
+  usePagination,
+  makeTheme,
+  isUpKey,
+  isDownKey,
+  isSpaceKey,
+  isEnterKey,
+} from '@inquirer/core'
 import type { Prompt } from '@inquirer/type'
 
 export type Choice = {
@@ -28,7 +39,11 @@ function isChecked(item: { checked: boolean }): boolean {
 }
 
 /** Returns true when some checked choice links to `value`, making it required. */
-function isRequired(value: string, items: { value: string; checked: boolean }[], link: Record<string, string[]>): boolean {
+function isRequired(
+  value: string,
+  items: { value: string; checked: boolean }[],
+  link: Record<string, string[]>
+): boolean {
   return Object.entries(link).some(
     ([source, linked]) => linked.includes(value) && items.some((item) => item.value === source && item.checked)
   )
@@ -37,7 +52,7 @@ function isRequired(value: string, items: { value: string; checked: boolean }[],
 export function toggleLinked<T extends { value: string; checked: boolean }>(
   items: T[],
   index: number,
-  link: Record<string, string[]>,
+  link: Record<string, string[]>
 ): T[] {
   const active = items[index]
   const nextChecked = !active.checked
@@ -46,7 +61,7 @@ export function toggleLinked<T extends { value: string; checked: boolean }>(
     return items
   }
 
-  const linked = nextChecked ? link[active.value] ?? [] : []
+  const linked = nextChecked ? (link[active.value] ?? []) : []
 
   return items.map((item, i) => {
     if (i === index) return { ...item, checked: nextChecked }
@@ -94,7 +109,10 @@ export const checkbox: Prompt<string[], Config> = createPrompt<string[], Config>
   })
 
   if (status === 'done') {
-    const answer = items.filter(isChecked).map((c) => c.name).join(', ')
+    const answer = items
+      .filter(isChecked)
+      .map((c) => c.name)
+      .join(', ')
     return `${prefix} ${theme.style.message(config.message, status)} ${theme.style.answer(answer)}`
   }
 

@@ -140,10 +140,7 @@ export function loadEnvFor(configPath: string): void {
       const key = trimmed.slice(0, eq).trim()
       let value = trimmed.slice(eq + 1).trim()
       if (process.env[key] !== undefined) continue
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1)
       }
       process.env[key] = value

@@ -53,7 +53,9 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
             type="button"
             onClick={() => setTab(t.id)}
             className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              tab === t.id ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900' : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
+              tab === t.id
+                ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
             }`}
           >
             {t.label}
@@ -92,7 +94,9 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
                   <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Scan this QR code in your authenticator app:
                   </p>
-                  <p className="break-all rounded bg-white p-3 text-xs text-neutral-600 font-mono dark:bg-neutral-950 dark:text-neutral-400">{totpQr}</p>
+                  <p className="break-all rounded bg-white p-3 text-xs text-neutral-600 font-mono dark:bg-neutral-950 dark:text-neutral-400">
+                    {totpQr}
+                  </p>
                 </div>
                 <form
                   action={async (fd: FormData) => {
@@ -201,7 +205,10 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
           </CardHeader>
           <div className="space-y-3">
             {sessions.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+              <div
+                key={s.id}
+                className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
+              >
                 <div>
                   <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                     {s.userAgent ? s.userAgent.split('/')[0] || 'Unknown device' : 'Unknown device'}

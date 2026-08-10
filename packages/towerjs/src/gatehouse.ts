@@ -51,7 +51,7 @@ function createDeepCall(path: string[]) {
         if (typeof subProp === 'symbol' || subProp === 'then') return undefined
         return createDeepCall([...path, String(subProp)])
       },
-    },
+    }
   )
 }
 

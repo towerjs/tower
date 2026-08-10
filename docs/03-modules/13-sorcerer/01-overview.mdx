@@ -1,7 +1,7 @@
 ---
-title: "Sorcerer"
-description: "AI application layer for agents, chat, streaming, and intelligent features."
-badge: "Coming Soon"
+title: 'Sorcerer'
+description: 'AI application layer for agents, chat, streaming, and intelligent features.'
+badge: 'Coming Soon'
 ---
 
 > **Status: Planned** — Sorcerer is not yet implemented. This document describes the intended vision.
@@ -68,8 +68,8 @@ Then reference models directly:
 
 ```tsx
 const response = await generate({
-  model: "openai:gpt-5",
-  prompt: "Write a summary",
+  model: 'openai:gpt-5',
+  prompt: 'Write a summary',
 })
 ```
 
@@ -79,8 +79,8 @@ Applications that want to avoid repeating model strings can define their own con
 
 ```ts
 const models = {
-  support: "anthropic:claude-sonnet-4",
-  fast: "openai:gpt-5-mini",
+  support: 'anthropic:claude-sonnet-4',
+  fast: 'openai:gpt-5-mini',
 }
 
 const supportAgent = agent({
@@ -92,10 +92,10 @@ But that is application code, not Tower config. Sorcerer does not decide what "s
 
 ## Guides
 
-* [Chat](/docs/sorcerer/chat) — conversations, streaming, and one-shot generation
-* [Agents](/docs/sorcerer/agents) — agents with tools, application context, and memory
-* [Workflows](/docs/sorcerer/workflows) — structured multi-step AI processes
-* [Headless AI UI](/docs/sorcerer/headless-ui) — React primitives for building AI interfaces
+- [Chat](/docs/sorcerer/chat) — conversations, streaming, and one-shot generation
+- [Agents](/docs/sorcerer/agents) — agents with tools, application context, and memory
+- [Workflows](/docs/sorcerer/workflows) — structured multi-step AI processes
+- [Headless AI UI](/docs/sorcerer/headless-ui) — React primitives for building AI interfaces
 
 ## Integration with Tower
 
@@ -103,21 +103,21 @@ But that is application code, not Tower config. Sorcerer does not decide what "s
 | --------------- | ----------------------------------------------------------------------------- |
 | **Vault**       | Persist conversations, provide database-backed tools, store AI-generated data |
 | **Gatehouse**   | Provide user identity, permissions, and authorization-aware tools             |
-| **Keep**      | Provide file attachments, document retrieval, and RAG sources                 |
-| **Beacon**    | Stream AI events and realtime responses                                       |
-| **Crane**     | Run long-running AI workflows as background jobs                              |
-| **Courier**   | Send AI-generated emails, SMS, and notifications                              |
-| **Observatory** | Trace agent runs, tool calls, latency, and monitor AI usage and failures    |
+| **Keep**        | Provide file attachments, document retrieval, and RAG sources                 |
+| **Beacon**      | Stream AI events and realtime responses                                       |
+| **Crane**       | Run long-running AI workflows as background jobs                              |
+| **Courier**     | Send AI-generated emails, SMS, and notifications                              |
+| **Observatory** | Trace agent runs, tool calls, latency, and monitor AI usage and failures      |
 
 ## Planned Features
 
-* **Multi-agent orchestration** — agents that delegate tasks to other agents
-* **Human-in-the-loop** — pause workflows for approval before continuing
-* **Embeddings and RAG** — native retrieval workflows with Vault integration
-* **Rate limiting** — token and request limits per application or agent
-* **Agent observability** — full traces of reasoning, tools, and execution
-* **Evaluations** — test agents and AI workflows automatically
-* **Voice interfaces** — realtime voice input and output support
+- **Multi-agent orchestration** — agents that delegate tasks to other agents
+- **Human-in-the-loop** — pause workflows for approval before continuing
+- **Embeddings and RAG** — native retrieval workflows with Vault integration
+- **Rate limiting** — token and request limits per application or agent
+- **Agent observability** — full traces of reasoning, tools, and execution
+- **Evaluations** — test agents and AI workflows automatically
+- **Voice interfaces** — realtime voice input and output support
 
 ## Philosophy
 
@@ -147,10 +147,10 @@ The replaceable engine underneath is the AI SDK runtime, not the AI provider.
 
 Instead of every application inventing its own:
 
-* agent architecture
-* conversation storage
-* AI UI patterns
-* tool integration
-* application context
+- agent architecture
+- conversation storage
+- AI UI patterns
+- tool integration
+- application context
 
 Sorcerer provides a consistent way to build AI-powered Tower applications.

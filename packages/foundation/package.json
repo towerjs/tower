@@ -17,6 +17,6 @@
     "build": "tsc -b"
   },
   "devDependencies": {
-    "@types/node": "^26"
+    "@types/node": "^26.2.0"
   }
 }

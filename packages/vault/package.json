@@ -18,13 +18,13 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "@towerjs/blueprint": "workspace:*",
-    "kysely": "^0.29.4",
+    "kysely": "^0.29.5",
     "kysely-neon": "^3.0.0",
-    "pg": "^8.22.0",
+    "pg": "^8.23.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
-    "@types/pg": "^8.11.0"
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.21.0"
   }
 }

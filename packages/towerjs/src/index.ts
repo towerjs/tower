@@ -18,9 +18,8 @@ getTowerApp().then((app) => {
 export const tower: TowerApp = new Proxy({} as TowerApp, {
   get(_, prop) {
     if (prop === 'then') return undefined
-    if (!_tower) throw new Error(
-      'Tower app is still initializing. Use getTowerApp() from towerjs/runtime for async access.'
-    )
+    if (!_tower)
+      throw new Error('Tower app is still initializing. Use getTowerApp() from towerjs/runtime for async access.')
     const value = (_tower as any)[prop]
     return typeof value === 'function' ? value.bind(_tower) : value
   },

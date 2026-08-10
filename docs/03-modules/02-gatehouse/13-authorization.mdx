@@ -1,9 +1,9 @@
 ---
-title: "Authorization"
-description: "Permission checks with can(), roles, and ownership — scoped to users or organizations."
+title: 'Authorization'
+description: 'Permission checks with can(), roles, and ownership — scoped to users or organizations.'
 ---
 
-Authentication answers *who you are*; authorization answers *what you can do*. Gatehouse gives you `can()` for permission checks, plus roles for users and organizations.
+Authentication answers _who you are_; authorization answers _what you can do_. Gatehouse gives you `can()` for permission checks, plus roles for users and organizations.
 
 ## `can()`
 
@@ -52,7 +52,7 @@ await requireCan({ user, permission: 'project.update' })
 
 ## Organization-scoped checks
 
-Combine with [organizations](/docs/gatehouse/organizations): check the user's role *inside* a specific organization.
+Combine with [organizations](/docs/gatehouse/organizations): check the user's role _inside_ a specific organization.
 
 ```tsx
 const canEdit = await gatehouse.can({
@@ -67,7 +67,7 @@ Create custom roles with permission maps and assign them via invites or members:
 ```tsx
 await gatehouse.organizations.roles.create({
   role: 'editor',
-  permission: { 'project': ['update'] },
+  permission: { project: ['update'] },
 })
 
 await gatehouse.organizations.invitations.create('org_id', {
@@ -81,8 +81,8 @@ Built-in organization roles: `owner`, `admin`, `member` — `owner` and `admin` 
 ## User roles (admin)
 
 ```tsx
-await gatehouse.admin.setRole({ userId, role: 'admin' })  // or any custom role
-await gatehouse.roles.assign(userId, role)                // same, module-level
+await gatehouse.admin.setRole({ userId, role: 'admin' }) // or any custom role
+await gatehouse.roles.assign(userId, role) // same, module-level
 await gatehouse.can({ user, permission: 'user.delete' })
 ```
 
@@ -90,7 +90,7 @@ Actions: `assignRole` (`userId`, `role`), `removeRole` (`userId`).
 
 ## Ownership checks
 
-Role checks don't cover "is this *their* record". Check ownership separately:
+Role checks don't cover "is this _their_ record". Check ownership separately:
 
 ```tsx
 const project = await getProject(id)
@@ -99,11 +99,11 @@ if (project.ownerId !== user.id) throw new AuthorizationError()
 
 ## Enforcement points
 
-| Where | How |
-| --- | --- |
-| Server actions | `await requireCan({ user, permission })` first line |
-| Route handlers | `Gatehouse.from(request)` then `can()` |
-| API keys | `apiKeys.verify()` with a permission map |
-| Pages | Render what the session allows — access is gated by the proxy, so pages don't redirect for auth |
+| Where          | How                                                                                             |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Server actions | `await requireCan({ user, permission })` first line                                             |
+| Route handlers | `Gatehouse.from(request)` then `can()`                                                          |
+| API keys       | `apiKeys.verify()` with a permission map                                                        |
+| Pages          | Render what the session allows — access is gated by the proxy, so pages don't redirect for auth |
 
 Fail closed: `can()` returns `false` on unknown permissions — and when no `organizationId` is provided — rather than guessing. It never throws; wrap it with `requireCan` (above) to raise `AuthorizationError` (→ 403) where you want one.

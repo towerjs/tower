@@ -51,7 +51,12 @@ const MAPPINGS: Mapping[] = [
   // ── Account (self-service) ──────────────────────────────────────
   { path: 'account.update', source: 'updateUser', verb: 'POST' },
   { path: 'account.delete', source: 'deleteUser', verb: 'POST' },
-  { path: 'account.setPassword', source: 'setPassword', verb: 'POST', build: (h, newPassword) => body(h, { newPassword }) },
+  {
+    path: 'account.setPassword',
+    source: 'setPassword',
+    verb: 'POST',
+    build: (h, newPassword) => body(h, { newPassword }),
+  },
   { path: 'account.changeEmail', source: 'changeEmail', verb: 'POST', build: (h, newEmail) => body(h, { newEmail }) },
 
   // ── Password ────────────────────────────────────────────────────
@@ -88,7 +93,7 @@ const MAPPINGS: Mapping[] = [
     path: 'passkeys.update',
     source: 'updatePasskey',
     verb: 'POST',
-    build: (h, id, params) => body(h, { id, ...(params) }),
+    build: (h, id, params) => body(h, { id, ...params }),
   },
   { path: 'passkeys.delete', source: 'deletePasskey', verb: 'POST', build: (h, id) => body(h, { id }) },
   // ── Admin ───────────────────────────────────────────────────────
@@ -107,19 +112,29 @@ const MAPPINGS: Mapping[] = [
     path: 'admin.banUser',
     source: 'banUser',
     verb: 'POST',
-    build: (h, userId, params) => body(h, { userId, ...(params) }),
+    build: (h, userId, params) => body(h, { userId, ...params }),
   },
   { path: 'admin.unbanUser', source: 'unbanUser', verb: 'POST', build: (h, userId) => body(h, { userId }) },
   { path: 'admin.impersonateUser', source: 'impersonateUser', verb: 'POST', build: (h, userId) => body(h, { userId }) },
   { path: 'admin.stopImpersonating', source: 'stopImpersonating', verb: 'POST' },
-  { path: 'admin.listUserSessions', source: 'listUserSessions', verb: 'POST', build: (h, userId) => body(h, { userId }) },
+  {
+    path: 'admin.listUserSessions',
+    source: 'listUserSessions',
+    verb: 'POST',
+    build: (h, userId) => body(h, { userId }),
+  },
   {
     path: 'admin.revokeUserSession',
     source: 'revokeUserSession',
     verb: 'POST',
     build: (h, sessionToken) => body(h, { sessionToken }),
   },
-  { path: 'admin.revokeUserSessions', source: 'revokeUserSessions', verb: 'POST', build: (h, userId) => body(h, { userId }) },
+  {
+    path: 'admin.revokeUserSessions',
+    source: 'revokeUserSessions',
+    verb: 'POST',
+    build: (h, userId) => body(h, { userId }),
+  },
 
   // ── API Keys ────────────────────────────────────────────────────
   { path: 'apiKeys.create', source: 'createApiKey', verb: 'POST' },
@@ -127,10 +142,15 @@ const MAPPINGS: Mapping[] = [
     path: 'apiKeys.list',
     source: 'listApiKeys',
     verb: 'GET',
-    build: (h, userId, options) => query(h, { userId, ...(options) }),
+    build: (h, userId, options) => query(h, { userId, ...options }),
   },
   { path: 'apiKeys.get', source: 'getApiKey', verb: 'GET', build: (h, id) => query(h, { id }) },
-  { path: 'apiKeys.update', source: 'updateApiKey', verb: 'POST', build: (h, id, params) => body(h, { keyId: id, ...(params) }) },
+  {
+    path: 'apiKeys.update',
+    source: 'updateApiKey',
+    verb: 'POST',
+    build: (h, id, params) => body(h, { keyId: id, ...params }),
+  },
   { path: 'apiKeys.delete', source: 'deleteApiKey', verb: 'POST', build: (h, id) => body(h, { keyId: id }) },
   { path: 'apiKeys.verify', source: 'verifyApiKey', verb: 'POST' },
   { path: 'apiKeys.deleteAllExpired', source: 'deleteAllExpiredApiKeys', verb: 'POST' },
@@ -139,54 +159,155 @@ const MAPPINGS: Mapping[] = [
   { path: 'identities.list', source: 'listUserAccounts', verb: 'GET' },
   { path: 'identities.unlink', source: 'unlinkAccount', verb: 'POST' },
   { path: 'identities.link', source: 'linkSocialAccount', verb: 'POST' },
-  { path: 'identities.getAccessToken', source: 'getAccessToken', verb: 'POST', build: (h, providerId) => body(h, { providerId }) },
+  {
+    path: 'identities.getAccessToken',
+    source: 'getAccessToken',
+    verb: 'POST',
+    build: (h, providerId) => body(h, { providerId }),
+  },
 
   // ── TOTP ────────────────────────────────────────────────────────
-  { path: 'totp.enable', source: 'enableTwoFactor', verb: 'POST', build: (h, p) => body(h, typeof p === 'string' ? { password: p } : (p ?? {})) },
-  { path: 'totp.disable', source: 'disableTwoFactor', verb: 'POST', build: (h, p) => body(h, typeof p === 'string' ? { password: p } : p) },
-  { path: 'totp.verify', source: 'verifyTOTP', verb: 'POST', build: (h, p) => body(h, typeof p === 'string' ? { code: p } : (p ?? {})) },
+  {
+    path: 'totp.enable',
+    source: 'enableTwoFactor',
+    verb: 'POST',
+    build: (h, p) => body(h, typeof p === 'string' ? { password: p } : (p ?? {})),
+  },
+  {
+    path: 'totp.disable',
+    source: 'disableTwoFactor',
+    verb: 'POST',
+    build: (h, p) => body(h, typeof p === 'string' ? { password: p } : p),
+  },
+  {
+    path: 'totp.verify',
+    source: 'verifyTOTP',
+    verb: 'POST',
+    build: (h, p) => body(h, typeof p === 'string' ? { code: p } : (p ?? {})),
+  },
   { path: 'totp.uri', source: 'getTOTPURI', verb: 'POST', build: (h, password) => body(h, { password }) },
   { path: 'totp.otp.send', source: 'sendTwoFactorOTP', verb: 'POST' },
   { path: 'totp.otp.verify', source: 'verifyTwoFactorOTP', verb: 'POST' },
 
   // ── Backup codes ────────────────────────────────────────────────
-  { path: 'backupCodes.generate', source: 'generateBackupCodes', verb: 'POST', build: (h, password) => body(h, typeof password === 'string' ? { password } : (password ?? {})) },
+  {
+    path: 'backupCodes.generate',
+    source: 'generateBackupCodes',
+    verb: 'POST',
+    build: (h, password) => body(h, typeof password === 'string' ? { password } : (password ?? {})),
+  },
   { path: 'backupCodes.verify', source: 'verifyBackupCode', verb: 'POST', build: (h, code) => body(h, { code }) },
   { path: 'backupCodes.view', source: 'viewBackupCodes', verb: 'POST' },
 
   // ── Organizations ───────────────────────────────────────────────
   { path: 'organizations.create', source: 'createOrganization', verb: 'POST' },
   { path: 'organizations.list', source: 'listOrganizations', verb: 'GET' },
-  { path: 'organizations.getFull', source: 'getFullOrganization', verb: 'GET', build: (h, id) => query(h, { organizationId: id }) },
-  { path: 'organizations.setActive', source: 'setActiveOrganization', verb: 'POST', build: (h, organizationId) => body(h, { organizationId }) },
-  { path: 'organizations.update', source: 'updateOrganization', verb: 'POST', build: (h, id, params) => body(h, { organizationId: id, data: params ?? {} }) },
-  { path: 'organizations.delete', source: 'deleteOrganization', verb: 'POST', build: (h, id) => body(h, { organizationId: id }) },
+  {
+    path: 'organizations.getFull',
+    source: 'getFullOrganization',
+    verb: 'GET',
+    build: (h, id) => query(h, { organizationId: id }),
+  },
+  {
+    path: 'organizations.setActive',
+    source: 'setActiveOrganization',
+    verb: 'POST',
+    build: (h, organizationId) => body(h, { organizationId }),
+  },
+  {
+    path: 'organizations.update',
+    source: 'updateOrganization',
+    verb: 'POST',
+    build: (h, id, params) => body(h, { organizationId: id, data: params ?? {} }),
+  },
+  {
+    path: 'organizations.delete',
+    source: 'deleteOrganization',
+    verb: 'POST',
+    build: (h, id) => body(h, { organizationId: id }),
+  },
   { path: 'organizations.checkSlug', source: 'checkOrganizationSlug', verb: 'POST' },
 
   // Members
-  { path: 'organizations.members.list', source: 'listMembers', verb: 'GET', build: (h, organizationId) => query(h, { organizationId }) },
-  { path: 'organizations.members.add', source: 'addMember', verb: 'POST', build: (h, organizationId, userId, role) => body(h, { organizationId, userId, ...(role ? { role } : {}) }) },
+  {
+    path: 'organizations.members.list',
+    source: 'listMembers',
+    verb: 'GET',
+    build: (h, organizationId) => query(h, { organizationId }),
+  },
+  {
+    path: 'organizations.members.add',
+    source: 'addMember',
+    verb: 'POST',
+    build: (h, organizationId, userId, role) => body(h, { organizationId, userId, ...(role ? { role } : {}) }),
+  },
   {
     path: 'organizations.members.update',
     source: 'updateMemberRole',
     verb: 'POST',
-    build: (h, memberId, role, organizationId) => body(h, { memberId, role, ...(organizationId ? { organizationId } : {}) }),
+    build: (h, memberId, role, organizationId) =>
+      body(h, { memberId, role, ...(organizationId ? { organizationId } : {}) }),
   },
-  { path: 'organizations.members.remove', source: 'removeMember', verb: 'POST', build: (h, orgId, memberId) => body(h, { memberIdOrEmail: memberId, organizationId: orgId }) },
+  {
+    path: 'organizations.members.remove',
+    source: 'removeMember',
+    verb: 'POST',
+    build: (h, orgId, memberId) => body(h, { memberIdOrEmail: memberId, organizationId: orgId }),
+  },
 
   // Invitations
-  { path: 'organizations.invitations.create', source: 'createInvitation', verb: 'POST', build: (h, orgId, params) => body(h, { organizationId: orgId, ...(params) }) },
-  { path: 'organizations.invitations.list', source: 'listInvitations', verb: 'GET', build: (h, organizationId) => query(h, { organizationId }) },
-  { path: 'organizations.invitations.get', source: 'getInvitation', verb: 'GET', build: (h, invitationId) => query(h, { invitationId }) },
-  { path: 'organizations.invitations.accept', source: 'acceptInvitation', verb: 'POST', build: (h, invitationId) => body(h, { invitationId }) },
-  { path: 'organizations.invitations.reject', source: 'rejectInvitation', verb: 'POST', build: (h, invitationId) => body(h, { invitationId }) },
-  { path: 'organizations.invitations.cancel', source: 'cancelInvitation', verb: 'POST', build: (h, invitationId) => body(h, { invitationId }) },
+  {
+    path: 'organizations.invitations.create',
+    source: 'createInvitation',
+    verb: 'POST',
+    build: (h, orgId, params) => body(h, { organizationId: orgId, ...params }),
+  },
+  {
+    path: 'organizations.invitations.list',
+    source: 'listInvitations',
+    verb: 'GET',
+    build: (h, organizationId) => query(h, { organizationId }),
+  },
+  {
+    path: 'organizations.invitations.get',
+    source: 'getInvitation',
+    verb: 'GET',
+    build: (h, invitationId) => query(h, { invitationId }),
+  },
+  {
+    path: 'organizations.invitations.accept',
+    source: 'acceptInvitation',
+    verb: 'POST',
+    build: (h, invitationId) => body(h, { invitationId }),
+  },
+  {
+    path: 'organizations.invitations.reject',
+    source: 'rejectInvitation',
+    verb: 'POST',
+    build: (h, invitationId) => body(h, { invitationId }),
+  },
+  {
+    path: 'organizations.invitations.cancel',
+    source: 'cancelInvitation',
+    verb: 'POST',
+    build: (h, invitationId) => body(h, { invitationId }),
+  },
 
   // Organization roles
   { path: 'organizations.roles.create', source: 'createOrgRole', verb: 'POST' },
-  { path: 'organizations.roles.list', source: 'listOrgRoles', verb: 'GET', build: (h, organizationId) => query(h, organizationId ? { organizationId } : {}) },
+  {
+    path: 'organizations.roles.list',
+    source: 'listOrgRoles',
+    verb: 'GET',
+    build: (h, organizationId) => query(h, organizationId ? { organizationId } : {}),
+  },
   { path: 'organizations.roles.get', source: 'getOrgRole', verb: 'GET' },
-  { path: 'organizations.roles.update', source: 'updateOrgRole', verb: 'POST', build: (h, roleId, params) => body(h, { roleId, data: params ?? {} }) },
+  {
+    path: 'organizations.roles.update',
+    source: 'updateOrgRole',
+    verb: 'POST',
+    build: (h, roleId, params) => body(h, { roleId, data: params ?? {} }),
+  },
   { path: 'organizations.roles.delete', source: 'deleteOrgRole', verb: 'POST' },
 
   // Permissions

@@ -1,6 +1,6 @@
 ---
-title: "Security"
-description: "Security best practices for Tower applications."
+title: 'Security'
+description: 'Security best practices for Tower applications.'
 ---
 
 ## Auth Secret
@@ -38,7 +38,9 @@ gatehouse: {
 Disable CSRF check only when necessary:
 
 ```tsx
-advanced: { disableCSRFCheck: true }
+advanced: {
+  disableCSRFCheck: true
+}
 ```
 
 ## Cookies
@@ -47,7 +49,9 @@ Configure secure cookies for production:
 
 ```tsx
 gatehouse: {
-  advanced: { useSecureCookies: true }
+  advanced: {
+    useSecureCookies: true
+  }
 }
 ```
 
@@ -79,9 +83,7 @@ Add Content Security Policy headers in your `next.config.ts`:
 headers: async () => [
   {
     source: '/(.*)',
-    headers: [
-      { key: 'Content-Security-Policy', value: "default-src 'self'" },
-    ],
+    headers: [{ key: 'Content-Security-Policy', value: "default-src 'self'" }],
   },
 ]
 ```

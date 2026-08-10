@@ -1,6 +1,6 @@
 ---
-title: "Client API"
-description: "gatehouseClient for browser code: sign-in, sign-up, session hooks, and OAuth."
+title: 'Client API'
+description: 'gatehouseClient for browser code: sign-in, sign-up, session hooks, and OAuth.'
 ---
 
 The client API is a typed Better Auth client for browser code. Import it from the client entry:
@@ -89,10 +89,10 @@ await gatehouseClient.phoneNumber.verifyOtp({ phoneNumber, otp })
 
 ## When to use the client vs server actions
 
-| Use case | API |
-| --- | --- |
-| Forms (sign-in, sign-up, settings) | [Pre-built actions](/docs/gatehouse/api-reference/actions) — server-side, no client code |
-| Buttons and redirects (OAuth, magic link) | `gatehouseClient` |
-| Passkey registration | [Pre-built actions](/docs/gatehouse/api-reference/actions) — no passkey client plugin |
-| Session-driven UI | `gatehouseClient.useSession()` |
-| Authoritative checks | `gatehouse` on the server |
+| Use case                                  | API                                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Forms (sign-in, sign-up, settings)        | [Pre-built actions](/docs/gatehouse/api-reference/actions) — server-side, no client code |
+| Buttons and redirects (OAuth, magic link) | `gatehouseClient`                                                                        |
+| Passkey registration                      | [Pre-built actions](/docs/gatehouse/api-reference/actions) — no passkey client plugin    |
+| Session-driven UI                         | `gatehouseClient.useSession()`                                                           |
+| Authoritative checks                      | `gatehouse` on the server                                                                |

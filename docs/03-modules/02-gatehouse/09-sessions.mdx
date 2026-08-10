@@ -1,18 +1,18 @@
 ---
-title: "Sessions"
-description: "Reading the session on the server and client, the request context, and session revocation."
+title: 'Sessions'
+description: 'Reading the session on the server and client, the request context, and session revocation.'
 ---
 
 Once a user signs in, a session cookie is set. Here's how to read it in every part of your app — and how to manage and revoke sessions.
 
 ## Reading the session
 
-| Method | Context | Returns |
-| --- | --- | --- |
-| `gatehouse.getSession()` | Server (request context) | `{ user, session } \| null` |
-| `gatehouse.user()` | Server (request context) | `GatehouseUser \| null` |
-| `gatehouse.requireUser()` | Server (request context) | `GatehouseUser` or throws |
-| `gatehouseClient.useSession()` | Client component | React hook, subscribes to session changes |
+| Method                         | Context                  | Returns                                   |
+| ------------------------------ | ------------------------ | ----------------------------------------- |
+| `gatehouse.getSession()`       | Server (request context) | `{ user, session } \| null`               |
+| `gatehouse.user()`             | Server (request context) | `GatehouseUser \| null`                   |
+| `gatehouse.requireUser()`      | Server (request context) | `GatehouseUser` or throws                 |
+| `gatehouseClient.useSession()` | Client component         | React hook, subscribes to session changes |
 
 ## Server components
 
@@ -109,10 +109,10 @@ gatehouse: {
 ## Revocation
 
 ```tsx
-await gatehouse.sessions.list()       // all sessions for the user
+await gatehouse.sessions.list() // all sessions for the user
 await gatehouse.sessions.revoke(token)
 await gatehouse.sessions.revokeOther() // everywhere except this device
-await gatehouse.sessions.signOut()     // current session
+await gatehouse.sessions.signOut() // current session
 ```
 
 Actions: `revokeSession` (`token`), `revokeOtherSessions`. Revocation is immediate — the session is deleted from the database.

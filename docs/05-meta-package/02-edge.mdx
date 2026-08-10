@@ -1,6 +1,6 @@
 ---
-title: "Edge Runtime"
-description: "Running Tower on Vercel Edge, Cloudflare Workers, and other edge runtimes."
+title: 'Edge Runtime'
+description: 'Running Tower on Vercel Edge, Cloudflare Workers, and other edge runtimes.'
 ---
 
 The Edge package configures Tower modules for edge runtime compatibility.
@@ -37,7 +37,7 @@ const users = await vault.selectFrom('users').selectAll().execute()
 
 // Migrations and seeds throw
 await vault.migrate() // Error: migrations unavailable on Edge
-await vault.seed()    // Error: seeds unavailable on Edge
+await vault.seed() // Error: seeds unavailable on Edge
 ```
 
 ### Neon Serverless

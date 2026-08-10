@@ -54,7 +54,9 @@ export default async function DashboardPage() {
         <Link href="/dashboard/courier" className="card-link">
           <Card className="p-5 space-y-1">
             <h3 className="font-medium">Courier</h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Send test emails through the configured provider</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Send test emails through the configured provider
+            </p>
           </Card>
         </Link>
       </div>

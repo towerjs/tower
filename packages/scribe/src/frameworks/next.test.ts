@@ -91,10 +91,10 @@ describe('towerConfig', () => {
     const result = towerConfig(state)
 
     expect(result).toContain(
-      '...(process.env.GOOGLE_CLIENT_ID ? { google: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } } : {})',
+      '...(process.env.GOOGLE_CLIENT_ID ? { google: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } } : {})'
     )
     expect(result).toContain(
-      '...(process.env.GITHUB_CLIENT_ID ? { github: { clientId: process.env.GITHUB_CLIENT_ID, clientSecret: process.env.GITHUB_CLIENT_SECRET! } } : {})',
+      '...(process.env.GITHUB_CLIENT_ID ? { github: { clientId: process.env.GITHUB_CLIENT_ID, clientSecret: process.env.GITHUB_CLIENT_SECRET! } } : {})'
     )
   })
 
@@ -349,7 +349,10 @@ describe('nextAdapter.generate', () => {
     await nextAdapter.generate(stateWithGatehouse, '/target')
 
     expect(mkdir).toHaveBeenCalledWith(expect.stringContaining('lib/auth'), { recursive: true })
-    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('actions.ts'), expect.stringContaining("from 'towerjs/gatehouse/actions'"))
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('actions.ts'),
+      expect.stringContaining("from 'towerjs/gatehouse/actions'")
+    )
   })
 
   it('does not create actions.ts when gatehouse is not selected', async () => {
@@ -381,9 +384,9 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithModules, '/target')
 
-    const [, agentsContent] = vi.mocked(writeFile).mock.calls.find(
-      ([path]) => typeof path === 'string' && path.includes('AGENTS.md'),
-    ) ?? ['']
+    const [, agentsContent] = vi
+      .mocked(writeFile)
+      .mock.calls.find(([path]) => typeof path === 'string' && path.includes('AGENTS.md')) ?? ['']
     expect(agentsContent).toContain('my-app')
     expect(agentsContent).toContain('gatehouse')
     expect(agentsContent).toContain('vault')
@@ -392,9 +395,9 @@ describe('nextAdapter.generate', () => {
   it('AGENTS.md appends Tower content after the generated Next.js content', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const [, agentsContent] = vi.mocked(writeFile).mock.calls.find(
-      ([path]) => typeof path === 'string' && path.includes('AGENTS.md'),
-    ) ?? ['']
+    const [, agentsContent] = vi
+      .mocked(writeFile)
+      .mock.calls.find(([path]) => typeof path === 'string' && path.includes('AGENTS.md')) ?? ['']
     expect(agentsContent).toContain('# Next.js project')
     expect(agentsContent).toContain('\n\n# Project:')
     expect(agentsContent).toContain('composable monolithic stack')
@@ -417,40 +420,36 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
 
-    expect(execa).toHaveBeenCalledWith(
-      'pnpm',
-      ['add', 'towerjs', '@towerjs/gatehouse'],
-      {
-        cwd: expect.stringContaining('my-app'),
-        stdio: 'inherit',
-      }
-    )
+    expect(execa).toHaveBeenCalledWith('pnpm', ['add', 'towerjs', '@towerjs/gatehouse'], {
+      cwd: expect.stringContaining('my-app'),
+      stdio: 'inherit',
+    })
   })
 
   it('does not install @towerjs/gatehouse without gatehouse', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const gatehouseAdd = vi.mocked(execa).mock.calls.find(
-      ([, args]) => Array.isArray(args) && args.includes('@towerjs/gatehouse'),
-    )
+    const gatehouseAdd = vi
+      .mocked(execa)
+      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('@towerjs/gatehouse'))
     expect(gatehouseAdd).toBeUndefined()
   })
 
   it('does not install @towerjs/edge on node runtime', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const edgeAdd = vi.mocked(execa).mock.calls.find(
-      ([, args]) => Array.isArray(args) && args.includes('@towerjs/edge'),
-    )
+    const edgeAdd = vi
+      .mocked(execa)
+      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('@towerjs/edge'))
     expect(edgeAdd).toBeUndefined()
   })
 
   it('does not write next.config.ts with withTowerEdge on node runtime', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const nextConfigCall = vi.mocked(writeFile).mock.calls.find(
-      ([path]) => typeof path === 'string' && path.includes('next.config.ts'),
-    )
+    const nextConfigCall = vi
+      .mocked(writeFile)
+      .mock.calls.find(([path]) => typeof path === 'string' && path.includes('next.config.ts'))
     expect(nextConfigCall).toBeUndefined()
   })
 
@@ -478,16 +477,16 @@ describe('nextAdapter.generate', () => {
 
     expect(writeFile).toHaveBeenCalledWith(
       expect.stringContaining('next.config.ts'),
-      expect.stringContaining('withTowerEdge'),
+      expect.stringContaining('withTowerEdge')
     )
   })
 
   it('writes .prettierrc with tailwind plugins when tailwind is selected', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const [, prettierContent] = vi.mocked(writeFile).mock.calls.find(
-      ([path]) => typeof path === 'string' && path.includes('.prettierrc'),
-    ) ?? ['']
+    const [, prettierContent] = vi
+      .mocked(writeFile)
+      .mock.calls.find(([path]) => typeof path === 'string' && path.includes('.prettierrc')) ?? ['']
     expect(prettierContent).toContain('prettier-plugin-tailwindcss')
     expect(prettierContent).toContain('prettier-plugin-tailwindcss-canonical-classes')
   })
@@ -500,9 +499,9 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithoutTailwind, '/target')
 
-    const [, prettierContent] = vi.mocked(writeFile).mock.calls.find(
-      ([path]) => typeof path === 'string' && path.includes('.prettierrc'),
-    ) ?? ['']
+    const [, prettierContent] = vi
+      .mocked(writeFile)
+      .mock.calls.find(([path]) => typeof path === 'string' && path.includes('.prettierrc')) ?? ['']
     expect(prettierContent).toContain('prettier-plugin-organize-imports')
     expect(prettierContent).not.toContain('prettier-plugin-tailwindcss')
   })
@@ -510,18 +509,18 @@ describe('nextAdapter.generate', () => {
   it('installs prettier and prettier-plugin-organize-imports', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const prettierCalls = vi.mocked(execa).mock.calls.filter(
-      ([, args]) => Array.isArray(args) && args.includes('prettier-plugin-organize-imports'),
-    )
+    const prettierCalls = vi
+      .mocked(execa)
+      .mock.calls.filter(([, args]) => Array.isArray(args) && args.includes('prettier-plugin-organize-imports'))
     expect(prettierCalls.length).toBeGreaterThanOrEqual(1)
   })
 
   it('installs tailwind prettier plugins when tailwind is selected', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const tailwindCall = vi.mocked(execa).mock.calls.find(
-      ([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'),
-    )
+    const tailwindCall = vi
+      .mocked(execa)
+      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'))
     expect(tailwindCall).toBeDefined()
     expect(tailwindCall![1]).toContain('prettier-plugin-tailwindcss-canonical-classes')
   })
@@ -534,9 +533,9 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithoutTailwind, '/target')
 
-    const tailwindCall = vi.mocked(execa).mock.calls.find(
-      ([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'),
-    )
+    const tailwindCall = vi
+      .mocked(execa)
+      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'))
     expect(tailwindCall).toBeUndefined()
   })
 })

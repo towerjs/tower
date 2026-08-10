@@ -124,8 +124,7 @@ async function createCourier(config: CourierConfig): Promise<CourierModule> {
 type SendService = { send(params: unknown): Promise<unknown> }
 
 function validateChannel<T extends SendService>(channel: 'email' | 'sms' | 'push', service: T): T {
-  const schema =
-    channel === 'email' ? emailSendSchema : channel === 'sms' ? smsSendSchema : pushSendSchema
+  const schema = channel === 'email' ? emailSendSchema : channel === 'sms' ? smsSendSchema : pushSendSchema
   return {
     ...service,
     async send(params: unknown) {

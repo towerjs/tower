@@ -1,6 +1,6 @@
 ---
-title: "API Keys"
-description: "Scoped keys for programmatic access — create, verify, rotate, and revoke."
+title: 'API Keys'
+description: 'Scoped keys for programmatic access — create, verify, rotate, and revoke.'
 ---
 
 API keys let services (CLIs, webhooks, cron jobs) authenticate without a user session. Each key carries a permission map that limits what it can do.
@@ -20,9 +20,9 @@ gatehouse: {
 ```tsx
 await gatehouse.apiKeys.create({
   name: 'Deploy CLI',
-  userId: 'user_123',             // required — the key's owner
-  expiresIn: 30 * 86400,          // optional, seconds
-  permissions: { 'project': ['deploy'] },
+  userId: 'user_123', // required — the key's owner
+  expiresIn: 30 * 86400, // optional, seconds
+  permissions: { project: ['deploy'] },
 })
 ```
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 ```tsx
 await gatehouse.apiKeys.list(userId, { sortBy: 'createdAt' })
 await gatehouse.apiKeys.get(keyId)
-await gatehouse.apiKeys.update(id, { name, expiresIn })   // rotate: shorten expiry or change permissions
+await gatehouse.apiKeys.update(id, { name, expiresIn }) // rotate: shorten expiry or change permissions
 await gatehouse.apiKeys.delete(id)
 await gatehouse.apiKeys.deleteAllExpired()
 ```
@@ -69,14 +69,14 @@ Actions: `updateApiKey` (`id`, `name`), `deleteApiKey` (`id`), `verifyApiKey` (`
 
 ## Key properties
 
-| Field | Description |
-| --- | --- |
-| `name` | Human-readable label |
-| `prefix` | Branded prefix (e.g. `tower_live_`) — keys start with it |
-| `permissions` | Permission map: `{ 'resource': ['action'] }` — checked against `can()` |
-| `metadata` | Free-form object |
-| `expiresAt` | Expiry; expired keys fail verification |
-| `organizationId` | Optional organization scope |
+| Field            | Description                                                            |
+| ---------------- | ---------------------------------------------------------------------- |
+| `name`           | Human-readable label                                                   |
+| `prefix`         | Branded prefix (e.g. `tower_live_`) — keys start with it               |
+| `permissions`    | Permission map: `{ 'resource': ['action'] }` — checked against `can()` |
+| `metadata`       | Free-form object                                                       |
+| `expiresAt`      | Expiry; expired keys fail verification                                 |
+| `organizationId` | Optional organization scope                                            |
 
 ## Notes
 

@@ -336,10 +336,7 @@ export interface GatehouseEmailVerificationConfig {
     request?: Request
   ) => void | Promise<void>
   /** Custom OTP email handler. Overrides Courier. Applies to the `otp` method. */
-  sendVerificationOTP?: (
-    data: { email: string; otp: string; type: string },
-    ctx?: unknown
-  ) => void | Promise<void>
+  sendVerificationOTP?: (data: { email: string; otp: string; type: string }, ctx?: unknown) => void | Promise<void>
 }
 /** Options for phone number OTP authentication. Maps to the better-auth phone number plugin. */
 export type GatehousePhoneNumberOptions = BetterAuthPhoneNumberOptions

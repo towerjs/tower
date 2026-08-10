@@ -1,6 +1,6 @@
 ---
-title: "Organizations"
-description: "Multi-tenant auth: organizations, invites, members, roles, and permission checks."
+title: 'Organizations'
+description: 'Multi-tenant auth: organizations, invites, members, roles, and permission checks.'
 ---
 
 Organizations let users belong to multiple workspaces, each with its own members, roles, and permissions.
@@ -57,8 +57,8 @@ Action: `setActiveOrganization` (`organizationId`).
 **Check** — `requireUser()` is per-user; query the active org for context:
 
 ```tsx
-const orgs = await gatehouse.getOrganizations()      // memberships
-const org = await gatehouse.getOrganization(orgId)   // full: members + invitations
+const orgs = await gatehouse.getOrganizations() // memberships
+const org = await gatehouse.getOrganization(orgId) // full: members + invitations
 ```
 
 ## Members
@@ -76,7 +76,7 @@ Actions: `addMember` (`organizationId`, `email`, `role`), `updateMemberRole` (`m
 ```tsx
 await gatehouse.organizations.roles.create({
   role: 'editor',
-  permission: { 'project': ['update'] },
+  permission: { project: ['update'] },
 })
 ```
 
@@ -97,7 +97,7 @@ Built-in roles: `owner`, `admin`, `member` — see [Authorization](/docs/gatehou
 await gatehouse.can({
   user,
   permission: 'project.update',
-  organizationId: 'org_id',   // scope the check to an org
+  organizationId: 'org_id', // scope the check to an org
 })
 ```
 

@@ -1,6 +1,6 @@
 ---
-title: "User Management"
-description: "Profile updates, email changes, account deletion, and the admin API."
+title: 'User Management'
+description: 'Profile updates, email changes, account deletion, and the admin API.'
 ---
 
 Users manage their own profile from the account API; admins manage everyone from the admin API.
@@ -9,7 +9,7 @@ Users manage their own profile from the account API; admins manage everyone from
 
 ```tsx
 await gatehouse.account.update({ name, image })
-await gatehouse.user()               // updated user
+await gatehouse.user() // updated user
 ```
 
 Action: `updateProfile` (`name`).
@@ -26,7 +26,7 @@ With `user.changeEmail.enabled`, the new address must be confirmed before it tak
 
 ```tsx
 await gatehouse.password.change({ currentPassword, newPassword })
-await gatehouse.password.confirm({ password })   // boolean — verify before sensitive actions
+await gatehouse.password.confirm({ password }) // boolean — verify before sensitive actions
 ```
 
 Actions: `changePassword` (`currentPassword`, `newPassword`), `verifyPassword` (`password`).
@@ -75,7 +75,7 @@ await gatehouse.admin.setRole({ userId, role })
 ```tsx
 await gatehouse.admin.banUser(userId, {
   banReason: 'Spam',
-  banExpiresIn: 7 * 86400,   // seconds; omit for permanent
+  banExpiresIn: 7 * 86400, // seconds; omit for permanent
 })
 await gatehouse.admin.unbanUser(userId)
 ```

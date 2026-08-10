@@ -4,6 +4,10 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
+    },
+    "@towerjs/with-nextjs#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**"]
     }
   }
 }

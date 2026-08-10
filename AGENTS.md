@@ -182,6 +182,7 @@ pnpm test:e2e
 **Test isolation:** Each test generates a unique email (`test-${Date.now()}@example.com`) to avoid database state conflicts. No database cleanup is needed between tests.
 
 **Adding new E2E tests:**
+
 1. Add `*.spec.ts` to `examples/with-nextjs/e2e/`
 2. Use unique test data (timestamps, random values)
 3. Add `test.skip()` for provider-dependent tests

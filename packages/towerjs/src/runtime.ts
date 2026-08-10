@@ -72,7 +72,7 @@ async function registerModuleServices(app: TowerApp) {
 }
 
 function setAppPromise(promise: Promise<TowerApp>) {
-  (globalThis as any)[APP_PROMISE_KEY] = promise
+  ;(globalThis as any)[APP_PROMISE_KEY] = promise
 }
 
 function getAppPromise(): Promise<TowerApp> | undefined {
@@ -101,7 +101,10 @@ export function initTower(config?: TowerBlueprint): Promise<TowerApp> {
   const promise = getFoundation().then(async ({ createTowerApp, resolveConfig }) => {
     let app: TowerApp
     if (config) {
-      app = await createTowerApp(config as unknown as TowerConfig, getModuleFactoryForConfig(config as unknown as TowerConfig))
+      app = await createTowerApp(
+        config as unknown as TowerConfig,
+        getModuleFactoryForConfig(config as unknown as TowerConfig)
+      )
     } else {
       const cfg = await resolveConfig()
       app = await createTowerApp(cfg as TowerConfig, getModuleFactoryForConfig(cfg as TowerConfig))

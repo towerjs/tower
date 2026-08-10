@@ -1,6 +1,6 @@
 ---
-title: "Configuration"
-description: "Every Gatehouse option in tower.config.ts: features, credentials, sessions, and provider details."
+title: 'Configuration'
+description: 'Every Gatehouse option in tower.config.ts: features, credentials, sessions, and provider details.'
 ---
 
 Gatehouse is configured under the `gatehouse` key in `tower.config.ts`. Features are opt-in — omit a feature to disable it.
@@ -27,13 +27,13 @@ gatehouse: {
 
 ## Core
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `provider` | `'better-auth'` | The auth provider backend |
-| `appName` | `string` | App name used in auth emails and TOTP labels |
-| `baseURL` | `string \| object` | Canonical app URL; object form accepts `allowedHosts`, `protocol`, `fallback` |
-| `trustedOrigins` | `string[]` | Additional trusted origins for cross-origin auth |
-| `plugins` | `BetterAuthPlugin[]` | Extra Better Auth plugins |
+| Option           | Type                 | Description                                                                   |
+| ---------------- | -------------------- | ----------------------------------------------------------------------------- |
+| `provider`       | `'better-auth'`      | The auth provider backend                                                     |
+| `appName`        | `string`             | App name used in auth emails and TOTP labels                                  |
+| `baseURL`        | `string \| object`   | Canonical app URL; object form accepts `allowedHosts`, `protocol`, `fallback` |
+| `trustedOrigins` | `string[]`           | Additional trusted origins for cross-origin auth                              |
+| `plugins`        | `BetterAuthPlugin[]` | Extra Better Auth plugins                                                     |
 
 **Secret** — there's no `secret` option. The cookie-signing secret comes from `passThrough.secret`, `GATEHOUSE_SECRET`, or `BETTER_AUTH_SECRET` (outside production, a dev fallback applies).
 
@@ -41,36 +41,36 @@ gatehouse: {
 
 Email/password auth. `true` enables it with defaults; an object configures behavior:
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `enabled` | `boolean` | — | Enable credentials auth |
-| `disableSignUp` | `boolean` | `false` | Email/password sign-up off (invite-only apps) |
-| `requireEmailVerification` | `boolean` | `false` | Deprecated — moved to `emailVerification.required` |
-| `minPasswordLength` | `number` | `8` | Minimum password length |
-| `maxPasswordLength` | `number` | — | Maximum password length |
-| `autoSignIn` | `boolean` | `true` | Create a session immediately after sign-up |
-| `revokeSessionsOnPasswordReset` | `boolean` | `true` | Sign out all devices after a reset |
-| `resetPasswordTokenExpiresIn` | `number` | — | Reset token lifetime in seconds |
-| `sendResetPassword` | `fn` | courier | Custom password-reset email handler |
-| `onPasswordReset` | `fn` | — | Called after a password reset |
-| `onExistingUserSignUp` | `fn` | — | Called when sign-up matches an existing user |
-| `customSyntheticUser` | `fn` | — | Customize the synthetic user created for OAuth/OTP flows |
-| `password.hash` / `password.verify` | `fn` | scrypt | Custom password hashing |
+| Option                              | Type      | Default | Description                                              |
+| ----------------------------------- | --------- | ------- | -------------------------------------------------------- |
+| `enabled`                           | `boolean` | —       | Enable credentials auth                                  |
+| `disableSignUp`                     | `boolean` | `false` | Email/password sign-up off (invite-only apps)            |
+| `requireEmailVerification`          | `boolean` | `false` | Deprecated — moved to `emailVerification.required`       |
+| `minPasswordLength`                 | `number`  | `8`     | Minimum password length                                  |
+| `maxPasswordLength`                 | `number`  | —       | Maximum password length                                  |
+| `autoSignIn`                        | `boolean` | `true`  | Create a session immediately after sign-up               |
+| `revokeSessionsOnPasswordReset`     | `boolean` | `true`  | Sign out all devices after a reset                       |
+| `resetPasswordTokenExpiresIn`       | `number`  | —       | Reset token lifetime in seconds                          |
+| `sendResetPassword`                 | `fn`      | courier | Custom password-reset email handler                      |
+| `onPasswordReset`                   | `fn`      | —       | Called after a password reset                            |
+| `onExistingUserSignUp`              | `fn`      | —       | Called when sign-up matches an existing user             |
+| `customSyntheticUser`               | `fn`      | —       | Customize the synthetic user created for OAuth/OTP flows |
+| `password.hash` / `password.verify` | `fn`      | scrypt  | Custom password hashing                                  |
 
 ## emailVerification
 
 How users prove they own their email. `true` enables it with default behavior (link method, not required); an object configures it:
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `enabled` | `boolean` | — | Enable email verification |
-| `method` | `'link' \| 'otp'` | `'link'` | Verify by clicking a link, or by entering a one-time code. `'otp'` also enables one-time-code sign-in (`gatehouse.signIn.emailOtp`) |
-| `required` | `boolean` | `false` | Block sign-in until the email is verified (unless signed in via OTP, which proves ownership) |
-| `sendOnSignUp` | `boolean` | `false` | Send the verification link/code at sign-up |
-| `autoSignInAfterVerification` | `boolean` | `true` | Create a session when the email is verified |
-| `expiresIn` | `number` | — | Verification token/code lifetime in seconds |
-| `sendVerificationEmail` | `fn` | courier | Custom verification link handler (`method: 'link'`) |
-| `sendVerificationOTP` | `fn` | courier | Custom verification code handler (`method: 'otp'`) |
+| Option                        | Type              | Default  | Description                                                                                                                         |
+| ----------------------------- | ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`                     | `boolean`         | —        | Enable email verification                                                                                                           |
+| `method`                      | `'link' \| 'otp'` | `'link'` | Verify by clicking a link, or by entering a one-time code. `'otp'` also enables one-time-code sign-in (`gatehouse.signIn.emailOtp`) |
+| `required`                    | `boolean`         | `false`  | Block sign-in until the email is verified (unless signed in via OTP, which proves ownership)                                        |
+| `sendOnSignUp`                | `boolean`         | `false`  | Send the verification link/code at sign-up                                                                                          |
+| `autoSignInAfterVerification` | `boolean`         | `true`   | Create a session when the email is verified                                                                                         |
+| `expiresIn`                   | `number`          | —        | Verification token/code lifetime in seconds                                                                                         |
+| `sendVerificationEmail`       | `fn`              | courier  | Custom verification link handler (`method: 'link'`)                                                                                 |
+| `sendVerificationOTP`         | `fn`              | courier  | Custom verification code handler (`method: 'otp'`)                                                                                  |
 
 `sendVerificationOTP` receives `{ email, otp, type }` where `type` is `'sign-in'`, `'email-verification'`, `'forget-password'`, or `'change-email'`.
 
@@ -121,67 +121,67 @@ Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disab
 
 ## session
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `expiresIn` | `number` | `604800` | Session lifetime in seconds (7 days) |
-| `updateAge` | `number` | — | Refresh the cookie after this age, extending expiry |
-| `disableSessionRefresh` | `boolean` | `false` | Turn off sliding expiry |
-| `deferSessionRefresh` | `boolean` | `false` | Refresh on the next request instead of inline |
-| `storeSessionInDatabase` | `boolean` | `true` | Persist sessions (disable for stateless) |
-| `preserveSessionInDatabase` | `boolean` | — | Keep the session row after it's revoked or expired |
-| `cookieCache` | `object` | — | Compact session cookie cache (`enabled`, `maxAge`, `strategy`) |
-| `additionalFields` | `object` | — | Extra columns on the session model |
-| `modelName` | `string` | — | Custom table name for the session model |
-| `fields` | `object` | — | Map internal session fields to custom column names |
+| Option                      | Type      | Default  | Description                                                    |
+| --------------------------- | --------- | -------- | -------------------------------------------------------------- |
+| `expiresIn`                 | `number`  | `604800` | Session lifetime in seconds (7 days)                           |
+| `updateAge`                 | `number`  | —        | Refresh the cookie after this age, extending expiry            |
+| `disableSessionRefresh`     | `boolean` | `false`  | Turn off sliding expiry                                        |
+| `deferSessionRefresh`       | `boolean` | `false`  | Refresh on the next request instead of inline                  |
+| `storeSessionInDatabase`    | `boolean` | `true`   | Persist sessions (disable for stateless)                       |
+| `preserveSessionInDatabase` | `boolean` | —        | Keep the session row after it's revoked or expired             |
+| `cookieCache`               | `object`  | —        | Compact session cookie cache (`enabled`, `maxAge`, `strategy`) |
+| `additionalFields`          | `object`  | —        | Extra columns on the session model                             |
+| `modelName`                 | `string`  | —        | Custom table name for the session model                        |
+| `fields`                    | `object`  | —        | Map internal session fields to custom column names             |
 
 ## user
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `modelName` | `string` | Custom table name for the user model |
-| `fields` | `object` | Map internal user fields to custom column names |
-| `additionalFields` | `object` | Extra columns on the user model |
-| `changeEmail.enabled` | `boolean` | Require confirmation before email changes take effect |
-| `changeEmail.sendChangeEmailConfirmation` | `fn` | Custom confirmation email |
-| `deleteUser.enabled` | `boolean` | Allow account deletion |
-| `deleteUser.beforeDelete` / `afterDelete` | `fn` | Cleanup hooks around account deletion |
+| Option                                    | Type      | Description                                           |
+| ----------------------------------------- | --------- | ----------------------------------------------------- |
+| `modelName`                               | `string`  | Custom table name for the user model                  |
+| `fields`                                  | `object`  | Map internal user fields to custom column names       |
+| `additionalFields`                        | `object`  | Extra columns on the user model                       |
+| `changeEmail.enabled`                     | `boolean` | Require confirmation before email changes take effect |
+| `changeEmail.sendChangeEmailConfirmation` | `fn`      | Custom confirmation email                             |
+| `deleteUser.enabled`                      | `boolean` | Allow account deletion                                |
+| `deleteUser.beforeDelete` / `afterDelete` | `fn`      | Cleanup hooks around account deletion                 |
 
 ## account
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `modelName` | `string` | Custom table name for the account model |
-| `fields` | `object` | Map internal account fields to custom column names |
-| `encryptOAuthTokens` | `boolean` | Encrypt OAuth access/refresh tokens at rest |
-| `updateAccountOnSignIn` | `boolean` | Update the account row on every sign-in |
-| `storeStateStrategy` | `'cookie' \| 'database'` | Where OAuth state is stored |
-| `storeAccountCookie` | `boolean` | Store account info in a cookie |
-| `accountLinking.enabled` | `boolean` | Link multiple providers to one account |
-| `accountLinking.trustedProviders` | `string[] \| fn` | Providers allowed to link automatically |
-| `accountLinking.allowDifferentEmails` | `boolean` | Allow linking accounts with different emails |
-| `accountLinking.disableImplicitLinking` | `boolean` | Require explicit linking |
-| `accountLinking.allowUnlinkingAll` | `boolean` | Allow unlinking every provider |
-| `accountLinking.updateUserInfoOnLink` | `boolean` | Refresh user info when linking |
+| Option                                  | Type                     | Description                                        |
+| --------------------------------------- | ------------------------ | -------------------------------------------------- |
+| `modelName`                             | `string`                 | Custom table name for the account model            |
+| `fields`                                | `object`                 | Map internal account fields to custom column names |
+| `encryptOAuthTokens`                    | `boolean`                | Encrypt OAuth access/refresh tokens at rest        |
+| `updateAccountOnSignIn`                 | `boolean`                | Update the account row on every sign-in            |
+| `storeStateStrategy`                    | `'cookie' \| 'database'` | Where OAuth state is stored                        |
+| `storeAccountCookie`                    | `boolean`                | Store account info in a cookie                     |
+| `accountLinking.enabled`                | `boolean`                | Link multiple providers to one account             |
+| `accountLinking.trustedProviders`       | `string[] \| fn`         | Providers allowed to link automatically            |
+| `accountLinking.allowDifferentEmails`   | `boolean`                | Allow linking accounts with different emails       |
+| `accountLinking.disableImplicitLinking` | `boolean`                | Require explicit linking                           |
+| `accountLinking.allowUnlinkingAll`      | `boolean`                | Allow unlinking every provider                     |
+| `accountLinking.updateUserInfoOnLink`   | `boolean`                | Refresh user info when linking                     |
 
 ## rateLimit
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `enabled` | `boolean` | — | Enable request rate limiting |
-| `window` | `number` | — | Time window in seconds |
-| `max` | `number` | — | Max requests per window |
-| `storage` | `'memory' \| 'database' \| 'secondary-storage'` | `'database'` | Where counters live |
-| `customRules` | `object` | — | Per-endpoint rules (`{ window, max }`, or `false` to disable) |
+| Option        | Type                                            | Default      | Description                                                   |
+| ------------- | ----------------------------------------------- | ------------ | ------------------------------------------------------------- |
+| `enabled`     | `boolean`                                       | —            | Enable request rate limiting                                  |
+| `window`      | `number`                                        | —            | Time window in seconds                                        |
+| `max`         | `number`                                        | —            | Max requests per window                                       |
+| `storage`     | `'memory' \| 'database' \| 'secondary-storage'` | `'database'` | Where counters live                                           |
+| `customRules` | `object`                                        | —            | Per-endpoint rules (`{ window, max }`, or `false` to disable) |
 
 ## advanced
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `useSecureCookies` | `boolean` | Set the Secure flag on cookies |
-| `disableCSRFCheck` | `boolean` | Disable CSRF protection |
-| `cookiePrefix` | `string` | Prefix for auth cookies |
-| `database.generateId` | `fn \| 'serial' \| 'uuid' \| false` | Custom ID generator |
-| `database.defaultFindManyLimit` | `number` | Default limit for list queries |
+| Option                          | Type                                | Description                    |
+| ------------------------------- | ----------------------------------- | ------------------------------ |
+| `useSecureCookies`              | `boolean`                           | Set the Secure flag on cookies |
+| `disableCSRFCheck`              | `boolean`                           | Disable CSRF protection        |
+| `cookiePrefix`                  | `string`                            | Prefix for auth cookies        |
+| `database.generateId`           | `fn \| 'serial' \| 'uuid' \| false` | Custom ID generator            |
+| `database.defaultFindManyLimit` | `number`                            | Default limit for list queries |
 
 ## passThrough
 

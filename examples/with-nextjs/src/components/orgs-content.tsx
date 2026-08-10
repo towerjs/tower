@@ -57,7 +57,9 @@ export function OrgsContent({ orgs }: OrgsContentProps) {
           )}
           <Input name="name" placeholder="Organization name" required />
           <Input name="slug" placeholder="slug" required />
-          <Button type="submit" pending={createPending}>Create</Button>
+          <Button type="submit" pending={createPending}>
+            Create
+          </Button>
         </form>
       </Card>
     </div>

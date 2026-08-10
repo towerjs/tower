@@ -22,14 +22,17 @@ export function SignInForm() {
   const [otpSent, setOtpSent] = useState(false)
 
   const [pw, pwAction, pwPending] = useActionState<ActionResult | undefined, FormData>(signIn, undefined)
-  const [magic, magicAction, magicPending] = useActionState<ActionResult | undefined, FormData>(requestMagicLink, undefined)
+  const [magic, magicAction, magicPending] = useActionState<ActionResult | undefined, FormData>(
+    requestMagicLink,
+    undefined
+  )
   const [otpSend, otpSendAction, otpSendPending] = useActionState<ActionResult | undefined, FormData>(
     sendVerificationOTP,
-    undefined,
+    undefined
   )
   const [otpVerify, otpVerifyAction, otpVerifyPending] = useActionState<ActionResult | undefined, FormData>(
     signInWithOTP,
-    undefined,
+    undefined
   )
 
   useEffect(() => {
@@ -42,10 +45,8 @@ export function SignInForm() {
 
   const isEmailOtp = tab === 'email-otp'
   const firstStepAction = tab === 'password' ? pwAction : tab === 'magic-link' ? magicAction : otpSendAction
-  const firstStepPending =
-    tab === 'password' ? pwPending : tab === 'magic-link' ? magicPending : otpSendPending
-  const firstStepState: ActionResult | undefined =
-    tab === 'password' ? pw : tab === 'magic-link' ? magic : otpSend
+  const firstStepPending = tab === 'password' ? pwPending : tab === 'magic-link' ? magicPending : otpSendPending
+  const firstStepState: ActionResult | undefined = tab === 'password' ? pw : tab === 'magic-link' ? magic : otpSend
   const secondStepState: ActionResult | undefined = otpVerify
 
   const error = (state: ActionResult | undefined) =>
@@ -181,11 +182,7 @@ export function SignInForm() {
           )}
 
           <Button type="submit" pending={firstStepPending} className="mt-6 w-full">
-            {tab === 'magic-link'
-              ? 'Send magic link'
-              : isEmailOtp
-                ? 'Send code'
-                : 'Sign in'}
+            {tab === 'magic-link' ? 'Send magic link' : isEmailOtp ? 'Send code' : 'Sign in'}
           </Button>
         </form>
       )}

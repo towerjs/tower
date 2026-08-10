@@ -17,18 +17,18 @@ docs(root): update README
 
 Scopes match package directory names:
 
-| Scope | Package |
-|---|---|
-| `foundation` | `@towerjs/foundation` |
-| `blueprint` | `@towerjs/blueprint` |
-| `vault` | `@towerjs/vault` |
-| `gatehouse` | `@towerjs/gatehouse` |
-| `courier` | `@towerjs/courier` |
-| `scribe` | `@towerjs/scribe` |
-| `create-tower` | `create-tower` |
-| `towerjs` | `towerjs` |
-| `edge` | `@towerjs/edge` |
-| `root` | Root-level changes (config, CI, README) |
+| Scope          | Package                                 |
+| -------------- | --------------------------------------- |
+| `foundation`   | `@towerjs/foundation`                   |
+| `blueprint`    | `@towerjs/blueprint`                    |
+| `vault`        | `@towerjs/vault`                        |
+| `gatehouse`    | `@towerjs/gatehouse`                    |
+| `courier`      | `@towerjs/courier`                      |
+| `scribe`       | `@towerjs/scribe`                       |
+| `create-tower` | `create-tower`                          |
+| `towerjs`      | `towerjs`                               |
+| `edge`         | `@towerjs/edge`                         |
+| `root`         | Root-level changes (config, CI, README) |
 
 ### Types
 
@@ -89,13 +89,13 @@ tower/
 
 ## Dependency rules
 
-| Package | Can depend on | Cannot depend on |
-|---|---|---|
-| `foundation` | (nothing) | any `@towerjs/*` |
-| `blueprint` | `foundation` | vault, gatehouse, courier, edge, scribe |
-| `vault` | `blueprint`, `foundation` | gatehouse, courier |
-| `courier` | `blueprint`, `foundation` | vault, gatehouse |
-| `gatehouse` | `blueprint`, `foundation`, `courier` | vault |
-| `towerjs` | anything | — |
+| Package      | Can depend on                        | Cannot depend on                        |
+| ------------ | ------------------------------------ | --------------------------------------- |
+| `foundation` | (nothing)                            | any `@towerjs/*`                        |
+| `blueprint`  | `foundation`                         | vault, gatehouse, courier, edge, scribe |
+| `vault`      | `blueprint`, `foundation`            | gatehouse, courier                      |
+| `courier`    | `blueprint`, `foundation`            | vault, gatehouse                        |
+| `gatehouse`  | `blueprint`, `foundation`, `courier` | vault                                   |
+| `towerjs`    | anything                             | —                                       |
 
 These are enforced by `tests/dependency-rules.test.ts`. No circular dependencies between packages.

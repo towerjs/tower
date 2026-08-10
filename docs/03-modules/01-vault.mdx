@@ -1,6 +1,6 @@
 ---
-title: "Vault"
-description: "Database ORM powered by Kysely. Supports PostgreSQL and Neon with migrations and seeds."
+title: 'Vault'
+description: 'Database ORM powered by Kysely. Supports PostgreSQL and Neon with migrations and seeds.'
 ---
 
 Vault wraps [Kysely](https://kysely.dev) with connection pooling, migrations, seeds, and both Node and Edge runtime support.
@@ -23,46 +23,25 @@ vault: {
 import { vault } from 'towerjs/vault'
 
 // Select
-const users = await vault
-  .selectFrom('users')
-  .selectAll()
-  .where('email', '=', 'user@example.com')
-  .execute()
+const users = await vault.selectFrom('users').selectAll().where('email', '=', 'user@example.com').execute()
 
 // Insert
-await vault
-  .insertInto('users')
-  .values({ name: 'Alice', email: 'alice@example.com' })
-  .execute()
+await vault.insertInto('users').values({ name: 'Alice', email: 'alice@example.com' }).execute()
 
 // Update
-await vault
-  .updateTable('users')
-  .set({ name: 'Alice Smith' })
-  .where('id', '=', userId)
-  .execute()
+await vault.updateTable('users').set({ name: 'Alice Smith' }).where('id', '=', userId).execute()
 
 // Delete
-await vault
-  .deleteFrom('users')
-  .where('id', '=', userId)
-  .execute()
+await vault.deleteFrom('users').where('id', '=', userId).execute()
 ```
 
 ## Transactions
 
 ```tsx
 await vault.transaction(async (trx) => {
-  const user = await trx
-    .insertInto('users')
-    .values({ name: 'Alice' })
-    .returningAll()
-    .executeTakeFirstOrThrow()
+  const user = await trx.insertInto('users').values({ name: 'Alice' }).returningAll().executeTakeFirstOrThrow()
 
-  await trx
-    .insertInto('profiles')
-    .values({ userId: user.id, bio: 'Hello' })
-    .execute()
+  await trx.insertInto('profiles').values({ userId: user.id, bio: 'Hello' }).execute()
 })
 ```
 
@@ -101,10 +80,7 @@ Create seed files in `src/vault/seeds/`:
 import { type Vault } from '@towerjs/vault'
 
 export default async function seed(db: Vault) {
-  await db
-    .insertInto('projects')
-    .values({ name: 'My First Project' })
-    .execute()
+  await db.insertInto('projects').values({ name: 'My First Project' }).execute()
 }
 ```
 
@@ -120,10 +96,7 @@ By default, migrations run before seeds. Skip migrations with `npx tower seed --
 
 ```tsx
 // vault.db is the raw Kysely instance
-const result = await vault.db
-  .selectFrom('users')
-  .select(vault.db.fn.countAll().as('count'))
-  .executeTakeFirst()
+const result = await vault.db.selectFrom('users').select(vault.db.fn.countAll().as('count')).executeTakeFirst()
 ```
 
 ## Edge Runtime
