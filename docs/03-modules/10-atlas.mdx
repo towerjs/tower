@@ -1,22 +1,27 @@
 ---
 title: "Atlas"
-description: "Atlas is Tower's routing module. It provides file-based routing conventions and framework adapters so your route structure is derived from your file tree."
+description: "File-based routing for frameworks without it — routes derived from your file tree."
 badge: "Coming Soon"
 ---
 
-> **Status: Planned** — Atlas is not yet implemented. This document describes the intended vision.
-
+> **Status: Planned** — Atlas is not yet implemented. This document describes the target API.
 
 ## Vision
 
-Atlas aims to deliver a routing layer that works across frameworks. Define routes as files, and Atlas maps them to framework-specific route registrations — whether you're using Next.js, Hono, Express, or Astro.
+Atlas gives you file-based routing in any framework. Your route tree is derived from the file system, mapped to URL patterns, and served through a single handler. Next.js ships its own App Router, so Atlas targets frameworks that don't provide routing — Express, Hono, Fastify — or teams that want the same convention everywhere.
 
-## File-Based Routing
+## Setup
 
-Atlas maps your file system to URL patterns using conventions similar to Next.js App Router.
+```tsx filename="tower.config.ts"
+atlas: {
+  routesDir: './src/routes',
+}
+```
+
+## Route files
 
 ```
-routes/
+src/routes/
   index.tsx          -> /
   about.tsx          -> /about
   blog/
@@ -28,49 +33,38 @@ routes/
       [id].tsx       -> /api/users/:id
 ```
 
-## Framework Adapters
+Each file exports a handler and optional metadata:
 
-An **adapter** converts Atlas route definitions into framework-specific handlers.
+```tsx filename="src/routes/dashboard/settings.tsx"
+export const route = {
+  layout: 'dashboard',
+  middleware: ['auth'],
+  method: 'get',
+}
+
+export default function handler(req: AtlasRequest) {
+  return atlas.json({ ok: true })
+}
+```
+
+## Mounting
 
 ```tsx
-import { defineAdapter } from "@towerjs/atlas"
+import express from 'express'
+import { atlas } from 'towerjs/atlas'
 
-const honoAdapter = defineAdapter({
-  name: "hono",
-  setup(app, routes) {
-    for (const route of routes) {
-      app.on(route.method, route.path, route.handler)
-    }
-  },
-})
+const app = express()
+app.use(atlas.handler())
 ```
 
-Built-in adapters planned:
+## Route metadata
 
-- Next.js App Router
-- Hono
-- Express / Fastify
-- Astro
+- `layout` — wrap the route in a layout file
+- `middleware` — named middleware chain
+- `method` — restrict to a single HTTP method (default: all)
 
-## Route Metadata
+## Planned features
 
-Routes export metadata for middleware, auth, and layout composition.
-
-```tsx filename="routes/dashboard/settings.tsx"
-export const route = {
-  layout: "dashboard",
-  middleware: ["auth"],
-  title: "Settings",
-}
-
-export default function SettingsPage() {
-  return <div>...</div>
-}
-```
-
-## Planned Features
-
-- Route groups and layouts
-- Middleware chaining per route
-- Automatic OpenAPI generation from routes
-- Route-level loaders for data fetching
+- Adapters for Hono, Express, Fastify, and Astro (middleware ordering, context)
+- Automatic OpenAPI generation from route metadata
+- Route loaders for data fetching

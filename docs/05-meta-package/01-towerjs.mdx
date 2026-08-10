@@ -23,20 +23,27 @@ createTower()                                // auto-resolves tower.config.ts
 createTowerApp({ modules: {...} })           // explicit config
 initTower({ modules: {...} })                // explicit init, returns TowerApp
 getTowerApp()                                // get cached TowerApp singleton
-tower                                        // TowerApp proxy (warns if uninitialized)
+tower                                        // TowerApp proxy (throws if uninitialized)
 ```
+
+`createTower` and `createTowerApp` are re-exports from `@towerjs/foundation` — they do not wire module factories by themselves. Use `initTower()` or `getTowerApp()` (which resolve the config, wire `getModuleFactory`, and lazy-init on first access), or pass `getModuleFactory` from `@towerjs/blueprint` explicitly.
 
 ### `towerjs/blueprint`
 
 ```tsx
-import { defineTower, registerModule, getModuleFactory } from 'towerjs/blueprint'
+import { defineTower } from 'towerjs/blueprint'
+// Type-safe config helper (runtime no-op)
 ```
+
+For programmatic module access (`registerModule`, `getModuleFactory`, `getModuleDependencies`, `getRegisteredModules`, `getModuleDeclarations`), import from `@towerjs/blueprint` directly.
 
 ### `towerjs/foundation`
 
 ```tsx
-import { createTowerApp, detectRuntime, resolveConfig } from 'towerjs/foundation'
+import { createTowerApp, createTower, initTower, getTowerApp } from 'towerjs/foundation'
 ```
+
+`detectRuntime` and `resolveConfig` live on `@towerjs/foundation` — they are not re-exported from this subpath.
 
 ### `towerjs/gatehouse`
 
@@ -51,13 +58,13 @@ const orgs = await gatehouse.getOrganizations()
 
 ### `towerjs/gatehouse/actions`
 
-50+ pre-built server actions for all auth operations:
+Pre-built server actions for common auth operations:
 
 ```tsx
 import { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
 ```
 
-Full list: `signIn`, `signUp`, `signOut`, `refreshSession`, `revokeSession`, `revokeOtherSessions`, `revokeAllSessions`, `updateSession`, `updateProfile`, `deleteAccount`, `setPassword`, `changeEmail`, `changePassword`, `verifyPassword`, `requestPasswordReset`, `resetPassword`, `sendVerificationEmail`, `verifyEmail`, `sendVerificationOTP`, `verifyEmailOTP`, `sendVerificationOTP`, `verifyPhoneOTP`, `requestPasswordResetPhoneOTP`, `resetPasswordPhoneOTP`, `sendPhoneOTP`, `verifyPhoneOTP`, `verifyPhone`, `updatePasskey`, `removePasskey`, `deletePasskey`, `createUser`, `removeUser`, `adminUpdateUser`, `setUserPassword`, `setRole`, `banUser`, `unbanUser`, `impersonateUser`, `stopImpersonating`, `revokeUserSession`, `revokeUserSessions`, `userHasPermission`, `createApiKey`, `updateApiKey`, `deleteApiKey`, `verifyApiKey`, `deleteExpiredApiKeys`, `unlinkAccount`, `enableTwoFactor`, `verifyTwoFactor`, `disableTwoFactor`, `generateTOTP`, `verifyBackupCode`, `generateBackupCodes`, `createOrganization`, `updateOrganization`, `deleteOrganization`, `setActiveOrganization`, `leaveOrganization`, `createOrgRole`, `updateOrgRole`, `deleteOrgRole`, `addMember`, `updateMemberRole`, `removeMember`, `inviteMember`, `cancelInvitation`, `acceptInvitation`, `rejectInvitation`, `assignRole`, `removeRole`, `hasPermission`.
+Full list: `signIn`, `signUp`, `signOut`, `signInWithOTP`, `signInWithPhone`, `requestMagicLink`, `revokeSession`, `revokeOtherSessions`, `updateProfile`, `deleteAccount`, `setPassword`, `changeEmail`, `changePassword`, `verifyPassword`, `requestPasswordReset`, `resetPassword`, `sendVerificationEmail`, `verifyEmail`, `sendVerificationOTP`, `verifyVerificationOTP`, `sendPhoneOTP`, `verifyPhoneOTP`, `updatePasskey`, `deletePasskey`, `createUser`, `removeUser`, `setUserPassword`, `setRole`, `banUser`, `unbanUser`, `impersonateUser`, `stopImpersonating`, `revokeUserSession`, `revokeUserSessions`, `createApiKey`, `updateApiKey`, `deleteApiKey`, `verifyApiKey`, `deleteExpiredApiKeys`, `unlinkAccount`, `enableTwoFactor`, `verifyTwoFactor`, `disableTwoFactor`, `generateTOTP`, `sendTwoFactorOTP`, `verifyTwoFactorOTP`, `verifyBackupCode`, `generateBackupCodes`, `createOrganization`, `updateOrganization`, `deleteOrganization`, `setActiveOrganization`, `addMember`, `updateMemberRole`, `removeMember`, `inviteMember`, `cancelInvitation`, `acceptInvitation`, `rejectInvitation`, `assignRole`, `removeRole`.
 
 ### `towerjs/gatehouse/next`
 
@@ -88,7 +95,7 @@ await gatehouseClient.signUp.email({ name, email, password })
 import { vault } from 'towerjs/vault'
 // Lazy proxy — initializes on first access
 
-await vault.selectFrom('users').selectAll().execute()
+await vault.db.selectFrom('users').selectAll().execute()
 await vault.migrate()
 ```
 
@@ -110,12 +117,13 @@ import { action } from 'towerjs/next'
 ### `towerjs/edge`
 
 ```tsx
-import { withTowerEdge } from 'towerjs/edge' // (re-exported from @towerjs/edge)
+import { withTowerEdge } from '@towerjs/edge'
+// Edge is not re-exported from towerjs — install and import @towerjs/edge directly
 ```
 
 ## Lazy Initialization
 
-The `tower` proxy and all module proxies (`gatehouse`, `vault`, `courier`) delegate to `getTowerApp()` before every method call. This means:
+The `gatehouse` and `vault` proxies delegate to `getTowerApp()` before every method call, triggering config resolution and module init on first access. The `courier` proxy does not lazy-init — it throws if Tower hasn't been initialized (e.g. via `initTower()` or another module's first use). This means:
 
 ```tsx
 import { gatehouse } from 'towerjs/gatehouse'

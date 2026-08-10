@@ -3,7 +3,7 @@ title: "Authentication"
 description: "The sign-in methods Gatehouse supports and how to wire each one into your app."
 ---
 
-Gatehouse supports six ways to authenticate. Every method shares the same shape — enable it in `tower.config.ts`, then call it from a server action (for forms) or `gatehouseClient` (for client code).
+Gatehouse supports six ways to authenticate — plus two-factor auth for a second step. Every method shares the same shape — enable it in `tower.config.ts`, then call it from a server action (for forms) or `gatehouseClient` (for client code).
 
 | Method | Config | Server call |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ Gatehouse supports six ways to authenticate. Every method shares the same shape 
 | [Magic links](/docs/gatehouse/magic-links) | `magicLinks` | `gatehouse.signIn.magicLink()` |
 | [Email OTP](/docs/gatehouse/email-password) | `emailVerification` (`method: 'otp'`) | `gatehouse.signIn.emailOtp()` |
 | [Phone OTP](/docs/gatehouse/magic-links) | `phoneNumber` | `gatehouse.signIn.phone()` |
-| [Passkeys](/docs/gatehouse/passkeys) | `passkeys` | `gatehouseClient.passkey.addPasskey()` |
+| [Passkeys](/docs/gatehouse/passkeys) | `passkeys` | `gatehouse.passkeys.list()` |
 | [Two-factor](/docs/gatehouse/two-factor) | `twoFactor` | `gatehouse.totp.verify()` |
 
 ## Two call styles

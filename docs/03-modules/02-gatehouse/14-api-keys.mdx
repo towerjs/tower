@@ -20,6 +20,7 @@ gatehouse: {
 ```tsx
 await gatehouse.apiKeys.create({
   name: 'Deploy CLI',
+  userId: 'user_123',             // required — the key's owner
   expiresIn: 30 * 86400,          // optional, seconds
   permissions: { 'project': ['deploy'] },
 })
@@ -27,7 +28,7 @@ await gatehouse.apiKeys.create({
 
 The key is returned **once** — store it where the service can read it. `prefix` (a string your app brands the key with), `metadata`, and `organizationId` are also supported.
 
-Action: `createApiKey` (`name`, `expiresIn`) — returns the key in its response.
+Action: `createApiKey` (`name`, `expiresIn`) — returns `{ ok: true }` or `{ error }`; the key itself isn't returned by the action, so create keys from a server context where `apiKeys.create()` is available.
 
 ## Verify
 
@@ -35,10 +36,10 @@ Verify on every programmatic request:
 
 ```tsx
 await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
-// { valid, key } — key carries id, name, permissions, expiresAt, ...
+// { valid, error, key } — runtime shape; key carries id, name, permissions, expiresAt, ...
 ```
 
-Invalid, expired, or revoked keys return `valid: false`.
+Invalid, expired, or revoked keys return `{ valid: false, error }`.
 
 Route-handler guard:
 
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
 ```tsx
 await gatehouse.apiKeys.list(userId, { sortBy: 'createdAt' })
 await gatehouse.apiKeys.get(keyId)
-await gatehouse.apiKeys.update(id, { name, expiresAt })   // rotate: shorten expiry or change permissions
+await gatehouse.apiKeys.update(id, { name, expiresIn })   // rotate: shorten expiry or change permissions
 await gatehouse.apiKeys.delete(id)
 await gatehouse.apiKeys.deleteAllExpired()
 ```
@@ -81,4 +82,4 @@ Actions: `updateApiKey` (`id`, `name`), `deleteApiKey` (`id`), `verifyApiKey` (`
 
 - Keys are hashed at rest — only the plaintext is shown at creation
 - Combine with [Authorization](/docs/gatehouse/authorization): `can()` and key permission maps use the same shape
-- `verifyApiKey` action returns `{ valid }` for client-side checks
+- `verifyApiKey` action returns `{ ok: true }` or `{ error }` — the key data isn't returned

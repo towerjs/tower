@@ -17,29 +17,36 @@ gatehouse: {
 
 ## Register a passkey
 
-Passkey registration is a browser operation — it needs `gatehouseClient` and a signed-in user:
+Passkey registration is a WebAuthn ceremony driven from a signed-in context. `gatehouseClient` has no passkey plugin, so use the server API's raw passkey endpoints through `gatehouse.api`:
 
-```tsx filename="app/settings/passkeys/passkey-register.tsx"
-'use client'
+```tsx filename="app/settings/passkeys/actions.ts"
+'use server'
 
-import { gatehouseClient } from 'towerjs/gatehouse/client'
+import { gatehouse } from 'towerjs/gatehouse'
 
-export function RegisterPasskey() {
-  return (
-    <button onClick={() => gatehouseClient.passkey.addPasskey({ name: 'My MacBook' })}>
-      Add passkey
-    </button>
-  )
+export async function generateRegistrationOptions() {
+  return gatehouse.api.generatePasskeyRegistrationOptions()
 }
 ```
 
-## Sign in with a passkey
+```tsx filename="app/settings/passkeys/register-passkey.tsx"
+'use client'
 
-```tsx
-await gatehouseClient.signIn.passkey()
+export function RegisterPasskey() {
+  async function handleRegister() {
+    const opts = await generateRegistrationOptions()
+    const credential = await navigator.credentials.create({ publicKey: opts })
+    await verifyRegistration('/api/auth/passkey/verify-registration', credential)
+  }
+  return <button onClick={handleRegister}>Add passkey</button>
+}
 ```
 
-The browser prompts for the device credential and the session is created on success.
+The raw endpoints — `generatePasskeyRegistrationOptions`, `verifyPasskeyRegistration`, `generatePasskeyAuthenticationOptions`, `verifyPasskeyAuthentication` — handle the WebAuthn flow and are available on `gatehouse.api`.
+
+## Sign in with a passkey
+
+Passkey sign-in runs the WebAuthn ceremony in the browser via `gatehouse.api.generatePasskeyAuthenticationOptions` / `gatehouse.api.verifyPasskeyAuthentication`; the browser prompts for the device credential and the session is created on success.
 
 ## Manage passkeys
 
@@ -48,10 +55,10 @@ List, rename, and remove from the server:
 ```tsx
 await gatehouse.passkeys.list()       // [{ id, name, createdAt }]
 await gatehouse.passkeys.update(id, { name })
-await gatehouse.passkeys.remove(id)
+await gatehouse.passkeys.delete(id)
 ```
 
-Actions: `updatePasskey` (`id`, `name`), `removePasskey` (`id`).
+Actions: `updatePasskey` (`id`, `name`), `deletePasskey` (`id`).
 
 ## Notes
 

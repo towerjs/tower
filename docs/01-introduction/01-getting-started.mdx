@@ -19,17 +19,14 @@ A freshly scaffolded Tower project includes:
 ```
 my-app/
 ├── src/
-│   ├── proxy.ts                        # Auth middleware
+│   ├── proxy.ts                        # Auth middleware (gatehouse)
+│   ├── lib/auth/actions.ts             # Server actions (gatehouse)
 │   ├── app/
-│   │   ├── actions.ts                  # Server actions
-│   │   ├── api/auth/[...all]/route.ts  # Auth API routes
+│   │   ├── api/auth/[...all]/route.ts  # Auth API routes (gatehouse)
 │   │   ├── layout.tsx
 │   │   └── page.tsx
-│   └── vault/
-│       ├── migrations/                 # Database migrations
-│       └── seeds/                      # Seed data
 ├── tower.config.ts
-├── next.config.ts
+├── next.config.ts                      # Edge runtime only
 ├── package.json
 └── tsconfig.json
 ```
@@ -44,24 +41,30 @@ Add Tower to an existing Next.js project:
   <CodeTab title="pnpm">
   ```bash
   pnpm add towerjs @towerjs/gatehouse
+  pnpm add -D @towerjs/scribe
   ```
   </CodeTab>
   <CodeTab title="npm">
   ```bash
   npm install towerjs @towerjs/gatehouse
+  npm install -D @towerjs/scribe
   ```
   </CodeTab>
   <CodeTab title="yarn">
   ```bash
   yarn add towerjs @towerjs/gatehouse
+  yarn add -D @towerjs/scribe
   ```
   </CodeTab>
   <CodeTab title="bun">
   ```bash
   bun add towerjs @towerjs/gatehouse
+  bun add -D @towerjs/scribe
   ```
   </CodeTab>
 </CodeTabs>
+
+`@towerjs/scribe` provides the `tower` CLI (`tower migrate`, `tower seed`) — install it as a dev dependency.
 
 > **Edge runtime only** — `@towerjs/edge` is only needed if you deploy to an edge runtime (Vercel Edge, Cloudflare Workers). Most apps run on the Node.js runtime and can skip it. If you do use an edge runtime, install it and wrap `next.config.ts`:
 >
@@ -87,7 +90,6 @@ export default defineTower({
       provider: 'better-auth',
       appName: 'My App',
       baseURL: 'http://localhost:3000',
-      secret: process.env.BETTER_AUTH_SECRET,
       credentials: { enabled: true },
     },
   },
@@ -129,6 +131,8 @@ export {
 ```
 
 ### 5. Run migrations
+
+Set `DATABASE_URL` (or pass `connectionString` to `vault()`), then:
 
 ```bash
 npx tower migrate

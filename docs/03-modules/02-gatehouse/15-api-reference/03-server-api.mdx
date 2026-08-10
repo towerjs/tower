@@ -51,7 +51,7 @@ Every method is bound to the request's session. The instance exposes the full op
 
 ```tsx
 await gh.signIn.email({ email, password })
-await gh.signIn.emailOtp({ email, code })
+await gh.signIn.emailOtp({ email, otp })
 await gh.signIn.magicLink({ email, callbackURL })
 await gh.signIn.phone({ phoneNumber, code })
 await gh.signIn.social({ provider, callbackURL })
@@ -94,7 +94,7 @@ await gh.password.confirm({ password })   // boolean
 await gh.email.sendVerification({ email })
 await gh.email.verify({ token })
 await gh.email.otp.send({ email, type })  // 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
-await gh.email.otp.confirm({ email, code })
+await gh.email.otp.confirm({ email, otp })
 await gh.phone.otp.send({ phoneNumber })
 await gh.phone.otp.confirm({ phoneNumber, code })
 ```
@@ -107,19 +107,20 @@ await gh.users.findByEmail(email)
 await gh.roles.assign(userId, role)
 await gh.roles.remove(userId)
 await gh.identities.list()
-await gh.identities.unlink(id)
+await gh.identities.unlink({ providerId, accountId })
 await gh.identities.link('github')
-await gh.identities.getAccessToken(provider)
+await gh.identities.getAccessToken(providerId)
 ```
 
 ### Passkeys
 
 ```tsx
-await gh.passkeys.add({ name })
 await gh.passkeys.list()
 await gh.passkeys.update(id, { name })
-await gh.passkeys.remove(id)
+await gh.passkeys.delete(id)
 ```
+
+Raw WebAuthn endpoints (`generatePasskeyRegistrationOptions`, `verifyPasskeyRegistration`, ...) are on `gh.api` — see [Passkeys](/docs/gatehouse/passkeys).
 
 ### Two-factor
 
@@ -139,7 +140,6 @@ await gh.backupCodes.verify(code)
 ```tsx
 await gh.organizations.create({ name, slug })
 await gh.organizations.list()
-await gh.organizations.get(id)
 await gh.organizations.getFull(id)                // includes members + invitations
 await gh.organizations.setActive(organizationId)
 await gh.organizations.update(id, params)
@@ -147,7 +147,7 @@ await gh.organizations.delete(id)
 
 await gh.organizations.members.list(organizationId)
 await gh.organizations.members.add(organizationId, userId, role?)
-await gh.organizations.members.update(organizationId, memberId, role)
+await gh.organizations.members.update(memberId, role, organizationId?)
 await gh.organizations.members.remove(organizationId, memberId)
 
 await gh.organizations.invitations.create(organizationId, { email, role })
@@ -157,11 +157,11 @@ await gh.organizations.invitations.accept(invitationId)
 await gh.organizations.invitations.reject(invitationId)
 await gh.organizations.invitations.cancel(invitationId)
 
-await gh.organizations.roles.create({ role, permission })
+await gh.organizations.roles.create({ role, permission })           // optional organizationId
 await gh.organizations.roles.list(organizationId?)
-await gh.organizations.roles.get(organizationId, roleName)
-await gh.organizations.roles.update(organizationId, roleName, params)
-await gh.organizations.roles.delete(organizationId, roleName)
+await gh.organizations.roles.get({ roleName, organizationId? })
+await gh.organizations.roles.update(roleId, { roleName?, permission? })
+await gh.organizations.roles.delete({ roleId | roleName, organizationId? })
 ```
 
 ### API keys
@@ -180,7 +180,6 @@ await gh.apiKeys.deleteAllExpired()
 
 ```tsx
 await gh.admin.createUser({ name, email, password, role? })
-await gh.admin.updateUser(userId, params)
 await gh.admin.getUser(userId)
 await gh.admin.listUsers(options?)               // { users, total? }
 await gh.admin.removeUser(userId)
@@ -191,9 +190,8 @@ await gh.admin.unbanUser(userId)
 await gh.admin.impersonateUser(userId)
 await gh.admin.stopImpersonating()
 await gh.admin.listUserSessions(userId)
-await gh.admin.revokeUserSession(userId, sessionToken)
+await gh.admin.revokeUserSession(sessionToken)
 await gh.admin.revokeUserSessions(userId)
-await gh.admin.hasPermission({ userId?, role?, permissions })
 ```
 
 ### Authorization

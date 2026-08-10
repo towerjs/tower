@@ -17,7 +17,7 @@ Follow the interactive prompts to select your framework, modules, and deployment
 - A ready-to-run application with your chosen framework (Next.js)
 - `tower.config.ts` with your module configuration
 - `.env` and `.env.example` with environment variables for your selected modules
-- Auth routes and middleware (if Gatehouse is selected)
+- Auth routes and proxy (if Gatehouse is selected)
 - Database setup (if Vault is selected)
 - All required dependencies installed
 

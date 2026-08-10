@@ -18,7 +18,6 @@ export default defineTower({
       provider: 'better-auth',
       appName: 'My App',
       baseURL: 'http://localhost:3000',
-      secret: process.env.BETTER_AUTH_SECRET,
 
       credentials: { enabled: true },
       emailVerification: { sendOnSignUp: true, autoSignInAfterVerification: true },
@@ -30,6 +29,8 @@ export default defineTower({
 ```
 
 Courier is auto-wired — Gatehouse uses it for password reset, email verification, and magic link emails automatically.
+
+> **Social provider env vars** — enabling a social provider requires its credentials in the environment (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`); Gatehouse throws at startup if they're missing.
 
 ## 2. Set up Auth Infrastructure
 
@@ -113,7 +114,7 @@ export default async function OrganizationsPage() {
   return (
     <ul>
       {orgs.map(org => (
-        <li key={org.id}>{org.name} ({org.members?.length ?? 0} members)</li>
+        <li key={org.id}>{org.name}</li>
       ))}
     </ul>
   )

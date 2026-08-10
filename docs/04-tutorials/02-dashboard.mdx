@@ -10,7 +10,6 @@ This tutorial builds a dashboard application with organization support — membe
 ```tsx filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
-  secret: process.env.BETTER_AUTH_SECRET,
   credentials: { enabled: true },
   organization: {
     allowUsersToCreateOrganizations: true,
@@ -61,7 +60,6 @@ export default async function DashboardPage() {
               <a href={`/dashboard/organizations/${org.id}`}>
                 {org.name}
               </a>
-              <span>{org.members?.length ?? 0} members</span>
             </li>
           ))}
         </ul>
@@ -110,12 +108,15 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
 
 ## 5. Invite Members
 
+Server actions that touch the gatehouse instance need the `action()` wrapper from `towerjs/gatehouse/next` — it provides the request context the facade reads headers/session from:
+
 ```tsx filename="src/app/actions.ts"
 'use server'
 
+import { action } from 'towerjs/gatehouse/next'
 import { gatehouse } from 'towerjs/gatehouse'
 
-export async function inviteMember(formData: FormData) {
+export const inviteMember = action(async (formData: FormData) => {
   const orgId = formData.get('orgId') as string
   const email = formData.get('email') as string
   const role = (formData.get('role') as string) || 'member'
@@ -124,16 +125,16 @@ export async function inviteMember(formData: FormData) {
     email,
     role,
   })
-}
+})
 ```
 
 ## 6. Set Active Organization
 
 ```tsx filename="src/app/actions.ts"
-export async function switchOrganization(formData: FormData) {
+export const switchOrganization = action(async (formData: FormData) => {
   const orgId = formData.get('orgId') as string
   await gatehouse.organizations.setActive(orgId)
-}
+})
 ```
 
 The active organization is used for session-scoped operations.
@@ -141,17 +142,18 @@ The active organization is used for session-scoped operations.
 ## 7. Permissions
 
 ```tsx filename="src/app/actions.ts"
-export async function deleteProject(formData: FormData) {
+export const deleteProject = action(async (formData: FormData) => {
   const projectId = formData.get('projectId') as string
   const orgId = formData.get('orgId') as string
+  const user = await gatehouse.requireUser()
 
   const allowed = await gatehouse.can({
-    user: session.user,
+    user,
     permission: 'delete:project',
     organizationId: orgId,
   })
 
   if (!allowed) throw new Error('Not authorized')
   // ... delete project
-}
+})
 ```

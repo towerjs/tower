@@ -1,6 +1,6 @@
 ---
 title: "Client API"
-description: "gatehouseClient for browser code: sign-in, sign-up, session hooks, passkeys, and OAuth."
+description: "gatehouseClient for browser code: sign-in, sign-up, session hooks, and OAuth."
 ---
 
 The client API is a typed Better Auth client for browser code. Import it from the client entry:
@@ -61,12 +61,7 @@ Use `useSession` for presentational decisions. For authoritative checks (redirec
 
 ## Passkeys
 
-Passkey registration and sign-in are browser operations:
-
-```tsx
-await gatehouseClient.passkey.addPasskey({ name: 'My MacBook' })
-await gatehouseClient.signIn.passkey()
-```
+Passkey registration and sign-in run the WebAuthn ceremony in the browser, but `gatehouseClient` has no passkey plugin — it's built from `adminClient`, `emailOTPClient`, `magicLinkClient`, `organizationClient`, `phoneNumberClient`, and `twoFactorClient`. Manage passkeys from the server: `updatePasskey` / `deletePasskey` ([actions](/docs/gatehouse/api-reference/actions)) or `gatehouse.passkeys.*`.
 
 See [Passkeys](/docs/gatehouse/passkeys).
 
@@ -98,6 +93,6 @@ await gatehouseClient.phoneNumber.verifyOtp({ phoneNumber, otp })
 | --- | --- |
 | Forms (sign-in, sign-up, settings) | [Pre-built actions](/docs/gatehouse/api-reference/actions) — server-side, no client code |
 | Buttons and redirects (OAuth, magic link) | `gatehouseClient` |
-| Passkey registration | `gatehouseClient` (needs the browser) |
+| Passkey registration | [Pre-built actions](/docs/gatehouse/api-reference/actions) — no passkey client plugin |
 | Session-driven UI | `gatehouseClient.useSession()` |
 | Authoritative checks | `gatehouse` on the server |

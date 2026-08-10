@@ -22,7 +22,6 @@ export default defineTower({
       provider: 'better-auth',
       appName: 'My App',
       baseURL: 'http://localhost:3000',
-      secret: process.env.BETTER_AUTH_SECRET,
       credentials: { enabled: true },
       emailVerification: { sendOnSignUp: true },
     },
@@ -36,7 +35,7 @@ When `createTower()` is called without a config argument, `resolveConfig()` sear
 
 1. Registered config providers (edge package registers one for bundler compat)
 2. `TOWER_CONFIG_PATH` environment variable (explicit path)
-3. Walks up the directory tree (up to 20 levels) looking for `tower.config.ts`, `.mjs`, `.js`
+3. Walks up the directory tree (up to 20 levels) looking for `tower.config.ts`, `.mjs`, `.js`, `.mts`
 
 ## Module Configuration
 
@@ -46,8 +45,8 @@ When `createTower()` is called without a config argument, `resolveConfig()` sear
 vault: {
   connectionString?: string       // defaults to DATABASE_URL env var
   pool?: {
-    max?: number                  // default: 20
-    idleTimeoutMillis?: number    // default: 30000
+    max?: number                  // pg default: 10
+    idleTimeoutMillis?: number    // pg default: 10000
     connectionTimeoutMillis?: number
     ssl?: boolean | { rejectUnauthorized?: boolean }
   }
@@ -115,7 +114,8 @@ courier: {
 | Variable | Required for | Default |
 |---|---|---|
 | `DATABASE_URL` | Vault | — |
-| `BETTER_AUTH_SECRET` | Gatehouse | — |
+| `GATEHOUSE_SECRET` | Gatehouse cookie signing | dev fallback |
+| `BETTER_AUTH_SECRET` | Gatehouse secret alias | `GATEHOUSE_SECRET` |
 | `RESEND_API_KEY` | Courier (Resend) | — |
 | `GOOGLE_CLIENT_ID` | Gatehouse (Google social) | — |
 | `GOOGLE_CLIENT_SECRET` | Gatehouse (Google social) | — |

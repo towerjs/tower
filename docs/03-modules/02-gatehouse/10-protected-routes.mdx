@@ -13,14 +13,16 @@ Access control and session reads are two separate layers:
 Access control belongs in the proxy middleware, not on individual pages or layouts. Pages render; the proxy decides who gets to see them.
 
 ```tsx filename="src/proxy.ts"
-import { proxy } from 'towerjs/gatehouse/proxy'
+import { gatehouse } from '@towerjs/gatehouse'
 
-export default proxy({
+const { handler } = gatehouse.proxy({
   public: ['/', '/sign-in', '/sign-up', '/docs'],
   redirectIfAuthenticated: ['/sign-in', '/sign-up'],
   redirectTo: '/sign-in',
   redirectAfterSignIn: '/dashboard',
 })
+
+export const proxy = handler
 
 export const config = {
   matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'],
@@ -29,12 +31,12 @@ export const config = {
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `public` | `string[]` | `['/']` | Paths reachable without a session (globs supported) |
-| `redirectIfAuthenticated` | `string \| string[]` | — | Paths that redirect to `redirectAfterSignIn` when signed in |
-| `redirectTo` | `string` | — | Where signed-out users go (default: allow through) |
-| `redirectAfterSignIn` | `string` | — | Where signed-in users land after a new sign-in |
+| `public` | `string[]` | `[]` | Paths reachable without a session (globs supported) |
+| `redirectIfAuthenticated` | `string[]` | — | Paths that redirect to `redirectAfterSignIn` when signed in |
+| `redirectTo` | `string` | `'/sign-in'` | Where signed-out users go |
+| `redirectAfterSignIn` | `string` | `'/'` | Where signed-in users land after a new sign-in |
 
-The proxy inspects the session cookie — it doesn't hit the database, so it stays fast on the edge.
+The proxy resolves the session with `getSession()` — database-backed — and redirects before anything renders.
 
 ## Reading the session in pages
 

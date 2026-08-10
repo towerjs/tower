@@ -65,11 +65,11 @@ const org = await gatehouse.getOrganization(orgId)   // full: members + invitati
 
 ```tsx
 await gatehouse.organizations.members.add(organizationId, userId, 'member')
-await gatehouse.organizations.members.update(organizationId, memberId, 'admin')
+await gatehouse.organizations.members.update(memberId, 'admin', organizationId)
 await gatehouse.organizations.members.remove(organizationId, memberId)
 ```
 
-Actions: `addMember` (`organizationId`, `email`, `role`), `updateMemberRole` (`memberId`, `role`), `removeMember` (`orgId`, `memberId`).
+Actions: `addMember` (`organizationId`, `email`, `role`), `updateMemberRole` (`memberId`, `role`, `organizationId`), `removeMember` (`orgId`, `memberId`).
 
 ## Custom roles
 
@@ -82,12 +82,12 @@ await gatehouse.organizations.roles.create({
 
 ```tsx
 await gatehouse.organizations.roles.list(organizationId?)
-await gatehouse.organizations.roles.get(organizationId, 'editor')
-await gatehouse.organizations.roles.update(organizationId, 'editor', params)
-await gatehouse.organizations.roles.delete(organizationId, 'editor')
+await gatehouse.organizations.roles.get({ roleName: 'editor', organizationId })
+await gatehouse.organizations.roles.update(roleId, { roleName?, permission? })
+await gatehouse.organizations.roles.delete({ roleId | roleName, organizationId })
 ```
 
-Actions: `createOrgRole` (`name`, `permissions`), `updateOrgRole` (`id`, `name`, `permissions`), `deleteOrgRole` (`id`).
+Roles are managed from the server API — see [Authorization](/docs/gatehouse/authorization) for permission semantics.
 
 Built-in roles: `owner`, `admin`, `member` — see [Authorization](/docs/gatehouse/authorization) for permission semantics.
 
@@ -101,7 +101,7 @@ await gatehouse.can({
 })
 ```
 
-For the signed-in user in their active organization, the `userHasPermission` action takes `permission` + optional `organizationId`.
+For the signed-in user in their active organization, check the session user with `gatehouse.can({ user: session.user, permission })`.
 
 ## Invitation fields
 

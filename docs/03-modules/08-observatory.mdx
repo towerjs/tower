@@ -1,63 +1,67 @@
 ---
 title: "Observatory"
-description: "Observability system for logs, metrics, tracing, error tracking, health checks, and application insights."
+description: "Logs, metrics, health checks, and tracing — observability without the boilerplate."
 badge: "Coming Soon"
 ---
 
-> **Status: Planned** — Observatory is not yet implemented. This document describes the intended vision.
-
+> **Status: Planned** — Observatory is not yet implemented. This document describes the target API.
 
 ## Vision
 
-Observatory aims to give every Tower app production-grade observability out of the box — without needing to wire up OpenTelemetry, Prometheus, or Datadog from scratch.
+Observatory gives every Tower app production-grade observability out of the box: structured logs, metrics, health checks, and tracing through one facade — with pluggable transports.
+
+## Setup
+
+```tsx filename="tower.config.ts"
+observatory: {
+  logLevel: 'info',
+}
+```
 
 ## Logging
 
-Structured, level-based logging with pluggable transports (stdout, files, remote services).
-
 ```tsx
-import { logger } from "@towerjs/observatory"
+import { observatory } from 'towerjs/observatory'
 
-logger.info("user signed in", { userId: 42, ip: "::1" })
-logger.error("payment failed", { error: err.message })
+observatory.log.info('user signed in', { userId: 'usr_1' })
+observatory.log.error('payment failed', { error: err.message })
 ```
 
-Log levels: `debug`, `info`, `warn`, `error`, `fatal`.
+Levels: `debug`, `info`, `warn`, `error`.
 
 ## Metrics
 
-Collect counters, gauges, and histograms. Metrics can be exposed as a Prometheus endpoint or pushed to a collector.
-
 ```tsx
-import { metrics } from "@towerjs/observatory"
-
-const requestCount = metrics.counter("http_requests_total", {
-  labels: ["method", "path"],
+const requests = observatory.metrics.counter('http_requests_total', {
+  labels: ['method'],
 })
 
-metrics.histogram("request_duration_ms", { buckets: [5, 10, 50, 100, 500] })
+requests.inc({ method: 'POST' })
 
-// In middleware
-requestCount.inc({ method: req.method, path: req.url })
+observatory.metrics.histogram('request_duration_ms', {
+  buckets: [5, 10, 50, 100, 500],
+})
 ```
 
-## Health Checks
-
-Expose a standard `/health` endpoint that reports the status of database connections, external services, and custom checks.
+## Health checks
 
 ```tsx
-import { health } from "@towerjs/observatory"
-
-health.check("database", async () => {
-  await db.$queryRaw`SELECT 1`
+observatory.health.check('database', async () => {
+  await vault.db.selectFrom('users').select('id').limit(1).execute()
 })
 
-health.check("stripe", async () => {
+observatory.health.check('stripe', async () => {
   await stripe.ping()
 })
 ```
 
-The `/health` endpoint returns:
+```tsx filename="app/health/route.ts"
+import { observatory } from 'towerjs/observatory/next'
+
+export const GET = observatory.health.GET
+```
+
+The endpoint returns:
 
 ```json
 {
@@ -71,19 +75,14 @@ The `/health` endpoint returns:
 
 ## Tracing
 
-Distributed tracing via OpenTelemetry, with automatic instrumentation for HTTP requests, database queries, and job processing.
-
 ```tsx
-import { tracer } from "@towerjs/observatory"
-
-const span = tracer.startSpan("process-report")
-// ... do work ...
+const span = observatory.trace.startSpan('process-report')
+// ... work ...
 span.end()
 ```
 
-## Planned Features
+## Planned features
 
-- Log correlation IDs across requests
-- Alerting rules (e.g. error rate > 1%)
-- Built-in Grafana dashboard templates
-- Log retention policies
+- OpenTelemetry export and log correlation IDs
+- Alerting rules (e.g. error rate above 1%)
+- Built-in dashboard templates

@@ -27,11 +27,11 @@ export default defineTower({
 
 ### `defineTower(config)`
 
-Defines the Tower application configuration. Returns a typed `TowerBlueprint` instance.
+Defines the Tower application configuration. Type-safe at compile time; a no-op at runtime.
 
-### `registerModule(meta, init)`
+### `registerModule(name, factory)` / `registerModule({ name, dependsOn, factory })`
 
-Registers a module with Tower's lifecycle system. Each module provides `init(context)` called during app startup, and optional `shutdown()` for cleanup.
+Registers a module factory with Tower's lifecycle system. Modules may implement `register(ctx)` to publish services, `initialize(ctx)` to start up, and an optional `shutdown(ctx)` for cleanup.
 
 ### `towerContext`
 
@@ -42,9 +42,10 @@ Per-request scoped storage using `AsyncLocalStorage`. Provides `run(data, handle
 ```ts
 interface TowerModule {
   name: string
-  version: string
-  init(ctx: TowerInitContext): Promise<void>
-  shutdown?(): Promise<void>
+  dependsOn?: string[]
+  register?(ctx: TowerContext): void
+  initialize?(ctx: TowerContext): Promise<void>
+  shutdown?(ctx: TowerContext): Promise<void>
 }
 ```
 

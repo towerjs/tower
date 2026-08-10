@@ -2,7 +2,7 @@
 
 [![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Status](https://img.shields.io/badge/status-alpha-yellow?style=for-the-badge&labelColor=000)](#status)
 
-Tower is the composable monolithic stack for JavaScript applications. It gives you a consistent architecture across routing, databases, authentication, realtime, jobs, storage, billing, search, and observability — choose the modules you need, and the providers behind them.
+Tower is the composable, monolithic stack for JavaScript applications. It gives you a consistent architecture across routing, databases, authentication, realtime, jobs, storage, billing, search, and observability — choose the modules you need, and the providers behind them.
 
 Tower separates application structure from implementation details, so the technology underneath a module can evolve without forcing you to rethink your application.
 
@@ -31,22 +31,23 @@ Currently supports **Next.js** with more frameworks coming.
 
 ### On the roadmap
 
-| Module      | Description                                              | Providers            |
-| ----------- | -------------------------------------------------------- | -------------------- |
-| Beacon      | Realtime channels and events                             | Ably, Pusher         |
-| Crane       | Background jobs and queues                               | Inngest, Trigger.dev |
-| Keep        | File storage and assets                                  | S3, Cloudflare R2    |
-| Treasury    | Billing and payments                                     | Stripe               |
-| Observatory | Search and indexing                                      | Meilisearch, Algolia |
-| Watchtower  | Logs, metrics, tracing, error tracking, health checks    | —                    |
-| Atlas       | File-based routing for frameworks that don't provide it  | —                    |
-| Forge       | Build and deployment for environments and infrastructure | —                    |
+| Module      | Description                                              | Providers                          |
+| ----------- | -------------------------------------------------------- | ---------------------------------- |
+| Beacon      | Realtime channels and events                             | Postgres (built-in), Redis, Ably, Pusher |
+| Crane       | Background jobs and queues                               | Postgres (built-in), Redis         |
+| Keep        | File storage and assets                                  | Local (built-in), S3, Cloudflare R2 |
+| Treasury    | Billing and payments                                     | Stripe                             |
+| Compass     | Search and indexing                                      | Postgres (built-in), Meilisearch, Typesense |
+| Observatory | Logs, metrics, tracing, health checks                    | Console (built-in)                 |
+| Atlas       | File-based routing for frameworks that don't provide it  | —                                  |
+| Forge       | Build and deployment for environments and infrastructure | —                                  |
+| Sorcerer    | AI application layer — agents, chat, workflows           | Vercel AI SDK (any model provider) |
 
 ## Why Tower?
 
 Most JavaScript frameworks handle the view layer well but leave you to figure out everything else. Tower fills the gap with a consistent, modular architecture:
 
-- **Provider-agnostic** — Swap databases, auth providers, or email services without changing your application code.
+- **Provider-agnostic** — Swap databases, email services, or other providers without changing your application code. Auth currently ships with Better Auth as its single implementation detail; the module API stays stable regardless.
 - **Framework-first** — Works alongside your framework of choice rather than replacing it.
 - **Composable** — Use only the modules you need. Start small, grow as required.
 - **Type-safe** — Full TypeScript with strict types throughout.

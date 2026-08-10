@@ -122,7 +122,7 @@ By default, migrations run before seeds. Skip migrations with `npx tower seed --
 // vault.db is the raw Kysely instance
 const result = await vault.db
   .selectFrom('users')
-  .select(db.fn.countAll().as('count'))
+  .select(vault.db.fn.countAll().as('count'))
   .executeTakeFirst()
 ```
 

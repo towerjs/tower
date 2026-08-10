@@ -18,7 +18,7 @@ If your application grows enough to need separate services, Tower's module bound
 | **Vault** | `@towerjs/vault` | Database ORM (Kysely), migrations, seeds |
 | **Gatehouse** | `@towerjs/gatehouse` | Authentication, sessions, organizations, API keys |
 | **Courier** | `@towerjs/courier` | Email, SMS, push notifications |
-| **Sorcerer** | `@towerjs/sorcerer` | AI agents, chat, tools, and workflows |
+| **Sorcerer** | `@towerjs/sorcerer` | AI agents, chat, tools, and workflows *(coming soon)* |
 
 Each module follows the same contract: register at import time, initialize on first use, and expose a consistent API.
 
@@ -30,7 +30,8 @@ Framework adapters live in each module's `frameworks/` directory. Currently only
 
 - **Auth**: `getSession`, server actions, middleware proxy, API routes
 - **Config**: Edge runtime bundling via `withTowerEdge`
-- **CLI**: `tower migrate`, `tower seed`
+
+The `tower` CLI (`tower create`, `tower migrate`, `tower seed`) ships as a standalone package, `@towerjs/scribe`.
 
 ## Installation
 

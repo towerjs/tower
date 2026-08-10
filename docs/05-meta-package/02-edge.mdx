@@ -17,9 +17,7 @@ export default withTowerEdge({
 
 `withTowerEdge` wraps your Next.js config to:
 
-1. Bundle `tower.config.ts` for the Edge Runtime (avoids filesystem access at runtime)
-2. Ensures all Tower module imports can be resolved at build time
-3. Configures Neon serverless driver for database access in edge functions
+1. Bundle `tower.config.ts` for the Edge Runtime (avoids filesystem access at runtime) — it aliases the Tower config through webpack and Turbopack so the bundled config is available in edge functions.
 
 ## What Changes on Edge
 

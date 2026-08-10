@@ -21,11 +21,12 @@ gatehouse: {
 ## 2. Set environment variables
 
 ```bash
-# Required — your app's base URL
-baseURL=http://localhost:3000
+# Optional — your app's base URL. Set `baseURL` in tower.config.ts, or use the
+# GATEHOUSE_URL / BETTER_AUTH_URL env fallbacks (development defaults to http://localhost:3000).
 
-# Required — signs session cookies. Generate with:
+# Signs session cookies. Generate with:
 # openssl rand -base64 32
+# GATEHOUSE_SECRET (or the BETTER_AUTH_SECRET alias) — dev lacks a value, a fallback applies.
 BETTER_AUTH_SECRET=your-secret
 ```
 
@@ -54,7 +55,7 @@ import { Gatehouse } from '@towerjs/gatehouse'
 async function main() {
   const tower = await initTower()
   await Gatehouse.migrate()
-  await tower.close()
+  await tower.shutdown()
 }
 
 main()
@@ -83,12 +84,18 @@ await gatehouseClient.signUp.email({
 Route access belongs in the proxy middleware — see [Protected Routes](/docs/gatehouse/protected-routes):
 
 ```tsx filename="src/proxy.ts"
-import { proxy } from 'towerjs/gatehouse/proxy'
+import { gatehouse } from '@towerjs/gatehouse'
 
-export default proxy({
+const { handler } = gatehouse.proxy({
   public: ['/', '/sign-in', '/sign-up'],
   redirectTo: '/sign-in',
 })
+
+export const proxy = handler
+
+export const config = {
+  matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'],
+}
 ```
 
 Signed-out visitors are redirected to `/sign-in` before any page renders. The session read in your dashboard then just works:

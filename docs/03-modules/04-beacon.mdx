@@ -1,59 +1,84 @@
 ---
 title: "Beacon"
-description: "Beacon is Tower's realtime module. It provides WebSocket-based communication for building live, event-driven features."
+description: "Realtime channels and events — WebSocket pub/sub, presence, and an internal event bus."
 badge: "Coming Soon"
 ---
 
-> **Status: Planned** — Beacon is not yet implemented. This document describes the intended vision.
-
+> **Status: Planned** — Beacon is not yet implemented. This document describes the target API.
 
 ## Vision
 
-Beacon aims to abstract WebSocket connection management, channel-based pub/sub, and internal event broadcasting into a single, framework-friendly API.
+Beacon brings realtime to Tower applications: WebSocket pub/sub channels, presence, and an in-process event bus — behind one stable API. Like every Tower module, the transport is swappable; the channel API stays the same.
+
+## Setup
+
+```tsx filename="tower.config.ts"
+beacon: {
+  provider: 'postgres',   // LISTEN/NOTIFY on the Vault connection — no extra service
+}
+```
+
+## Providers
+
+| Provider   | Transport                       | Use case                    |
+| ---------- | ------------------------------- | --------------------------- |
+| `postgres` | Vault connection (LISTEN/NOTIFY) | Development and small apps |
+| `redis`    | Redis Pub/Sub                   | Multi-instance deployments  |
+| `ably`     | Ably hosted service             | Global edge delivery        |
+| `pusher`   | Pusher hosted service           | Global edge delivery        |
 
 ## Channels
 
-A **channel** is a named topic that clients can subscribe to. Channels support scoping (e.g. `room:42`, `user:5`) so events are only delivered to relevant clients.
+A **channel** is a named topic with a scope (e.g. `room:42`, `user:5`). Open channels through the `beacon` facade, mirroring how Vault and Gatehouse expose their APIs:
 
 ```tsx
-import { channel } from "@towerjs/beacon"
+import { beacon } from 'towerjs/beacon'
 
-const chat = channel("room:42")
+const chat = beacon.channel('room:42')
 
-chat.publish("message", { user: "alice", text: "hello" })
+chat.publish('message', { user: 'alice', text: 'hello' })
 
-chat.subscribe((event) => {
-  console.log("received", event)
+const unsubscribe = chat.subscribe((event) => {
+  console.log('received', event)
 })
 ```
 
-## Pub / Sub
-
-Beacon provides a publish/subscribe primitive that works both server-side and client-side. Server code can broadcast events to all connected clients on a channel, and clients can emit events back to the server.
-
-## Internal Events
-
-Beyond WebSocket traffic, Beacon exposes an internal event bus for in-process communication between modules. This allows decoupled integration — for example, Vault could emit a `record:created` event that Beacon forwards to subscribed WebSocket clients.
+## Presence
 
 ```tsx
-import { emitter } from "@towerjs/beacon"
+await chat.presence.join({ userId: 'usr_1' })
+const members = await chat.presence.list()
+```
 
-emitter.on("vault:created", async (record) => {
-  await channel(`project:${record.projectId}`).publish("item:created", record)
+## Internal events
+
+Beyond WebSocket traffic, Beacon exposes an in-process event bus for module-to-module communication. Vault emits `vault:record:*` events, which you can bridge to channels:
+
+```tsx
+beacon.on('vault:record:created', async ({ table, id }) => {
+  if (table === 'messages') {
+    await beacon.channel(`room:${id}`).publish('message:created', { id })
+  }
 })
 ```
 
-## Broadcasting
+## WebSocket endpoint (Next.js)
 
-Broadcasting sends an event to all connected clients (or all clients on a channel) without requiring individual fan-out logic. The server handles connection tracking and delivery.
+```tsx filename="app/api/beacon/route.ts"
+import { beacon } from 'towerjs/beacon/next'
 
-## Framework Adapters
+export const GET = beacon.GET    // WebSocket upgrade and message handling
+export const POST = beacon.POST  // client-to-server events
+```
 
-Beacon will ship with framework-specific adapters (Next.js route handlers, Hono, etc.) so WebSocket upgrade and message parsing are handled transparently.
+## Integration with Tower
 
-## Planned Features
+- **Gatehouse** — authorize channel access from the session; presence is scoped to authenticated users
+- **Vault** — bridge `vault:record:*` events to channels
+- **Crane** — emit `job:completed` events to connected clients
 
-- Automatic reconnection with backoff
-- Presence tracking (who is online)
-- Room-based access control
-- Scalable backends (Redis, Postgres LISTEN/NOTIFY)
+## Planned features
+
+- Automatic reconnection with backoff (client SDK)
+- Typed channels — channel names as a discriminated union
+- End-to-end encryption for private channels

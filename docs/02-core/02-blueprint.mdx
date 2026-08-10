@@ -7,7 +7,7 @@ Blueprint provides the module system that ties all Tower packages together.
 
 ## defineTower
 
-Type-safe config helper. A runtime no-op — it only provides TypeScript types:
+Type-safe config helper. A runtime no-op — it provides TypeScript types. Module configs are `Record<string, unknown>`-shaped (per-module autocomplete lives in each module's own config helper):
 
 ```tsx
 import { defineTower } from 'towerjs/blueprint'
@@ -17,7 +17,6 @@ export default defineTower({
     vault: {},
     gatehouse: {
       provider: 'better-auth',
-      secret: process.env.BETTER_AUTH_SECRET,
       credentials: { enabled: true },
     },
   },
@@ -59,7 +58,7 @@ interface ModuleDeclaration {
 ## Module Factory
 
 ```tsx
-import { getModuleFactory } from 'towerjs/blueprint'
+import { getModuleFactory } from '@towerjs/blueprint'
 
 const factory = getModuleFactory('vault')
 // → ModuleFactory | undefined
@@ -84,7 +83,7 @@ import {
   getModuleDependencies,
   getRegisteredModules,
   getModuleDeclarations,
-} from 'towerjs/blueprint'
+} from '@towerjs/blueprint'
 ```
 
 ## Module Lifecycle

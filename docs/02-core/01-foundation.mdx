@@ -7,26 +7,33 @@ Foundation is the lowest-level package. It provides the runtime infrastructure t
 
 ## createTowerApp
 
-The primary way to create a Tower application:
+The primary way to create a Tower application. To use modules, pass `getModuleFactory` (from `@towerjs/blueprint`) as the second argument — without it, module configs are not registered or initialized:
 
 ```tsx
 import { createTowerApp } from '@towerjs/foundation'
+import { getModuleFactory } from '@towerjs/blueprint'
 
-const app = await createTowerApp({
-  modules: {
-    vault: { connectionString: process.env.DATABASE_URL },
-    gatehouse: { provider: 'better-auth', secret: 'my-secret', credentials: { enabled: true } },
+const app = await createTowerApp(
+  {
+    modules: {
+      vault: { connectionString: process.env.DATABASE_URL },
+      gatehouse: { provider: 'better-auth', credentials: { enabled: true } },
+    },
   },
-})
+  getModuleFactory
+)
 ```
 
-When using the `towerjs` meta-package, `getModuleFactory` is wired automatically. Calling `createTower()` (no "App") adds config file resolution:
+Calling `createTower()` (no "App") adds config file resolution, but you still pass the module factory:
 
 ```tsx
-import { createTower } from 'towerjs'
+import { createTower } from '@towerjs/foundation'
+import { getModuleFactory } from '@towerjs/blueprint'
 
-const app = await createTower() // resolves tower.config.ts automatically
+const app = await createTower(undefined, getModuleFactory) // resolves tower.config.ts automatically
 ```
+
+The `towerjs` meta-package wires `getModuleFactory` automatically through `getTowerApp()` / `initTower()` — see [towerjs](/docs/towerjs) for the lazy-initialized facade.
 
 ### TowerApp interface
 
@@ -80,7 +87,7 @@ Modules register themselves during the registration phase (`module.vault`, `modu
 For cross-module access after initialization:
 
 ```tsx
-import { registerService, getService } from '@towerjs/blueprint'
+import { registerService, getService } from '@towerjs/foundation'
 
 registerService('database', pool)
 const pool = getService<Pool>('database')

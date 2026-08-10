@@ -1,63 +1,41 @@
 ---
 title: "Forge"
-description: "Forge is Tower's deployment module. It provides build tooling, Docker support, CI/CD integrations, and environment management."
+description: "Build and deployment — one command from source to production."
 badge: "Coming Soon"
 ---
 
-> **Status: Planned** — Forge is not yet implemented. This document describes the intended vision.
-
+> **Status: Planned** — Forge is not yet implemented. This document describes the target API.
 
 ## Vision
 
-Forge aims to make deploying a Tower app a single command — handling builds, environment variable injection, and infrastructure provisioning for your chosen platform.
+Forge extends the `tower` CLI (shipped in `@towerjs/scribe`) with build and deployment commands: compile the app, generate an optimized Dockerfile, scaffold CI, and manage environment variables across platforms.
 
 ## Build
 
-Forge compiles your Tower app for production, handling TypeScript compilation, asset bundling, and output optimization.
-
 ```bash
 tower build
-# Outputs to ./dist/
 ```
 
 The build pipeline:
 
-1. Compiles TypeScript via `tsc` or `swc`
-2. Copies static assets
-3. Generates a Prisma client (if Vault is used)
+1. Typechecks the project
+2. Compiles to `./dist/` and copies static assets
+3. Runs Vault migrations and generates typed Kysely queries (if Vault is used)
 4. Creates a production `package.json` with only runtime dependencies
 
 ## Docker
 
-Forge generates an optimized Dockerfile for your project.
-
-```dockerfile filename="Dockerfile"
-FROM node:22-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN tower build
-
-FROM node:22-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-EXPOSE 3000
-CMD ["node", "dist/index.js"]
-```
-
 ```bash
-tower docker:init    # Generate Dockerfile
-tower docker:build   # Build the image
-tower docker:push    # Push to registry
+tower docker init     # generate an optimized Dockerfile
+tower docker build    # build the image
+tower docker push     # push to a registry
 ```
 
 ## CI/CD
 
-Forge can scaffold CI/CD configuration files for common providers:
-
 ```bash
-tower ci:init --provider github
-# Creates .github/workflows/deploy.yml
+tower ci init --provider github
+# creates .github/workflows/deploy.yml
 ```
 
 Generated pipelines typically include:
@@ -68,29 +46,31 @@ Generated pipelines typically include:
 - Run `tower build`
 - Deploy to the selected platform
 
-## Environment Management
+## Environment
 
-Forge reads `.env` files and validates that all required variables (defined in `tower.config.ts`) are present before building. It also supports:
+Forge validates that all required variables (defined in `tower.config.ts`) are present before building:
 
 ```bash
-tower env:pull   # Download env from platform
-tower env:push   # Upload env to platform
-tower env:check  # Validate local env
+tower env check     # validate local env
+tower env pull      # download env from the platform
+tower env push      # upload env to the platform
 ```
 
-## Platform Adapters
+## Deploy
 
-Forge will ship adapters for:
+```bash
+tower deploy --provider vercel
+```
 
-- Vercel
-- Docker (any host)
-- Fly.io
-- Railway
-- AWS (ECS / Elastic Beanstalk)
+## Providers
 
-## Planned Features
+| Provider  | Status                 |
+| --------- | ---------------------- |
+| `vercel`  | Planned first provider |
+| `fly`, `railway`, `aws` | Future adapters |
 
-- Zero-downtime deploys
-- Rollback support
+## Planned features
+
+- Zero-downtime deploys with rollback
 - Preview deployments per branch
-- Database migration runs as part of deploy
+- Migrations run as part of deploy

@@ -37,18 +37,19 @@ The scaffolded project includes:
 ```
 my-app/
 ├── src/
-│   ├── proxy.ts
+│   ├── proxy.ts                     # gatehouse only
+│   ├── lib/auth/actions.ts          # gatehouse only
 │   ├── app/
-│   │   ├── actions.ts
-│   │   ├── api/auth/[...all]/route.ts
+│   │   ├── api/auth/[...all]/route.ts   # gatehouse only
 │   │   ├── layout.tsx
 │   │   └── page.tsx
-│   └── vault/
-│       ├── migrations/
-│       └── seeds/
 ├── tower.config.ts
-├── next.config.ts
+├── next.config.ts                   # edge runtime only
 ├── package.json
 ├── tsconfig.json
-└── .env.example
+├── .env.example
+├── .prettierrc
+└── AGENTS.md
 ```
+
+Migration and seed folders (`src/vault/migrations/`, `src/vault/seeds/`) are not scaffolded — create them when you add your first migration or seed file.

@@ -18,9 +18,9 @@ gatehouse: {
 ## Enabling 2FA for a user
 
 ```tsx
-const { data } = await gatehouse.totp.enable(password)
-// data.totpURI    — feed to an authenticator app (QR code or manual entry)
-// data.backupCodes — one-time recovery codes, show them once
+const { totpURI, backupCodes } = await gatehouse.totp.enable(password)
+// totpURI      — feed to an authenticator app (QR code or manual entry)
+// backupCodes  — one-time recovery codes, show them once
 ```
 
 The `enableTwoFactor` action takes `password` and returns both in its response.
@@ -33,7 +33,7 @@ Two steps on the server:
 await gatehouse.totp.verify({ code, trustDevice })
 ```
 
-- `trustDevice` — skip 2FA for `trustedDevices` on this device
+- `trustDevice` — mark this device trusted and skip 2FA on it for the `trustDeviceMaxAge` period
 - Untrusted or unverified sessions stay blocked from `requireUser()` until the code is verified
 
 Action: `verifyTwoFactor` (`code`, `trustDevice`).
@@ -60,5 +60,5 @@ Action: `disableTwoFactor` (`password`).
 ## Notes
 
 - Check `user.twoFactorEnabled` to conditionally show 2FA UI in settings
-- `trustDevice` requires the `twoFactor.trustedDevices` configuration to persist
+- `trustDevice` persists the trust for the `trustDeviceMaxAge` period (there's no `trustedDevices` option — the provider currently instantiates `twoFactor()` with no options)
 - Backup codes are single-use — verify consumes them

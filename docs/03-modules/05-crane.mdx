@@ -1,79 +1,87 @@
 ---
 title: "Crane"
-description: "Crane is Tower's background jobs module. It provides a unified system for queueing, scheduling, and processing asynchronous work."
+description: "Background jobs, queues, and cron schedules — persisted, retried, and processed in-process."
 badge: "Coming Soon"
 ---
 
-> **Status: Planned** — Crane is not yet implemented. This document describes the intended vision.
-
+> **Status: Planned** — Crane is not yet implemented. This document describes the target API.
 
 ## Vision
 
-Crane aims to make background job processing as simple as calling a function. Define a job, dispatch it, and let Crane handle retries, concurrency, and persistence — backed by your database or Redis.
+Crane turns background work into plain function calls. Define a job, dispatch it — Crane handles persistence, retries, concurrency, and scheduling. The default provider runs on your existing Vault database, so there is no queue service to stand up.
 
-## Queues
+## Setup
 
-A **queue** holds pending jobs until a worker picks them up. Queues can be configured with different backends (Postgres, Redis, in-memory).
-
-```tsx
-import { defineJob, queue } from "@towerjs/crane"
-
-const sendEmail = defineJob({
-  name: "send-email",
-  async execute(payload: { to: string; subject: string }) {
-    // ...
-  },
-})
-
-await queue.enqueue(sendEmail, {
-  to: "user@example.com",
-  subject: "Welcome!",
-})
+```tsx filename="tower.config.ts"
+crane: {
+  provider: 'postgres',   // job tables in the Vault database
+  concurrency: 5,
+  retries: 3,
+  backoff: 'exponential',
+}
 ```
 
-## Cron Scheduling
+Run `tower migrate` — Crane's migrations create the job tables.
 
-Crane supports recurring schedules using cron expressions. The scheduler runs inside your Node.js process and enqueues jobs at the configured intervals.
+## Providers
+
+| Provider   | Description                                    |
+| ---------- | ---------------------------------------------- |
+| `postgres` | Built-in: jobs persisted in the Vault database |
+| `redis`    | Redis-backed queues for multi-instance setups  |
+
+## Jobs
 
 ```tsx
-import { cron } from "@towerjs/crane"
+import { crane } from 'towerjs/crane'
 
-cron.schedule("daily-report", "0 6 * * *", async () => {
+crane.job('send-email', async (payload: { to: string; subject: string }) => {
+  await courier.email.send({ ...payload, html: '<p>Welcome!</p>' })
+})
+
+await crane.dispatch('send-email', {
+  to: 'user@example.com',
+  subject: 'Welcome!',
+})
+
+// Delayed dispatch
+await crane.dispatch('send-email', payload, { runAt: '2026-09-01T09:00:00Z' })
+```
+
+## Cron
+
+```tsx
+crane.cron('daily-report', '0 6 * * *', async () => {
   await generateReport()
 })
 ```
 
-## Worker Management
+## Worker
 
-Workers process jobs from queues. Crane handles:
-
-- **Concurrency control** — limit how many jobs run simultaneously
-- **Retries** — automatic retry with exponential backoff
-- **Dead-letter queues** — jobs that exhaust retries are moved to a DLQ for inspection
-- **Graceful shutdown** — finish in-flight jobs before the process exits
+Crane polls for due jobs in-process — no separate worker process:
 
 ```tsx
-import { createWorker } from "@towerjs/crane"
-
-const worker = createWorker({
-  concurrency: 5,
-  backoff: { type: "exponential", delay: 1000 },
-})
-
-worker.start()
+await crane.start()  // start processing
+await crane.stop()   // finish in-flight jobs, then exit
 ```
 
-## Persistence
+## Failures
 
-Job state is persisted so no work is lost on crash. Crane will support Postgres (using Kysely) and Redis adapters.
+Jobs that exhaust retries are marked failed and inspected through the facade:
 
-## Planned Features
-
-- Delayed jobs (run at a specific future time)
-- Job dependencies / chains
-- Rate limiting
-- Dashboard UI for monitoring queues
+```tsx
+const failed = await crane.failed('send-email')
+await crane.retry(failed[0].id)
+```
 
 ## Integration with Tower
 
-Crane integrates naturally with Vault (store job results), Beacon (emit events when jobs complete), and Observatory (log job lifecycle).
+- **Vault** — job persistence and migration in the shared database
+- **Beacon** — emit `job:completed` events to connected clients
+- **Observatory** — log job lifecycle, retries, and latency
+
+## Planned features
+
+- Job dependencies and chains
+- Rate limiting per job
+- Queue dashboard with manual retry and replay

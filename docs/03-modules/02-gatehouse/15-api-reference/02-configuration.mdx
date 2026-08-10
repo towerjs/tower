@@ -10,7 +10,6 @@ gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
   baseURL: 'http://localhost:3000',
-  secret: process.env.BETTER_AUTH_SECRET,
 
   // Enable auth methods
   credentials: { enabled: true },
@@ -33,9 +32,10 @@ gatehouse: {
 | `provider` | `'better-auth'` | The auth provider backend |
 | `appName` | `string` | App name used in auth emails and TOTP labels |
 | `baseURL` | `string \| object` | Canonical app URL; object form accepts `allowedHosts`, `protocol`, `fallback` |
-| `secret` | `string` | Signs session cookies — use `BETTER_AUTH_SECRET` from env |
 | `trustedOrigins` | `string[]` | Additional trusted origins for cross-origin auth |
 | `plugins` | `BetterAuthPlugin[]` | Extra Better Auth plugins |
+
+**Secret** — there's no `secret` option. The cookie-signing secret comes from `passThrough.secret`, `GATEHOUSE_SECRET`, or `BETTER_AUTH_SECRET` (outside production, a dev fallback applies).
 
 ## credentials
 
@@ -52,6 +52,9 @@ Email/password auth. `true` enables it with defaults; an object configures behav
 | `revokeSessionsOnPasswordReset` | `boolean` | `true` | Sign out all devices after a reset |
 | `resetPasswordTokenExpiresIn` | `number` | — | Reset token lifetime in seconds |
 | `sendResetPassword` | `fn` | courier | Custom password-reset email handler |
+| `onPasswordReset` | `fn` | — | Called after a password reset |
+| `onExistingUserSignUp` | `fn` | — | Called when sign-up matches an existing user |
+| `customSyntheticUser` | `fn` | — | Customize the synthetic user created for OAuth/OTP flows |
 | `password.hash` / `password.verify` | `fn` | scrypt | Custom password hashing |
 
 ## emailVerification
@@ -90,11 +93,11 @@ Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disab
 
 ## magicLinks
 
-`true` enables it. Options: `sendMagicLink` (defaults to Courier), `callbackURL`, link expiry.
+`true` enables it. Only `sendMagicLink` (defaults to Courier) is honored — options like `callbackURL` and link expiry are currently not passed to the plugin.
 
 ## phoneNumber
 
-`true` enables it. Options: `sendOTP` (defaults to Courier SMS), OTP expiry.
+`true` enables it. Only `sendOTP` (defaults to Courier SMS) is honored — OTP expiry and other options are currently not passed to the plugin.
 
 ## passkeys
 
@@ -102,15 +105,15 @@ Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disab
 
 ## twoFactor
 
-`true` enables TOTP. Options map to the Better Auth 2FA plugin (OTP delivery, trusted-device behavior).
+`true` enables TOTP. The plugin is currently instantiated with no options — the object form is typed but reserved (no 2FA options are passed yet).
 
 ## organization
 
-`true` enables organizations. Options map to the Better Auth organization plugin (permissions, creator roles).
+`true` enables organizations. The plugin is currently instantiated with no options — the object form is typed but reserved.
 
 ## admin
 
-`true` enables the admin API. Options map to the Better Auth admin plugin.
+`true` enables the admin API. The plugin is currently instantiated with no options — the object form is typed but reserved.
 
 ## apiKey
 
@@ -125,17 +128,64 @@ Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disab
 | `disableSessionRefresh` | `boolean` | `false` | Turn off sliding expiry |
 | `deferSessionRefresh` | `boolean` | `false` | Refresh on the next request instead of inline |
 | `storeSessionInDatabase` | `boolean` | `true` | Persist sessions (disable for stateless) |
+| `preserveSessionInDatabase` | `boolean` | — | Keep the session row after it's revoked or expired |
+| `cookieCache` | `object` | — | Compact session cookie cache (`enabled`, `maxAge`, `strategy`) |
 | `additionalFields` | `object` | — | Extra columns on the session model |
+| `modelName` | `string` | — | Custom table name for the session model |
+| `fields` | `object` | — | Map internal session fields to custom column names |
 
 ## user
 
 | Option | Type | Description |
 | --- | --- | --- |
+| `modelName` | `string` | Custom table name for the user model |
+| `fields` | `object` | Map internal user fields to custom column names |
 | `additionalFields` | `object` | Extra columns on the user model |
 | `changeEmail.enabled` | `boolean` | Require confirmation before email changes take effect |
 | `changeEmail.sendChangeEmailConfirmation` | `fn` | Custom confirmation email |
 | `deleteUser.enabled` | `boolean` | Allow account deletion |
 | `deleteUser.beforeDelete` / `afterDelete` | `fn` | Cleanup hooks around account deletion |
+
+## account
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `modelName` | `string` | Custom table name for the account model |
+| `fields` | `object` | Map internal account fields to custom column names |
+| `encryptOAuthTokens` | `boolean` | Encrypt OAuth access/refresh tokens at rest |
+| `updateAccountOnSignIn` | `boolean` | Update the account row on every sign-in |
+| `storeStateStrategy` | `'cookie' \| 'database'` | Where OAuth state is stored |
+| `storeAccountCookie` | `boolean` | Store account info in a cookie |
+| `accountLinking.enabled` | `boolean` | Link multiple providers to one account |
+| `accountLinking.trustedProviders` | `string[] \| fn` | Providers allowed to link automatically |
+| `accountLinking.allowDifferentEmails` | `boolean` | Allow linking accounts with different emails |
+| `accountLinking.disableImplicitLinking` | `boolean` | Require explicit linking |
+| `accountLinking.allowUnlinkingAll` | `boolean` | Allow unlinking every provider |
+| `accountLinking.updateUserInfoOnLink` | `boolean` | Refresh user info when linking |
+
+## rateLimit
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | — | Enable request rate limiting |
+| `window` | `number` | — | Time window in seconds |
+| `max` | `number` | — | Max requests per window |
+| `storage` | `'memory' \| 'database' \| 'secondary-storage'` | `'database'` | Where counters live |
+| `customRules` | `object` | — | Per-endpoint rules (`{ window, max }`, or `false` to disable) |
+
+## advanced
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `useSecureCookies` | `boolean` | Set the Secure flag on cookies |
+| `disableCSRFCheck` | `boolean` | Disable CSRF protection |
+| `cookiePrefix` | `string` | Prefix for auth cookies |
+| `database.generateId` | `fn \| 'serial' \| 'uuid' \| false` | Custom ID generator |
+| `database.defaultFindManyLimit` | `number` | Default limit for list queries |
+
+## passThrough
+
+Raw Better Auth options spread onto the `betterAuth()` config — anything not covered by the options above. Notably `passThrough.secret` supplies the signing secret (falling back to `GATEHOUSE_SECRET` / `BETTER_AUTH_SECRET`), and `passThrough.basePath` overrides the auth base path.
 
 ## Courier auto-wiring
 

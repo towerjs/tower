@@ -80,7 +80,7 @@ Users can connect providers to their existing account so the same identity works
 ```tsx
 await gatehouse.identities.list()          // connected providers
 await gatehouse.identities.link('github')  // start linking flow
-await gatehouse.identities.unlink(id)      // disconnect
+await gatehouse.identities.unlink({ providerId, accountId })   // disconnect
 ```
 
 The `unlinkAccount` action takes `providerId` + `accountId`.

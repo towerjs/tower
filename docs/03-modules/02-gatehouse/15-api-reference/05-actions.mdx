@@ -1,9 +1,9 @@
 ---
 title: "Actions"
-description: "50+ pre-built server actions: wire auth straight into forms with no client code."
+description: "Pre-built server actions: wire auth straight into forms with no client code."
 ---
 
-Gatehouse ships pre-built server actions for every auth operation. They run in an authenticated request context, take plain form fields, and return `{ ok: true }` or `{ error: string }` — ready for `useActionState`.
+Gatehouse ships pre-built server actions for common auth operations. They run in an authenticated request context, take plain form fields, and return `{ ok: true }` or `{ error: string }` — ready for `useActionState`.
 
 ## Usage
 
@@ -49,9 +49,8 @@ Field names map directly to `<input name="...">` attributes.
 | `signIn` | `email`, `password` |
 | `signUp` | `name`, `email`, `password` |
 | `signOut` | — |
-| `refreshSession` | `refreshToken` |
-| `signInWithOTP` | `email` |
-| `signInWithPhone` | `phoneNumber` |
+| `signInWithOTP` | `email`, `otp` |
+| `signInWithPhone` | `phoneNumber`, `code` |
 | `requestMagicLink` | `email` |
 
 ## Sessions
@@ -60,15 +59,14 @@ Field names map directly to `<input name="...">` attributes.
 | --- | --- |
 | `revokeSession` | `token` |
 | `revokeOtherSessions` | — |
-| `revokeAllSessions` | — |
 
 ## Account & password
 
 | Action | Form fields |
 | --- | --- |
-| `updateProfile` | `name` |
+| `updateProfile` | `name`, `image` |
 | `deleteAccount` | `password` |
-| `setPassword` | `newPassword`, `currentPassword` |
+| `setPassword` | `newPassword` |
 | `changeEmail` | `newEmail` |
 | `changePassword` | `currentPassword`, `newPassword` |
 | `verifyPassword` | `password` |
@@ -83,29 +81,25 @@ Field names map directly to `<input name="...">` attributes.
 | `verifyEmail` | `token` |
 | `sendVerificationOTP` | `email`, `type` |
 | `verifyVerificationOTP` | `email`, `otp` |
-| `verifyEmailOTP` | `email`, `otp` |
-| `forgotPasswordOTP` | `email` |
-| `resetPasswordOTP` | `email`, `otp`, `newPassword` |
-| `requestEmailChangeOTP` | `email`, `newEmail` |
-| `confirmEmailChangeOTP` | `email`, `newEmail`, `otp` |
 
 ## Phone OTP
 
 | Action | Form fields |
 | --- | --- |
 | `sendPhoneOTP` | `phoneNumber` |
-| `verifyPhoneOTP` | `phoneNumber`, `otp` |
-| `requestPasswordResetPhoneOTP` | `phoneNumber` |
-| `resetPasswordPhoneOTP` | `phoneNumber`, `otp`, `newPassword` |
+| `verifyPhoneOTP` | `phoneNumber`, `code` |
 
 ## Two-factor
 
 | Action | Form fields |
 | --- | --- |
-| `enableTwoFactor` | `password` — returns `{ totpURI, backupCodes }` |
+| `enableTwoFactor` | `password` — returns `{ totpURI, backupCodes }` directly |
 | `verifyTwoFactor` | `code`, `trustDevice` |
 | `disableTwoFactor` | `password` |
-| `generateBackupCodes` | `password` — returns new codes |
+| `generateTOTP` | `password` |
+| `sendTwoFactorOTP` | `trustDevice` |
+| `verifyTwoFactorOTP` | `code`, `trustDevice` |
+| `generateBackupCodes` | `password` — returns new codes directly |
 | `verifyBackupCode` | `code` |
 
 ## Passkeys
@@ -113,7 +107,7 @@ Field names map directly to `<input name="...">` attributes.
 | Action | Form fields |
 | --- | --- |
 | `updatePasskey` | `id`, `name` |
-| `removePasskey` | `id` |
+| `deletePasskey` | `id` |
 
 ## Admin
 
@@ -121,29 +115,27 @@ Field names map directly to `<input name="...">` attributes.
 | --- | --- |
 | `createUser` | `name`, `email`, `password` |
 | `removeUser` | `userId` |
-| `adminUpdateUser` | `userId`, `name`, `email`, `role` |
 | `setUserPassword` | `userId`, `newPassword` |
 | `setRole` | `userId`, `role` |
 | `banUser` | `userId`, `banReason`, `banExpiresIn` |
 | `unbanUser` | `userId` |
 | `impersonateUser` | `userId` |
 | `stopImpersonating` | — |
+| `revokeUserSession` | `sessionToken` |
 | `revokeUserSessions` | `userId` |
-| `userHasPermission` | `userId`, `permission`, `organizationId` |
 
-## Roles & permissions
+## Roles
 
 | Action | Form fields |
 | --- | --- |
 | `assignRole` | `userId`, `role` |
 | `removeRole` | `userId` |
-| `hasPermission` | `userId`, `permission`, `organizationId` |
 
 ## API keys
 
 | Action | Form fields |
 | --- | --- |
-| `createApiKey` | `name`, `expiresIn` — returns the key once |
+| `createApiKey` | `name`, `expiresIn` — returns `{ ok: true }`, not the key |
 | `updateApiKey` | `id`, `name` |
 | `deleteApiKey` | `id` |
 | `verifyApiKey` | `key` |
@@ -157,12 +149,8 @@ Field names map directly to `<input name="...">` attributes.
 | `updateOrganization` | `id`, `name`, `slug` |
 | `deleteOrganization` | `id` |
 | `setActiveOrganization` | `organizationId` |
-| `leaveOrganization` | `organizationId` |
-| `createOrgRole` | `name`, `permissions` |
-| `updateOrgRole` | `id`, `name`, `permissions` |
-| `deleteOrgRole` | `id` |
-| `addMember` | `organizationId`, `email`, `role` |
-| `updateMemberRole` | `memberId`, `role` |
+| `addMember` | `organizationId`, `userId`, `role` |
+| `updateMemberRole` | `memberId`, `role`, `organizationId` |
 | `removeMember` | `orgId`, `memberId` |
 | `inviteMember` | `orgId`, `email`, `role` |
 | `cancelInvitation` | `invitationId` |
@@ -177,4 +165,6 @@ Field names map directly to `<input name="...">` attributes.
 
 ## Error handling
 
-Actions return `{ error: string }` on failure and `{ ok: true }` on success (actions that return data — `enableTwoFactor`, `createApiKey`, `generateBackupCodes` — include it in the response). Render `state.error` in the form; no try/catch needed.
+Actions wrapped with `action.form` return `{ error: string }` on failure and `{ ok: true }` on success — render `state.error` in the form; no try/catch needed.
+
+A few actions are wrapped with plain `action()` instead and **throw** on failure rather than returning `{ error }`: `enableTwoFactor` and `generateBackupCodes` return their data (`{ totpURI, backupCodes }` and the new codes) directly and will reject with an error — catch around them.

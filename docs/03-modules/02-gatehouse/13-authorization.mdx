@@ -26,13 +26,13 @@ if (await gatehouse.can({ user, permission: 'project.update' })) {
 }
 ```
 
-For the signed-in user in their current context, the `userHasPermission` action takes `permission` and optional `organizationId`.
+For the signed-in user in their current context, check the session user with `gatehouse.can({ user: session.user, permission })`.
 
 ## Where permissions come from
 
 A user's permissions are the union of:
 
-1. **User roles** — via `assignRole(userId, role)` (admin API), with `gatehouse.role`-style permissions
+1. **User roles** — via `gatehouse.roles.assign(userId, role)`, with `gatehouse.role`-style permissions
 2. **Organization roles** — the user's role inside the organization being checked, when `organizationId` is provided
 3. **Ad-hoc grants** — plugin-defined permissions evaluated by the adapter
 
@@ -82,7 +82,8 @@ Built-in organization roles: `owner`, `admin`, `member` — `owner` and `admin` 
 
 ```tsx
 await gatehouse.admin.setRole({ userId, role: 'admin' })  // or any custom role
-await gatehouse.admin.hasPermission({ role: 'admin', permissions: ['user.delete'] })
+await gatehouse.roles.assign(userId, role)                // same, module-level
+await gatehouse.can({ user, permission: 'user.delete' })
 ```
 
 Actions: `assignRole` (`userId`, `role`), `removeRole` (`userId`).
@@ -105,4 +106,4 @@ if (project.ownerId !== user.id) throw new AuthorizationError()
 | API keys | `apiKeys.verify()` with a permission map |
 | Pages | Render what the session allows — access is gated by the proxy, so pages don't redirect for auth |
 
-Fail closed: `can()` returns `false` on unknown permissions, and throw `AuthorizationError` (→ 403) rather than rendering partial UI.
+Fail closed: `can()` returns `false` on unknown permissions — and when no `organizationId` is provided — rather than guessing. It never throws; wrap it with `requireCan` (above) to raise `AuthorizationError` (→ 403) where you want one.

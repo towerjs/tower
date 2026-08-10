@@ -146,6 +146,12 @@ interface SmsSendParams {
 
 interface PushSendParams {
   subscription: PushSubscription
-  payload: Record<string, unknown>
+  payload?: string | Record<string, unknown>
+  title?: string
+  body?: string
+  data?: Record<string, unknown>
+  ttl?: number
+  urgency?: 'very-low' | 'low' | 'normal' | 'high'
+  topic?: string
 }
 ```

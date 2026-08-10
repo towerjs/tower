@@ -65,7 +65,6 @@ await gatehouse.admin.listUsers({ searchField: 'email', searchValue: 'ada@' })
 // { users, total }
 
 await gatehouse.admin.getUser(userId)
-await gatehouse.admin.updateUser(userId, { name, role })
 await gatehouse.admin.removeUser(userId)
 await gatehouse.admin.setUserPassword(userId, newPassword)
 await gatehouse.admin.setRole({ userId, role })
@@ -81,7 +80,7 @@ await gatehouse.admin.banUser(userId, {
 await gatehouse.admin.unbanUser(userId)
 ```
 
-Banned users are blocked at sign-in and lose their sessions. `user.banned` / `user.banReason` / `user.banExpiresAt` surface the state.
+Banned users are blocked at sign-in and lose their sessions. `user.banned` / `user.banReason` surface the state (`banExpiresAt` is not mapped by the adapter).
 
 ### Impersonation
 
@@ -90,17 +89,18 @@ await gatehouse.admin.impersonateUser(userId)
 await gatehouse.admin.stopImpersonating()
 ```
 
-Inspect `user.role === 'impersonating'` or use the impersonation result to show a banner in your UI.
+Impersonation shows up as `session.impersonatedBy` on the impersonated session — check it to show a banner in your UI.
 
 ### Sessions & permissions
 
 ```tsx
 await gatehouse.admin.listUserSessions(userId)
-await gatehouse.admin.revokeUserSession(userId, sessionToken)
+await gatehouse.admin.revokeUserSession(sessionToken)
 await gatehouse.admin.revokeUserSessions(userId)
-await gatehouse.admin.hasPermission({ role: 'admin', permissions: ['user.delete'] })
 ```
+
+Role and permission checks live on the authorization API — see [Authorization](/docs/gatehouse/authorization).
 
 ## User fields
 
-`GatehouseUser` carries: `id`, `name`, `email`, `emailVerified`, `image`, `createdAt`, `updatedAt`, plus `twoFactorEnabled`, `banned` / `banReason` / `banExpiresAt`, and `role` when enabled. Add your own columns with `user.additionalFields`.
+`GatehouseUser` carries: `id`, `name`, `email`, `emailVerified`, `image`, `createdAt`, `updatedAt`, plus `twoFactorEnabled`, `banned` / `banReason`, and `role` when enabled. Add your own columns with `user.additionalFields`.

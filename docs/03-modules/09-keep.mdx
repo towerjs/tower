@@ -1,82 +1,80 @@
 ---
 title: "Keep"
-description: "Keep is Tower's file storage module. It provides a unified API for uploading, retrieving, and deleting files across multiple storage backends."
+description: "File storage — upload, retrieve, and delete files across local disk and S3-compatible backends."
 badge: "Coming Soon"
 ---
 
-> **Status: Planned** — Keep is not yet implemented. This document describes the intended vision.
-
+> **Status: Planned** — Keep is not yet implemented. This document describes the target API.
 
 ## Vision
 
-Keep abstracts local disk, S3-compatible object storage, and CDN delivery behind a single interface. Swap storage backends with a config change — no code changes needed.
+Keep abstracts local disk and S3-compatible object storage behind one facade. Swap storage backends with a config change — no code changes needed.
 
-## Upload / Retrieve / Delete
+## Setup
+
+```tsx filename="tower.config.ts"
+keep: {
+  defaultDisk: 'local',
+  disks: {
+    local: {
+      driver: 'local',
+      root: './storage',
+    },
+    prod: {
+      driver: 's3',
+      bucket: 'my-app-prod',
+      region: 'us-east-1',
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+    r2: {
+      driver: 's3',
+      bucket: 'my-app',
+      endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    },
+  },
+}
+```
+
+## Storing files
 
 ```tsx
-import { storage } from "@towerjs/keep"
+import { keep } from 'towerjs/keep'
 
-// Upload
-const file = await storage.put("avatars/user-42.png", buffer, {
-  contentType: "image/png",
+const file = await keep.storage.put('avatars/user-42.png', buffer, {
+  contentType: 'image/png',
 })
 
-// Retrieve (returns a readable stream or buffer)
-const data = await storage.get("avatars/user-42.png")
+const data = await keep.storage.get('avatars/user-42.png')  // Buffer or stream
+await keep.storage.delete('avatars/user-42.png')
 
-// Delete
-await storage.delete("avatars/user-42.png")
+// Public URL (requires publicUrl on the disk)
+const url = keep.url('avatars/user-42.png')
 
-// Generate a signed URL (for private files)
-const url = await storage.signedUrl("reports/q3.pdf", { expiresIn: 3600 })
+// Signed URL for private files
+const signed = await keep.storage.signedUrl('reports/q3.pdf', {
+  expiresIn: 3600,
+})
 ```
 
 ## Disks
 
-A **disk** is a named storage configuration. You can define multiple disks and use different ones per environment.
-
-```tsx filename="tower.config.ts"
-import { defineConfig } from "@towerjs/keep"
-
-export default defineConfig({
-  disks: {
-    local: {
-      driver: "local",
-      root: "./storage",
-    },
-    s3: {
-      driver: "s3",
-      bucket: "my-app-prod",
-      region: "us-east-1",
-      endpoint: process.env.S3_ENDPOINT,
-    },
-    r2: {
-      driver: "s3",
-      bucket: "my-app",
-      endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    },
-  },
-})
-```
-
-Use a specific disk:
+A **disk** is a named storage configuration. Use a specific disk through the facade:
 
 ```tsx
-const avatar = storage.disk("s3").put("...", buffer)
+await keep.storage.disk('prod').put('backups/db.sql', buffer)
 ```
 
-## Object Storage
+## Providers
 
-Keep works with any S3-compatible provider: AWS S3, Cloudflare R2, MinIO, Garage, Backblaze B2.
+| Driver   | Backends                                            |
+| -------- | --------------------------------------------------- |
+| `local`  | Local disk (development)                            |
+| `s3`     | AWS S3, Cloudflare R2, MinIO, Garage, Backblaze B2  |
 
-## Image Transformations
+## Planned features
 
-Planned support for on-the-fly resizing, cropping, and format conversion (using Sharp or a CDN like Imgix).
-
-## Planned Features
-
-- Streaming uploads
-- Multipart upload for large files
+- Image transformations (resize, crop, format conversion)
+- Streaming and multipart uploads
+- Temporary direct-to-storage upload URLs
 - File validation (size, MIME type)
-- Public / private file visibility
-- Temporary upload URLs (direct-to-S3)
