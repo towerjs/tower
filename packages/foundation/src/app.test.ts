@@ -76,6 +76,37 @@ describe('createTowerApp', () => {
     await expect(createTowerApp(modules({ exploder: {} }), getModuleFactory)).rejects.toThrow('init failed')
   })
 
+  it('registers all services before initializing any module', async () => {
+    const seen: string[] = []
+
+    registerModule('first', () => ({
+      name: 'first',
+      register() {
+        seen.push('register:first')
+      },
+      async initialize() {
+        seen.push('init:first')
+      },
+    }))
+
+    registerModule('second', () => ({
+      name: 'second',
+      register() {
+        seen.push('register:second')
+      },
+      async initialize() {
+        // Both modules must be registered before the first initialize runs.
+        if (seen.includes('register:first')) seen.push('init:second')
+        else seen.push('init:second:no-first')
+      },
+    }))
+
+    const app = await createTowerApp(modules({ first: {}, second: {}, mock: {} }), getModuleFactory)
+    await app.shutdown()
+
+    expect(seen).toEqual(['register:first', 'register:second', 'init:first', 'init:second'])
+  })
+
   it('shutdown handles modules without shutdown hook', async () => {
     registerModule('quiet', () => ({
       name: 'quiet',

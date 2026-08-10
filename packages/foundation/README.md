@@ -13,34 +13,26 @@ pnpm add @towerjs/foundation
 ## Usage
 
 ```ts
-import { createTowerApp, defineTower } from '@towerjs/blueprint'
-
-export default defineTower({
-  modules: {
-    vault: { provider: 'pg' },
-    gatehouse: { provider: 'better-auth' },
-  },
-})
-```
-
-Then initialize:
-
-```ts
-import { tower } from 'towerjs'
-// or
 import { createTower } from '@towerjs/foundation'
+
 const app = await createTower()
 ```
+
+`createTower()` discovers `tower.config.ts` from the working directory and initializes all registered modules.
 
 ## API
 
 ### `createTower(config?)`
 
-Discovers `tower.config.ts` from the working directory and initializes all registered modules.
+Discovers `tower.config.ts` from the working directory, initializes all registered modules, and returns the `TowerApp` with each module attached.
+
+### `createTowerApp(config, getModuleFactory?)`
+
+Creates a `TowerApp` from an explicit config and module factory registry. Used by the meta-package and CLI.
 
 ### `detectRuntime()`
 
-Returns the current runtime environment: `"node"`, `"browser"`, `"edge"`, or `"workerd"`.
+Detects the deployment environment (Vercel, AWS Lambda, Netlify, Cloudflare) and returns a `TowerRuntime`: `{ name: 'node-server' | 'vercel-serverless' | 'edge', isServerless: boolean }`.
 
 ### `ServiceContainer`
 

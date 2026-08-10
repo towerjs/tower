@@ -19,7 +19,7 @@ export interface TowerContext {
 export interface TowerModule {
   name: string
   dependsOn?: string[]
-  register?(ctx: TowerContext): void
+  register?(ctx: TowerContext): void | Promise<void>
   initialize?(ctx: TowerContext): Promise<void>
   shutdown?(ctx: TowerContext): Promise<void>
 }

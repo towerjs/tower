@@ -74,7 +74,7 @@ export async function createTowerApp(
       if (typeof mod.register === 'function') {
         const modConfig = nameToOptions.get(mod.name) ?? {}
         const ctx: TowerContext = { services: container, config: modConfig, appConfig: config, runtime }
-        mod.register(ctx)
+        await mod.register(ctx)
       }
     }
 
