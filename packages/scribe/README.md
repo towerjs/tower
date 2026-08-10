@@ -44,6 +44,10 @@ Runs database seeds for the Vault module.
 tower seed
 ```
 
+### `help` / `--version`
+
+`tower help` shows usage; `tower --version` (or `-v`) prints the version.
+
 ## Programmatic API
 
 ```ts

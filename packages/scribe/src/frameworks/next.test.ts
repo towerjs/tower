@@ -77,6 +77,25 @@ describe('towerConfig', () => {
 
     expect(result).toContain('credentials: true')
     expect(result).toContain('google')
+    expect(result).toContain('process.env.GOOGLE_CLIENT_ID')
+    expect(result).not.toContain('GOOGLE_CLIENT_ID ? { google: {} }')
+  })
+
+  it('emits guarded social config that skips providers without credentials', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: {
+        gatehouse: { credentials: true, social: { google: {}, github: {} } },
+      },
+    }
+    const result = towerConfig(state)
+
+    expect(result).toContain(
+      '...(process.env.GOOGLE_CLIENT_ID ? { google: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } } : {})',
+    )
+    expect(result).toContain(
+      '...(process.env.GITHUB_CLIENT_ID ? { github: { clientId: process.env.GITHUB_CLIENT_ID, clientSecret: process.env.GITHUB_CLIENT_SECRET! } } : {})',
+    )
   })
 
   it('generates courier config with provider', () => {
@@ -88,6 +107,44 @@ describe('towerConfig', () => {
 
     expect(result).toContain('provider: "resend"')
     expect(result).toContain('onboarding@resend.dev')
+  })
+
+  it('defaults to link-based email verification when gatehouse and courier email are configured', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: {
+        gatehouse: { credentials: true },
+        courier: { email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' } },
+      },
+    }
+    const result = towerConfig(state)
+
+    expect(result).toContain('emailVerification: {')
+    expect(result).toContain('sendOnSignUp: true')
+  })
+
+  it('does not add email verification without a courier email provider', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { gatehouse: { credentials: true } },
+    }
+    const result = towerConfig(state)
+
+    expect(result).not.toContain('emailVerification')
+  })
+
+  it('does not override an explicit emailVerification config', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: {
+        gatehouse: { credentials: true, emailVerification: { method: 'otp' } },
+        courier: { email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' } },
+      },
+    }
+    const result = towerConfig(state)
+
+    expect(result).toContain('method: "otp"')
+    expect(result).not.toContain('sendOnSignUp: true')
   })
 })
 
@@ -182,6 +239,19 @@ describe('envExample', () => {
 
     expect(result).toContain('SMTP_HOST')
     expect(result).not.toContain('AWS_ACCESS_KEY_ID')
+  })
+
+  it('shows social provider env vars when social login is enabled', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { gatehouse: { credentials: true, social: { google: {}, github: {} } } },
+    }
+    const result = envExample(state)
+
+    expect(result).toContain('GOOGLE_CLIENT_ID=')
+    expect(result).toContain('GOOGLE_CLIENT_SECRET=')
+    expect(result).toContain('GITHUB_CLIENT_ID=')
+    expect(result).toContain('GITHUB_CLIENT_SECRET=')
   })
 })
 

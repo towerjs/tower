@@ -8,6 +8,12 @@ const MODULE_CHOICES = [
   { name: 'Courier — Email, SMS, Push', value: 'courier' },
 ]
 
+const MODULE_LINKS: Record<string, string[]> = {
+  // Gatehouse persists sessions and users in the Vault database and
+  // sends auth emails through Courier — both are required.
+  gatehouse: ['vault', 'courier'],
+}
+
 const VAULT_BRAND_CHOICES = [
   { name: 'Neon', value: 'neon' as const },
   { name: 'Supabase', value: 'supabase' as const },
@@ -114,7 +120,7 @@ async function promptModules(): Promise<string[]> {
   return modulesCheckbox({
     message: 'Which Tower modules do you want?',
     choices: MODULE_CHOICES,
-    link: { gatehouse: ['courier'] },
+    link: MODULE_LINKS,
   })
 }
 

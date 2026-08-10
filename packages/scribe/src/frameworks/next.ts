@@ -86,6 +86,23 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(actionsDir, 'actions.ts'), actionsFile())
 
       await writeFile(join(projectDir, 'src', 'proxy.ts'), proxyFile())
+
+      await mkdir(join(projectDir, 'src', 'app', 'sign-in'), { recursive: true })
+      await writeFile(join(projectDir, 'src', 'app', 'sign-in', 'page.tsx'), signInPage())
+      await mkdir(join(projectDir, 'src', 'app', 'sign-up'), { recursive: true })
+      await writeFile(join(projectDir, 'src', 'app', 'sign-up', 'page.tsx'), signUpPage())
+      await mkdir(join(projectDir, 'src', 'app', 'dashboard'), { recursive: true })
+      await writeFile(join(projectDir, 'src', 'app', 'dashboard', 'page.tsx'), dashboardPage())
+    }
+
+    if (state.modules.vault) {
+      // Keep the default migration/seed folders present so `npx tower migrate` works out of the box.
+      const migrationsDir = join(projectDir, 'src', 'vault', 'migrations')
+      const seedsDir = join(projectDir, 'src', 'vault', 'seeds')
+      await mkdir(migrationsDir, { recursive: true })
+      await writeFile(join(migrationsDir, '.gitkeep'), '')
+      await mkdir(seedsDir, { recursive: true })
+      await writeFile(join(seedsDir, '.gitkeep'), '')
     }
 
     await writeFile(join(projectDir, '.prettierrc'), prettierConfig(useTailwind))
@@ -149,21 +166,46 @@ function renderObject(obj: Record<string, unknown>, indent: number): string[] {
   return Object.entries(obj).flatMap(([k, v]) => formatConfigLine(k, v, indent))
 }
 
-function moduleConfig(name: string, cfg: Record<string, unknown>): Record<string, unknown> {
+function moduleConfig(name: string, cfg: Record<string, unknown>, state: ProjectState): Record<string, unknown> {
   if (name === 'gatehouse') {
-    return { ...cfg, appName: cfg.appName ?? 'My App' }
+    const resolved: Record<string, unknown> = { ...cfg, provider: 'better-auth', appName: cfg.appName ?? 'My App' }
+    // Default to link-based email verification when a courier email provider is configured.
+    // Change to { method: "otp" } for code-based verification, or remove to disable.
+    const courierEmail = (state.modules.courier as Record<string, unknown> | undefined)?.email
+    if (courierEmail && resolved.emailVerification === undefined) {
+      resolved.emailVerification = { sendOnSignUp: true }
+    }
+    return resolved
   }
   return cfg
+}
+
+function formatSocialConfig(social: Record<string, unknown>, indent: number): string[] {
+  const providers = Object.keys(social)
+  if (providers.length === 0) return [`${' '.repeat(indent)}social: {},`]
+  const inner = providers
+    .map((p) => {
+      const key = p.toUpperCase().replace(/-/g, '_')
+      const pad = ' '.repeat(indent + 2)
+      return (
+        `${pad}...(process.env.${key}_CLIENT_ID ` +
+        `? { ${p}: { clientId: process.env.${key}_CLIENT_ID, clientSecret: process.env.${key}_CLIENT_SECRET! } } : {}),`
+      )
+    })
+    .join('\n')
+  return [`${' '.repeat(indent)}social: {`, inner, `${' '.repeat(indent)}},`]
 }
 
 /** Generates the tower.config.ts content for a new project. */
 export function towerConfig(state: ProjectState): string {
   const modules = Object.entries(state.modules)
     .map(([name, cfg]) => {
-      const resolved = moduleConfig(name, (cfg ?? {}) as Record<string, unknown>)
+      const resolved = moduleConfig(name, (cfg ?? {}) as Record<string, unknown>, state)
       const lines = Object.entries(resolved)
         .filter(([k, v]) => !CLI_ONLY_KEYS.has(k) && v !== undefined)
-        .flatMap(([k, v]) => formatConfigLine(k, v, 6))
+        .flatMap(([k, v]) =>
+          k === 'social' && v && typeof v === 'object' ? formatSocialConfig(v as Record<string, unknown>, 6) : formatConfigLine(k, v, 6),
+        )
       if (lines.length === 0) return `    ${name}: {},`
       return `    ${name}: {\n${lines.join('\n')}\n    },`
     })
@@ -255,6 +297,17 @@ export function envExample(state: ProjectState): string {
       vars.push('# Authentication')
       vars.push('GATEHOUSE_SECRET=')
       vars.push('GATEHOUSE_URL="http://localhost:3000"')
+      const social = (cfg as Record<string, unknown> | undefined)?.social as
+        | Record<string, unknown>
+        | undefined
+      if (social && Object.keys(social).length > 0) {
+        for (const provider of Object.keys(social)) {
+          const key = provider.toUpperCase().replace(/-/g, '_')
+          vars.push(`# ${provider} OAuth — optional, only needed if you enable social login`)
+          vars.push(`${key}_CLIENT_ID=`)
+          vars.push(`${key}_CLIENT_SECRET=`)
+        }
+      }
     }
     if (name === 'courier') {
       if (vars.length > 0) vars.push('')
@@ -290,6 +343,136 @@ export {
 // export const enableTwoFactor = action(async (formData: FormData) => {
 //   return gatehouse.totp.enable(formData.get('password') as string)
 // })
+`
+}
+
+function signInPage(): string {
+  return `'use client'
+
+import { useActionState } from 'react'
+import Link from 'next/link'
+import { signIn } from '@/lib/auth/actions'
+
+type State = { error?: string } | { ok: true }
+
+export default function SignInPage() {
+  const [state, formAction, pending] = useActionState(signIn, undefined)
+
+  return (
+    <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-4 py-16">
+      <h1 className="mb-6 text-2xl font-semibold">Sign in</h1>
+      <form action={formAction} className="flex flex-col gap-3">
+        {state && 'error' in state ? <p className="text-sm text-red-600">{state.error}</p> : null}
+        <label className="flex flex-col gap-1 text-sm">
+          Email
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            className="rounded-md border border-neutral-300 px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Password
+          <input
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            className="rounded-md border border-neutral-300 px-3 py-2"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={pending}
+          className="mt-2 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {pending ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
+      <p className="mt-4 text-sm text-neutral-500">
+        No account yet? <Link className="underline" href="/sign-up">Sign up</Link>
+      </p>
+    </main>
+  )
+}
+`
+}
+
+function signUpPage(): string {
+  return `'use client'
+
+import { useActionState } from 'react'
+import Link from 'next/link'
+import { signUp } from '@/lib/auth/actions'
+
+type State = { error?: string } | { ok: true }
+
+export default function SignUpPage() {
+  const [state, formAction, pending] = useActionState(signUp, undefined)
+
+  return (
+    <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-4 py-16">
+      <h1 className="mb-6 text-2xl font-semibold">Create your account</h1>
+      <form action={formAction} className="flex flex-col gap-3">
+        {state && 'error' in state ? <p className="text-sm text-red-600">{state.error}</p> : null}
+        <label className="flex flex-col gap-1 text-sm">
+          Name
+          <input name="name" type="text" required autoComplete="name" className="rounded-md border border-neutral-300 px-3 py-2" />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Email
+          <input name="email" type="email" required autoComplete="email" className="rounded-md border border-neutral-300 px-3 py-2" />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Password
+          <input
+            name="password"
+            type="password"
+            required
+            autoComplete="new-password"
+            className="rounded-md border border-neutral-300 px-3 py-2"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={pending}
+          className="mt-2 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {pending ? 'Creating account…' : 'Sign up'}
+        </button>
+      </form>
+      <p className="mt-4 text-sm text-neutral-500">
+        Already have an account? <Link className="underline" href="/sign-in">Sign in</Link>
+      </p>
+    </main>
+  )
+}
+`
+}
+
+function dashboardPage(): string {
+  return `import { redirect } from 'next/navigation'
+import { gatehouse } from 'towerjs/gatehouse'
+import { signOut } from '@/lib/auth/actions'
+
+export default async function DashboardPage() {
+  const session = await gatehouse.getSession()
+  if (!session) redirect('/sign-in')
+
+  return (
+    <main className="mx-auto flex w-full max-w-md flex-col px-4 py-16">
+      <h1 className="text-2xl font-semibold">Welcome, {session.user.name}</h1>
+      <p className="mt-1 text-sm text-neutral-500">{session.user.email}</p>
+      <form action={signOut} className="mt-8">
+        <button type="submit" className="rounded-md border border-neutral-300 px-3 py-2 text-sm">
+          Sign out
+        </button>
+      </form>
+    </main>
+  )
+}
 `
 }
 
@@ -341,8 +524,7 @@ function agentsMd(state: ProjectState): string {
     '```bash',
     'pnpm dev        # Start the development server',
     'pnpm build      # Build for production',
-    'pnpm test       # Run tests',
-    'pnpm typecheck  # Type-check the project',
+    'pnpm lint       # Lint with oxlint/ESLint',
     '```',
     '',
     '## Import conventions',
@@ -405,7 +587,7 @@ function agentsMd(state: ProjectState): string {
     '',
     'This project uses Prettier with plugins for import organization and Tailwind CSS class sorting.',
     '```bash',
-    'pnpm format  # Format all files',
+    'pnpm exec prettier --write .  # Format all files',
     '```',
     '',
   )
