@@ -328,22 +328,36 @@ export function envExample(state: ProjectState): string {
 }
 
 function actionsFile(): string {
+  // Emit const aliases instead of re-exporting. Turbopack cannot verify that
+  // re-exported `any`-typed values from a `use server` module are async, which
+  // breaks `next build`. Const aliases are concrete exports Turbopack accepts.
   return `'use server'
 
-export {
-  signIn,
-  signUp,
-  signOut,
-  updateProfile,
-  changePassword,
+import {
+  signIn as _signIn,
+  signUp as _signUp,
+  signOut as _signOut,
+  updateProfile as _updateProfile,
+  changePassword as _changePassword,
 } from 'towerjs/gatehouse/actions'
 
+export const signIn = _signIn
+export const signUp = _signUp
+export const signOut = _signOut
+export const updateProfile = _updateProfile
+export const changePassword = _changePassword
+
 // Add more actions from the registry as needed:
-// createOrganization, updateOrganization, deleteOrganization,
-// inviteMember, removeMember, cancelInvitation, acceptInvitation,
-// revokeSession, revokeOtherSessions,
-// verifyTwoFactor, disableTwoFactor,
-// assignRole, removeRole
+// import {
+//   createOrganization as _createOrganization,
+//   updateOrganization as _updateOrganization,
+//   deleteOrganization as _deleteOrganization,
+//   ...
+// } from 'towerjs/gatehouse/actions'
+//
+// export const createOrganization = _createOrganization
+// export const updateOrganization = _updateOrganization
+// ...
 
 // For actions with custom returns, use \`action\` directly:
 // import { action } from 'towerjs/gatehouse/next'
@@ -365,7 +379,7 @@ import { signIn } from '@/lib/auth/actions'
 type State = { error?: string } | { ok: true }
 
 export default function SignInPage() {
-  const [state, formAction, pending] = useActionState(signIn, undefined)
+  const [state, formAction, pending] = useActionState<State | undefined, FormData>(signIn, undefined)
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-4 py-16">
@@ -419,7 +433,7 @@ import { signUp } from '@/lib/auth/actions'
 type State = { error?: string } | { ok: true }
 
 export default function SignUpPage() {
-  const [state, formAction, pending] = useActionState(signUp, undefined)
+  const [state, formAction, pending] = useActionState<State | undefined, FormData>(signUp, undefined)
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-4 py-16">

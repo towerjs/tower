@@ -4,7 +4,7 @@ type ModuleFactoryFn = (options: Record<string, unknown>) => TowerModule
 
 const MODULE_DEFS: Record<string, { pkg: string; dependsOn: string[]; factoryFn: string }> = {
   vault: { pkg: '@towerjs/vault', dependsOn: [], factoryFn: 'createVaultModule' },
-  gatehouse: { pkg: '@towerjs/gatehouse', dependsOn: ['vault'], factoryFn: 'defineGatehouse' },
+  gatehouse: { pkg: '@towerjs/gatehouse', dependsOn: ['vault', 'courier'], factoryFn: 'defineGatehouse' },
   courier: { pkg: '@towerjs/courier', dependsOn: [], factoryFn: 'defineCourier' },
 }
 
