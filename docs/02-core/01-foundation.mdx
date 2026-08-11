@@ -80,7 +80,7 @@ container.get('key') // → T
 container.registerFactory('key', () => new Instance())
 ```
 
-Modules register themselves during the registration phase (`module.vault`, `module.gatehouse`, etc.).
+Each module registers its service under its bare name (e.g. `vault`, `gatehouse`). The `module.` prefix is used only for the internal lifecycle wrapper and is not part of the public API — resolve services by their bare name: `app.container.get('vault')`.
 
 ## Global Service Registry
 
