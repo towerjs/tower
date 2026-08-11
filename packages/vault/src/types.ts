@@ -40,7 +40,7 @@ export interface VaultModule<TSchema = unknown> extends Omit<Kysely<TSchema>, 't
   readonly db: Vault<TSchema>
   transaction<T>(fn: (trx: Vault<TSchema>) => Promise<T>): Promise<T>
   migrate(): Promise<void>
-  seed(name?: string): Promise<void>
+  seed(name?: string): Promise<{ applied: string[] }>
   close(): Promise<void>
   migrator: Migrator
 }
