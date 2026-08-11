@@ -1,5 +1,8 @@
+import type { SignInResult } from './types.js'
+import { mapUser } from './map-user.js'
+
 // ─── Mapping: Better Auth method → Gatehouse path ─────────────────
-// Every path is a dot-separated sequence of object keys.
+// Every path is a dot-separated sequence of keys.
 //
 // Each entry declares the source better-auth method, the HTTP verb
 // better-auth expects (which decides whether params go in `body` or
@@ -67,7 +70,7 @@ const MAPPINGS: Mapping[] = [
 
   // ── Email ────────────────────────────────────────────────────────
   { path: 'email.sendVerification', source: 'sendVerificationEmail', verb: 'POST' },
-  { path: 'email.verify', source: 'verifyEmail', verb: 'POST' },
+  { path: 'email.verify', source: 'verifyEmail', verb: 'GET', build: (h, token) => query(h, { token }) },
 
   // ── Email OTP ───────────────────────────────────────────────────
   { path: 'email.otp.send', source: 'sendVerificationOTP', verb: 'POST' },
@@ -96,6 +99,14 @@ const MAPPINGS: Mapping[] = [
     build: (h, id, params) => body(h, { id, ...params }),
   },
   { path: 'passkeys.delete', source: 'deletePasskey', verb: 'POST', build: (h, id) => body(h, { id }) },
+  // ── Users ───────────────────────────────────────────────────────
+  { path: 'users.get', source: 'getUser', verb: 'GET', build: (h, id) => query(h, { id }) },
+  { path: 'users.findByEmail', source: 'findUserByEmail', verb: 'GET', build: (h, email) => query(h, { email }) },
+
+  // ── Roles ───────────────────────────────────────────────────────
+  { path: 'roles.assign', source: 'setRole', verb: 'POST' },
+  { path: 'roles.remove', source: 'setRole', verb: 'POST', build: (h, userId) => body(h, { userId, role: '' }) },
+
   // ── Admin ───────────────────────────────────────────────────────
   { path: 'admin.createUser', source: 'createUser', verb: 'POST' },
   { path: 'admin.getUser', source: 'getUser', verb: 'GET', build: (h, userId) => query(h, { id: userId }) },
@@ -158,7 +169,16 @@ const MAPPINGS: Mapping[] = [
   // ── Identities (social providers) ───────────────────────────────
   { path: 'identities.list', source: 'listUserAccounts', verb: 'GET' },
   { path: 'identities.unlink', source: 'unlinkAccount', verb: 'POST' },
-  { path: 'identities.link', source: 'linkSocialAccount', verb: 'POST' },
+  {
+    path: 'identities.link',
+    source: 'linkSocialAccount',
+    verb: 'POST',
+    build: (h, input) =>
+      body(
+        h,
+        typeof input === 'string' ? { provider: input } : { provider: input.provider, callbackURL: input.callbackURL }
+      ),
+  },
   {
     path: 'identities.getAccessToken',
     source: 'getAccessToken',
@@ -272,7 +292,7 @@ const MAPPINGS: Mapping[] = [
     path: 'organizations.invitations.get',
     source: 'getInvitation',
     verb: 'GET',
-    build: (h, invitationId) => query(h, { invitationId }),
+    build: (h, invitationId) => query(h, { id: invitationId }),
   },
   {
     path: 'organizations.invitations.accept',
@@ -390,6 +410,27 @@ export function buildProxiedApi(api: any, headers: Headers) {
  * becomes `query` (GET) or `body` (POST), and methods with positional or
  * string arguments are shaped by their `build` function.
  */
+// Paths whose better-auth response ({ token, user, redirect, url }) should be
+// normalized into a SignInResult. Everything else is returned as-is.
+const SIGN_IN_RESULT_PATHS = new Set([
+  'signIn.email',
+  'signIn.emailOtp',
+  'signIn.phone',
+  'signIn.social',
+  'signUp.email',
+  'email.otp.confirm',
+  'phone.otp.confirm',
+])
+
+function toSignInResult(raw: Record<string, unknown>): SignInResult {
+  return {
+    user: mapUser(raw.user as Record<string, unknown>),
+    token: raw.token as string,
+    redirect: !!raw.redirect,
+    url: (raw.url as string | null) ?? null,
+  }
+}
+
 export function buildApi(api: Record<string, Function>, headers: Headers): Record<string, any> {
   const built: Record<string, any> = {}
 
@@ -407,10 +448,17 @@ export function buildApi(api: Record<string, Function>, headers: Headers): Recor
     }
 
     if (mapping.build) {
-      current[key] = (...args: any[]) => fn(mapping.build!(headers, ...args))
+      const builtFn = (...args: any[]) => fn(mapping.build!(headers, ...args))
+      current[key] = SIGN_IN_RESULT_PATHS.has(mapping.path)
+        ? async (...args: any[]) => toSignInResult((await builtFn(...args)) as Record<string, unknown>)
+        : builtFn
     } else {
       const putIn = mapping.verb === 'GET' ? 'query' : 'body'
-      current[key] = (params?: Record<string, unknown>) => fn({ headers, [putIn]: params ?? {} })
+      const bareFn = (params?: Record<string, unknown>) => fn({ headers, [putIn]: params ?? {} })
+      current[key] = SIGN_IN_RESULT_PATHS.has(mapping.path)
+        ? async (params?: Record<string, unknown>) =>
+            toSignInResult((await bareFn(params)) as Record<string, unknown>)
+        : bareFn
     }
   }
 

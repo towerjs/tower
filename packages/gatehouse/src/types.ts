@@ -23,10 +23,25 @@ export interface GatehouseSession {
   userAgent?: string | null
 }
 
-/** Combined user and session returned by auth operations. */
+/** Combined user and session returned by `getSession()` and `requireUser()`. */
 export interface Session {
   user: GatehouseUser
   session: GatehouseSession
+}
+
+/**
+ * Result returned by sign-in / sign-up / OTP confirmation operations.
+ *
+ * Better Auth's server-side API returns the user, a session token, and redirect
+ * metadata — but not the full session object (id, expiresAt, etc.), because the
+ * session cookie is set in the response and isn't available to read back during
+ * the same request. Use `getSession()` afterwards if you need the full session.
+ */
+export interface SignInResult {
+  user: GatehouseUser
+  token: string
+  redirect: boolean
+  url?: string | null
 }
 
 export interface UpdateUserData {
@@ -242,7 +257,7 @@ export class AuthorizationError extends Error {
 
 export interface EmailOtpSendParams {
   email: string
-  type?: 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
+  type: 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
 }
 
 export interface EmailOtpConfirmParams {
@@ -555,15 +570,15 @@ export interface GatehouseInstance {
   requireUser(): Promise<Session>
 
   signIn: {
-    email(params: { email: string; password: string }): Promise<Session>
-    emailOtp(params: { email: string; otp: string }): Promise<Session>
+    email(params: { email: string; password: string }): Promise<SignInResult>
+    emailOtp(params: { email: string; otp: string }): Promise<SignInResult>
     magicLink(params: { email: string; callbackURL?: string }): Promise<void>
-    phone(params: { phoneNumber: string; code: string }): Promise<Session>
-    social(params: { provider: string; callbackURL?: string; disableRedirect?: boolean }): Promise<Session>
+    phone(params: { phoneNumber: string; code: string }): Promise<SignInResult>
+    social(params: { provider: string; callbackURL?: string; disableRedirect?: boolean }): Promise<SignInResult>
   }
 
   signUp: {
-    email(params: { name: string; email: string; password: string }): Promise<Session>
+    email(params: { name: string; email: string; password: string }): Promise<SignInResult>
   }
 
   sessions: {
@@ -592,14 +607,14 @@ export interface GatehouseInstance {
     verify(params: { token: string }): Promise<void>
     otp: {
       send(params: EmailOtpSendParams): Promise<void>
-      confirm(params: EmailOtpConfirmParams): Promise<Session>
+      confirm(params: EmailOtpConfirmParams): Promise<SignInResult>
     }
   }
 
   phone: {
     otp: {
       send(params: PhoneOtpSendParams): Promise<void>
-      confirm(params: PhoneOtpConfirmParams): Promise<Session>
+      confirm(params: PhoneOtpConfirmParams): Promise<SignInResult>
     }
   }
 
@@ -648,7 +663,7 @@ export interface GatehouseInstance {
   identities: {
     list(): Promise<Identity[]>
     unlink(params: { providerId: string; accountId: string }): Promise<void>
-    link(input: string | { provider: string; redirect?: string }): Promise<void>
+    link(input: string | { provider: string; callbackURL?: string }): Promise<void>
     getAccessToken(providerId: string): Promise<AccessToken>
   }
 

@@ -2,7 +2,6 @@ import type { Kysely } from 'kysely'
 import type {
   GatehouseConfig,
   GatehouseInstance,
-  GatehouseSession,
   GatehouseUser,
   Session,
   ProxyOptions,
@@ -11,6 +10,7 @@ import type {
 import type { EmailOTPOptions } from 'better-auth/plugins'
 import { AuthenticationError } from '../types.js'
 import { buildApi } from '../api-builder.js'
+import { mapUser, mapSession } from '../map-user.js'
 
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
@@ -212,19 +212,19 @@ export class BetterAuthAdapter {
       headers,
       provider: this.auth,
       requireUser: () => this.requireAuth({ headers }),
-
+      can: (params) => this.checkPermission(params),
+      ...api,
+      // Manual service blocks override the generic api surface where present,
+      // so framework-level abstractions (users.findByEmail) are never clobbered
+      // by the generic better-auth passthrough.
       users: {
         get: (id) => this.findUser(id, headers),
         findByEmail: (email) => this.findUserByEmail(email, headers),
       },
-
       roles: {
         assign: (userId, role) => this.setRole(userId, role, headers),
         remove: (userId) => this.removeRole(userId, headers),
       },
-
-      can: (params) => this.checkPermission(params),
-      ...api,
     } as GatehouseInstance
   }
 
@@ -366,33 +366,6 @@ function expandSocial(
     expanded[provider] = { ...opts, clientId, clientSecret }
   }
   return expanded
-}
-
-function mapUser(user: Record<string, unknown>): GatehouseUser {
-  return {
-    id: user.id as string,
-    name: user.name as string,
-    email: user.email as string,
-    emailVerified: user.emailVerified as boolean,
-    image: (user.image as string) ?? null,
-    createdAt: user.createdAt as Date,
-    updatedAt: user.updatedAt as Date,
-    twoFactorEnabled: user.twoFactorEnabled as boolean | undefined,
-    banned: user.banned as boolean | undefined,
-    banReason: user.banReason as string | null | undefined,
-    role: user.role as string | undefined,
-  }
-}
-
-function mapSession(session: Record<string, unknown>): GatehouseSession {
-  return {
-    id: session.id as string,
-    userId: session.userId as string,
-    expiresAt: session.expiresAt as Date,
-    token: session.token as string,
-    ipAddress: session.ipAddress as string | null | undefined,
-    userAgent: session.userAgent as string | null | undefined,
-  }
 }
 
 function matchPath(pathname: string, pattern: string): boolean {

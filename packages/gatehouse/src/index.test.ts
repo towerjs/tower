@@ -103,6 +103,17 @@ function setupBetterAuthApi() {
   const APK = '___tower_app_promise___'
   for (const k of [GK, RCK, CPK, APK]) delete (globalThis as any)[k]
 
+  mocks.mockSignInEmail.mockResolvedValue({
+    user: { id: 'u1', name: 'A', email: 'a@b.com', emailVerified: true },
+    token: 'tok',
+    redirect: false,
+  })
+  mocks.mockSignUpEmail.mockResolvedValue({
+    user: { id: 'u1', name: 'A', email: 'a@b.com', emailVerified: true },
+    token: 'tok',
+    redirect: false,
+  })
+
   const api = {
     getSession: mocks.mockGetSession,
     signInEmail: mocks.mockSignInEmail,
@@ -240,11 +251,17 @@ describe('buildApi', () => {
   it('sends single object params as body for POST methods', async () => {
     const { buildApi } = await import('./api-builder.js')
     const headers = new Headers({ cookie: 'x' })
-    const inner = vi.fn().mockResolvedValue({ ok: true })
+    const inner = vi.fn().mockResolvedValue({
+      user: { id: 'u1', name: 'A', email: 'a@b.com', emailVerified: true },
+      token: 'tok',
+      redirect: false,
+    })
     const gatehouse = buildApi({ signInEmail: inner } as any, headers)
 
-    await gatehouse.signIn.email({ email: 'a@b.com', password: 'pw' })
+    const result = await gatehouse.signIn.email({ email: 'a@b.com', password: 'pw' })
     expect(inner).toHaveBeenCalledWith({ headers, body: { email: 'a@b.com', password: 'pw' } })
+    expect(result.user.email).toBe('a@b.com')
+    expect(result.token).toBe('tok')
   })
 
   it('sends single object params as query for GET methods', async () => {
@@ -561,8 +578,23 @@ describe('gatehouse combined proxy', () => {
     await initModule()
     const { gatehouse, runWithRequest } = await import('./index.js')
 
+    mocks.mockGetSession.mockResolvedValue({
+      user: {
+        id: 'u1',
+        name: 'A',
+        email: 'a@b.com',
+        emailVerified: true,
+        image: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: { id: 's1', userId: 'u1', expiresAt: new Date(), token: 'tok' },
+    })
+
     const result = await runWithRequest({ headers: new Headers() }, async () => {
-      await (gatehouse as any).signIn.email({ email: 'a@b.com', password: 'pw' })
+      const signInResult = await (gatehouse as any).signIn.email({ email: 'a@b.com', password: 'pw' })
+      expect(signInResult.user.email).toBe('a@b.com')
+      expect(signInResult.token).toBe('tok')
       return 'done'
     })
     expect(result).toBe('done')
@@ -774,9 +806,24 @@ describe('runWithRequest', () => {
     const { defineGatehouse, runWithRequest } = await import('./index.js')
     await defineGatehouse({ provider: 'better-auth' } as any).init!(mockCtx())
 
+    mocks.mockGetSession.mockResolvedValue({
+      user: {
+        id: 'u1',
+        name: 'A',
+        email: 'a@b.com',
+        emailVerified: true,
+        image: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: { id: 's1', userId: 'u1', expiresAt: new Date(), token: 'tok' },
+    })
+
     const result = await runWithRequest({ headers: new Headers() }, async () => {
       const { gatehouse } = await import('./index.js')
-      await (gatehouse as any).signIn.email({ email: 'a@b.com', password: 'pw' })
+      const signInResult = await (gatehouse as any).signIn.email({ email: 'a@b.com', password: 'pw' })
+      expect(signInResult.user.email).toBe('a@b.com')
+      expect(signInResult.token).toBe('tok')
       return 'done'
     })
     expect(result).toBe('done')
