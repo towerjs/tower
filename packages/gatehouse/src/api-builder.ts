@@ -70,7 +70,7 @@ const MAPPINGS: Mapping[] = [
 
   // ── Email ────────────────────────────────────────────────────────
   { path: 'email.sendVerification', source: 'sendVerificationEmail', verb: 'POST' },
-  { path: 'email.verify', source: 'verifyEmail', verb: 'GET', build: (h, token) => query(h, { token }) },
+  { path: 'email.verify', source: 'verifyEmail', verb: 'GET' },
 
   // ── Email OTP ───────────────────────────────────────────────────
   { path: 'email.otp.send', source: 'sendVerificationOTP', verb: 'POST' },
