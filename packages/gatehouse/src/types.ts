@@ -567,7 +567,7 @@ export interface GatehouseInstance {
    * Returns the current session or throws AuthenticationError.
    * Use this in route handlers and server actions where a user must be logged in.
    */
-  requireUser(): Promise<Session>
+  requireUser(): Promise<GatehouseUser>
 
   signIn: {
     email(params: { email: string; password: string }): Promise<SignInResult>

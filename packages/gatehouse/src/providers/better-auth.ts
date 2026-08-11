@@ -211,7 +211,7 @@ export class BetterAuthAdapter {
       user: async () => session?.user ?? null,
       headers,
       provider: this.auth,
-      requireUser: () => this.requireAuth({ headers }),
+      requireUser: async () => (await this.requireAuth({ headers })).user,
       can: (params) => this.checkPermission(params),
       ...api,
       // Manual service blocks override the generic api surface where present,
