@@ -3,13 +3,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
   mockReaddir: vi.fn(),
+  mockReadFile: vi.fn(),
+  mockWriteFile: vi.fn(),
   seedCallback: vi.fn(),
   seedOrder: [] as string[],
 }))
 
 vi.mock('node:fs', () => ({
   existsSync: mocks.mockExistsSync,
-  promises: { readdir: mocks.mockReaddir },
+  promises: {
+    readdir: mocks.mockReaddir,
+    readFile: mocks.mockReadFile,
+    writeFile: mocks.mockWriteFile,
+  },
 }))
 
 vi.mock('node:path', () => ({
@@ -49,6 +55,9 @@ describe('runSeeds', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.seedOrder.length = 0
+    // Manifest file does not exist by default (fresh seed folder).
+    mocks.mockExistsSync.mockImplementation((p: string) => !String(p).includes('.tower-seeds.json'))
+    mocks.mockReadFile.mockResolvedValue('{"applied":[]}')
   })
 
   it('returns empty when seed folder does not exist', async () => {
@@ -86,6 +95,7 @@ describe('runSeeds', () => {
 
     expect(mocks.seedCallback).toHaveBeenCalledWith({ some: 'db' })
     expect(result).toEqual({ applied: ['users.ts'] })
+    expect(mocks.mockWriteFile).toHaveBeenCalled()
   })
 
   it('throws when seed file has no function default or named seed export', async () => {
@@ -112,5 +122,17 @@ describe('runSeeds', () => {
 
     expect(mocks.seedOrder).toEqual(['001_first', '002_second'])
     expect(result).toEqual({ applied: ['001_first.ts', '002_second.ts'] })
+  })
+
+  it('skips seeds that were already applied (idempotent)', async () => {
+    mocks.mockExistsSync.mockReturnValue(true)
+    mocks.mockReaddir.mockResolvedValue(['001_first.ts', '002_second.ts'])
+    // Manifest shows 001_first.ts was already applied on a prior run.
+    mocks.mockReadFile.mockResolvedValue('{"applied":["001_first.ts"]}')
+
+    const result = await runSeeds({} as any, { folder: 'seeds' })
+
+    expect(mocks.seedOrder).toEqual(['002_second'])
+    expect(result).toEqual({ applied: ['002_second.ts'] })
   })
 })
