@@ -21,8 +21,9 @@ export async function resolveConfig(): Promise<TowerConfig> {
   if (process.env.TOWER_CONFIG_PATH) {
     try {
       const url = process.env.TOWER_CONFIG_PATH
-      const mod = (await Function('return import("' + url + '")')()) as { default: TowerConfig }
-      if (mod?.default) return mod.default
+      const load = Function('f', 'return import(f)') as (f: string) => Promise<unknown>
+      const mod = (await load(url)) as { default?: TowerConfig }
+      return mod.default ? mod.default : (mod as unknown as TowerConfig)
     } catch {}
   }
 
@@ -46,7 +47,7 @@ async function discoverConfig(): Promise<TowerConfig> {
   } catch {
     throw new Error(
       'Could not find tower.config.\n' +
-        'On Edge Runtime, pass an explicit config to initTower(config), ' +
+        'On Edge Runtime, pass an explicit config to createTower(config), ' +
         'or use create-tower to set up automatic config discovery.'
     )
   }
@@ -67,6 +68,6 @@ async function discoverConfig(): Promise<TowerConfig> {
   throw new Error(
     'Could not find tower.config.ts.\n' +
       'Ensure the file exists in your project root, ' +
-      'or pass an explicit config to initTower(config).'
+      'or pass an explicit config to createTower(config).'
   )
 }
