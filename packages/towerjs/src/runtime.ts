@@ -71,7 +71,7 @@ async function registerModuleServices(app: TowerApp) {
   }
 }
 
-function setAppPromise(promise: Promise<TowerApp>) {
+function setAppPromise(promise: Promise<TowerApp> | undefined) {
   ;(globalThis as any)[APP_PROMISE_KEY] = promise
 }
 
@@ -79,16 +79,28 @@ function getAppPromise(): Promise<TowerApp> | undefined {
   return (globalThis as any)[APP_PROMISE_KEY]
 }
 
+function buildApp(config: TowerConfig): Promise<TowerApp> {
+  return getFoundation().then(async ({ createTowerApp }) => {
+    const app = await createTowerApp(config, getModuleFactoryForConfig(config))
+    await registerModuleServices(app)
+    return app
+  })
+}
+
 export function getTowerApp(): Promise<TowerApp> {
   const existing = getAppPromise()
   if (existing) return existing
 
-  const promise = getFoundation().then(async ({ resolveConfig, createTowerApp }) => {
-    const config = await resolveConfig()
-    const app = await createTowerApp(config as TowerConfig, getModuleFactoryForConfig(config as TowerConfig))
-    await registerModuleServices(app)
-    return app
-  })
+  const promise = getFoundation()
+    .then(async ({ resolveConfig }) => {
+      const config = await resolveConfig()
+      return buildApp(config as TowerConfig)
+    })
+    .catch((err) => {
+      // Don't cache rejected promises — allow retry on next call.
+      setAppPromise(undefined)
+      throw err
+    })
 
   setAppPromise(promise)
   return promise
@@ -98,20 +110,18 @@ export function initTower(config?: TowerBlueprint): Promise<TowerApp> {
   const existing = getAppPromise()
   if (existing) return existing
 
-  const promise = getFoundation().then(async ({ createTowerApp, resolveConfig }) => {
-    let app: TowerApp
-    if (config) {
-      app = await createTowerApp(
-        config as unknown as TowerConfig,
-        getModuleFactoryForConfig(config as unknown as TowerConfig)
-      )
-    } else {
-      const cfg = await resolveConfig()
-      app = await createTowerApp(cfg as TowerConfig, getModuleFactoryForConfig(cfg as TowerConfig))
-    }
-    await registerModuleServices(app)
-    return app
-  })
+  const promise = getFoundation()
+    .then(async ({ resolveConfig }) => {
+      const cfg = config
+        ? (config as unknown as TowerConfig)
+        : await resolveConfig()
+      return buildApp(cfg as TowerConfig)
+    })
+    .catch((err) => {
+      // Don't cache rejected promises — allow retry on next call.
+      setAppPromise(undefined)
+      throw err
+    })
 
   setAppPromise(promise)
   return promise
