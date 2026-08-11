@@ -1,5 +1,5 @@
 import type { VaultModule } from '@towerjs/vault'
-import { createLazyModule } from './lazy-module'
+import { createLazyModule } from './lazy-module.js'
 
 /**
  * Lazy vault proxy.

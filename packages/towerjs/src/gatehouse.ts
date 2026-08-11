@@ -7,7 +7,7 @@ import type {
   Organization,
   OrganizationFull,
 } from '@towerjs/gatehouse'
-import { getTowerApp, importModule } from './runtime'
+import { getTowerApp, importModule } from './runtime.js'
 
 type GatehouseApiMethods = {
   getSession(): Promise<Session | null>
