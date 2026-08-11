@@ -198,9 +198,9 @@ export async function getUserSessions(): Promise<GatehouseSession[]> {
 /**
  * Lists API keys for a given user.
  */
-export async function getApiKeys(userId: string): Promise<ApiKeyInfo[]> {
+export async function getApiKeys(userId: string, options?: ApiKeyListOptions): Promise<ApiKeyInfo[]> {
   return withRequestContext(async (instance) => {
-    const { keys } = await instance.apiKeys.list(userId)
+    const { keys } = await instance.apiKeys.list(userId, options)
     return keys
   })
 }
