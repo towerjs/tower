@@ -8,7 +8,7 @@ import type {
   OrganizationFull,
 } from '@towerjs/gatehouse'
 import { setRequestContextResolver } from '@towerjs/foundation'
-import { getTowerApp, importModule } from '../runtime'
+import { getTowerApp, importModule } from '../runtime.js'
 
 type GatehouseApiMethods = {
   getSession(): Promise<Session | null>
@@ -24,7 +24,7 @@ type GatehouseApiMethods = {
 type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
 
 setRequestContextResolver(async () => {
-  const { headers } = await import('next/headers')
+  const { headers } = await import('next/headers.js')
   const h = await headers()
   return { headers: h }
 })
@@ -37,7 +37,7 @@ setRequestContextResolver(async () => {
  * so the tower app (and its DB connection) is never initialized at build time.
  */
 async function markDynamicAndInit(): Promise<any> {
-  const { headers } = await import('next/headers')
+  const { headers } = await import('next/headers.js')
   await headers()
   await getTowerApp()
   return (await importModule('@towerjs/gatehouse')).gatehouse

@@ -215,7 +215,7 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
                   </p>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">{s.ipAddress || 'Unknown IP'}</p>
                 </div>
-                <form action={revokeSession}>
+                <form action={(formData) => { revokeSession(formData) }}>
                   <input type="hidden" name="token" value={s.token} />
                   <Button type="submit" variant="ghost" size="sm">
                     Revoke
@@ -225,7 +225,7 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
             ))}
           </div>
           <div className="mt-4">
-            <form action={revokeOtherSessions}>
+            <form action={(formData) => { revokeOtherSessions(formData) }}>
               <Button type="submit" variant="secondary" size="sm">
                 Revoke all other sessions
               </Button>

@@ -1,6 +1,6 @@
 'use server'
 
-import { action } from '../next.js'
+import { action, FormActionFn } from '../next.js'
 import { gatehouse } from '@towerjs/gatehouse'
 import { authActions } from './registry.js'
 
@@ -11,7 +11,7 @@ function resolve(path: string) {
   return obj
 }
 
-const built: Record<string, any> = {}
+const built: Record<string, FormActionFn> = {}
 
 for (const def of authActions) {
   if (def.noForm) {
@@ -131,7 +131,7 @@ export const {
   cancelInvitation,
   acceptInvitation,
   rejectInvitation,
-} = built as { [key: string]: any }
+} = built
 
 export const verifyTwoFactor = action.form(async ({ code, trustDevice }: Record<string, string>) => {
   await gatehouse.totp.verify({ code, trustDevice: trustDevice === 'true' })

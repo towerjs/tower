@@ -1,4 +1,4 @@
-import { getTowerApp } from '../runtime'
+import { getTowerApp } from '../runtime.js'
 import {
   action as realAction,
   withGatehouse as realWithGatehouse,
@@ -6,12 +6,19 @@ import {
   POST as realPOST,
 } from '@towerjs/gatehouse/next'
 
-type FormActionFn = {
-  (formData: FormData): Promise<void>
-  (prevState: ActionResult | undefined, formData: FormData): Promise<ActionResult>
-}
+export type ActionResult = { error?: string; ok?: true }
 
-type ActionResult = { error: string } | { ok: true }
+/**
+ * A server action compatible with React 19's `useActionState`.
+ *
+ * The first parameter is either the previous state (when called via
+ * `useActionState`) or the FormData (when the action is used directly as a
+ * form action). The second parameter, when present, is always the FormData.
+ */
+export type FormActionFn = (
+  prevState: ActionResult | undefined | null | FormData,
+  formData?: FormData
+) => Promise<ActionResult | undefined>
 
 async function ensureReady(): Promise<void> {
   await getTowerApp()
