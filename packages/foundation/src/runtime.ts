@@ -20,13 +20,16 @@ export function detectRuntime(): TowerRuntime {
     return { name: 'vercel-serverless', isServerless: true }
   }
 
+  if (hasProcessEnv('CLOUDFLARE_WORKER')) {
+    return { name: 'edge', isServerless: true }
+  }
+
   if (
     hasProcessEnv('AWS_LAMBDA_FUNCTION_NAME') ||
     hasProcessEnv('AWS_EXECUTION_ENV') ||
-    hasProcessEnv('NETLIFY') ||
-    hasProcessEnv('CLOUDFLARE_WORKER')
+    hasProcessEnv('NETLIFY')
   ) {
-    return { name: 'edge', isServerless: true }
+    return { name: 'vercel-serverless', isServerless: true }
   }
 
   return { name: 'node-server', isServerless: false }

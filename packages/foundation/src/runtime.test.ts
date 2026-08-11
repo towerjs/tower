@@ -35,25 +35,25 @@ describe('detectRuntime', () => {
     expect(runtime).toEqual({ name: 'edge', isServerless: true })
   })
 
-  it('detects edge for AWS Lambda', () => {
+  it('detects vercel-serverless for AWS Lambda (not edge)', () => {
     process.env.AWS_LAMBDA_FUNCTION_NAME = 'my-function'
 
     const runtime = detectRuntime()
-    expect(runtime).toEqual({ name: 'edge', isServerless: true })
+    expect(runtime).toEqual({ name: 'vercel-serverless', isServerless: true })
   })
 
-  it('detects edge for AWS_EXECUTION_ENV', () => {
+  it('detects vercel-serverless for AWS_EXECUTION_ENV (not edge)', () => {
     process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs20'
 
     const runtime = detectRuntime()
-    expect(runtime).toEqual({ name: 'edge', isServerless: true })
+    expect(runtime).toEqual({ name: 'vercel-serverless', isServerless: true })
   })
 
-  it('detects edge for Netlify', () => {
+  it('detects vercel-serverless for Netlify (not edge)', () => {
     process.env.NETLIFY = '1'
 
     const runtime = detectRuntime()
-    expect(runtime).toEqual({ name: 'edge', isServerless: true })
+    expect(runtime).toEqual({ name: 'vercel-serverless', isServerless: true })
   })
 
   it('detects edge for Cloudflare Workers', () => {
