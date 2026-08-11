@@ -136,7 +136,7 @@ function setAdapter(adapter: BetterAuthAdapter | undefined) {
 }
 
 /** Returns the adapter's getSession method. Useful for server-side session checks. */
-export function getAuth(): { getSession(request: { headers: Headers }): Promise<Session | null> } {
+export function getAuth(): BetterAuthAdapter {
   if (!getAdapter()) throw new Error('Gatehouse not initialized')
   return getAdapter()!
 }
