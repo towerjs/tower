@@ -115,10 +115,20 @@ export async function createTower(
 
   const app = await createTowerApp(config, getModuleFactory)
 
-  const modules: Record<string, unknown> = {}
-  for (const [name] of Object.entries(config.modules)) {
-    modules[name] = app.container.has(name) ? app.container.get(name) : app.container.get(`module.${name}`)
+  const tower: TowerApp & Record<string, unknown> = {
+    config: app.config,
+    container: app.container,
+    runtime: app.runtime,
+    shutdown: app.shutdown,
   }
 
-  return { ...modules, runtime: app.runtime } as TowerApp & Record<string, unknown>
+  for (const [name] of Object.entries(config.modules)) {
+    if (app.container.has(name)) {
+      tower[name] = app.container.get(name)
+    } else if (app.container.has(`module.${name}`)) {
+      tower[name] = app.container.get(`module.${name}`)
+    }
+  }
+
+  return tower
 }

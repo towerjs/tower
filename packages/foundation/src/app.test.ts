@@ -1,7 +1,8 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 import { registerModule, getModuleFactory } from '@towerjs/blueprint'
 import { resetModuleFactories } from '@towerjs/blueprint/internal'
-import { createTowerApp } from './app.js'
+import { createTowerApp, createTower } from './app.js'
+import { ServiceContainer } from './container.js'
 
 beforeAll(() => {
   registerModule('mock', () => ({
@@ -115,5 +116,40 @@ describe('createTowerApp', () => {
 
     const app = await createTowerApp(modules({ quiet: {}, mock: {} }), getModuleFactory)
     await expect(app.shutdown()).resolves.toBeUndefined()
+  })
+})
+
+describe('createTower', () => {
+  it('returns a real TowerApp with config, container, runtime, shutdown', async () => {
+    const app = await createTower(modules({ mock: {} }), getModuleFactory)
+    expect(app.config).toEqual(modules({ mock: {} }))
+    expect(app.container).toBeInstanceOf(ServiceContainer)
+    expect(app.runtime).toBeDefined()
+    expect(typeof app.shutdown).toBe('function')
+  })
+
+  it('attaches module services by name', async () => {
+    const app = await createTower(modules({ mock: {} }), getModuleFactory)
+    expect((app as any).mock).toEqual({ value: 42 })
+  })
+
+  it('exposes shutdown that runs module shutdown hooks in reverse', async () => {
+    const order: number[] = []
+    registerModule('first', () => ({
+      name: 'first',
+      async shutdown() {
+        order.push(1)
+      },
+    }))
+    registerModule('second', () => ({
+      name: 'second',
+      async shutdown() {
+        order.push(2)
+      },
+    }))
+
+    const app = await createTower(modules({ first: {}, second: {}, mock: {} }), getModuleFactory)
+    await app.shutdown()
+    expect(order).toEqual([2, 1])
   })
 })
