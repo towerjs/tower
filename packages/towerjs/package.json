@@ -24,6 +24,10 @@
       "types": "./dist/gatehouse.d.ts",
       "default": "./dist/gatehouse.js"
     },
+    "./gatehouse/react-server": {
+      "types": "./dist/gatehouse/react-server.d.ts",
+      "default": "./dist/gatehouse/react-server.js"
+    },
     "./gatehouse/actions": {
       "types": "./dist/gatehouse/actions/index.d.ts",
       "default": "./dist/gatehouse/actions/index.js"
@@ -61,7 +65,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b"
+    "build": "rm -rf dist && tsc -b"
   },
   "peerDependencies": {
     "next": "^16"
@@ -76,5 +80,15 @@
     "@towerjs/foundation": "workspace:*",
     "@towerjs/gatehouse": "workspace:*",
     "@towerjs/vault": "workspace:*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyphenzero/tower.git",
+    "directory": "packages/towerjs"
+  },
+  "homepage": "https://github.com/hyphenzero/tower#readme",
+  "engines": {
+    "node": ">=22.6"
   }
 }
