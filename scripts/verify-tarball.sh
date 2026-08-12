@@ -123,12 +123,14 @@ echo ""
 echo "=== Checking for stale artifacts (issue #27) ==="
 STALE=0
 if find "$EXTRACT_DIR/dist" -name "*.tsbuildinfo" 2>/dev/null | grep -q .; then
-  echo "  WARN: tsbuildinfo found in dist (should be excluded from tarball)"
+  echo "  FAIL: tsbuildinfo found in dist (must be excluded from tarball)"
   STALE=1
 fi
 # .map files are acceptable (sourcemaps), but tsbuildinfo is not
 if [ "$STALE" -eq 0 ]; then
   echo "  OK: no stale build artifacts"
+else
+  FAILED=1
 fi
 
 if [ "$FAILED" -eq 0 ]; then

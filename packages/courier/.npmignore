@@ -1,2 +1,1 @@
-*.tsbuildinfo
-*.map
+dist/tsconfig.tsbuildinfo

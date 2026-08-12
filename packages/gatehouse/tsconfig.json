@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "../../.cache/tower/gatehouse.tsbuildinfo",
     "types": ["node"]
   },
   "include": ["src"],
