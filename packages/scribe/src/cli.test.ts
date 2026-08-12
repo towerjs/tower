@@ -6,6 +6,7 @@ const mockSeed = vi.fn()
 const mockClose = vi.fn()
 const hoisted = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
+  mockRealpathSync: vi.fn((p: string) => p),
   mockCreateCommand: vi.fn(),
 }))
 const mockExistsSync = hoisted.mockExistsSync
@@ -55,7 +56,8 @@ vi.mock('jiti', () => ({
 
 vi.mock('node:fs', () => ({
   existsSync: hoisted.mockExistsSync,
-  default: { existsSync: hoisted.mockExistsSync },
+  realpathSync: hoisted.mockRealpathSync,
+  default: { existsSync: hoisted.mockExistsSync, realpathSync: hoisted.mockRealpathSync },
 }))
 
 vi.mock('./commands/create.js', () => ({

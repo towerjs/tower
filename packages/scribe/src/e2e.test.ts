@@ -246,10 +246,12 @@ describe('scaffolding — real file output', () => {
             const towerAddCalls = vi
               .mocked(execa)
               .mock.calls.filter(([bin, args]) => bin === 'pnpm' && Array.isArray(args) && args[0] === 'add')
-            const gatehouseDirectDep = towerAddCalls.some(([, args]) =>
-              (args as string[]).includes('@towerjs/gatehouse')
-            )
-            expect(gatehouseDirectDep).toBe(hasGatehouse)
+            // Selected @towerjs/* modules are direct deps so pnpm's strict
+            // dependency isolation works for real generated applications.
+            for (const pkg of ['@towerjs/gatehouse', '@towerjs/vault', '@towerjs/courier']) {
+              const directDep = towerAddCalls.some(([, args]) => (args as string[]).includes(pkg))
+              expect(directDep).toBe(Boolean(modules[pkg.split('/').pop()!]))
+            }
 
             const edgeDevDep = towerAddCalls.some(
               ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/edge')

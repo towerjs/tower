@@ -15,10 +15,12 @@ export type ActionResult = { error?: string; ok?: true }
  * `useActionState`) or the FormData (when the action is used directly as a
  * form action). The second parameter, when present, is always the FormData.
  */
-export type FormActionFn = (
-  prevState: ActionResult | undefined | null | FormData,
-  formData?: FormData
-) => Promise<ActionResult | undefined>
+export type FormActionFn = {
+  /** Form action signature accepted by Next.js `<form action={...}>`. */
+  (formData: FormData): Promise<void>
+  /** React `useActionState` signature with the previous action state. */
+  (prevState: ActionResult | undefined | null | FormData, formData?: FormData): Promise<ActionResult | undefined>
+}
 
 async function ensureReady(): Promise<void> {
   await getTowerApp()

@@ -113,8 +113,11 @@ export const nextAdapter: FrameworkAdapter = {
     await writeFile(agentsPath, generated + '\n\n' + towerSection)
 
     const towerDeps: string[] = ['towerjs']
-    if (state.modules.gatehouse) {
-      towerDeps.push('@towerjs/gatehouse')
+    // Generated code and Tower's lazy module loader are evaluated by the
+    // consumer's package manager, so every selected module must be a direct
+    // dependency. This is important for pnpm's strict dependency isolation.
+    for (const moduleName of ['vault', 'gatehouse', 'courier']) {
+      if (state.modules[moduleName]) towerDeps.push(`@towerjs/${moduleName}`)
     }
     await execa(pm, [...addCommand(pm).slice(1), ...towerDeps], { cwd: projectDir, stdio: 'inherit' })
 

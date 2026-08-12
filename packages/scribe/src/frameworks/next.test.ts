@@ -426,6 +426,20 @@ describe('nextAdapter.generate', () => {
     })
   })
 
+  it('installs selected vault and courier dependencies directly', async () => {
+    const stateWithModules: ProjectState = {
+      ...state,
+      modules: { vault: { provider: 'pg' }, courier: { email: { provider: 'console' } } },
+    }
+
+    await nextAdapter.generate(stateWithModules, '/target')
+
+    expect(execa).toHaveBeenCalledWith('pnpm', ['add', 'towerjs', '@towerjs/vault', '@towerjs/courier'], {
+      cwd: expect.stringContaining('my-app'),
+      stdio: 'inherit',
+    })
+  })
+
   it('does not install @towerjs/gatehouse without gatehouse', async () => {
     await nextAdapter.generate(state, '/target')
 
@@ -433,6 +447,15 @@ describe('nextAdapter.generate', () => {
       .mocked(execa)
       .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('@towerjs/gatehouse'))
     expect(gatehouseAdd).toBeUndefined()
+  })
+
+  it('does not add product-specific pnpm workspace configuration', async () => {
+    await nextAdapter.generate(state, '/target')
+
+    const workspaceWrite = vi
+      .mocked(writeFile)
+      .mock.calls.find(([path]) => typeof path === 'string' && path.endsWith('pnpm-workspace.yaml'))
+    expect(workspaceWrite).toBeUndefined()
   })
 
   it('does not install @towerjs/edge on node runtime', async () => {

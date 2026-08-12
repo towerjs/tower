@@ -118,7 +118,8 @@ export async function loadApp(configPath?: string): Promise<TowerApp> {
   loadEnvFor(configPath)
   const jiti = createJiti(import.meta.url, { interopDefault: true })
   const config = await jiti.import(configPath)
-  return createTowerApp((config as any).default ?? config, getModuleFactory)
+  const resolvedConfig = (config as any).default ?? config
+  return createTowerApp(resolvedConfig, (name) => getModuleFactory(name, new Set(Object.keys(resolvedConfig.modules))))
 }
 
 /**
@@ -193,7 +194,9 @@ export function helpText(): string[] {
   ]
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+const currentFile = fs.realpathSync(fileURLToPath(import.meta.url))
+const isMain =
+  process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === currentFile
 if (isMain) {
   const [command, ...flags] = process.argv.slice(2)
   run(command, flags).then(
