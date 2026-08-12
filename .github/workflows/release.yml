@@ -22,11 +22,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm check:versions
       - run: pnpm build
 
       - uses: changesets/action@v1
         with:
-          version: pnpm version
+          # `pnpm version` is pnpm's built-in semver command. Explicitly use
+          # `pnpm run` so the repository's Changesets script is executed.
+          version: pnpm run version
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
