@@ -1,45 +1,9 @@
-import { describe, expect, it, beforeAll, afterAll } from 'vitest'
-import { execSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
 import { getModuleFactory } from '@towerjs/blueprint'
 import { createTowerApp } from '@towerjs/foundation'
 import '@towerjs/vault'
 import '@towerjs/gatehouse'
 import '@towerjs/courier'
-
-const ROOT = resolve(import.meta.dirname, '..')
-const COMPOSE_FILE = resolve(ROOT, 'docker-compose.yml')
-const TEST_DB_URL = 'postgres://tower:tower@localhost:5432/tower'
-
-async function ensureTestDatabase(): Promise<void> {
-  if (process.env.DATABASE_URL) return
-  if (!existsSync(COMPOSE_FILE)) return
-
-  try {
-    execSync('docker compose up -d postgres --wait', {
-      cwd: ROOT,
-      stdio: 'pipe',
-      timeout: 60_000,
-    })
-    process.env.DATABASE_URL = TEST_DB_URL
-  } catch {
-    /* Docker unavailable or startup failed — tests will skip */
-  }
-}
-
-async function stopTestDatabase(): Promise<void> {
-  if (!existsSync(COMPOSE_FILE)) return
-  try {
-    execSync('docker compose down --remove-orphans', {
-      cwd: ROOT,
-      stdio: 'pipe',
-      timeout: 30_000,
-    })
-  } catch {
-    /* best effort */
-  }
-}
 
 describe('boot — module composition', () => {
   it('creates an app with no modules', async () => {
@@ -82,14 +46,6 @@ describe('boot — module composition', () => {
 })
 
 describe('boot — full tower', () => {
-  beforeAll(async () => {
-    await ensureTestDatabase()
-  }, 65_000)
-
-  afterAll(async () => {
-    await stopTestDatabase()
-  })
-
   it('initializes vault, gatehouse, and courier', async ({ skip }) => {
     if (!process.env.DATABASE_URL) skip()
     const app = await createTowerApp(

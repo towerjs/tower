@@ -20,8 +20,8 @@ import { defineTower, createTower, createTowerApp, initTower, getTowerApp, tower
 
 defineTower({ modules: { vault: {} } })     // type-safe config (from blueprint)
 createTower()                                // auto-resolves tower.config.ts
-createTowerApp({ modules: {...} })           // explicit config
-initTower({ modules: {...} })                // explicit init, returns TowerApp
+createTowerApp({ modules: {} })            // explicit config
+initTower({ modules: {} })                 // explicit init, returns TowerApp
 getTowerApp()                                // get cached TowerApp singleton
 tower                                        // TowerApp proxy (throws if uninitialized)
 ```

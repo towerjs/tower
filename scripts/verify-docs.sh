@@ -2,9 +2,19 @@
 #
 # Documentation contract test.
 #
-# Extracts TypeScript code blocks from all docs/ .mdx files and verifies they
-# compile against the Tower types. This ensures documentation examples don't
-# silently diverge from the implementation.
+# Extracts TypeScript/TSX code blocks from all docs/ .mdx files and verifies
+# each one compiles against the Tower types. This ensures documented,
+# executable examples don't silently diverge from the implementation.
+#
+# Conventions:
+#   - Blocks are compiled individually (concatenating snippets into one file
+#     would fail on duplicate declarations and mask per-example errors).
+#   - Docs marked as planned ("badge: 'Coming Soon'" or "Status: Planned")
+#     describe target APIs that are not implemented yet — their blocks are
+#     not compiled.
+#   - Illustrative fragments (config shapes, API signature listings) must not
+#     be fenced as ```ts/```tsx — use a plain ``` fence so the checker treats
+#     them as prose, not as an executable example.
 #
 # Usage: bash scripts/verify-docs.sh
 
@@ -22,25 +32,14 @@ trap cleanup EXIT
 
 echo "=== Extracting TypeScript code blocks from docs ==="
 
-# Extract code blocks delimited by ```ts/tsx/typescript ... ```
-# Concatenate them into a single .tsx file for compilation.
-OUTPUT_FILE="$TMP_DIR/docs-examples.tsx"
-echo "// Auto-generated from docs/ — do not edit manually" > "$OUTPUT_FILE"
-echo "import * as React from 'react'" >> "$OUTPUT_FILE"
-echo "import * as towerjs from 'towerjs'" >> "$OUTPUT_FILE"
-echo "import * as vault from 'towerjs/vault'" >> "$OUTPUT_FILE"
-echo "import * as gatehouse from 'towerjs/gatehouse'" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Extract TypeScript code blocks from all .mdx files using Node.js (bash's
-# backtick handling in regex is unreliable, so we write the script to a file).
 EXTRACT_SCRIPT="$TMP_DIR/extract.mjs"
 cat > "$EXTRACT_SCRIPT" << 'NODESCRIPT'
-import { readFileSync, readdirSync, appendFileSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 const docsDir = process.argv[2];
-const outputFile = process.argv[3];
+const blocksDir = process.argv[3];
+mkdirSync(blocksDir, { recursive: true });
 
 const files = [];
 function walk(dir) {
@@ -52,19 +51,29 @@ function walk(dir) {
 }
 walk(docsDir);
 
-let blockCount = 0;
-for (const file of files) {
-  const content = readFileSync(file, 'utf8');
-  const lines = content.split('\n');
-  let inBlock = false;
+function isPlanned(file) {
+  const head = readFileSync(file, 'utf8').split('\n').slice(0, 20).join('\n');
+  return /badge:\s*'Coming Soon'/.test(head) || /Status:\s*Planned/.test(head);
+}
 
-  for (const line of lines) {
+let blockCount = 0;
+let plannedCount = 0;
+for (const file of files) {
+  const planned = isPlanned(file);
+  const lines = readFileSync(file, 'utf8').split('\n');
+  let inBlock = false;
+  let buf = [];
+  let start = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const openMatch = line.match(/^\s*```([a-zA-Z]+)/);
     if (openMatch) {
       const lang = openMatch[1];
       if (/^(ts|tsx|typescript)$/.test(lang)) {
         inBlock = true;
-        appendFileSync(outputFile, '\n// === From ' + file.slice(docsDir.length + 1) + ' ===\n');
+        buf = [];
+        start = i + 1;
       } else {
         inBlock = false;
       }
@@ -73,34 +82,36 @@ for (const file of files) {
 
     if (/^\s*```\s*$/.test(line) && inBlock) {
       inBlock = false;
-      continue;
-    }
-
-    if (inBlock) {
-      appendFileSync(outputFile, line + '\n');
+      if (planned) {
+        plannedCount++;
+        continue;
+      }
+      const name = 'block-' + String(blockCount).padStart(3, '0') + '.tsx';
+      writeFileSync(join(blocksDir, name), buf.join('\n') + '\n');
+      console.log('  ' + name + ' <- ' + file.slice(docsDir.length + 1) + ':' + start);
       blockCount++;
     }
   }
 }
 
-console.log('  Extracted ' + blockCount + ' lines from ' + files.length + ' files');
+console.log('  Extracted ' + blockCount + ' blocks from ' + files.length + ' files'
+  + (plannedCount > 0 ? ' (skipped ' + plannedCount + ' blocks in planned docs)' : ''));
+console.log(blockCount === 0 ? 'NO_BLOCKS' : 'BLOCKS_OK');
 NODESCRIPT
 
-node "$EXTRACT_SCRIPT" "$DOCS_DIR" "$OUTPUT_FILE"
+BLOCKS_DIR="$TMP_DIR/blocks"
+EXTRACT_OUT=$(node "$EXTRACT_SCRIPT" "$DOCS_DIR" "$BLOCKS_DIR")
+echo "$EXTRACT_OUT" | sed '$d'
 
-echo ""
-
-# Check if we extracted any code
-CODE_LINES=$(wc -l < "$OUTPUT_FILE")
-if [ "$CODE_LINES" -le 4 ]; then
-  echo "No TypeScript code blocks found in docs."
+if echo "$EXTRACT_OUT" | grep -q '^NO_BLOCKS$'; then
+  echo ""
+  echo "=== No executable TypeScript blocks found in docs. ==="
   exit 0
 fi
 
+echo ""
 echo "=== Compiling extracted examples ==="
 
-# Create a tsconfig that extends the root config (which has @towerjs/* path
-# mappings) but only checks our extracted examples file.
 # Docs import from bare 'towerjs' and 'towerjs/*' (the package name as users
 # write it), not '@towerjs/*'. Add path mappings so tsc can resolve them.
 node -e "
@@ -124,25 +135,50 @@ const config = {
       '@towerjs/*': [path.join(root, 'packages/*/src/index.ts')]
     }
   },
-  include: ['docs-examples.tsx']
+  include: ['blocks/*.tsx']
 };
 fs.writeFileSync('$TMP_DIR/tsconfig.json', JSON.stringify(config, null, 2));
 "
 
-# Run tsc from the temp dir so relative paths in the examples resolve
-cd "$TMP_DIR"
 TSC="$ROOT/node_modules/.bin/tsc"
 if [ ! -x "$TSC" ]; then
   echo "ERROR: tsc not found at $TSC"
   exit 1
 fi
-if "$TSC" --project "$TMP_DIR/tsconfig.json" --noEmit 2>&1 | head -40; then
+
+ERRORS="$TMP_DIR/errors.txt"
+set +e
+"$TSC" --project "$TMP_DIR/tsconfig.json" --noEmit > "$ERRORS" 2>&1
+TSC_EXIT=$?
+set -e
+
+if [ "$TSC_EXIT" -eq 0 ]; then
   echo ""
   echo "=== DOCS CONTRACT TEST PASSED ==="
-else
-  echo ""
-  echo "=== DOCS CONTRACT TEST FAILED ==="
-  FAILED=1
+  exit 0
 fi
 
+echo ""
+echo "=== DOCS CONTRACT TEST FAILED ==="
+echo ""
+echo "The following code blocks do not compile. Either fix the example or, if"
+echo "the block is an illustrative fragment (config shape / API signature),"
+echo "re-fence it as a plain code block (\`\`\`) instead of \`\`\`ts/\`\`\`tsx."
+echo ""
+
+# Map each compiled block back to its docs location.
+awk '
+  /^block-[0-9]+\.tsx\(/ {
+    file = $0
+    sub(/\(.*/, "", file)
+    print file
+  }
+' "$ERRORS" | sort -u | while read -r name; do
+  echo "--- $name ---"
+  grep -o "^$name([0-9]*,[0-9]*): error TS[0-9]*: .*" "$ERRORS" | while read -r line; do
+    echo "  $line"
+  done
+done
+
+FAILED=1
 exit $FAILED

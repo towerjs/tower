@@ -82,6 +82,13 @@ else
   fail "Tarball verification failed"
 fi
 
+check "6b. Documentation examples"
+if bash scripts/verify-docs.sh >/dev/null 2>&1; then
+  pass "All documented examples compile"
+else
+  fail "Documentation examples fail to compile"
+fi
+
 check "7. Generated app (requires network)"
 echo ""
 echo "  Manual steps — run these and verify each succeeds:"

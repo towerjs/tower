@@ -7,7 +7,7 @@ Organizations let users belong to multiple workspaces, each with its own members
 
 ## Enable
 
-```tsx filename="tower.config.ts"
+``` filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -80,7 +80,7 @@ await gatehouse.organizations.roles.create({
 })
 ```
 
-```tsx
+```
 await gatehouse.organizations.roles.list(organizationId?)
 await gatehouse.organizations.roles.get({ roleName: 'editor', organizationId })
 await gatehouse.organizations.roles.update(roleId, { roleName?, permission? })

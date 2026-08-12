@@ -1,8 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { execSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'url'
+import { describe, it, expect } from 'vitest'
 import { getModuleFactory } from '@towerjs/blueprint'
 import { createTowerApp } from '@towerjs/foundation'
 import type { Vault } from '@towerjs/vault'
@@ -11,49 +7,7 @@ import '@towerjs/vault'
 import '@towerjs/gatehouse'
 import '@towerjs/courier'
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const ROOT = resolve(__dirname, '..')
-const COMPOSE_FILE = resolve(ROOT, 'docker-compose.yml')
-const TEST_DB_URL = 'postgres://tower:tower@127.0.0.1:5432/tower'
-
-async function ensureTestDatabase(): Promise<void> {
-  if (process.env.DATABASE_URL) return
-  if (!existsSync(COMPOSE_FILE)) return
-
-  try {
-    execSync('docker compose up -d postgres --wait', {
-      cwd: ROOT,
-      stdio: 'pipe',
-      timeout: 60_000,
-    })
-    process.env.DATABASE_URL = TEST_DB_URL
-  } catch {
-    /* Docker unavailable or startup failed — tests will skip */
-  }
-}
-
-async function stopTestDatabase(): Promise<void> {
-  if (!existsSync(COMPOSE_FILE)) return
-  try {
-    execSync('docker compose down --remove-orphans', {
-      cwd: ROOT,
-      stdio: 'pipe',
-      timeout: 30_000,
-    })
-  } catch {
-    /* best effort */
-  }
-}
-
 describe('Gatehouse live integration (database boundary)', () => {
-  beforeAll(async () => {
-    await ensureTestDatabase()
-  }, 65_000)
-
-  afterAll(async () => {
-    await stopTestDatabase()
-  })
-
   it('creates a user through the full stack and verifies persistence', async ({ skip }) => {
     if (!process.env.DATABASE_URL) skip()
 

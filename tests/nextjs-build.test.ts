@@ -7,12 +7,8 @@ const EXAMPLE_DIR = resolve(import.meta.dirname, '..', 'examples', 'with-nextjs'
 const ROOT_DIR = resolve(import.meta.dirname, '..')
 const NEXT_DIR = resolve(EXAMPLE_DIR, '.next')
 
-// Only run in CI or when explicitly requested via CI=true
-const runBuildTest = process.env.CI === 'true'
-
 describe('Next.js build acceptance', () => {
   beforeAll(() => {
-    if (!runBuildTest) return
     if (!existsSync(resolve(EXAMPLE_DIR, 'node_modules'))) {
       execSync('pnpm install', { cwd: EXAMPLE_DIR, stdio: 'pipe' })
     }
@@ -20,8 +16,7 @@ describe('Next.js build acceptance', () => {
     execSync('pnpm build', { cwd: ROOT_DIR, stdio: 'pipe' })
   }, 180_000)
 
-  it('builds the example app', ({ skip }) => {
-    if (!runBuildTest) skip()
+  it('builds the example app', () => {
     expect(existsSync(NEXT_DIR)).toBe(true)
     expect(existsSync(resolve(NEXT_DIR, 'build-manifest.json'))).toBe(true)
     expect(existsSync(resolve(NEXT_DIR, 'server'))).toBe(true)

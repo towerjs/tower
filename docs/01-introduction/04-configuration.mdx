@@ -41,7 +41,7 @@ When `createTower()` is called without a config argument, `resolveConfig()` sear
 
 ### Vault
 
-```tsx
+```
 vault: {
   connectionString?: string       // defaults to DATABASE_URL env var
   pool?: {
@@ -59,7 +59,7 @@ Provider auto-detection: `neon` for Neon serverless, `pg` for standard PostgreSQ
 
 ### Gatehouse
 
-```tsx
+```
 gatehouse: {
   provider: 'better-auth'
 
@@ -91,7 +91,7 @@ Social provider credentials resolve from environment variables automatically:
 
 ### Courier
 
-```tsx
+```
 courier: {
   email?: {
     provider: 'console' | 'resend' | 'smtp' | 'ses'

@@ -29,7 +29,7 @@ RESEND_API_KEY=re_...
 
 Gatehouse uses Better Auth's built-in CSRF protection. Configure trusted origins:
 
-```tsx
+```
 gatehouse: {
   trustedOrigins: ['https://example.com'],
 }
@@ -65,7 +65,7 @@ Always serve production sites over HTTPS. Vercel provides this automatically. Fo
 
 Better Auth provides built-in rate limiting:
 
-```tsx
+```
 gatehouse: {
   rateLimit: {
     enabled: true,
