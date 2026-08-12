@@ -61,7 +61,7 @@ echo "=== Verifying exports map ==="
 # Read the exports field from the extracted package.json
 EXPORTS_JSON=$(node -e "console.log(JSON.stringify(require('$EXTRACT_DIR/package.json').exports))")
 
-echo "  Checking $((${SUBPATHS[@]} + 0)) documented subpaths..."
+echo "  Checking ${#SUBPATHS[@]} documented subpaths..."
 for subpath in "${SUBPATHS[@]}"; do
   # Check that the exports map has this subpath
   HAS_EXPORT=$(node -e "
