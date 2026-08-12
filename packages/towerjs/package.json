@@ -65,7 +65,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -b"
+    "build": "rm -rf dist ../../.cache/tower/towerjs.tsbuildinfo && tsc -b"
   },
   "peerDependencies": {
     "next": "^16"

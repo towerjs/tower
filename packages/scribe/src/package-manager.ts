@@ -29,3 +29,9 @@ export function addCommand(pm: PackageManager, dev = false): string[] {
 export function devCommand(pm: PackageManager): string {
   return pm === 'npm' ? 'npm run dev' : `${pm} dev`
 }
+
+export function migrateCommand(pm: PackageManager): string {
+  if (pm === 'npm') return 'npm exec tower migrate'
+  if (pm === 'bun') return 'bunx tower migrate'
+  return `${pm} exec tower migrate`
+}

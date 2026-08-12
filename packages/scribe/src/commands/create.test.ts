@@ -51,6 +51,7 @@ describe('createCommand', () => {
 
     expect(consoleLog).toHaveBeenCalledWith(expect.stringContaining('my-app'))
     expect(consoleLog).toHaveBeenCalledWith(expect.stringContaining('pnpm dev'))
+    expect(consoleLog).toHaveBeenCalledWith(expect.stringContaining('Review .env'))
 
     consoleLog.mockRestore()
     if (originalUserAgent === undefined) {
@@ -58,6 +59,26 @@ describe('createCommand', () => {
     } else {
       process.env.npm_config_user_agent = originalUserAgent
     }
+  })
+
+  it('prints the migration command when Vault is selected', async () => {
+    const originalUserAgent = process.env.npm_config_user_agent
+    process.env.npm_config_user_agent = 'pnpm/10.0.0'
+    mocks.mockCollectProjectState.mockResolvedValue({
+      projectName: 'my-app',
+      framework: 'next',
+      modules: { vault: { provider: 'neon' } },
+      frameworkAnswers: {},
+    })
+    mocks.mockGenerateProject.mockResolvedValue(undefined)
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await createCommand()
+
+    expect(consoleLog).toHaveBeenCalledWith('  pnpm exec tower migrate')
+    consoleLog.mockRestore()
+    if (originalUserAgent === undefined) delete process.env.npm_config_user_agent
+    else process.env.npm_config_user_agent = originalUserAgent
   })
 
   it('re-throws errors from generateProject', async () => {

@@ -1,6 +1,6 @@
 import { collectProjectState } from '../prompts.js'
 import { generateProject } from '../generators/project.js'
-import { detectPackageManager, devCommand } from '../package-manager.js'
+import { detectPackageManager, devCommand, migrateCommand } from '../package-manager.js'
 
 /** CLI handler for `tower create` — prompts for project settings and scaffolds a new app. */
 export async function createCommand(): Promise<void> {
@@ -19,5 +19,7 @@ export async function createCommand(): Promise<void> {
 
   process.stdout.write(' done\n\n')
   console.log(`  cd ${state.projectName}`)
+  console.log(`  Review .env and fill in any provider credentials.`)
+  if (state.modules.vault) console.log(`  ${migrateCommand(pm)}`)
   console.log(`  ${devCommand(pm)}\n`)
 }

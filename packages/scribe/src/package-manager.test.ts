@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectPackageManager, nextAppFlag, addCommand, devCommand } from './package-manager.js'
+import { detectPackageManager, nextAppFlag, addCommand, devCommand, migrateCommand } from './package-manager.js'
 
 describe('detectPackageManager', () => {
   it('detects yarn from npm_config_user_agent', () => {
@@ -64,5 +64,17 @@ describe('devCommand', () => {
     expect(devCommand('pnpm')).toBe('pnpm dev')
     expect(devCommand('yarn')).toBe('yarn dev')
     expect(devCommand('bun')).toBe('bun dev')
+  })
+})
+
+describe('migrateCommand', () => {
+  it('uses the package manager exec command', () => {
+    expect(migrateCommand('pnpm')).toBe('pnpm exec tower migrate')
+    expect(migrateCommand('yarn')).toBe('yarn exec tower migrate')
+  })
+
+  it('uses npm exec and bunx equivalents', () => {
+    expect(migrateCommand('npm')).toBe('npm exec tower migrate')
+    expect(migrateCommand('bun')).toBe('bunx tower migrate')
   })
 })
