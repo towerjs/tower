@@ -16,6 +16,7 @@ vi.mock('@towerjs/blueprint', () => ({
 vi.mock('@towerjs/foundation', () => ({
   createTowerApp: mockCreateTowerApp,
   createTower: vi.fn(),
+  registerConfigProvider: vi.fn(),
   TowerApp: class {},
 }))
 

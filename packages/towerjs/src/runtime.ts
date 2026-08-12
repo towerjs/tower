@@ -1,6 +1,9 @@
 import type { TowerApp, TowerModule, TowerContext, TowerConfig } from '@towerjs/foundation'
 import type { TowerBlueprint } from '@towerjs/blueprint'
 import { registerService } from '@towerjs/foundation'
+import { registerEdgeConfigProvider } from '@towerjs/edge/register'
+
+if (process.env.NODE_ENV !== 'test') void registerEdgeConfigProvider().catch(() => undefined)
 
 type ModuleFactoryFn = (options: Record<string, unknown>) => TowerModule
 

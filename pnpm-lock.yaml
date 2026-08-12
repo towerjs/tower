@@ -150,13 +150,13 @@ importers:
 
   packages/edge:
     dependencies:
+      '@towerjs/blueprint':
+        specifier: workspace:*
+        version: link:../blueprint
       '@towerjs/foundation':
         specifier: workspace:*
         version: link:../foundation
     devDependencies:
-      '@towerjs/blueprint':
-        specifier: workspace:*
-        version: link:../blueprint
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
@@ -243,6 +243,9 @@ importers:
       '@towerjs/courier':
         specifier: workspace:*
         version: link:../courier
+      '@towerjs/edge':
+        specifier: workspace:*
+        version: link:../edge
       '@towerjs/foundation':
         specifier: workspace:*
         version: link:../foundation

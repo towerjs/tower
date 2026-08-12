@@ -10,6 +10,7 @@ vi.mock('@towerjs/foundation', () => ({
   resolveConfig: mocks.mockResolveConfig,
   createTowerApp: mocks.mockCreateTowerApp,
   registerService: mocks.mockRegisterService,
+  registerConfigProvider: vi.fn(),
 }))
 
 import { getTowerApp, initTower } from './runtime.js'

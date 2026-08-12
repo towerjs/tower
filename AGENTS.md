@@ -46,7 +46,7 @@ These rules are enforced by `tests/dependency-rules.test.ts`:
 | `courier`    | `@towerjs/blueprint`, `@towerjs/foundation`                     | vault, gatehouse                        |
 | `gatehouse`  | `@towerjs/blueprint`, `@towerjs/foundation`, `@towerjs/courier` | vault                                   |
 
-The `towerjs` meta-package re-exports from all others and can depend on anything. It holds the composition root: the module-factory registry (`MODULE_DEFS`), the app singleton (`getTowerApp`/`initTower`), and the lazy-initialization orchestration (`runtime.ts`). Per-module feature logic stays in the individual `@towerjs/*` packages; `towerjs` wires them together.
+The `towerjs` meta-package re-exports from all others and can depend on anything. It also owns the composition root: the module-factory registry (`MODULE_DEFS`), the app singleton (`getTowerApp`/`initTower`), and the lazy-initialization orchestration (`runtime.ts`). Per-module feature logic stays in the individual `@towerjs/*` packages; `towerjs` wires them together.
 
 **Never** create circular dependencies between packages. If two packages need to share types, put them in a common dependency (foundation or a new shared package).
 
