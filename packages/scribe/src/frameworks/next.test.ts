@@ -26,6 +26,20 @@ describe('towerConfig', () => {
     expect(result).toContain('modules:')
   })
 
+  it('keeps architecture in tower.config.ts and credentials in the environment contract', () => {
+    const stateWithSocial: ProjectState = {
+      ...baseState,
+      modules: { gatehouse: { social: { google: {} } } },
+    }
+    const config = towerConfig(stateWithSocial)
+    const environment = envExample(stateWithSocial)
+
+    expect(config).toContain("env.optional('GOOGLE_CLIENT_ID')")
+    expect(config).not.toContain('process.env.')
+    expect(environment).toContain('GOOGLE_CLIENT_ID=')
+    expect(environment).toContain('GOOGLE_CLIENT_SECRET=')
+  })
+
   it('generates config with vault module', () => {
     const state: ProjectState = {
       ...baseState,

@@ -14,6 +14,28 @@ pnpm create tower
 
 Follow the prompts to choose your modules — Vault (database), Gatehouse (auth), Courier (email/SMS/push), and more. A fully configured project is scaffolded with `tower.config.ts`, `.env`, auth routes, and database setup.
 
+### Configuration contract
+
+Tower keeps application architecture and environment-specific values separate:
+
+- `tower.config.ts` defines which modules and providers the application uses. It must not contain secrets or environment-specific credentials.
+- `.env` and deployment environment variables provide values such as `DATABASE_URL`, `GATEHOUSE_SECRET`, and provider API keys.
+- `.env.example` is the generated, authoritative contract for the selected modules and providers. It is safe to commit and contains names, hints, and placeholders—not secrets.
+
+Use `env` from `towerjs/blueprint` for validated, lazy environment access in configuration:
+
+```ts
+import { defineTower, env } from 'towerjs/blueprint'
+
+export default defineTower({
+  modules: {
+    vault: { provider: 'neon', connectionString: env.string('DATABASE_URL') },
+  },
+})
+```
+
+Run `tower about` for a diagnostic view of the application, runtime, enabled modules, providers, and whether required environment variables are present. Values are never printed.
+
 Currently supports **Next.js** with more frameworks coming.
 
 ## Modules
@@ -22,7 +44,7 @@ Currently supports **Next.js** with more frameworks coming.
 | -------------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
 | [Foundation](/packages/foundation)     | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
 | [Blueprint](/packages/blueprint)       | Application definition, module registration, context                | —                                   |
-| [Vault](/packages/vault)               | Database ORM with Kysely, migrations, seeds                         | Neon, pg                            |
+| [Vault](/packages/vault)               | PostgreSQL database API with Kysely, migrations, and seeds            | Neon, pg                            |
 | [Gatehouse](/packages/gatehouse)       | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
 | [Courier](/packages/courier)           | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
 | [Scribe](/packages/scribe)             | CLI for scaffolding and managing Tower applications                 | —                                   |

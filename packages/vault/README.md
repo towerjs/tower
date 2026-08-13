@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@towerjs/vault?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/vault)
 
-Database and ORM layer for Tower. Built on [Kysely](https://kysely.dev) with PostgreSQL providers for Neon (HTTP) and standard `pg` connections. Provides migrations, seeds, and connection management.
+Database layer for Tower. Vault's current public query API is built on [Kysely](https://kysely.dev), with PostgreSQL providers for Neon (HTTP) and standard `pg` connections. It provides migrations, seeds, and connection management. A future application-oriented model API may sit above this query API; it will not replace Kysely or remove the low-level escape hatch.
 
 ## Installation
 
@@ -16,12 +16,13 @@ Configure Vault in your `tower.config.ts`:
 
 ```ts
 import { defineTower } from '@towerjs/blueprint'
+import { env } from '@towerjs/blueprint'
 
 export default defineTower({
   modules: {
     vault: {
       provider: 'pg',
-      connectionString: process.env.DATABASE_URL,
+      connectionString: env.string('DATABASE_URL'),
     },
   },
 })
@@ -100,6 +101,7 @@ tower seed
 ```
 tower migrate    — Run pending migrations
 tower seed       — Execute seed files
+tower about      — Diagnose application, modules, runtime, and environment configuration
 ```
 
 ## Edge Runtime

@@ -44,6 +44,14 @@ Runs database seeds for the Vault module.
 tower seed
 ```
 
+### `about`
+
+Shows the current Tower version, configuration path, environment, runtime, enabled modules, providers, and required environment-variable presence. It never prints secret values.
+
+```bash
+tower about
+```
+
 ### `help` / `--version`
 
 `tower help` shows usage; `tower --version` (or `-v`) prints the version.
