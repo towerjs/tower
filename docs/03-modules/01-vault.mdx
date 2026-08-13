@@ -92,11 +92,15 @@ npx tower seed
 
 By default, migrations run before seeds. Skip migrations with `npx tower seed --skip-migrate`.
 
-## Accessing the Raw Kysely Instance
+## Advanced: Using Kysely Functions
 
 ```tsx
-// vault.db is the raw Kysely instance
-const result = await vault.db.selectFrom('users').select(vault.db.fn.countAll().as('count')).executeTakeFirst()
+import { vault } from 'towerjs/vault'
+
+const result = await vault
+  .selectFrom('users')
+  .select(vault.fn.countAll().as('count'))
+  .executeTakeFirst()
 ```
 
 ## Edge Runtime

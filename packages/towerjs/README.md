@@ -23,7 +23,7 @@ import { courier } from 'towerjs/courier'
 const session = await gatehouse.getSession()
 
 // Vault — direct database access
-await vault.db.selectFrom('users').selectAll().execute()
+await vault.selectFrom('users').selectAll().execute()
 
 // Courier — communications
 await courier.email.send({ to: 'user@example.com', subject: 'Hello', text: 'World' })

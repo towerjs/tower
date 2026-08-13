@@ -47,7 +47,7 @@ observatory.metrics.histogram('request_duration_ms', {
 
 ```tsx
 observatory.health.check('database', async () => {
-  await vault.db.selectFrom('users').select('id').limit(1).execute()
+  await vault.selectFrom('users').select('id').limit(1).execute()
 })
 
 observatory.health.check('stripe', async () => {

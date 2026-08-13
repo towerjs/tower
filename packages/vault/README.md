@@ -31,9 +31,9 @@ export default defineTower({
 Run queries:
 
 ```ts
-import { tower } from 'towerjs'
+import { vault } from 'towerjs/vault'
 
-await tower.vault.db.insertInto('users').values({ name: 'Alice', email: 'alice@example.com' }).execute()
+await vault.insertInto('users').values({ name: 'Alice', email: 'alice@example.com' }).execute()
 ```
 
 ## Migrations

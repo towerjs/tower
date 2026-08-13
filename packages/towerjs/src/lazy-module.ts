@@ -7,11 +7,13 @@ import { getTowerApp } from './runtime.js'
  * at module load) and then delegates property access to the real service
  * registered under its bare name (e.g. `vault`, not `module.vault`).
  *
- * The proxy is thenable so `await vault` resolves to the service, and
- * `await vault.db` works for the common "get the db then chain" pattern.
+ * The proxy is thenable so `await vault` resolves to the service.
  * Property access returns real (synchronous) values from the service, so
- * Kysely builder chaining like `vault.db.selectFrom(...).selectAll().execute()`
+ * Kysely builder chaining like `vault.selectFrom(...).selectAll().execute()`
  * works without intermediate awaits.
+ *
+ * All Kysely methods (selectFrom, insertInto, fn, schema, raw, dynamic, etc.)
+ * are forwarded directly.
  */
 export function createLazyModule<T>(moduleName: string): T {
   let resolved: any = undefined

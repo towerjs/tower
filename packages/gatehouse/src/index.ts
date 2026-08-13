@@ -1,7 +1,6 @@
 import type { TowerModule, TowerContext } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
 import { towerContext, getRequestContextResolver } from '@towerjs/foundation'
-import type { Kysely } from 'kysely'
 import type {
   GatehouseConfig,
   GatehouseModule,
@@ -355,9 +354,10 @@ export function defineGatehouse(
 
     async initialize(ctx: TowerContext) {
       const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
-      const vault = ctx.services.get<{ db: Kysely<unknown> }>('vault')
+      const vaultProxy = ctx.services.get<any>('vault')
+      const vault = vaultProxy._kysely
       const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
-      setAdapter(new (BaAdapter as any)(withCourierTransport(config, courier), vault.db) as BetterAuthAdapter)
+      setAdapter(new (BaAdapter as any)(withCourierTransport(config, courier), vault) as BetterAuthAdapter)
       await (getAdapter() as any).init()
     },
 

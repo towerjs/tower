@@ -33,11 +33,15 @@ export type VaultSeedConfig = {
 /**
  * The vault module interface, combining database query methods with Tower lifecycle.
  *
- * Use `.db` to access the database handle directly, `.transaction` for transactions,
- * `.migrate` / `.seed` for database management, and `.close` to release the pool.
+ * Use `vault.selectFrom()`, `vault.insertInto()`, etc. for queries,
+ * `vault.transaction()` for transactions,
+ * `vault.migrate()` / `vault.seed()` for database management, and
+ * `vault.close()` to release the pool.
+ *
+ * All Kysely methods (selectFrom, insertInto, fn, schema, raw, dynamic, etc.)
+ * are forwarded directly — no need for vault.db.
  */
 export interface VaultModule<TSchema = unknown> extends Omit<Kysely<TSchema>, 'transaction'> {
-  readonly db: Vault<TSchema>
   transaction<T>(fn: (trx: Vault<TSchema>) => Promise<T>): Promise<T>
   migrate(): Promise<void>
   seed(name?: string): Promise<{ applied: string[] }>

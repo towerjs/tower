@@ -95,7 +95,7 @@ await gatehouseClient.signUp.email({ name, email, password })
 import { vault } from 'towerjs/vault'
 // Lazy proxy — initializes on first access
 
-await vault.db.selectFrom('users').selectAll().execute()
+await vault.selectFrom('users').selectAll().execute()
 await vault.migrate()
 ```
 

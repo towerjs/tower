@@ -103,8 +103,9 @@ async function validateConnection(pool: any): Promise<void> {
 /**
  * Proxy singleton that dispatches to the initialized vault module.
  *
- * Throws if accessed before Tower has started. Use `vault.db` to access
- * the underlying Kysely instance directly.
+ * Throws if accessed before Tower has started. Use `vault.selectFrom()`,
+ * `vault.insertInto()`, etc. for queries. All Kysely methods (fn, schema,
+ * raw, dynamic, etc.) are forwarded directly — no vault.db needed.
  */
 export const vault: VaultModule = new Proxy({} as VaultModule, {
   get(_, prop) {
@@ -130,7 +131,6 @@ function buildProxyUnconfigured(): VaultModule {
 function buildProxyDb(db: Vault, pool: { end(): Promise<void> }): VaultModule {
   return new Proxy(db as unknown as VaultModule, {
     get(target, prop) {
-      if (prop === 'db') return db
       if (prop === 'close') return () => pool.end()
       if (prop === 'transaction') {
         return <T>(fn: (trx: Vault) => Promise<T>) => db.transaction().execute(fn)
@@ -156,7 +156,6 @@ function buildProxyConfigured(
 ): VaultModule {
   return new Proxy(db as unknown as VaultModule, {
     get(target, prop) {
-      if (prop === 'db') return db
       if (prop === 'migrator') return _migrator
       if (prop === 'migrate') {
         return () => migrateToLatest(db, { folder: migrationFolder })
@@ -237,6 +236,7 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
         })
         _pool = NOOP_POOL
         _vault = await buildProxyForRuntime(db, NOOP_POOL, isEdge, options)
+        ;(_vault as any)._kysely = db
         ctx.services.register('vault', _vault)
         return
       }
@@ -259,6 +259,7 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
       const db: Vault = new Kysely({ dialect: new PostgresDialect({ pool }) })
 
       _vault = await buildProxyForRuntime(db, pool, isEdge, options)
+      ;(_vault as any)._kysely = db
 
       ctx.services.register('vault', _vault)
     },

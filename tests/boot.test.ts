@@ -42,8 +42,8 @@ describe('Tower boot', () => {
     expect(app).toBeDefined()
     expect(app.container.has('vault')).toBe(true)
 
-    const vault = app.container.get<{ db: unknown }>('vault')
-    expect(vault.db).toBeDefined()
+    const vault = app.container.get<{ selectFrom: unknown }>('vault')
+    expect(vault.selectFrom).toBeDefined()
     await app.shutdown()
   })
 
