@@ -6,4 +6,4 @@ All `@towerjs/*`, `towerjs`, and `create-tower` packages share a fixed version â
 
 See [Changesets documentation](https://github.com/changesets/changesets) for more information.
 
-For the first public release, `first-public-release.md` is an empty release marker. It produces no version bump because all publishable packages are already set to `0.1.0`; it exists to drive the initial Changesets workflow. Do not replace it with a patch changeset, or the first release will become `0.1.1`.
+For the first public release, all publishable packages are already set to `0.1.0`. Keep the Changesets directory empty until the initial packages are published; an empty Changeset file makes `changesets/action` stop without publishing. Future Changesets should describe normal version bumps.
