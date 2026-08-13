@@ -32,6 +32,10 @@
     "next": "^16.3.0"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/hyphenzero/tower.git",

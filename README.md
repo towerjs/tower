@@ -36,6 +36,24 @@ export default defineTower({
 
 Run `tower about` for a diagnostic view of the application, runtime, enabled modules, providers, and whether required environment variables are present. Values are never printed.
 
+### Publishing v0.1.0
+
+The first public release publishes nine packages together at `0.1.0`: `towerjs`, `create-tower`, and the seven `@towerjs/*` packages. The example app and the private root package are not published.
+
+Before publishing, verify the initial release contract locally:
+
+```bash
+pnpm check:initial-version
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Then add an `NPM_TOKEN` repository secret with permission to publish the `towerjs` package and the `@towerjs` organization scope. Push the release changes to `main`. The Release workflow uses Changesets to consume the initial release marker, creates or updates the release PR if needed, and publishes the packages after that release commit reaches `main`. `changeset publish` creates the corresponding Git tags and GitHub releases.
+
+The initial Changeset intentionally produces no version bump: every publishable package is already set to `0.1.0`. This is deliberate for the first release. Future Changesets will calculate normal version bumps.
+
 Currently supports **Next.js** with more frameworks coming.
 
 ## Modules
