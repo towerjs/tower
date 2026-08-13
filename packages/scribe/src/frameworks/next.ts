@@ -200,8 +200,8 @@ function formatSocialConfig(social: Record<string, unknown>, indent: number): st
       const key = p.toUpperCase().replace(/-/g, '_')
       const pad = ' '.repeat(indent + 2)
       return (
-        `${pad}...(process.env.${key}_CLIENT_ID ` +
-        `? { ${p}: { clientId: process.env.${key}_CLIENT_ID, clientSecret: process.env.${key}_CLIENT_SECRET! } } : {}),`
+        `${pad}...(env.optional('${key}_CLIENT_ID') ` +
+        `? { ${p}: { clientId: env.string('${key}_CLIENT_ID'), clientSecret: env.string('${key}_CLIENT_SECRET') } } : {}),`
       )
     })
     .join('\n')
@@ -225,7 +225,7 @@ export function towerConfig(state: ProjectState): string {
     })
     .join('\n')
 
-  return `import { defineTower } from "towerjs/blueprint";
+  return `import { defineTower, env } from "towerjs/blueprint";
 
 export default defineTower({
   modules: {

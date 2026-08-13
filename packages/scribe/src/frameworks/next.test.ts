@@ -22,7 +22,7 @@ describe('towerConfig', () => {
   it('generates config with no modules', () => {
     const result = towerConfig(baseState)
 
-    expect(result).toContain('import { defineTower } from "towerjs/blueprint"')
+    expect(result).toContain('import { defineTower, env } from "towerjs/blueprint"')
     expect(result).toContain('modules:')
   })
 
@@ -77,7 +77,7 @@ describe('towerConfig', () => {
 
     expect(result).toContain('credentials: true')
     expect(result).toContain('google')
-    expect(result).toContain('process.env.GOOGLE_CLIENT_ID')
+    expect(result).toContain("env.optional('GOOGLE_CLIENT_ID')")
     expect(result).not.toContain('GOOGLE_CLIENT_ID ? { google: {} }')
   })
 
@@ -91,10 +91,10 @@ describe('towerConfig', () => {
     const result = towerConfig(state)
 
     expect(result).toContain(
-      '...(process.env.GOOGLE_CLIENT_ID ? { google: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } } : {})'
+      "...(env.optional('GOOGLE_CLIENT_ID') ? { google: { clientId: env.string('GOOGLE_CLIENT_ID'), clientSecret: env.string('GOOGLE_CLIENT_SECRET') } } : {})"
     )
     expect(result).toContain(
-      '...(process.env.GITHUB_CLIENT_ID ? { github: { clientId: process.env.GITHUB_CLIENT_ID, clientSecret: process.env.GITHUB_CLIENT_SECRET! } } : {})'
+      "...(env.optional('GITHUB_CLIENT_ID') ? { github: { clientId: env.string('GITHUB_CLIENT_ID'), clientSecret: env.string('GITHUB_CLIENT_SECRET') } } : {})"
     )
   })
 
