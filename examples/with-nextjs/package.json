@@ -28,6 +28,7 @@
     "@types/react-dom": "^19.2.4",
     "pg": "^8.23.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "~7.0.2"
   }
 }
