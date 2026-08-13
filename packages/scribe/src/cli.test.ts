@@ -168,6 +168,19 @@ describe('unknown command', () => {
   })
 })
 
+describe('about', () => {
+  it('reports runtime, modules, providers, and environment status', async () => {
+    process.env.DATABASE_URL = 'postgres://example'
+    const result = await run('about', [], '/fake/tower.config.ts')
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('Application')
+    expect(result.stdout.some((line) => line.includes('Runtime'))).toBe(true)
+    expect(result.stdout.some((line) => line.includes('vault') && line.includes('configured'))).toBe(true)
+    expect(result.stdout.some((line) => line.includes('DATABASE_URL') && line.includes('✓'))).toBe(true)
+    delete process.env.DATABASE_URL
+  })
+})
+
 describe('migrate', () => {
   beforeEach(() => {
     resetMockApp()

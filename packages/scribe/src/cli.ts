@@ -31,7 +31,7 @@ function fail(msg: string): CliResult {
   return { stdout: [], stderr: [msg], exitCode: 1 }
 }
 
-/** Runs a CLI command (create, migrate, seed, help, or version). */
+/** Runs a CLI command (create, about, migrate, seed, help, or version). */
 export async function run(command: string | undefined, flags: string[], configPath?: string): Promise<CliResult> {
   if (command === '--version' || command === '-v') {
     return ok([versionText()])
@@ -44,6 +44,8 @@ export async function run(command: string | undefined, flags: string[], configPa
     case 'create':
       await createCommand()
       return ok([])
+    case 'about':
+      return runAbout(configPath)
     case 'migrate':
       return runMigrate(runSeed, configPath)
     case 'seed':
@@ -56,6 +58,59 @@ export async function run(command: string | undefined, flags: string[], configPa
     default:
       return fail(`Unknown command: ${command}`)
   }
+}
+
+function envStatus(name: string): string {
+  return typeof process !== 'undefined' && process.env[name] ? '✓' : '—'
+}
+
+function moduleProvider(config: Record<string, unknown>): string {
+  const provider = config.provider
+  if (typeof provider === 'string') return provider
+  const email = config.email
+  if (email && typeof email === 'object' && typeof (email as Record<string, unknown>).provider === 'string') {
+    return String((email as Record<string, unknown>).provider)
+  }
+  return 'configured'
+}
+
+async function runAbout(configPath?: string): Promise<CliResult> {
+  const app = await loadApp(configPath)
+  const runtime = app.runtime ?? { name: 'unknown', isServerless: false }
+  const lines = [
+    versionText(),
+    '',
+    'Application',
+    `  Config     ${configPath ?? findConfig()}`,
+    `  Environment ${process.env.NODE_ENV ?? 'development'}`,
+    `  Runtime    ${runtime.name}${runtime.isServerless ? ' (serverless)' : ''}`,
+    '',
+    'Modules',
+  ]
+
+  for (const [name, config] of Object.entries(app.config.modules)) {
+    lines.push(`  ${name.padEnd(11)} ✓ ${moduleProvider(config)}`)
+  }
+  if (Object.keys(app.config.modules).length === 0) lines.push('  (none)')
+
+  lines.push('', 'Environment')
+  const envKeys = new Set<string>()
+  if (app.config.modules.vault) envKeys.add('DATABASE_URL')
+  if (app.config.modules.gatehouse) envKeys.add('GATEHOUSE_SECRET')
+  if (app.config.modules.courier) {
+    const email = app.config.modules.courier.email as Record<string, unknown> | undefined
+    if (email?.provider === 'resend') envKeys.add('RESEND_API_KEY')
+    if (email?.provider === 'smtp') {
+      envKeys.add('SMTP_HOST')
+      envKeys.add('SMTP_USER')
+      envKeys.add('SMTP_PASS')
+    }
+  }
+  for (const key of envKeys) lines.push(`  ${key.padEnd(19)} ${envStatus(key)}`)
+  if (envKeys.size === 0) lines.push('  (no module environment variables)')
+
+  await closeModules(app)
+  return ok(lines)
 }
 
 async function runMigrate(runSeed: boolean, configPath?: string): Promise<CliResult> {
@@ -184,6 +239,7 @@ export function helpText(): string[] {
     '',
     'Commands:',
     '  create           Scaffold a new Tower application',
+    '  about            Show application, module, runtime, and environment diagnostics',
     '  migrate          Run database and auth migrations',
     '  migrate --seed   Run migrations, then seeds',
     '  seed             Run seeds (runs migrations first unless --skip-migrate)',
