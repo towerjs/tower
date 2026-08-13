@@ -183,7 +183,7 @@ describe('scaffolding — real file output', () => {
       await nextAdapter.generate(state, tmpDir)
 
       const config = readFileSync(join(projectDir, 'tower.config.ts'), 'utf-8')
-      expect(config).toMatch(/^import \{ defineTower \} from "towerjs\/blueprint"/)
+      expect(config).toMatch(/^import \{ defineTower, env \} from "towerjs\/blueprint"/)
       expect(config).toMatch(/export default defineTower\(/)
       expect(config).toMatch(/}\);?\s*$/)
       rmSync(projectDir, { recursive: true, force: true })

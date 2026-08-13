@@ -55,25 +55,14 @@ export const nextAdapter: FrameworkAdapter = {
     if (isEdge) {
       await writeFile(join(projectDir, 'next.config.ts'), nextConfig())
     }
-    await writeFile(join(projectDir, '.env.example'), envExample(state))
-    if (state.modules.gatehouse || state.modules.vault) {
-      const envLines: string[] = []
-      if (state.modules.gatehouse) {
-        envLines.push(
-          `# Authentication — auto-generated during setup`,
-          `GATEHOUSE_SECRET="${randomBytes(32).toString('base64')}"`,
-          `GATEHOUSE_URL="http://localhost:3000"`
-        )
-      }
-      if (state.modules.vault) {
-        if (envLines.length > 0) envLines.push(``)
-        envLines.push(
-          ...vaultEnvHints(state.modules.vault?.brand as string | undefined),
-          `DATABASE_URL="postgres://user:password@localhost:5432/tower"`
-        )
-      }
-      envLines.push(``)
-      await writeFile(join(projectDir, '.env'), envLines.join('\n'))
+    const environmentContract = envExample(state)
+    await writeFile(join(projectDir, '.env.example'), environmentContract)
+    if (Object.keys(state.modules).length > 0) {
+      const localEnv = environmentContract.replace(
+        /^GATEHOUSE_SECRET=$/m,
+        `GATEHOUSE_SECRET="${randomBytes(32).toString('base64')}"`
+      )
+      await writeFile(join(projectDir, '.env'), localEnv)
     }
 
     if (state.modules.gatehouse) {
