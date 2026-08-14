@@ -18,6 +18,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -88,5 +89,11 @@ jobs:
           createGithubReleases: ${{ steps.release.outputs.create-releases }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Publishing uses npm trusted publishing (OIDC): no NPM_TOKEN is
+          # stored. Each package must already exist on the registry with a
+          # trusted publisher configured for hyphenzero/tower + release.yml
+          # before the automated workflow can publish it (npm requires the
+          # package to exist first). The initial publish is therefore done
+          # manually from a local machine with interactive npm login (2FA),
+          # then the trusted publisher is configured on npmjs.com. pnpm 11+
+          # performs the OIDC exchange automatically.

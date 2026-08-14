@@ -117,8 +117,8 @@ Details:
 
 - Publishing only runs when the push is a `release: version packages` merge (or an explicit `workflow_dispatch` run with `force-publish`). Unrelated pushes to `main` never trigger a publish.
 - `pnpm version` applies changesets and then runs `pnpm install` so the pnpm lockfile stays in sync with the version bumps; `pnpm release` verifies lockstep versions with `check:versions`, builds, and runs `changeset publish`.
-- The `@towerjs` npm scope must be owned by the account backing `NPM_TOKEN`; otherwise `changeset publish` fails with `E404 Not Found`.
-- The first release needs no special handling — the initial `release: version packages` merge publishes automatically (or run the workflow manually with `force-publish` if there are no changesets yet).
+- The `@towerjs` npm scope must be owned by the account that performs the manual first publish; otherwise publishing fails with `E404 Not Found`.
+- The **first** release is manual: npm only allows configuring a trusted publisher for a package that already exists, so each new package is published once from a local machine (interactive `npm publish`, 2FA) before its trusted publisher can be configured on npmjs.com for `hyphenzero/tower` + `release.yml` (allowed action `npm publish`). The workflow declares `id-token: write` so that after bootstrapping, `changeset publish` → `pnpm publish` publishes tokenlessly via OIDC automatically (pnpm 11+ does the exchange) — a `release: version packages` merge publishes automatically (or run the workflow manually with `force-publish`). Provenance attestations are only generated once the repository is public.
 
 **⚠️ Critical: Never run `pnpm release`, publish to npm, push release tags, or create GitHub releases yourself unless the user explicitly instructs you to do so and confirms.** Publishing to npm is irreversible — a mistaken release would publish all packages to the public registry. The human gate on automated releases is merging the version PR or manually triggering the workflow; always wait for explicit, confirmed user instruction before running any release commands.
 
