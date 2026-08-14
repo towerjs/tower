@@ -48,7 +48,7 @@ function collectSourceFiles(pkgDir: string): string[] {
       const full = resolve(dir, entry.name)
       if (entry.isDirectory()) {
         walk(full)
-      } else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+      } else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts') && !entry.name.endsWith('.test-d.ts')) {
         files.push(full)
       }
     }
