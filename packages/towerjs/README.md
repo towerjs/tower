@@ -43,7 +43,6 @@ await app.shutdown()
 
 | Export           | Description                                                      |
 | ---------------- | ---------------------------------------------------------------- |
-| `tower`          | Lazy `TowerApp` proxy — exposes `config`, `container`, `runtime` |
 | `initTower`      | Programmatic initialization (with optional config)               |
 | `getTowerApp`    | Async access to the initialized `TowerApp`                       |
 | `createTower`    | Initialization helper from `@towerjs/foundation`                 |
@@ -51,7 +50,7 @@ await app.shutdown()
 | `defineTower`    | Configuration helper from `@towerjs/blueprint`                   |
 | `TowerApp`       | Type for the initialized Tower object                            |
 
-`tower` is a lazy proxy — the app (and its `tower.config.ts` discovery) initializes on first use. For async initialization, await `getTowerApp()` first.
+Each subpath import initializes the Tower app (and its `tower.config.ts` discovery) on first use. For async initialization, await `getTowerApp()` first.
 
 ## Subpaths
 
