@@ -1,6 +1,6 @@
 # Tower
 
-[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Status](https://img.shields.io/badge/status-alpha-yellow?style=for-the-badge&labelColor=000)](#status)
+[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md)
 
 Tower is the composable, monolithic stack for JavaScript applications. It gives you a consistent architecture across routing, databases, authentication, realtime, jobs, storage, billing, search, and observability — choose the modules you need, and the providers behind them.
 
@@ -14,45 +14,46 @@ pnpm create tower
 
 Follow the prompts to choose your modules — Vault (database), Gatehouse (auth), Courier (email/SMS/push), and more. A fully configured project is scaffolded with `tower.config.ts`, `.env`, auth routes, and database setup.
 
-### Configuration contract
+## What it looks like
 
-Tower keeps application architecture and environment-specific values separate:
-
-- `tower.config.ts` defines which modules and providers the application uses. It must not contain secrets or environment-specific credentials.
-- `.env` and deployment environment variables provide values such as `DATABASE_URL`, `GATEHOUSE_SECRET`, and provider API keys.
-- `.env.example` is the generated, authoritative contract for the selected modules and providers. It is safe to commit and contains names, hints, and placeholders—not secrets.
-
-Use `env` from `towerjs/blueprint` for validated, lazy environment access in configuration:
+Tower configures itself in one file and keeps environment-specific values out:
 
 ```ts
+// tower.config.ts
 import { defineTower, env } from 'towerjs/blueprint'
 
 export default defineTower({
   modules: {
     vault: { provider: 'neon', connectionString: env.string('DATABASE_URL') },
+    gatehouse: { provider: 'better-auth' },
+    courier: { email: { provider: 'resend', apiKey: env.string('RESEND_API_KEY') } },
   },
 })
 ```
 
-Run `tower about` for a diagnostic view of the application, runtime, enabled modules, providers, and whether required environment variables are present. Values are never printed.
+Then import the modules you need, anywhere in your app:
 
-### Publishing v0.1.0
+```ts
+// src/app/api/users/route.ts
+import { vault } from 'towerjs/vault'
+import { gatehouse } from 'towerjs/gatehouse'
 
-The first public release publishes nine packages together at `0.1.0`: `towerjs`, `create-tower`, and the seven `@towerjs/*` packages. The example app and the private root package are not published.
-
-Before publishing, verify the initial release contract locally:
-
-```bash
-pnpm check:initial-version
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
+export async function GET() {
+  const session = await gatehouse.getSession()
+  const users = await vault.selectFrom('user').selectAll().execute()
+  return Response.json({ session, users })
+}
 ```
 
-Then add an `NPM_TOKEN` repository secret with permission to publish the `towerjs` package and the `@towerjs` organization scope. Push the release changes to `main`. The Release workflow uses Changesets to consume the initial release marker, creates or updates the release PR if needed, and publishes the packages after that release commit reaches `main`. `changeset publish` creates the corresponding Git tags and GitHub releases.
+Each module is lazy-initialized, provider-agnostic, and works alongside your framework — not instead of it.
 
-The initial release has no Changeset file: every publishable package is already set to `0.1.0`, so the Release workflow publishes those unpublished versions without calculating a bump. Future Changesets will calculate normal version bumps.
+### Configuration contract
+
+- `tower.config.ts` defines which modules and providers the application uses. It must not contain secrets or environment-specific credentials.
+- `.env` and deployment environment variables provide values such as `DATABASE_URL`, `GATEHOUSE_SECRET`, and provider API keys.
+- `.env.example` is the generated, authoritative contract for the selected modules and providers. It is safe to commit and contains names, hints, and placeholders — not secrets.
+
+Run `tower about` for a diagnostic view of the application, runtime, enabled modules, providers, and whether required environment variables are present. Values are never printed.
 
 Currently supports **Next.js** with more frameworks coming.
 

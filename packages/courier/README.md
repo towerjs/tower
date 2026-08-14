@@ -31,15 +31,15 @@ export default defineTower({
 Send messages:
 
 ```ts
-import { tower } from 'towerjs'
+import { courier } from 'towerjs/courier'
 
-await tower.courier.email.send({
+await courier.email.send({
   to: 'user@example.com',
   subject: 'Welcome!',
   text: 'Hello from Tower',
 })
 
-await tower.courier.sms.send({
+await courier.sms.send({
   to: '+1234567890',
   body: 'Your code is 123456',
 })
@@ -74,8 +74,9 @@ Courier renders React email templates natively:
 
 ```tsx
 import WelcomeEmail from './emails/welcome.tsx'
+import { courier } from 'towerjs/courier'
 
-await tower.courier.email.send({
+await courier.email.send({
   to: 'user@example.com',
   subject: 'Welcome!',
   react: <WelcomeEmail name="Alice" />,

@@ -31,9 +31,9 @@ export default defineTower({
 Access auth in your application:
 
 ```ts
-import { tower } from 'towerjs'
+import { gatehouse } from 'towerjs/gatehouse'
 
-const session = await tower.gatehouse.getSession()
+const session = await gatehouse.getSession()
 if (session) {
   console.log(session.user.email)
 }
