@@ -157,6 +157,29 @@ export const Gatehouse = {
     if (!getAdapter()) throw new Error('Gatehouse not initialized')
     return getAdapter()!.from(request)
   },
+
+  /**
+   * Creates a per-request Gatehouse instance from headers.
+   * Use this in React Server Components where `headers()` is available.
+   *
+   * @example
+   * ```ts
+   * // app/dashboard/page.tsx
+   * import { headers } from 'next/headers'
+   * import { gatehouse } from 'towerjs/gatehouse'
+   *
+   * export default async function DashboardPage() {
+   *   const gh = await gatehouse.fromHeaders(await headers())
+   *   const session = await gh.getSession()
+   *   // ...
+   * }
+   * ```
+   */
+  fromHeaders(headers: Headers): Promise<GatehouseInstance> {
+    if (!getAdapter()) throw new Error('Gatehouse not initialized')
+    return getAdapter()!.from({ headers })
+  },
+
   migrate(): Promise<void> {
     if (!getAdapter()) throw new Error('Gatehouse not initialized')
     return getAdapter()!.migrate()
@@ -270,6 +293,12 @@ async function requestRequireUser(): Promise<GatehouseUser> {
  * (`getSession`, `session`, `user`, `requireUser`) use the registered
  * framework adapter to resolve the request context.
  */
+function notInitialized(prop: string) {
+  return () => {
+    throw new Error(`gatehouse.${prop}() called before Gatehouse was initialized. Ensure tower.config.ts includes gatehouse module and Tower is started.`)
+  }
+}
+
 export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
   get(_, prop) {
     const instance = towerContext.get<GatehouseInstance>('gatehouse')
@@ -292,9 +321,11 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
       }
     }
 
+    if (prop === 'from') return getAdapter() ? (request: any) => getAdapter()!.from(request) : notInitialized('from')
+    if (prop === 'fromHeaders') return getAdapter() ? (headers: Headers) => getAdapter()!.from({ headers }) : notInitialized('fromHeaders')
+    if (prop === 'migrate') return getAdapter() ? () => getAdapter()!.migrate() : notInitialized('migrate')
+
     if (getAdapter()) {
-      if (prop === 'from') return (request: any) => getAdapter()!.from(request)
-      if (prop === 'migrate') return () => getAdapter()!.migrate()
       if (prop === 'provider') return getAdapter()!.provider
       if (prop === 'routes') return getAdapter()!.routes
 
@@ -371,6 +402,10 @@ export function defineGatehouse(
 
     async from(request: Request | { headers: Headers }) {
       return getAdapter()!.from(request)
+    },
+
+    async fromHeaders(headers: Headers) {
+      return getAdapter()!.from({ headers })
     },
 
     proxy(options?: ProxyOptions) {

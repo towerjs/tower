@@ -732,6 +732,8 @@ export interface GatehouseModule {
 
   from(request: Request | { headers: Headers }): Promise<GatehouseInstance>
 
+  fromHeaders(headers: Headers): Promise<GatehouseInstance>
+
   proxy(options?: ProxyOptions): ProxyResult
 
   migrate(): Promise<void>

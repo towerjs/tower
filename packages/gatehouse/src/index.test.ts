@@ -602,9 +602,10 @@ describe('gatehouse combined proxy', () => {
   })
 
   it('throws when uninitialized', async () => {
-    const { gatehouse, ContextRequiredError } = await import('./index.js')
-    expect(() => (gatehouse as any).from).toThrow(ContextRequiredError)
-    expect(() => (gatehouse as any).migrate).toThrow(ContextRequiredError)
+    const { gatehouse, _ContextRequiredError } = await import('./index.js')
+    // from/migrate return functions that throw Error when called (not ContextRequiredError)
+    expect(() => (gatehouse as any).from()).toThrow('gatehouse.from() called before Gatehouse was initialized')
+    expect(() => (gatehouse as any).migrate()).toThrow('gatehouse.migrate() called before Gatehouse was initialized')
     expect(typeof (gatehouse as any).proxy).toBe('function')
     const result = (gatehouse as any).proxy()
     expect(result).toHaveProperty('handler')
