@@ -9,7 +9,7 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "exclude": ["**/*.test.ts"],
+  "exclude": ["**/*.test.ts", "**/*.test-d.ts"],
   "references": [
     { "path": "../foundation" },
     { "path": "../vault" },
