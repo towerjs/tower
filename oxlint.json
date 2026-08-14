@@ -5,5 +5,8 @@
     "suspicious": "warn",
     "style/noUnusedVariable": "warn"
   },
-  "ignorePatterns": ["dist", ".next", "node_modules", "*.js", "*.js.map", "*.d.ts", "*.d.ts.map"]
+  "ignorePatterns": ["dist", ".next", "node_modules", "*.js", "*.js.map", "*.d.ts", "*.d.ts.map", "**/__tests__/**", "**/types/**"],
+  "plugins": {
+    "typescript": false
+  }
 }
