@@ -1,6 +1,6 @@
 # Tower
 
-[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md)
+[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Tests](https://img.shields.io/github/actions/workflow/status/hyphenzero/tower/ci.yml?style=for-the-badge&labelColor=000&label=tests)](https://github.com/hyphenzero/tower/actions/workflows/ci.yml)
 
 Tower is the composable, monolithic stack for JavaScript applications. It gives you a consistent architecture across routing, databases, authentication, realtime, jobs, storage, billing, search, and observability — choose the modules you need, and the providers behind them.
 
