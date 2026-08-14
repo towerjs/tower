@@ -21,6 +21,10 @@ export default withTowerEdge({})
 
 `withTowerEdge` bundles your `tower.config.ts` via webpack/Turbopack aliases so Tower can discover it at runtime in Edge Functions, Middleware, and other serverless environments.
 
+## Runtime notes
+
+Gatehouse (auth) currently requires a Node.js-compatible runtime and does not work in Vercel Edge or Cloudflare Workers. Vault with Neon and Courier with HTTP providers work in edge runtimes. Edge support for Gatehouse is planned for v0.2.0.
+
 ## Included in
 
 - [towerjs](https://www.npmjs.com/package/towerjs) — meta-package

@@ -138,6 +138,19 @@ Framework-specific code lives in `packages/*/src/frameworks/`. Currently only Ne
 
 When adding a new framework (e.g., Express, Hono), create a new adapter file in each package's `frameworks/` directory.
 
+## Edge Runtime Limitations
+
+Tower is designed for portable application architecture across Node.js, serverless, and edge environments. However, the current Gatehouse implementation (which wraps Better Auth) requires Node.js-compatible runtime APIs (`headers()`, `cookies()` from Next.js) for session/cookie handling. This means:
+
+- **Gatehouse** works in Node.js and Vercel Serverless, but **not** in Vercel Edge or Cloudflare Workers.
+- **Vault** with Neon provider works in all runtimes (including Edge).
+- **Courier** with HTTP providers (Resend, SES, SMTP, Twilio, Web Push) works in all runtimes.
+- **Foundation**, **Blueprint**, **Scribe** (CLI), **Edge** adapter are runtime-agnostic.
+
+Edge support for Gatehouse is planned for v0.2.0 via a custom adapter that doesn't rely on Next.js runtime-specific APIs.
+
+When writing application code, use the Tower APIs (`gatehouse.getSession()`, `vault.selectFrom()`, etc.) — the runtime/provider adapter layer handles the differences. Do not write runtime-specific branches in application code.
+
 ## Testing
 
 - Unit tests: `packages/*/src/**/*.test.ts` — run via `pnpm test`
