@@ -15,8 +15,8 @@
     "check:versions": "node scripts/check-release-versions.mjs",
     "check:initial-version": "node scripts/check-release-versions.mjs --initial",
     "changeset": "changeset",
-    "version": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "version": "changeset version && pnpm install",
+    "release": "pnpm check:versions && pnpm build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",

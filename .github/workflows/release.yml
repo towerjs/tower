@@ -4,13 +4,28 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      force-publish:
+        description: >-
+          Publish the current main branch to npm even when the push was not a
+          "release: version packages" merge. Used for the initial release or to
+          retry a failed publish.
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -27,14 +42,50 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm check:versions
-      - run: pnpm build
+
+      - name: Decide whether to publish
+        id: release
+        env:
+          FORCE_PUBLISH: ${{ github.event.inputs.force-publish || 'false' }}
+        run: |
+          # `changesets/action` publishes on any push to main that has no
+          # changesets. That would attempt a publish on every unrelated push and,
+          # before the first release, could publish the initial version by
+          # accident. Publishing is therefore only enabled when this push is the
+          # merge of the "release: version packages" PR (detected via the commit
+          # message on HEAD or one of its parents, which covers squash, rebase,
+          # and merge-commit merges) or when the workflow was triggered manually
+          # with force-publish=true.
+          version_merge="false"
+          head_msg="$(git log -1 --pretty=%s)"
+          if [ "$head_msg" = "release: version packages" ]; then
+            version_merge="true"
+          fi
+          for parent in $(git log -1 --pretty=%P); do
+            if [ "$(git log -1 "$parent" --pretty=%s)" = "release: version packages" ]; then
+              version_merge="true"
+            fi
+          done
+
+          if [ "$version_merge" = "true" ] || [ "$FORCE_PUBLISH" = "true" ]; then
+            echo "publish=pnpm run release" >> "$GITHUB_OUTPUT"
+            echo "create-releases=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=" >> "$GITHUB_OUTPUT"
+            echo "create-releases=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: changesets/action@v1
         with:
           # `pnpm version` is pnpm's built-in semver command. Explicitly use
           # `pnpm run` so the repository's Changesets script is executed.
           version: pnpm run version
-          publish: pnpm release
+          # Empty when this push is not a version-packages merge, so the action
+          # only opens/updates the version PR and never attempts to publish.
+          publish: ${{ steps.release.outputs.publish }}
+          commit: "release: version packages"
+          title: "release: version packages"
+          createGithubReleases: ${{ steps.release.outputs.create-releases }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

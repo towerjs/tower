@@ -97,8 +97,8 @@ pnpm format       # Format with Prettier
 pnpm clean        # Remove all dist directories
 pnpm check:deps   # Validate dependency rules across packages
 pnpm changeset    # Create a new changeset for release
-pnpm version      # Apply changesets and bump versions
-pnpm release      # Build, publish to npm, and create GitHub release
+pnpm version      # Apply changesets, bump versions, update changelogs, re-sync lockfile
+pnpm release      # Verify lockstep versions, build, and publish to npm
 ```
 
 Always prefer `pnpm build` over `turbo build` and `pnpm test` over `vitest run`. The package.json scripts are the canonical interface.
@@ -107,13 +107,20 @@ The `pnpm build` pipeline runs monorepo packages first (via Turborepo), then the
 
 ### Release workflow
 
-1. `pnpm changeset` — select bumped packages and describe changes
-2. `pnpm version` — applies changesets, bumps versions, updates changelogs
-3. `pnpm release` — builds all packages and publishes to npm
+Releases are automated by Changesets in CI. The flow is:
 
-All changesets should be committed before running `pnpm version`. After release, push the generated version bump commit and tag.
+1. `pnpm changeset` — select bumped packages and describe changes, then commit and push the changeset.
+2. The **Release** GitHub Action (`.github/workflows/release.yml`) opens or updates a `release: version packages` PR on `main` whenever changesets are present.
+3. Merging that PR publishes the bumped versions to npm, pushes the git tags (e.g. `@towerjs/gatehouse@0.2.0`), and creates GitHub releases from the package changelogs.
 
-**⚠️ Critical: Never publish to npm, create a GitHub release, or tag a release on GitHub unless the user explicitly instructs you to do so and confirms.** Publishing to npm is irreversible — a mistaken release would publish all packages to the public registry. Always wait for explicit, confirmed user instruction before running any release commands.
+Details:
+
+- Publishing only runs when the push is a `release: version packages` merge (or an explicit `workflow_dispatch` run with `force-publish`). Unrelated pushes to `main` never trigger a publish.
+- `pnpm version` applies changesets and then runs `pnpm install` so the pnpm lockfile stays in sync with the version bumps; `pnpm release` verifies lockstep versions with `check:versions`, builds, and runs `changeset publish`.
+- The `@towerjs` npm scope must be owned by the account backing `NPM_TOKEN`; otherwise `changeset publish` fails with `E404 Not Found`.
+- The first release needs no special handling — the initial `release: version packages` merge publishes automatically (or run the workflow manually with `force-publish` if there are no changesets yet).
+
+**⚠️ Critical: Never run `pnpm release`, publish to npm, push release tags, or create GitHub releases yourself unless the user explicitly instructs you to do so and confirms.** Publishing to npm is irreversible — a mistaken release would publish all packages to the public registry. The human gate on automated releases is merging the version PR or manually triggering the workflow; always wait for explicit, confirmed user instruction before running any release commands.
 
 ## TypeScript
 
