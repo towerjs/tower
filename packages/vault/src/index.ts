@@ -138,7 +138,7 @@ function buildProxyDb(db: Vault, pool: { end(): Promise<void> }): VaultModule {
       if (prop === 'migrate' || prop === 'migrator' || prop === 'seed') {
         return () => {
           throw new Error(
-            'Migrations and seeds are not available on Edge Runtime. Run them locally or in a Node.js environment.'
+            'Migrations and seeds are not available on Edge Runtime. Run them locally or in a Node.js environment with `tower migrate`.'
           )
         }
       }
