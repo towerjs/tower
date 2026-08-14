@@ -44,6 +44,9 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm check:versions
       - run: pnpm build
+
+      - run: node packages/scribe/dist/cli.js about
+
       - run: pnpm test
 
   e2e:
@@ -79,6 +82,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
+
+      - run: node packages/scribe/dist/cli.js about
 
       - run: pnpm --filter @towerjs/with-nextjs exec playwright install --with-deps chromium
 
