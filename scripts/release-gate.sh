@@ -94,28 +94,28 @@ echo ""
 echo "  Manual steps — run these and verify each succeeds:"
 echo "    1. pnpm db:up  ← start Postgres container"
 echo "    2. pnpm create tower test-app"
-echo "    2. Select: no tailwind (or tailwind), modules: gatehouse + vault"
-echo "    3. cd test-app"
-echo "    4. pnpm install"
-echo "    5. Set DATABASE_URL in .env"
-echo "    6. pnpm build  ← THIS IS THE KEY GATE"
-echo "    7. pnpm dev    ← app should boot"
+echo "    3. Select: no tailwind (or tailwind), modules: gatehouse + vault"
+echo "    4. cd test-app"
+echo "    5. pnpm install"
+echo "    6. Set DATABASE_URL in .env"
+echo "    7. pnpm build  ← THIS IS THE KEY GATE"
+echo "    8. pnpm dev    ← app should boot"
 echo ""
 echo "  If 'pnpm build' exits 0, this gate passes."
 
-check "8. E2E auth flow (requires Docker Postgres + network)"
+check "8. E2E auth flow (requires Docker + network)"
 echo ""
-echo "  Manual steps:"
-echo "    1. pnpm db:up  ← start Postgres container (docker compose up -d --wait postgres)"
-echo "    2. cd examples/with-nextjs"
-echo "    3. pnpm install"
-echo "    4. pnpm build"
-echo "    5. pnpm test:e2e  ← all auth flows should pass (or use pnpm test:e2e:docker from root to auto-teardown)"
+echo "  Running: pnpm test:e2e:docker  ← auto-starts Postgres, runs the suite, tears Postgres down"
+if pnpm test:e2e:docker >/dev/null 2>&1; then
+  pass "All e2e auth flows pass (Postgres auto-started and torn down)"
+else
+  fail "E2E auth flows failed"
+fi
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then
   echo "=== AUTOMATED GATES PASSED ==="
-  echo "Complete the manual gates (#7, #8) before releasing."
+  echo "Complete the manual gate (#7, generated app) before releasing."
 else
   echo "=== SOME GATES FAILED ==="
   exit 1
