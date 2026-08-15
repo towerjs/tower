@@ -119,6 +119,7 @@ Releases are automated by Changesets in CI. The flow is:
 3. Merging that PR publishes the bumped versions to npm, pushes the git tags, and creates GitHub releases from the package changelogs.
 
 Details:
+
 - Publishing only runs when the push is a `release: version packages` merge (or an explicit `workflow_dispatch` run with `force-publish`). Unrelated pushes to `main` never trigger a publish.
 - `pnpm version` applies changesets and then runs `pnpm install` so the pnpm lockfile stays in sync with the version bumps; `pnpm release` verifies lockstep versions with `check:versions`, builds, and runs `changeset publish`.
 - Publishing uses npm trusted publishing (OIDC): no `NPM_TOKEN` is stored. Each package must already exist on the registry with a trusted publisher configured for `hyphenzero/tower` + `release.yml` before the automated workflow can publish it.
@@ -226,6 +227,8 @@ To reset the database between runs: `pnpm db:down && pnpm db:up`.
 4. Verify with `pnpm test:e2e:docker`
 
 ## Commit style
+
+Before committing, run `pnpm format` and include any formatting changes it produces. This is a required step — do not commit without it.
 
 Use conventional commits with the package name as scope:
 
