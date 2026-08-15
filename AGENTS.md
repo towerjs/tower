@@ -98,6 +98,9 @@ pnpm typecheck    # TypeScript type checking (tsc --noEmit)
 pnpm format       # Format with Prettier
 pnpm clean        # Remove all dist directories
 pnpm check:deps   # Validate dependency rules across packages
+pnpm db:up        # Start the Postgres container (docker compose up -d --wait postgres)
+pnpm db:down      # Stop and delete the Postgres container and its volume
+pnpm test:e2e:docker  # Start Postgres, run e2e tests, then tear Postgres down
 pnpm changeset    # Create a new changeset for release
 pnpm version      # Apply changesets, bump versions, update changelogs, re-sync lockfile
 pnpm release      # Verify lockstep versions, build, and publish to npm
@@ -156,7 +159,7 @@ When writing application code, use the Tower APIs (`gatehouse.getSession()`, `va
 
 - Unit tests: `packages/*/src/**/*.test.ts` — run via `pnpm test`
 - Acceptance tests: `tests/*.test.ts` — boot test, build test
-- E2E tests: `examples/with-nextjs/e2e/` — run via `pnpm test:e2e` (requires Docker Postgres)
+- E2E tests: `examples/with-nextjs/e2e/` — run via `pnpm test:e2e:docker` (auto-starts and tears down Docker Postgres)
 - Tests should NOT require external services unless tagged with `{ skip }` when unavailable
 - Database-dependent tests check for `DATABASE_URL` and skip gracefully
 
@@ -187,14 +190,27 @@ auth-extended.spec.ts
 **Running E2E tests:**
 
 ```bash
-# Start Postgres (root or examples/with-nextjs)
-docker compose up postgres
-
-# Run tests (auto-starts Next.js dev server via Playwright webServer)
-pnpm test:e2e
+# One command: starts Postgres, runs the suite, then removes the container
+pnpm test:e2e:docker
 ```
 
-**Database:** Reset between runs with `docker compose down -v && docker compose up postgres`.
+This is the canonical way to run E2E tests. The `scripts/test-e2e-docker.sh` wrapper:
+
+1. Verifies Docker is installed and running (fails with a clear message otherwise).
+2. Reuses an already-running Postgres container if one exists; otherwise starts one and waits for its health check: `docker compose up -d --wait postgres`.
+3. Runs `pnpm test:e2e` (Playwright auto-starts the Next.js dev server via its `webServer` config).
+4. Tears Postgres down with `docker compose down -v` (removes the container and data volume) only if the script started it — an already-running container is left in place, even if tests fail.
+
+If you only need the database up or down without running tests, use the individual scripts:
+
+```bash
+pnpm db:up    # start Postgres and wait for healthy
+pnpm db:down  # stop Postgres and delete its data volume
+```
+
+To reset the database between runs: `pnpm db:down && pnpm db:up`.
+
+**Docker is available and expected** for E2E tests — it is not a boundary. If a script reports Docker isn't running, start Docker Desktop and re-run; do not skip or stub the Postgres dependency.
 
 **Email provider:** The demo app uses Courier's `console` provider (`provider: "console"`), which logs emails to stdout. No external credentials needed for development.
 
@@ -207,7 +223,7 @@ pnpm test:e2e
 1. Add `*.spec.ts` to `examples/with-nextjs/e2e/`
 2. Use unique test data (timestamps, random values)
 3. Add `test.skip()` for provider-dependent tests
-4. Verify with `pnpm test:e2e`
+4. Verify with `pnpm test:e2e:docker`
 
 ## Commit style
 
