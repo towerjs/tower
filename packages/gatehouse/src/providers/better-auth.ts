@@ -1,16 +1,10 @@
-import type { Kysely } from 'kysely'
-import type {
-  GatehouseConfig,
-  GatehouseInstance,
-  GatehouseUser,
-  Session,
-  ProxyOptions,
-  ProxyResult,
-} from '../types.js'
 import type { EmailOTPOptions } from 'better-auth/plugins'
-import { AuthenticationError } from '../types.js'
+import type { Kysely } from 'kysely'
+
 import { buildApi } from '../api-builder.js'
-import { mapUser, mapSession } from '../map-user.js'
+import { mapSession, mapUser } from '../map-user.js'
+import type { GatehouseConfig, GatehouseInstance, GatehouseUser, ProxyOptions, ProxyResult, Session } from '../types.js'
+import { AuthenticationError } from '../types.js'
 
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {

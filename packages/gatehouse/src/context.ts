@@ -1,4 +1,5 @@
 import { towerContext } from '@towerjs/foundation'
+
 import type { GatehouseInstance } from './types.js'
 
 /**

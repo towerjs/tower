@@ -1,13 +1,14 @@
 'use client'
 
+import { createOrganization } from '@/app/actions'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useActionState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { createOrganization } from '@/app/actions'
 
 type OrgsContentProps = {
   orgs: Array<{ id: string; name: string; slug: string }>

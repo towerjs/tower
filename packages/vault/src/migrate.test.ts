@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createMigrator, migrateToLatest } from './migrate.js'
 
 const { mockMigrateToLatest, mockMigrator } = vi.hoisted(() => {
   const fn = vi.fn()
@@ -21,8 +23,6 @@ vi.mock('node:path', () => ({
   resolve: vi.fn((_: string, folder: string) => `/resolved/${folder}`),
   default: { resolve: vi.fn((_: string, folder: string) => `/resolved/${folder}`) },
 }))
-
-import { createMigrator, migrateToLatest } from './migrate.js'
 
 describe('createMigrator', () => {
   it('creates a Migrator with FileMigrationProvider', () => {

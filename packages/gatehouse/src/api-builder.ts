@@ -1,5 +1,5 @@
-import type { SignInResult } from './types.js'
 import { mapUser } from './map-user.js'
+import type { SignInResult } from './types.js'
 
 // ─── Mapping: Better Auth method → Gatehouse path ─────────────────
 // Every path is a dot-separated sequence of keys.
@@ -456,8 +456,7 @@ export function buildApi(api: Record<string, Function>, headers: Headers): Recor
       const putIn = mapping.verb === 'GET' ? 'query' : 'body'
       const bareFn = (params?: Record<string, unknown>) => fn({ headers, [putIn]: params ?? {} })
       current[key] = SIGN_IN_RESULT_PATHS.has(mapping.path)
-        ? async (params?: Record<string, unknown>) =>
-            toSignInResult((await bareFn(params)) as Record<string, unknown>)
+        ? async (params?: Record<string, unknown>) => toSignInResult((await bareFn(params)) as Record<string, unknown>)
         : bareFn
     }
   }

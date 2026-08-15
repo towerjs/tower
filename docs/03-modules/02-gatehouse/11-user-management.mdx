@@ -39,7 +39,7 @@ await gatehouse.account.delete()
 
 The `deleteAccount` action requires the current `password` — destructive operations re-authenticate first. Configure cleanup hooks:
 
-``` filename="tower.config.ts"
+```filename="tower.config.ts"
 gatehouse: {
   user: {
     deleteUser: {
@@ -54,7 +54,7 @@ gatehouse: {
 
 Enable it, then manage users from your admin UI:
 
-``` filename="tower.config.ts"
+```filename="tower.config.ts"
 gatehouse: {
   admin: true,
 }

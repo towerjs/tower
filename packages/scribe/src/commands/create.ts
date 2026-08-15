@@ -1,7 +1,7 @@
-import { collectProjectState, collectProjectStateFromFlags } from '../prompts.js'
 import { parseCreateFlags } from '../create-flags.js'
 import { generateProject } from '../generators/project.js'
 import { detectPackageManager, devCommand, migrateCommand } from '../package-manager.js'
+import { collectProjectState, collectProjectStateFromFlags } from '../prompts.js'
 
 /** CLI handler for `tower create` — scaffolds a new app, interactively or from flags. */
 export async function createCommand(flags: string[] = []): Promise<void> {

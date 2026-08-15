@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { detectPackageManager, nextAppFlag, addCommand, devCommand, migrateCommand } from './package-manager.js'
+import { describe, expect, it } from 'vitest'
+
+import { addCommand, detectPackageManager, devCommand, migrateCommand, nextAppFlag } from './package-manager.js'
 
 describe('detectPackageManager', () => {
   it('detects yarn from npm_config_user_agent', () => {

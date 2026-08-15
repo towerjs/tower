@@ -1,6 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { towerConfig, envExample, capitalize } from './next.js'
+import { mkdir, writeFile } from 'node:fs/promises'
+
+import { execa } from 'execa'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { ProjectState } from '../state.js'
+import { capitalize, envExample, towerConfig } from './next.js'
+import { nextAdapter } from './next.js'
 
 const baseState: ProjectState = {
   projectName: 'my-app',
@@ -286,10 +291,6 @@ vi.mock('../package-manager.js', () => ({
   nextAppFlag: vi.fn((pm: string) => `--use-${pm}`),
   addCommand: vi.fn((pm: string, dev = false) => [pm, 'add', ...(dev ? ['-D'] : [])]),
 }))
-
-import { nextAdapter } from './next.js'
-import { execa } from 'execa'
-import { mkdir, writeFile } from 'node:fs/promises'
 
 describe('nextAdapter.generate', () => {
   const state: ProjectState = {

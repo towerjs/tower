@@ -1,5 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fileURLToPath } from 'node:url'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { closeModules, findConfig, getModule, helpText, run, versionText } from './cli.js'
 
 const mockMigrate = vi.fn()
 const mockSeed = vi.fn()
@@ -63,8 +66,6 @@ vi.mock('node:fs', () => ({
 vi.mock('./commands/create.js', () => ({
   createCommand: hoisted.mockCreateCommand,
 }))
-
-import { run, helpText, findConfig, getModule, closeModules, versionText } from './cli.js'
 
 const cliPath = fileURLToPath(new URL('./cli.ts', import.meta.url))
 

@@ -1,5 +1,6 @@
-import { describe, expect, it, afterEach } from 'vitest'
-import { defineTower, registerModule, getModuleFactory, env } from './index.js'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { defineTower, env, getModuleFactory, registerModule } from './index.js'
 import { resetModuleFactories } from './internal.js'
 
 describe('defineTower', () => {

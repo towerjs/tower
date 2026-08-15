@@ -1,14 +1,14 @@
 import {
   createPrompt,
-  useState,
-  useKeypress,
-  usePrefix,
-  usePagination,
-  makeTheme,
-  isUpKey,
   isDownKey,
-  isSpaceKey,
   isEnterKey,
+  isSpaceKey,
+  isUpKey,
+  makeTheme,
+  useKeypress,
+  usePagination,
+  usePrefix,
+  useState,
 } from '@inquirer/core'
 import type { Prompt } from '@inquirer/type'
 

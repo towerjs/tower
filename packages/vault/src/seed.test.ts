@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { runSeeds } from './seed.js'
 
 const mocks = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
@@ -48,8 +50,6 @@ vi.mock('/resolved/seeds/empty.ts', () => ({ default: 'notafunction' }))
 vi.mock('/resolved/seeds/crash.ts', () => ({
   default: vi.fn().mockRejectedValue(new Error('seed error')),
 }))
-
-import { runSeeds } from './seed.js'
 
 describe('runSeeds', () => {
   beforeEach(() => {

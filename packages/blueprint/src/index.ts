@@ -1,10 +1,11 @@
 import type { TowerConfig } from '@towerjs/foundation'
+
 import {
-  registerModule,
-  getModuleFactory,
-  getModuleDependencies,
-  getRegisteredModules,
   getModuleDeclarations,
+  getModuleDependencies,
+  getModuleFactory,
+  getRegisteredModules,
+  registerModule,
 } from './internal.js'
 
 export type TowerBlueprint = TowerConfig

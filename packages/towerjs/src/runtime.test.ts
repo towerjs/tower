@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { getTowerApp, initTower } from './runtime.js'
 
 const mocks = vi.hoisted(() => ({
   mockRegisterService: vi.fn(),
@@ -12,8 +14,6 @@ vi.mock('@towerjs/foundation', () => ({
   registerService: mocks.mockRegisterService,
   registerConfigProvider: vi.fn(),
 }))
-
-import { getTowerApp, initTower } from './runtime.js'
 
 describe('getTowerApp / initTower caching', () => {
   beforeEach(() => {

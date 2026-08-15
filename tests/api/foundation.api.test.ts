@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createTowerApp, createTower, ServiceContainer, detectRuntime } from '@towerjs/foundation'
+import { ServiceContainer, createTower, createTowerApp, detectRuntime } from '@towerjs/foundation'
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const OLD_ENV = process.env
 

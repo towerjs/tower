@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest'
 import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+
+import { beforeAll, describe, expect, it } from 'vitest'
 
 const EXAMPLE_DIR = resolve(import.meta.dirname, '..', 'examples', 'with-nextjs')
 const ROOT_DIR = resolve(import.meta.dirname, '..')

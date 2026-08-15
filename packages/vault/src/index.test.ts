@@ -1,4 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+// ─── Imports (must be after mocks) ─────────────────────────────────
+import { getModuleFactory } from '@towerjs/blueprint'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createVaultModule, vault } from './index.js'
 
 // ─── Hoisted shared mocks (must be before any vi.mock) ─────────────
 
@@ -100,11 +105,6 @@ vi.mock('./migrate.js', () => ({
 vi.mock('./seed.js', () => ({
   runSeeds: mocks.mockRunSeeds,
 }))
-
-// ─── Imports (must be after mocks) ─────────────────────────────────
-
-import { getModuleFactory } from '@towerjs/blueprint'
-import { createVaultModule, vault } from './index.js'
 
 // ─── Helpers ───────────────────────────────────────────────────────
 

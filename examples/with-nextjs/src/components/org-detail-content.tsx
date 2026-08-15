@@ -1,10 +1,11 @@
 'use client'
 
-import { useActionState } from 'react'
-import { updateOrganization, deleteOrganization, inviteMember, removeMember, cancelInvitation } from '@/app/actions'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { cancelInvitation, deleteOrganization, inviteMember, removeMember, updateOrganization } from '@/app/actions'
 import { Button } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+
+import { useActionState } from 'react'
 
 type OrgDetailContentProps = {
   org: any

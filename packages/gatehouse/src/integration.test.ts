@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest'
 import { getModuleFactory } from '@towerjs/blueprint'
+import '@towerjs/courier'
 import { createTowerApp } from '@towerjs/foundation'
+import '@towerjs/gatehouse'
 // Register modules so getModuleFactory resolves them
 import '@towerjs/vault'
-import '@towerjs/gatehouse'
-import '@towerjs/courier'
+
+import { describe, expect, it } from 'vitest'
 
 describe('Gatehouse live integration (database boundary)', () => {
   it('creates a user through the full stack and verifies persistence', async ({ skip }) => {
@@ -57,11 +58,7 @@ describe('Gatehouse live integration (database boundary)', () => {
     // Verify the user persisted to the database (proves vault integration works)
     const vaultProxy = app.container.get<any>('vault')
     const vault = vaultProxy._kysely
-    const persisted = await vault
-      .selectFrom('user')
-      .where('id', '=', userId)
-      .selectAll()
-      .executeTakeFirst()
+    const persisted = await vault.selectFrom('user').where('id', '=', userId).selectAll().executeTakeFirst()
     expect(persisted).toBeDefined()
     expect(persisted.id).toBe(userId)
     expect(persisted.email).toBe(uniqueEmail)

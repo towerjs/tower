@@ -1,7 +1,8 @@
-import { input, select, checkbox as featureCheckbox } from '@inquirer/prompts'
+import { checkbox as featureCheckbox, input, select } from '@inquirer/prompts'
+
 import { checkbox as modulesCheckbox } from './checkbox.js'
-import type { ProjectState, ProviderMap, DeploymentTarget, Runtime } from './state.js'
 import type { CreateFlags } from './create-flags.js'
+import type { DeploymentTarget, ProjectState, ProviderMap, Runtime } from './state.js'
 
 const MODULE_CHOICES = [
   { name: 'Vault — Database ORM (Postgres, Neon)', value: 'vault' },

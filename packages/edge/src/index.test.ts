@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { resolve } from 'node:path'
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 describe('@towerjs/edge public API contract', () => {
   describe('exports', () => {
@@ -55,7 +56,7 @@ describe('@towerjs/edge public API contract', () => {
     it('returns original config unchanged when no config found', async () => {
       rmSync(configPath)
       const { withTowerEdge } = await import('@towerjs/edge')
-      const original = { /* some next config */ }
+      const original = {/* some next config */}
       const result = withTowerEdge(original)
       expect(result).toBe(original)
     })

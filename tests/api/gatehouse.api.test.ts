@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 // Gatehouse requires a Better Auth adapter which needs a database. Most of its
 // surface can't be exercised without a live server. This contract test verifies
@@ -41,9 +41,7 @@ describe('Gatehouse public API contract', () => {
     })
 
     it('exports error classes', async () => {
-      const { AuthenticationError, AuthorizationError, ContextRequiredError } = await import(
-        '@towerjs/gatehouse'
-      )
+      const { AuthenticationError, AuthorizationError, ContextRequiredError } = await import('@towerjs/gatehouse')
       expect(AuthenticationError).toBeInstanceOf(Function)
       expect(AuthorizationError).toBeInstanceOf(Function)
       expect(ContextRequiredError).toBeInstanceOf(Function)

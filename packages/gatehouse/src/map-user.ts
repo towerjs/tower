@@ -1,4 +1,4 @@
-import type { GatehouseUser, GatehouseSession } from './types.js'
+import type { GatehouseSession, GatehouseUser } from './types.js'
 
 export function mapUser(user: Record<string, unknown>): GatehouseUser {
   return {

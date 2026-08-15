@@ -67,7 +67,9 @@ Or programmatically:
 
 ```ts
 import { migrateToLatest } from '@towerjs/vault'
+
 import { vault } from 'towerjs/vault'
+
 await migrateToLatest(vault, { folder: 'src/vault/migrations' })
 ```
 

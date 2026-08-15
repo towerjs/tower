@@ -9,7 +9,7 @@ Get authentication running end to end: enable the module, mount the API, migrate
 
 Add `gatehouse` to `tower.config.ts`. Credentials and email verification are good defaults to start with:
 
-``` filename="tower.config.ts"
+```filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -49,8 +49,9 @@ This mounts the full Better Auth API under `/api/auth` — the `gatehouseClient`
 The auth tables (users, sessions, accounts, organizations, ...) live in the Vault database:
 
 ```tsx filename="scripts/migrate.ts"
-import { initTower } from 'towerjs/runtime'
 import { Gatehouse } from '@towerjs/gatehouse'
+
+import { initTower } from 'towerjs/runtime'
 
 async function main() {
   const tower = await initTower()

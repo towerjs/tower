@@ -1,8 +1,10 @@
-import type { TowerModule, TowerContext } from '@towerjs/blueprint'
+import type { TowerContext, TowerModule } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
+
 import type { Migrator } from 'kysely/migration'
-import type { VaultConfig, Vault, VaultModule, VaultMigrationConfig, VaultSeedConfig } from './types.js'
+
 import { parseVaultConfig } from './schemas.js'
+import type { Vault, VaultConfig, VaultMigrationConfig, VaultModule, VaultSeedConfig } from './types.js'
 
 export type { VaultConfig, Vault, VaultModule, VaultSeedConfig, VaultMigrationConfig } from './types.js'
 

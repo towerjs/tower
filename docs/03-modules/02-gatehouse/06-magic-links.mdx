@@ -7,7 +7,7 @@ Passwordless auth: users request a link, click it, and they're signed in. No pas
 
 ## Enable
 
-``` filename="tower.config.ts"
+```filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -22,8 +22,9 @@ The email goes through [Courier](/docs/courier) when configured — no callback 
 ```tsx filename="app/sign-in/magic-link-form.tsx"
 'use client'
 
-import { useActionState } from 'react'
 import { requestMagicLink } from '@/app/actions'
+
+import { useActionState } from 'react'
 
 export function MagicLinkForm() {
   const [state, action, pending] = useActionState(requestMagicLink, undefined)
@@ -61,7 +62,7 @@ await gatehouse.signIn.magicLink({
 
 Magic-link-adjacent: six-digit codes instead of links. Email codes live under `emailVerification` (see [Email & password](/docs/gatehouse/email-password)); setting `method: 'otp'` also enables one-time-code sign-in:
 
-``` filename="tower.config.ts"
+```filename="tower.config.ts"
 gatehouse: {
   emailVerification: { method: 'otp' },
   phoneNumber: true,

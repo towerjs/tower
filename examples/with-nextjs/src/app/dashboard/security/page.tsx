@@ -1,5 +1,6 @@
-import { gatehouse } from 'towerjs/gatehouse'
 import { SecurityContent } from '@/components/security-content'
+
+import { gatehouse } from 'towerjs/gatehouse'
 
 export default async function SecurityPage() {
   const session = await gatehouse.getSession()

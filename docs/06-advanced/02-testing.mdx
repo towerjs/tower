@@ -25,8 +25,8 @@ export default defineConfig({
 ### Testing with createTowerApp
 
 ```tsx
-import { createTowerApp } from '@towerjs/foundation'
 import { getModuleFactory } from '@towerjs/blueprint'
+import { createTowerApp } from '@towerjs/foundation'
 
 it('creates an app with vault', async () => {
   const app = await createTowerApp(
@@ -65,7 +65,7 @@ pnpm test:e2e
 ### Test Patterns
 
 ```tsx
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('user can sign up', async ({ page }) => {
   const email = `test-${Date.now()}@example.com`

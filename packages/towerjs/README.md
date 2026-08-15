@@ -15,9 +15,9 @@ pnpm add towerjs
 Import the modules you need from their subpaths. First use triggers Tower initialization (and `tower.config.ts` discovery).
 
 ```ts
+import { courier } from 'towerjs/courier'
 import { gatehouse } from 'towerjs/gatehouse'
 import { vault } from 'towerjs/vault'
-import { courier } from 'towerjs/courier'
 
 // Gatehouse — authentication
 const session = await gatehouse.getSession()
@@ -41,14 +41,14 @@ await app.shutdown()
 
 ## Exports
 
-| Export           | Description                                                      |
-| ---------------- | ---------------------------------------------------------------- |
-| `initTower`      | Programmatic initialization (with optional config)               |
-| `getTowerApp`    | Async access to the initialized `TowerApp`                       |
-| `createTower`    | Initialization helper from `@towerjs/foundation`                 |
-| `createTowerApp` | Low-level app builder from `@towerjs/foundation`                 |
-| `defineTower`    | Configuration helper from `@towerjs/blueprint`                   |
-| `TowerApp`       | Type for the initialized Tower object                            |
+| Export           | Description                                        |
+| ---------------- | -------------------------------------------------- |
+| `initTower`      | Programmatic initialization (with optional config) |
+| `getTowerApp`    | Async access to the initialized `TowerApp`         |
+| `createTower`    | Initialization helper from `@towerjs/foundation`   |
+| `createTowerApp` | Low-level app builder from `@towerjs/foundation`   |
+| `defineTower`    | Configuration helper from `@towerjs/blueprint`     |
+| `TowerApp`       | Type for the initialized Tower object              |
 
 Each subpath import initializes the Tower app (and its `tower.config.ts` discovery) on first use. For async initialization, await `getTowerApp()` first.
 

@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
-import { resolve, relative } from 'node:path'
+import { relative, resolve } from 'node:path'
+
 import type { NextConfig } from 'next'
 
 const CONFIG_NAMES = ['tower.config.ts', 'tower.config.js', 'tower.config.mjs', 'tower.config.mts']

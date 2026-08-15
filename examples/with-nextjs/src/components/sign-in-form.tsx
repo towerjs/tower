@@ -1,11 +1,12 @@
 'use client'
 
-import Link from 'next/link'
-import { useActionState, useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { requestMagicLink, sendVerificationOTP, signIn, signInWithOTP } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useActionState, useEffect, useState } from 'react'
 
 const TABS = [
   { id: 'password', label: 'Password' },

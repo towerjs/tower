@@ -1,52 +1,54 @@
-import type { TowerModule, TowerContext } from '@towerjs/blueprint'
+import type { TowerContext, TowerModule } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
-import { towerContext, getRequestContextResolver } from '@towerjs/foundation'
+import { getRequestContextResolver, towerContext } from '@towerjs/foundation'
+
+import { ContextRequiredError } from './context.js'
+import type { BetterAuthAdapter } from './providers/better-auth.js'
+import { parseGatehouseConfig } from './schemas.js'
 import type {
-  GatehouseConfig,
-  GatehouseModule,
-  GatehouseInstance,
-  Session,
-  EmailOtpConfirmParams,
-  PhoneOtpSendParams,
-  PhoneOtpConfirmParams,
-  PasskeyInfo,
-  PasskeyUpdateParams,
-  AdminUserCreateParams,
-  AdminUserBanParams,
-  AdminSetRoleParams,
-  AdminListUsersOptions,
+  AccessToken,
   AdminImpersonationResult,
+  AdminListUsersOptions,
+  AdminSetRoleParams,
+  AdminUserBanParams,
+  AdminUserCreateParams,
   AdminUserSession,
-  ApiKeyInfo,
   ApiKeyCreateParams,
-  ApiKeyUpdateParams,
+  ApiKeyInfo,
   ApiKeyListOptions,
+  ApiKeyUpdateParams,
   ApiKeyVerifyParams,
-  TwoFactorInfo,
-  TwoFactorVerifyResult,
+  EmailOtpConfirmParams,
+  GatehouseConfig,
+  GatehouseInstance,
+  GatehouseModule,
+  GatehouseSession,
+  Identity,
   Organization,
-  OrganizationFull,
-  OrganizationMember,
-  OrganizationInvitation,
-  OrganizationRole,
   OrganizationCreateParams,
-  OrganizationUpdateParams,
+  OrganizationFull,
+  OrganizationInvitation,
   OrganizationInviteParams,
+  OrganizationMember,
+  OrganizationRole,
   OrganizationRoleCreateParams,
   OrganizationRoleUpdateParams,
-  Identity,
-  AccessToken,
-  GatehouseSession,
-  TwoFactorOtpSendParams,
-  TwoFactorOtpVerifyParams,
+  OrganizationUpdateParams,
+  PasskeyInfo,
+  PasskeyUpdateParams,
+  PhoneOtpConfirmParams,
+  PhoneOtpSendParams,
   ProxyOptions,
   ProxyResult,
+  Session,
+  TwoFactorInfo,
+  TwoFactorOtpSendParams,
+  TwoFactorOtpVerifyParams,
+  TwoFactorVerifyResult,
 } from './types.js'
 import type { GatehouseUser } from './types.js'
 import { AuthenticationError, AuthorizationError } from './types.js'
-import type { BetterAuthAdapter } from './providers/better-auth.js'
-import { ContextRequiredError } from './context.js'
-import { parseGatehouseConfig } from './schemas.js'
+
 interface EmailService {
   send(params: { to: string; subject: string; text?: string; html?: string }): Promise<{ id: string; provider: string }>
 }
@@ -295,7 +297,9 @@ async function requestRequireUser(): Promise<GatehouseUser> {
  */
 function notInitialized(prop: string) {
   return () => {
-    throw new Error(`gatehouse.${prop}() called before Gatehouse was initialized. Ensure tower.config.ts includes gatehouse module and Tower is started.`)
+    throw new Error(
+      `gatehouse.${prop}() called before Gatehouse was initialized. Ensure tower.config.ts includes gatehouse module and Tower is started.`
+    )
   }
 }
 
@@ -322,7 +326,8 @@ export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
     }
 
     if (prop === 'from') return getAdapter() ? (request: any) => getAdapter()!.from(request) : notInitialized('from')
-    if (prop === 'fromHeaders') return getAdapter() ? (headers: Headers) => getAdapter()!.from({ headers }) : notInitialized('fromHeaders')
+    if (prop === 'fromHeaders')
+      return getAdapter() ? (headers: Headers) => getAdapter()!.from({ headers }) : notInitialized('fromHeaders')
     if (prop === 'migrate') return getAdapter() ? () => getAdapter()!.migrate() : notInitialized('migrate')
 
     if (getAdapter()) {

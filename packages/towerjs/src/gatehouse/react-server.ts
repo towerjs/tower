@@ -1,13 +1,14 @@
-import type { GatehouseModule, GatehouseInstance } from '@towerjs/gatehouse'
+import { setRequestContextResolver } from '@towerjs/foundation'
+import type { GatehouseInstance, GatehouseModule } from '@towerjs/gatehouse'
 import type {
-  Session,
-  GatehouseUser,
-  GatehouseSession,
   ApiKeyInfo,
+  GatehouseSession,
+  GatehouseUser,
   Organization,
   OrganizationFull,
+  Session,
 } from '@towerjs/gatehouse'
-import { setRequestContextResolver } from '@towerjs/foundation'
+
 import { getTowerApp, importModule } from '../runtime.js'
 
 type GatehouseApiMethods = {

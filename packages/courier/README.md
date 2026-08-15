@@ -73,8 +73,9 @@ await courier.sms.send({
 Courier renders React email templates natively:
 
 ```tsx
-import WelcomeEmail from './emails/welcome.tsx'
 import { courier } from 'towerjs/courier'
+
+import WelcomeEmail from './emails/welcome.tsx'
 
 await courier.email.send({
   to: 'user@example.com',

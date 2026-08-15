@@ -28,9 +28,13 @@ export default defineTower({
 Modules self-register at import time:
 
 ```tsx
-import '@towerjs/vault' // registers 'vault' module
-import '@towerjs/gatehouse' // registers 'gatehouse' module
-import '@towerjs/courier' // registers 'courier' module
+// registers 'gatehouse' module
+import '@towerjs/courier'
+// registers 'vault' module
+import '@towerjs/gatehouse'
+import '@towerjs/vault'
+
+// registers 'courier' module
 ```
 
 Each registration includes a name, dependency list, and factory function:
@@ -78,11 +82,11 @@ If validation fails, an error is thrown with details about the conflict.
 
 ```tsx
 import {
-  registerModule,
-  getModuleFactory,
-  getModuleDependencies,
-  getRegisteredModules,
   getModuleDeclarations,
+  getModuleDependencies,
+  getModuleFactory,
+  getRegisteredModules,
+  registerModule,
 } from '@towerjs/blueprint'
 ```
 

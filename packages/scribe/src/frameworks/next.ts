@@ -1,10 +1,12 @@
 import { randomBytes } from 'node:crypto'
-import { execa } from 'execa'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { FrameworkAdapter } from './adapter.js'
+
+import { execa } from 'execa'
+
+import { type PackageManager, addCommand, detectPackageManager, nextAppFlag } from '../package-manager.js'
 import type { ProjectState } from '../state.js'
-import { detectPackageManager, nextAppFlag, addCommand, type PackageManager } from '../package-manager.js'
+import type { FrameworkAdapter } from './adapter.js'
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)

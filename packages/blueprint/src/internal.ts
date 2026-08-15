@@ -1,4 +1,4 @@
-import type { ModuleFactory, ModuleDeclaration } from '@towerjs/foundation'
+import type { ModuleDeclaration, ModuleFactory } from '@towerjs/foundation'
 
 interface StoredModule {
   factory: ModuleFactory

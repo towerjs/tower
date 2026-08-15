@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const mockDefineTower = vi.fn((c: any) => c)
 const mockCreateTowerApp = vi.fn()

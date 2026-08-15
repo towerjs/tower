@@ -7,7 +7,7 @@ Vault wraps [Kysely](https://kysely.dev) with connection pooling, migrations, se
 
 ## Setup
 
-``` filename="tower.config.ts"
+```filename="tower.config.ts"
 vault: {
   connectionString: process.env.DATABASE_URL,   // defaults to DATABASE_URL
   pool: {
@@ -97,10 +97,7 @@ By default, migrations run before seeds. Skip migrations with `npx tower seed --
 ```tsx
 import { vault } from 'towerjs/vault'
 
-const result = await vault
-  .selectFrom('users')
-  .select(vault.fn.countAll().as('count'))
-  .executeTakeFirst()
+const result = await vault.selectFrom('users').select(vault.fn.countAll().as('count')).executeTakeFirst()
 ```
 
 ## Edge Runtime

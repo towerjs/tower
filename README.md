@@ -35,8 +35,8 @@ Then import the modules you need, anywhere in your app:
 
 ```ts
 // src/app/api/users/route.ts
-import { vault } from 'towerjs/vault'
 import { gatehouse } from 'towerjs/gatehouse'
+import { vault } from 'towerjs/vault'
 
 export async function GET() {
   const session = await gatehouse.getSession()
@@ -63,7 +63,7 @@ Currently supports **Next.js** with more frameworks coming.
 | -------------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
 | [Foundation](/packages/foundation)     | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
 | [Blueprint](/packages/blueprint)       | Application definition, module registration, context                | —                                   |
-| [Vault](/packages/vault)               | PostgreSQL database API with Kysely, migrations, and seeds            | Neon, pg                            |
+| [Vault](/packages/vault)               | PostgreSQL database API with Kysely, migrations, and seeds          | Neon, pg                            |
 | [Gatehouse](/packages/gatehouse)       | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
 | [Courier](/packages/courier)           | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
 | [Scribe](/packages/scribe)             | CLI for scaffolding and managing Tower applications                 | —                                   |

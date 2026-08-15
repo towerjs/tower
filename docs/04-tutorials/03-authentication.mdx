@@ -38,6 +38,7 @@ Create the required files:
 
 ```tsx filename="src/proxy.ts"
 import { gatehouse } from '@towerjs/gatehouse'
+
 const { handler } = gatehouse.proxy({
   public: ['/', '/sign-in', '/sign-up'],
   redirectIfAuthenticated: ['/sign-in', '/sign-up'],
@@ -85,8 +86,8 @@ export default function SignInPage() {
 ## 5. Protected Dashboard
 
 ```tsx filename="src/app/dashboard/page.tsx"
-import { gatehouse } from 'towerjs/gatehouse'
 import { redirect } from 'next/navigation'
+import { gatehouse } from 'towerjs/gatehouse'
 
 export default async function Dashboard() {
   const session = await gatehouse.getSession()

@@ -1,6 +1,6 @@
-import type { ProjectState } from '../state.js'
 import type { FrameworkAdapter } from '../frameworks/adapter.js'
 import { nextAdapter } from '../frameworks/next.js'
+import type { ProjectState } from '../state.js'
 
 const adapters: Record<string, FrameworkAdapter> = {
   next: nextAdapter,

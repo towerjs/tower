@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { ResendEmailProvider } from './resend.js'
 
 const { mockResendCreate } = vi.hoisted(() => ({

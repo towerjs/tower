@@ -1,7 +1,9 @@
-import { describe, expect, it, beforeAll, afterAll } from 'vitest'
-import { registerModule, getModuleFactory } from '@towerjs/blueprint'
+import { getModuleFactory, registerModule } from '@towerjs/blueprint'
 import { resetModuleFactories } from '@towerjs/blueprint/internal'
-import { createTowerApp, createTower } from './app.js'
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import { createTower, createTowerApp } from './app.js'
 import { ServiceContainer } from './container.js'
 
 beforeAll(() => {

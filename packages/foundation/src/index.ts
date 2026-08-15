@@ -1,3 +1,5 @@
+import type { TowerConfig } from './types.js'
+
 export { createTowerApp, createTower } from './app.js'
 export type { TowerApp } from './app.js'
 export { ServiceContainer } from './container.js'
@@ -35,7 +37,6 @@ export type {
   ServiceRegistry,
 } from './types.js'
 export type { DependencyValidationResult, DependencyError } from './dependency-graph.js'
-import type { TowerConfig } from './types.js'
 
 /** @internal Lazily-loads resolve-config to avoid bundler tracing of dynamic import(). */
 export async function resolveConfig(): Promise<TowerConfig> {
@@ -44,9 +45,7 @@ export async function resolveConfig(): Promise<TowerConfig> {
 }
 
 /** @internal Lazily-loads registerConfigProvider to avoid bundler tracing of dynamic import(). */
-export async function registerConfigProvider(
-  provider: () => Promise<TowerConfig | undefined>
-): Promise<void> {
+export async function registerConfigProvider(provider: () => Promise<TowerConfig | undefined>): Promise<void> {
   const mod = await import('./resolve-config.js')
   mod.registerConfigProvider(provider)
 }

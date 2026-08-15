@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createCommand } from './create.js'
 
 const mocks = vi.hoisted(() => ({
   mockCollectProjectState: vi.fn(),
@@ -14,8 +16,6 @@ vi.mock('../prompts.js', () => ({
 vi.mock('../generators/project.js', () => ({
   generateProject: mocks.mockGenerateProject,
 }))
-
-import { createCommand } from './create.js'
 
 describe('createCommand', () => {
   beforeEach(() => {

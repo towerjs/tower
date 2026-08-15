@@ -26,9 +26,7 @@ export async function runSeeds(db: Vault, config: VaultSeedConfig, name?: string
   const applied = await readManifest(nodeFs, manifestPath)
 
   const all = await nodeFs.promises.readdir(seedFolder)
-  const entries = all
-    .filter((f) => (f.endsWith('.js') || f.endsWith('.ts')) && f !== '.tower-seeds.json')
-    .sort()
+  const entries = all.filter((f) => (f.endsWith('.js') || f.endsWith('.ts')) && f !== '.tower-seeds.json').sort()
 
   const files = name ? entries.filter((e) => e.includes(name)) : entries
 

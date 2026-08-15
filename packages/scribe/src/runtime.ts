@@ -1,4 +1,4 @@
-import type { TowerModule, TowerContext } from '@towerjs/foundation'
+import type { TowerContext, TowerModule } from '@towerjs/foundation'
 
 type ModuleFactoryFn = (options: Record<string, unknown>) => TowerModule
 

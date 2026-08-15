@@ -1,7 +1,8 @@
 'use server'
 
-import { action, FormActionFn } from '../next.js'
 import { gatehouse } from '@towerjs/gatehouse'
+
+import { FormActionFn, action } from '../next.js'
 import { authActions } from './registry.js'
 
 function resolve(path: string) {

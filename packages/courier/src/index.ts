@@ -1,5 +1,9 @@
 import type { TowerContext, TowerModule } from '@towerjs/blueprint'
 import { registerModule } from '@towerjs/blueprint'
+
+import { z } from 'zod'
+
+import { emailSendSchema, parseCourierConfig, parseSendParams, pushSendSchema, smsSendSchema } from './schemas.js'
 import type {
   CourierConfig,
   CourierModule,
@@ -10,8 +14,6 @@ import type {
   SmsConfig,
   SmsService,
 } from './types.js'
-import { z } from 'zod'
-import { parseCourierConfig, parseSendParams, emailSendSchema, pushSendSchema, smsSendSchema } from './schemas.js'
 
 export type {
   ConsoleEmailConfig,

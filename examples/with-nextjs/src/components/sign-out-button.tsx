@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { signOut } from '@/app/actions'
+
+import { useRouter } from 'next/navigation'
+import { useActionState, useEffect } from 'react'
 
 export function SignOutButton() {
   const router = useRouter()

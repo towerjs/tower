@@ -1,17 +1,18 @@
 'use client'
 
-import { useState } from 'react'
 import {
-  enableTwoFactor,
-  verifyTwoFactor,
   disableTwoFactor,
+  enableTwoFactor,
   generateBackupCodes,
-  revokeSession,
   revokeOtherSessions,
+  revokeSession,
+  verifyTwoFactor,
 } from '@/app/actions'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+
+import { useState } from 'react'
 
 type SecurityContentProps = {
   user: {
@@ -215,7 +216,11 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
                   </p>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">{s.ipAddress || 'Unknown IP'}</p>
                 </div>
-                <form action={(formData) => { revokeSession(formData) }}>
+                <form
+                  action={(formData) => {
+                    revokeSession(formData)
+                  }}
+                >
                   <input type="hidden" name="token" value={s.token} />
                   <Button type="submit" variant="ghost" size="sm">
                     Revoke
@@ -225,7 +230,11 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
             ))}
           </div>
           <div className="mt-4">
-            <form action={(formData) => { revokeOtherSessions(formData) }}>
+            <form
+              action={(formData) => {
+                revokeOtherSessions(formData)
+              }}
+            >
               <Button type="submit" variant="secondary" size="sm">
                 Revoke all other sessions
               </Button>

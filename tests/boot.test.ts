@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
 import { getRegisteredModules } from '@towerjs/blueprint'
+
+import { describe, expect, it } from 'vitest'
 
 describe('Tower boot', () => {
   it('all module registrations are importable', async () => {

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createTowerApp, resolveDependencyOrder } from '@towerjs/foundation'
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const OLD_ENV = process.env
 
@@ -59,9 +60,7 @@ describe('Foundation negative / edge cases', () => {
             throw new Error('init failed')
           },
         })) as any
-      await expect(createTowerApp({ modules: { exploder: {} } }, factory)).rejects.toThrow(
-        'init failed'
-      )
+      await expect(createTowerApp({ modules: { exploder: {} } }, factory)).rejects.toThrow('init failed')
     })
   })
 

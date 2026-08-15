@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { getModuleFactory } from './runtime.js'
 
 describe('Scribe module runtime', () => {

@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { registerModule, getModuleFactory } from '@towerjs/blueprint'
+import { getModuleFactory, registerModule } from '@towerjs/blueprint'
 import { resetModuleFactories } from '@towerjs/blueprint/internal'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createTower } from './app.js'
 
 const mocks = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
@@ -10,8 +13,6 @@ vi.mock('node:fs', async (importOriginal) => {
   const actual = (await importOriginal()) as typeof import('node:fs')
   return { ...actual, existsSync: mocks.mockExistsSync }
 })
-
-import { createTower } from './app.js'
 
 describe('createTower with auto-discovery', () => {
   beforeEach(() => {

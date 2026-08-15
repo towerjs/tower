@@ -42,9 +42,7 @@ export function createLazyModule<T>(moduleName: string): T {
       }
       if (prop === Symbol.toPrimitive) return undefined
       if (resolved === undefined) {
-        throw new Error(
-          'Tower app is still initializing. Use getTowerApp() from towerjs/runtime for async access.'
-        )
+        throw new Error('Tower app is still initializing. Use getTowerApp() from towerjs/runtime for async access.')
       }
       const value = resolved[prop]
       return typeof value === 'function' ? value.bind(resolved) : value

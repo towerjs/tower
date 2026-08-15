@@ -24,11 +24,7 @@ export function detectRuntime(): TowerRuntime {
     return { name: 'edge', isServerless: true }
   }
 
-  if (
-    hasProcessEnv('AWS_LAMBDA_FUNCTION_NAME') ||
-    hasProcessEnv('AWS_EXECUTION_ENV') ||
-    hasProcessEnv('NETLIFY')
-  ) {
+  if (hasProcessEnv('AWS_LAMBDA_FUNCTION_NAME') || hasProcessEnv('AWS_EXECUTION_ENV') || hasProcessEnv('NETLIFY')) {
     return { name: 'vercel-serverless', isServerless: true }
   }
 

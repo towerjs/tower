@@ -1,6 +1,7 @@
+import { type ReactElement, createElement } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { createElement, type ReactElement } from 'react'
-import { toAddressList, resolveEmailContent } from './email-shared.js'
+
+import { resolveEmailContent, toAddressList } from './email-shared.js'
 
 vi.mock('@react-email/render', () => ({
   render: vi.fn(async (el: ReactElement) => `<html>${JSON.stringify(el)}</html>`),

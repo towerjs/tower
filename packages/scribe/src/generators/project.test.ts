@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { generateProject } from './project.js'
 
 const mocks = vi.hoisted(() => ({
   mockNextAdapter: {
@@ -9,8 +11,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../frameworks/next.js', () => ({
   nextAdapter: mocks.mockNextAdapter,
 }))
-
-import { generateProject } from './project.js'
 
 describe('generateProject', () => {
   beforeEach(() => {

@@ -1,4 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { checkbox as featureCheckbox, input, select } from '@inquirer/prompts'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { checkbox as modulesCheckbox } from './checkbox.js'
+import { collectProjectState, collectProjectStateFromFlags } from './prompts.js'
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
@@ -9,10 +13,6 @@ vi.mock('@inquirer/prompts', () => ({
 vi.mock('./checkbox.js', () => ({
   checkbox: vi.fn(),
 }))
-
-import { input, select, checkbox as featureCheckbox } from '@inquirer/prompts'
-import { checkbox as modulesCheckbox } from './checkbox.js'
-import { collectProjectState, collectProjectStateFromFlags } from './prompts.js'
 
 describe('collectProjectState', () => {
   beforeEach(() => {

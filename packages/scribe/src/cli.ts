@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-import { createJiti } from 'jiti'
+import fs from 'node:fs'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { createTowerApp } from '@towerjs/foundation'
 import type { TowerApp } from '@towerjs/foundation'
-import path from 'node:path'
-import fs from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { createRequire } from 'node:module'
+
+import { createJiti } from 'jiti'
+
 import { createCommand } from './commands/create.js'
 import { getModuleFactory } from './runtime.js'
 

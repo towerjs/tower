@@ -1,7 +1,7 @@
-import type { TowerConfig, TowerModule, TowerContext, ModuleFactory, TowerRuntime } from './types.js'
 import { ServiceContainer } from './container.js'
-import { detectRuntime } from './runtime.js'
 import { resolveDependencyOrder } from './dependency-graph.js'
+import { detectRuntime } from './runtime.js'
+import type { ModuleFactory, TowerConfig, TowerContext, TowerModule, TowerRuntime } from './types.js'
 
 export interface TowerApp {
   config: TowerConfig

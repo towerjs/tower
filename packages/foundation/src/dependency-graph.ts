@@ -1,4 +1,4 @@
-import type { TowerModule, ModuleDeclaration } from './types.js'
+import type { ModuleDeclaration, TowerModule } from './types.js'
 
 export interface DependencyError {
   type: 'missing' | 'circular' | 'self-reference'

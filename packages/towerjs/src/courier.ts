@@ -1,4 +1,5 @@
 import type { CourierModule } from '@towerjs/courier'
+
 import { createLazyModule } from './lazy-module.js'
 
 /**

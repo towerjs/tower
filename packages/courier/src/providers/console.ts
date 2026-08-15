@@ -1,4 +1,4 @@
-import type { EmailSendParams, EmailSendResult, ConsoleEmailConfig } from '../types.js'
+import type { ConsoleEmailConfig, EmailSendParams, EmailSendResult } from '../types.js'
 
 export class ConsoleEmailProvider {
   private config: ConsoleEmailConfig

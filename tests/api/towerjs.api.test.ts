@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
 import { registerConfigProvider } from '@towerjs/foundation'
+
+import { describe, expect, it } from 'vitest'
 
 // Register a config provider BEFORE any towerjs access to avoid the
 // tower.config.ts discovery that fails in the test environment.

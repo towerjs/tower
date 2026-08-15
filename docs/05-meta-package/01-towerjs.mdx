@@ -16,14 +16,14 @@ pnpm add towerjs
 ### `towerjs`
 
 ```tsx
-import { defineTower, createTower, createTowerApp, initTower, getTowerApp, tower } from 'towerjs'
+import { createTower, createTowerApp, defineTower, getTowerApp, initTower, tower } from 'towerjs'
 
-defineTower({ modules: { vault: {} } })     // type-safe config (from blueprint)
-createTower()                                // auto-resolves tower.config.ts
-createTowerApp({ modules: {} })            // explicit config
-initTower({ modules: {} })                 // explicit init, returns TowerApp
-getTowerApp()                                // get cached TowerApp singleton
-tower                                        // TowerApp proxy (throws if uninitialized)
+defineTower({ modules: { vault: {} } }) // type-safe config (from blueprint)
+createTower() // auto-resolves tower.config.ts
+createTowerApp({ modules: {} }) // explicit config
+initTower({ modules: {} }) // explicit init, returns TowerApp
+getTowerApp() // get cached TowerApp singleton
+tower // TowerApp proxy (throws if uninitialized)
 ```
 
 `createTower` and `createTowerApp` are re-exports from `@towerjs/foundation` — they do not wire module factories by themselves. Use `initTower()` or `getTowerApp()` (which resolve the config, wire `getModuleFactory`, and lazy-init on first access), or pass `getModuleFactory` from `@towerjs/blueprint` explicitly.
@@ -32,6 +32,7 @@ tower                                        // TowerApp proxy (throws if uninit
 
 ```tsx
 import { defineTower } from 'towerjs/blueprint'
+
 // Type-safe config helper (runtime no-op)
 ```
 
@@ -40,7 +41,7 @@ For programmatic module access (`registerModule`, `getModuleFactory`, `getModule
 ### `towerjs/foundation`
 
 ```tsx
-import { createTowerApp, createTower, initTower, getTowerApp } from 'towerjs/foundation'
+import { createTower, createTowerApp, getTowerApp, initTower } from 'towerjs/foundation'
 ```
 
 `detectRuntime` and `resolveConfig` live on `@towerjs/foundation` — they are not re-exported from this subpath.
@@ -49,6 +50,7 @@ import { createTowerApp, createTower, initTower, getTowerApp } from 'towerjs/fou
 
 ```tsx
 import { gatehouse } from 'towerjs/gatehouse'
+
 // Fully lazy proxy — awaits tower init, then delegates to @towerjs/gatehouse
 
 const session = await gatehouse.getSession()
@@ -61,7 +63,7 @@ const orgs = await gatehouse.getOrganizations()
 Pre-built server actions for common auth operations:
 
 ```tsx
-import { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
+import { signIn, signOut, signUp } from 'towerjs/gatehouse/actions'
 ```
 
 Full list: `signIn`, `signUp`, `signOut`, `signInWithOTP`, `signInWithPhone`, `requestMagicLink`, `revokeSession`, `revokeOtherSessions`, `updateProfile`, `deleteAccount`, `setPassword`, `changeEmail`, `changePassword`, `verifyPassword`, `requestPasswordReset`, `resetPassword`, `sendVerificationEmail`, `verifyEmail`, `sendVerificationOTP`, `verifyVerificationOTP`, `sendPhoneOTP`, `verifyPhoneOTP`, `updatePasskey`, `deletePasskey`, `createUser`, `removeUser`, `setUserPassword`, `setRole`, `banUser`, `unbanUser`, `impersonateUser`, `stopImpersonating`, `revokeUserSession`, `revokeUserSessions`, `createApiKey`, `updateApiKey`, `deleteApiKey`, `verifyApiKey`, `deleteExpiredApiKeys`, `unlinkAccount`, `enableTwoFactor`, `verifyTwoFactor`, `disableTwoFactor`, `generateTOTP`, `sendTwoFactorOTP`, `verifyTwoFactorOTP`, `verifyBackupCode`, `generateBackupCodes`, `createOrganization`, `updateOrganization`, `deleteOrganization`, `setActiveOrganization`, `addMember`, `updateMemberRole`, `removeMember`, `inviteMember`, `cancelInvitation`, `acceptInvitation`, `rejectInvitation`, `assignRole`, `removeRole`.
@@ -69,7 +71,7 @@ Full list: `signIn`, `signUp`, `signOut`, `signInWithOTP`, `signInWithPhone`, `r
 ### `towerjs/gatehouse/next`
 
 ```tsx
-import { action, withGatehouse, GET, POST } from 'towerjs/gatehouse/next'
+import { GET, POST, action, withGatehouse } from 'towerjs/gatehouse/next'
 
 // action — wraps a server action in gatehouse request context
 export const myAction = action(async (formData: FormData) => {
@@ -93,6 +95,7 @@ await gatehouseClient.signUp.email({ name, email, password })
 
 ```tsx
 import { vault } from 'towerjs/vault'
+
 // Lazy proxy — initializes on first access
 
 await vault.selectFrom('users').selectAll().execute()
@@ -111,6 +114,7 @@ await courier.email.send({ to: 'user@example.com', subject: 'Hi', html: '<p>Hi</
 
 ```tsx
 import { action } from 'towerjs/next'
+
 // Next.js server action wrapper (no .form variant)
 ```
 
@@ -118,6 +122,7 @@ import { action } from 'towerjs/next'
 
 ```tsx
 import { withTowerEdge } from '@towerjs/edge'
+
 // Edge is not re-exported from towerjs — install and import @towerjs/edge directly
 ```
 

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const hasGoogle = !!process.env.GOOGLE_CLIENT_ID
 const hasGithub = !!process.env.GITHUB_CLIENT_ID

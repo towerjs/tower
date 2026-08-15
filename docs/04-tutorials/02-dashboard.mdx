@@ -7,7 +7,7 @@ This tutorial builds a dashboard application with organization support — membe
 
 ## 1. Configure Organizations
 
-``` filename="tower.config.ts"
+```filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   credentials: { enabled: true },
@@ -111,8 +111,8 @@ Server actions that touch the gatehouse instance need the `action()` wrapper fro
 ```tsx filename="src/app/actions.ts"
 'use server'
 
-import { action } from 'towerjs/gatehouse/next'
 import { gatehouse } from 'towerjs/gatehouse'
+import { action } from 'towerjs/gatehouse/next'
 
 export const inviteMember = action(async (formData: FormData) => {
   const orgId = formData.get('orgId') as string

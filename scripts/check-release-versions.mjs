@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { readdir, access } from 'node:fs/promises'
+import { access, readdir } from 'node:fs/promises'
 
 const packageFiles = ['package.json']
 for (const workspace of ['packages', 'examples']) {

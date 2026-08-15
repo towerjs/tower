@@ -1,10 +1,11 @@
-import { getTowerApp } from '../runtime.js'
 import {
   action as realAction,
-  withGatehouse as realWithGatehouse,
   GET as realGET,
   POST as realPOST,
+  withGatehouse as realWithGatehouse,
 } from '@towerjs/gatehouse/next'
+
+import { getTowerApp } from '../runtime.js'
 
 export type ActionResult = { error?: string; ok?: true }
 

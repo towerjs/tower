@@ -1,7 +1,7 @@
-import type { TowerApp, TowerModule, TowerContext, TowerConfig } from '@towerjs/foundation'
 import type { TowerBlueprint } from '@towerjs/blueprint'
-import { registerService } from '@towerjs/foundation'
 import { registerEdgeConfigProvider } from '@towerjs/edge/register'
+import type { TowerApp, TowerConfig, TowerContext, TowerModule } from '@towerjs/foundation'
+import { registerService } from '@towerjs/foundation'
 
 if (process.env.NODE_ENV !== 'test') void registerEdgeConfigProvider().catch(() => undefined)
 
@@ -115,9 +115,7 @@ export function initTower(config?: TowerBlueprint): Promise<TowerApp> {
 
   const promise = getFoundation()
     .then(async ({ resolveConfig }) => {
-      const cfg = config
-        ? (config as unknown as TowerConfig)
-        : await resolveConfig()
+      const cfg = config ? (config as unknown as TowerConfig) : await resolveConfig()
       return buildApp(cfg as TowerConfig)
     })
     .catch((err) => {

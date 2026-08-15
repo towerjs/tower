@@ -78,8 +78,8 @@ import { gatehouse } from '@towerjs/gatehouse'
 User code in generated projects imports from `towerjs`:
 
 ```ts
-import { gatehouse } from 'towerjs/gatehouse'
 import { defineTower } from 'towerjs/blueprint'
+import { gatehouse } from 'towerjs/gatehouse'
 import { getSession } from 'towerjs/gatehouse/next'
 ```
 

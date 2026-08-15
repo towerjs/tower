@@ -1,6 +1,8 @@
-import { Migrator, FileMigrationProvider } from 'kysely/migration'
 import * as nodeFs from 'node:fs'
 import * as nodePath from 'node:path'
+
+import { FileMigrationProvider, Migrator } from 'kysely/migration'
+
 import type { Vault, VaultMigrationConfig } from './types.js'
 
 const vaultFs = {

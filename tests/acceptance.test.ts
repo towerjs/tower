@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
 import { getModuleFactory } from '@towerjs/blueprint'
-import { createTowerApp } from '@towerjs/foundation'
-import '@towerjs/vault'
-import '@towerjs/gatehouse'
 import '@towerjs/courier'
+import { createTowerApp } from '@towerjs/foundation'
+import '@towerjs/gatehouse'
+import '@towerjs/vault'
+
+import { describe, expect, it } from 'vitest'
 
 describe('boot — module composition', () => {
   it('creates an app with no modules', async () => {

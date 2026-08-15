@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { defineCourier, courier } from './index.js'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { courier, defineCourier } from './index.js'
 
 vi.mock('web-push', () => ({
   setVapidDetails: vi.fn(),

@@ -1,5 +1,3 @@
-import { createAuthClient } from 'better-auth/react'
-import type { ReactAuthClient } from 'better-auth/react'
 import type { BetterAuthClientOptions } from 'better-auth/client'
 import {
   adminClient,
@@ -9,6 +7,8 @@ import {
   phoneNumberClient,
   twoFactorClient,
 } from 'better-auth/client/plugins'
+import { createAuthClient } from 'better-auth/react'
+import type { ReactAuthClient } from 'better-auth/react'
 
 export type GatehouseClientOptions = BetterAuthClientOptions & {
   baseURL?: string

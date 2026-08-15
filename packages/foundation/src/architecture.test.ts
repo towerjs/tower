@@ -1,8 +1,10 @@
-import { describe, it, expect, vi } from 'vitest'
-import { resolveDependencyOrder } from './dependency-graph.js'
-import { resolve, dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { TowerModule, TowerContext } from './types.js'
+
+import { describe, expect, it, vi } from 'vitest'
+
+import { resolveDependencyOrder } from './dependency-graph.js'
+import type { TowerContext, TowerModule } from './types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const { createTowerApp } = await import(resolve(dirname(__filename), './app.ts'))

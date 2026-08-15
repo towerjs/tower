@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { sendCourierEmail } from '@/app/actions'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+
+import { useState } from 'react'
 
 type SendResult = {
   id?: string

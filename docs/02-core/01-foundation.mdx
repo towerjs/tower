@@ -10,8 +10,8 @@ Foundation is the lowest-level package. It provides the runtime infrastructure t
 The primary way to create a Tower application. To use modules, pass `getModuleFactory` (from `@towerjs/blueprint`) as the second argument — without it, module configs are not registered or initialized:
 
 ```tsx
-import { createTowerApp } from '@towerjs/foundation'
 import { getModuleFactory } from '@towerjs/blueprint'
+import { createTowerApp } from '@towerjs/foundation'
 
 const app = await createTowerApp(
   {
@@ -27,8 +27,8 @@ const app = await createTowerApp(
 Calling `createTower()` (no "App") adds config file resolution, but you still pass the module factory:
 
 ```tsx
-import { createTower } from '@towerjs/foundation'
 import { getModuleFactory } from '@towerjs/blueprint'
+import { createTower } from '@towerjs/foundation'
 
 const app = await createTower(undefined, getModuleFactory) // resolves tower.config.ts automatically
 ```
@@ -87,7 +87,7 @@ Each module registers its service under its bare name (e.g. `vault`, `gatehouse`
 For cross-module access after initialization:
 
 ```tsx
-import { registerService, getService } from '@towerjs/foundation'
+import { getService, registerService } from '@towerjs/foundation'
 
 registerService('database', pool)
 const pool = getService<Pool>('database')

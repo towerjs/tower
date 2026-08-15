@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { readdirSync, readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
+import { readFileSync, readdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { describe, expect, it } from 'vitest'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const packagesDir = resolve(__dirname, '..', 'packages')
@@ -48,7 +49,12 @@ function collectSourceFiles(pkgDir: string): string[] {
       const full = resolve(dir, entry.name)
       if (entry.isDirectory()) {
         walk(full)
-      } else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts') && !entry.name.endsWith('.test-d.ts')) {
+      } else if (
+        entry.isFile() &&
+        entry.name.endsWith('.ts') &&
+        !entry.name.endsWith('.test.ts') &&
+        !entry.name.endsWith('.test-d.ts')
+      ) {
         files.push(full)
       }
     }

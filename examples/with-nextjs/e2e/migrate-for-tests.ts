@@ -1,5 +1,5 @@
-import { resolve, dirname } from 'path'
-import { readFileSync, existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
+import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))

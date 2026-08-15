@@ -1,7 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, existsSync, readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { execa } from 'execa'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { nextAdapter } from './frameworks/next.js'
 import type { ProjectState } from './state.js'
 
 vi.mock('execa', () => ({
@@ -13,9 +17,6 @@ vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
   checkbox: vi.fn(),
 }))
-
-import { execa } from 'execa'
-import { nextAdapter } from './frameworks/next.js'
 
 const baseState: ProjectState = {
   projectName: 'my-tower-app',

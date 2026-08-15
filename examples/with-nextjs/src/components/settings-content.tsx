@@ -1,10 +1,11 @@
 'use client'
 
-import { useActionState } from 'react'
-import { updateProfile, changePassword } from '@/app/actions'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { changePassword, updateProfile } from '@/app/actions'
 import { Button } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+
+import { useActionState } from 'react'
 
 type SettingsContentProps = {
   user: { name: string; email: string }

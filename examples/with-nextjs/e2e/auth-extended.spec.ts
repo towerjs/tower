@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { type Page, expect, test } from '@playwright/test'
 
 const PASSWORD = 'Password123!'
 const NEW_PASSWORD = 'NewPassword789!'

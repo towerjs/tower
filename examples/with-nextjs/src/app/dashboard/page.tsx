@@ -1,7 +1,8 @@
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+
 import Link from 'next/link'
 import { gatehouse } from 'towerjs/gatehouse'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 export default async function DashboardPage() {
   const session = await gatehouse.getSession()

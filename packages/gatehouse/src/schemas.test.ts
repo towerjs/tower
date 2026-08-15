@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { parseGatehouseConfig } from './schemas.js'
 
 describe('gatehouse config validation', () => {

@@ -79,8 +79,8 @@ jobs:
           # Empty when this push is not a version-packages merge, so the action
           # only opens/updates the version PR and never attempts to publish.
           publish: ${{ steps.release.outputs.publish }}
-          commit: "release: version packages"
-          title: "release: version packages"
+          commit: 'release: version packages'
+          title: 'release: version packages'
           createGithubReleases: ${{ steps.release.outputs.create-releases }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

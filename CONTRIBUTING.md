@@ -103,6 +103,7 @@ When a pull request is created, Tower maintainers will be notified automatically
 Tower follows a layered architecture where each module lives in its own package under `packages/` and communicates through well-defined interfaces. Please review [AGENTS.md](AGENTS.md) for architectural principles, dependency rules, and import conventions before making changes.
 
 Key principles:
+
 - **Provider-agnostic** — Modules abstract over specific providers behind a stable API
 - **Framework-first** — Works alongside the user's framework rather than replacing it
 - **Lazy initialization** — Tower apps initialize on first use, not at import time

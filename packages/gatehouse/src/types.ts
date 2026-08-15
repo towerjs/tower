@@ -1,3 +1,14 @@
+import type { ApiKeyOptions as BetterAuthApiKeyOptions } from '@better-auth/api-key'
+import type { PasskeyOptions as BetterAuthPasskeyOptions } from '@better-auth/passkey'
+import type {
+  AdminOptions as BetterAuthAdminOptions,
+  MagicLinkOptions as BetterAuthMagicLinkOptions,
+  OrganizationOptions as BetterAuthOrganizationOptions,
+  PhoneNumberOptions as BetterAuthPhoneNumberOptions,
+  TwoFactorOptions as BetterAuthTwoFactorOptions,
+} from 'better-auth/plugins'
+import type { SocialProviders as BetterAuthSocialProviders } from 'better-auth/types'
+
 /** A user managed by Gatehouse. */
 export interface GatehouseUser {
   id: string
@@ -308,17 +319,6 @@ export interface OrganizationInviteParams {
   email: string
   role: string
 }
-
-import type {
-  MagicLinkOptions as BetterAuthMagicLinkOptions,
-  PhoneNumberOptions as BetterAuthPhoneNumberOptions,
-  TwoFactorOptions as BetterAuthTwoFactorOptions,
-  OrganizationOptions as BetterAuthOrganizationOptions,
-  AdminOptions as BetterAuthAdminOptions,
-} from 'better-auth/plugins'
-import type { SocialProviders as BetterAuthSocialProviders } from 'better-auth/types'
-import type { PasskeyOptions as BetterAuthPasskeyOptions } from '@better-auth/passkey'
-import type { ApiKeyOptions as BetterAuthApiKeyOptions } from '@better-auth/api-key'
 
 /** Options for magic-link authentication. Maps to the better-auth magic link plugin. */
 export type GatehouseMagicLinkOptions = BetterAuthMagicLinkOptions
