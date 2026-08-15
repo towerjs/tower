@@ -45,7 +45,7 @@ jobs:
       - run: pnpm check:versions
       - run: pnpm build
 
-      - run: node packages/scribe/dist/cli.js about
+      - run: node ../../packages/scribe/dist/cli.js about
         working-directory: examples/with-nextjs
 
       - run: pnpm test
@@ -84,7 +84,7 @@ jobs:
 
       - run: pnpm build
 
-      - run: node packages/scribe/dist/cli.js about
+      - run: node ../../packages/scribe/dist/cli.js about
         working-directory: examples/with-nextjs
 
       - run: pnpm --filter @towerjs/with-nextjs exec playwright install --with-deps chromium
