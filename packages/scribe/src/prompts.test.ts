@@ -19,15 +19,9 @@ describe('collectProjectState', () => {
     vi.clearAllMocks()
   })
 
-  it('collects project name, framework, typescript, tailwind, deployment, runtime, and modules', async () => {
+  it('collects project name, tailwind, deployment, runtime, and modules', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
-      .mockResolvedValueOnce('neon')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('neon')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['vault', 'gatehouse'])
     vi.mocked(featureCheckbox).mockResolvedValueOnce(['credentials', 'social'])
 
@@ -35,37 +29,39 @@ describe('collectProjectState', () => {
 
     expect(state.projectName).toBe('my-app')
     expect(state.framework).toBe('next')
-    expect(state.frameworkAnswers).toEqual({ typescript: true, tailwind: true })
+    expect(state.frameworkAnswers).toEqual({ tailwind: true })
     expect(state.deployment).toBe('vercel')
     expect(state.runtime).toBe('node')
     expect(state.modules.vault).toEqual({ provider: 'neon', brand: 'neon' })
     expect(state.modules.gatehouse).toEqual({ credentials: true, social: { google: {}, github: {} } })
   })
 
-  it('prompts for edge runtime when vercel + edge is chosen', async () => {
+  it('uses next framework and TypeScript by default', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('edge')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
 
-    expect(state.frameworkAnswers).toEqual({ typescript: true, tailwind: true })
-    expect(state.deployment).toBe('vercel')
-    expect(state.runtime).toBe('edge')
+    expect(state.framework).toBe('next')
+    expect(state.frameworkAnswers.typescript).toBeUndefined()
   })
 
-  it('defaults cloudflare to edge runtime without prompting', async () => {
+  it('derives node runtime for vercel without prompting', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('cloudflare')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
+    vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
+
+    const state = await collectProjectState()
+
+    expect(state.deployment).toBe('vercel')
+    expect(state.runtime).toBe('node')
+    expect(select).not.toHaveBeenCalledWith(expect.objectContaining({ message: 'Runtime' }))
+  })
+
+  it('derives edge runtime for cloudflare without prompting', async () => {
+    vi.mocked(input).mockResolvedValueOnce('my-app')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('cloudflare')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -74,13 +70,9 @@ describe('collectProjectState', () => {
     expect(state.runtime).toBe('edge')
   })
 
-  it('defaults other deployment to node runtime without prompting', async () => {
+  it('derives node runtime for other deployment without prompting', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('other')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('other')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -91,12 +83,7 @@ describe('collectProjectState', () => {
 
   it('skips module providers when no modules selected', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -106,12 +93,7 @@ describe('collectProjectState', () => {
 
   it('validates project name', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     await collectProjectState()
@@ -125,13 +107,7 @@ describe('collectProjectState', () => {
 
   it('maps vault provider to pg for non-neon', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
-      .mockResolvedValueOnce('supabase')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('supabase')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['vault'])
 
     const state = await collectProjectState()
@@ -139,15 +115,19 @@ describe('collectProjectState', () => {
     expect(state.modules.vault).toEqual({ provider: 'pg', brand: 'supabase' })
   })
 
+  it('keeps vault enabled when provider is deferred', async () => {
+    vi.mocked(input).mockResolvedValueOnce('my-app')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('skip')
+    vi.mocked(modulesCheckbox).mockResolvedValueOnce(['vault'])
+
+    const state = await collectProjectState()
+
+    expect(state.modules.vault).toEqual({})
+  })
+
   it('prompts for courier email provider when courier is selected', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
-      .mockResolvedValueOnce('resend')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('resend')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['courier'])
 
     const state = await collectProjectState()
@@ -155,30 +135,21 @@ describe('collectProjectState', () => {
     expect(state.modules.courier).toEqual({ email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' } })
   })
 
-  it('skips courier config when user defers provider choice', async () => {
+  it('keeps courier enabled when email provider is deferred', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
-      .mockResolvedValueOnce('skip')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('skip')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['courier'])
 
     const state = await collectProjectState()
 
-    expect(state.modules.courier).toBeUndefined()
+    expect(state.modules.courier).toEqual({})
   })
 
   it('prompts for sms provider when courier and phone auth are enabled', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
     vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
       .mockResolvedValueOnce('resend')
       .mockResolvedValueOnce('twilio')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['gatehouse', 'courier'])
@@ -195,13 +166,7 @@ describe('collectProjectState', () => {
 
   it('does not prompt for sms provider without phone auth', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select)
-      .mockResolvedValueOnce('next')
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce('vercel')
-      .mockResolvedValueOnce('node')
-      .mockResolvedValueOnce('resend')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('resend')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['gatehouse', 'courier'])
     vi.mocked(featureCheckbox).mockResolvedValueOnce(['credentials'])
 

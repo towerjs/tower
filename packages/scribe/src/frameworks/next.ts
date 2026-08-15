@@ -14,8 +14,7 @@ export const nextAdapter: FrameworkAdapter = {
   name: 'next',
 
   async generate(state: ProjectState, targetDir: string) {
-    const answers = state.frameworkAnswers as { typescript?: boolean; tailwind?: boolean }
-    const useTs = answers.typescript !== false
+    const answers = state.frameworkAnswers as { tailwind?: boolean }
     const useTailwind = answers.tailwind === true
     const isEdge = state.runtime === 'edge'
     const pm = detectPackageManager()
@@ -30,13 +29,8 @@ export const nextAdapter: FrameworkAdapter = {
       '--no-react-compiler',
       '--agents-md',
       nextAppFlag(pm),
+      '--ts',
     ]
-
-    if (useTs) {
-      flags.push('--ts')
-    } else {
-      flags.push('--js')
-    }
 
     if (useTailwind) {
       flags.push('--tailwind')

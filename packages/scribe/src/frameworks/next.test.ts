@@ -6,7 +6,7 @@ const baseState: ProjectState = {
   projectName: 'my-app',
   framework: 'next',
   modules: {},
-  frameworkAnswers: { typescript: true, tailwind: true },
+  frameworkAnswers: { tailwind: true },
   deployment: 'vercel',
   runtime: 'node',
 }
@@ -296,7 +296,7 @@ describe('nextAdapter.generate', () => {
     projectName: 'my-app',
     framework: 'next',
     modules: {},
-    frameworkAnswers: { typescript: true, tailwind: true },
+    frameworkAnswers: { tailwind: true },
     deployment: 'vercel',
     runtime: 'node',
   }
@@ -531,7 +531,7 @@ describe('nextAdapter.generate', () => {
   it('writes .prettierrc without tailwind plugins when tailwind is not selected', async () => {
     const stateWithoutTailwind: ProjectState = {
       ...state,
-      frameworkAnswers: { typescript: true, tailwind: false },
+      frameworkAnswers: { tailwind: false },
     }
 
     await nextAdapter.generate(stateWithoutTailwind, '/target')
@@ -565,7 +565,7 @@ describe('nextAdapter.generate', () => {
   it('does not install tailwind prettier plugins without tailwind', async () => {
     const stateWithoutTailwind: ProjectState = {
       ...state,
-      frameworkAnswers: { typescript: true, tailwind: false },
+      frameworkAnswers: { tailwind: false },
     }
 
     await nextAdapter.generate(stateWithoutTailwind, '/target')

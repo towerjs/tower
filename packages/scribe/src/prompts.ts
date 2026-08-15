@@ -1,6 +1,6 @@
 import { input, select, checkbox as featureCheckbox } from '@inquirer/prompts'
 import { checkbox as modulesCheckbox } from './checkbox.js'
-import type { Framework, ProjectState, ProviderMap, DeploymentTarget, Runtime } from './state.js'
+import type { ProjectState, ProviderMap, DeploymentTarget, Runtime } from './state.js'
 
 const MODULE_CHOICES = [
   { name: 'Vault — Database ORM (Postgres, Neon)', value: 'vault' },
@@ -19,6 +19,7 @@ const VAULT_BRAND_CHOICES = [
   { name: 'Supabase', value: 'supabase' as const },
   { name: 'Railway', value: 'railway' as const },
   { name: 'Other PostgreSQL provider', value: 'other' as const },
+  { name: 'Configure later', value: 'skip' as const },
 ]
 
 const GATEHOUSE_FEATURE_CHOICES = [
@@ -34,28 +35,31 @@ const EMAIL_PROVIDER_CHOICES = [
   { name: 'Resend', value: 'resend' },
   { name: 'SMTP', value: 'smtp' },
   { name: 'SES (AWS)', value: 'ses' },
-  { name: "I'll configure later", value: 'skip' },
+  { name: 'Configure later', value: 'skip' },
 ]
 
 const SMS_PROVIDER_CHOICES = [
   { name: 'Twilio', value: 'twilio' },
-  { name: "I'll configure later", value: 'skip' },
+  { name: 'Configure later', value: 'skip' },
 ]
-
-const FRAMEWORK_CHOICES: { name: string; value: Framework }[] = [{ name: 'Next.js', value: 'next' }]
 
 const DEPLOYMENT_CHOICES: { name: string; value: DeploymentTarget }[] = [
   { name: 'Vercel', value: 'vercel' },
-  { name: 'Cloudflare Workers', value: 'cloudflare' },
-  { name: 'Other / self-hosted', value: 'other' },
+  { name: 'Cloudflare', value: 'cloudflare' },
+  { name: 'Self-hosted', value: 'other' },
 ]
 
-const RUNTIME_CHOICES: { name: string; value: Runtime }[] = [
-  { name: 'Serverless Node.js (recommended)', value: 'node' },
-  { name: 'Serverless Vercel Edge', value: 'edge' },
-]
+/** Next.js is currently the only supported framework. */
+const DEFAULT_FRAMEWORK = 'next'
 
-function resolveVaultProvider(brand: string): { provider: 'neon' | 'pg'; brand: string } {
+/** Derives the runtime from the deployment target instead of asking. */
+function deriveRuntime(deployment: DeploymentTarget): Runtime {
+  if (deployment === 'cloudflare') return 'edge'
+  return 'node'
+}
+
+function resolveVaultProvider(brand: string): { provider: 'neon' | 'pg'; brand: string } | undefined {
+  if (brand === 'skip') return undefined
   if (brand === 'neon') return { provider: 'neon', brand: 'neon' }
   return { provider: 'pg', brand }
 }
@@ -72,26 +76,9 @@ async function promptProjectName(): Promise<string> {
   })
 }
 
-async function promptFramework(): Promise<Framework> {
-  return select({
-    message: 'Select framework',
-    choices: FRAMEWORK_CHOICES,
-  })
-}
-
-async function promptTypeScript(): Promise<boolean> {
-  return select({
-    message: 'TypeScript?',
-    choices: [
-      { name: 'Yes', value: true },
-      { name: 'No', value: false },
-    ],
-  })
-}
-
 async function promptTailwind(): Promise<boolean> {
   return select({
-    message: 'Tailwind CSS?',
+    message: 'Tailwind CSS',
     choices: [
       { name: 'Yes', value: true },
       { name: 'No', value: false },
@@ -101,32 +88,22 @@ async function promptTailwind(): Promise<boolean> {
 
 async function promptDeployment(): Promise<DeploymentTarget> {
   return select({
-    message: 'Deployment target',
+    message: 'Deployment',
     choices: DEPLOYMENT_CHOICES,
-  })
-}
-
-async function promptRuntime(deployment: DeploymentTarget): Promise<Runtime> {
-  if (deployment === 'cloudflare') return 'edge'
-  if (deployment === 'other') return 'node'
-
-  return select({
-    message: 'Runtime',
-    choices: RUNTIME_CHOICES,
   })
 }
 
 async function promptModules(): Promise<string[]> {
   return modulesCheckbox({
-    message: 'Which Tower modules do you want?',
+    message: 'What should your application include',
     choices: MODULE_CHOICES,
     link: MODULE_LINKS,
   })
 }
 
-async function promptVaultProvider(): Promise<{ provider: 'neon' | 'pg'; brand: string }> {
+async function promptVaultProvider(): Promise<{ provider: 'neon' | 'pg'; brand: string } | undefined> {
   const brand = await select({
-    message: 'PostgreSQL provider',
+    message: 'Database provider',
     choices: VAULT_BRAND_CHOICES,
   })
   return resolveVaultProvider(brand)
@@ -134,7 +111,7 @@ async function promptVaultProvider(): Promise<{ provider: 'neon' | 'pg'; brand: 
 
 async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
   const features = await featureCheckbox({
-    message: 'Auth features to enable',
+    message: 'Auth features',
     choices: GATEHOUSE_FEATURE_CHOICES,
   })
   const cfg: Record<string, unknown> = {}
@@ -147,7 +124,7 @@ async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
   return cfg
 }
 
-async function promptCourierProvider(needsSms: boolean): Promise<Record<string, unknown> | undefined> {
+async function promptCourierProvider(needsSms: boolean): Promise<Record<string, unknown>> {
   const cfg: Record<string, unknown> = {}
 
   const email = await select({
@@ -168,7 +145,7 @@ async function promptCourierProvider(needsSms: boolean): Promise<Record<string, 
     }
   }
 
-  return Object.keys(cfg).length > 0 ? cfg : undefined
+  return cfg
 }
 
 async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
@@ -183,14 +160,14 @@ async function promptModuleProviders(enabled: string[]): Promise<ProviderMap> {
   for (const name of enabled) {
     switch (name) {
       case 'vault': {
-        const { provider, brand } = await promptVaultProvider()
-        modules.vault = { provider, brand }
+        // A selected module is always kept; deferring the provider just
+        // leaves the module enabled with a default configuration.
+        modules.vault = (await promptVaultProvider()) ?? {}
         break
       }
       case 'courier': {
         const needsSms = gatehouseFeatures?.phoneNumber === true
-        const cfg = await promptCourierProvider(needsSms)
-        if (cfg) modules.courier = cfg
+        modules.courier = await promptCourierProvider(needsSms)
         break
       }
       case 'gatehouse':
@@ -208,20 +185,18 @@ export async function collectProjectState(): Promise<ProjectState> {
   console.log('\n  Tower — Create application\n')
 
   const projectName = await promptProjectName()
-  const framework = await promptFramework()
-  const typescript = await promptTypeScript()
   const tailwind = await promptTailwind()
   const deployment = await promptDeployment()
-  const runtime = await promptRuntime(deployment)
+  const runtime = deriveRuntime(deployment)
   const selected = await promptModules()
   const modules = selected.length > 0 ? await promptModuleProviders(selected) : {}
   console.log('')
 
   return {
     projectName,
-    framework,
+    framework: DEFAULT_FRAMEWORK,
     modules,
-    frameworkAnswers: { typescript, tailwind },
+    frameworkAnswers: { tailwind },
     deployment,
     runtime,
   }
