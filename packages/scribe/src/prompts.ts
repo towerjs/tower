@@ -1,6 +1,7 @@
 import { input, select, checkbox as featureCheckbox } from '@inquirer/prompts'
 import { checkbox as modulesCheckbox } from './checkbox.js'
 import type { ProjectState, ProviderMap, DeploymentTarget, Runtime } from './state.js'
+import type { CreateFlags } from './create-flags.js'
 
 const MODULE_CHOICES = [
   { name: 'Vault — Database ORM (Postgres, Neon)', value: 'vault' },
@@ -114,6 +115,10 @@ async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
     message: 'Auth features',
     choices: GATEHOUSE_FEATURE_CHOICES,
   })
+  return resolveGatehouseFeatures(features)
+}
+
+function resolveGatehouseFeatures(features: string[]): Record<string, unknown> {
   const cfg: Record<string, unknown> = {}
   for (const f of features) {
     if (f === 'credentials') cfg[f] = true
@@ -125,24 +130,31 @@ async function promptGatehouseFeatures(): Promise<Record<string, unknown>> {
 }
 
 async function promptCourierProvider(needsSms: boolean): Promise<Record<string, unknown>> {
-  const cfg: Record<string, unknown> = {}
-
   const email = await select({
     message: 'Email provider',
     choices: EMAIL_PROVIDER_CHOICES,
   })
+
+  let sms: string | undefined
+  if (needsSms) {
+    sms = await select({
+      message: 'SMS provider',
+      choices: SMS_PROVIDER_CHOICES,
+    })
+  }
+
+  return resolveCourierProvider(email, sms)
+}
+
+function resolveCourierProvider(email: string, sms: string | undefined): Record<string, unknown> {
+  const cfg: Record<string, unknown> = {}
+
   if (email !== 'skip') {
     cfg.email = { provider: email, from: 'My App <onboarding@resend.dev>' }
   }
 
-  if (needsSms) {
-    const sms = await select({
-      message: 'SMS provider',
-      choices: SMS_PROVIDER_CHOICES,
-    })
-    if (sms !== 'skip') {
-      cfg.sms = { provider: sms }
-    }
+  if (sms && sms !== 'skip') {
+    cfg.sms = { provider: sms }
   }
 
   return cfg
@@ -191,6 +203,48 @@ export async function collectProjectState(): Promise<ProjectState> {
   const selected = await promptModules()
   const modules = selected.length > 0 ? await promptModuleProviders(selected) : {}
   console.log('')
+
+  return {
+    projectName,
+    framework: DEFAULT_FRAMEWORK,
+    modules,
+    frameworkAnswers: { tailwind },
+    deployment,
+    runtime,
+  }
+}
+
+/** Collects the full project state from CLI flags, without prompting. */
+export async function collectProjectStateFromFlags(flags: CreateFlags): Promise<ProjectState> {
+  const projectName = flags.name ?? 'my-app'
+  const deployment = flags.deployment ?? 'vercel'
+  const runtime = deriveRuntime(deployment)
+  const tailwind = flags.tailwind ?? false
+  const modules: ProviderMap = {}
+
+  const selected = flags.modules ?? []
+  let gatehouseFeatures: Record<string, unknown> | undefined
+  if (selected.includes('gatehouse')) {
+    gatehouseFeatures = resolveGatehouseFeatures(flags.features ?? [])
+    modules.gatehouse = gatehouseFeatures
+  }
+
+  for (const name of selected) {
+    switch (name) {
+      case 'vault':
+        modules.vault = resolveVaultProvider(flags.vault ?? 'skip') ?? {}
+        break
+      case 'courier': {
+        const needsSms = gatehouseFeatures?.phoneNumber === true
+        modules.courier = resolveCourierProvider(flags.email ?? 'skip', needsSms ? flags.sms : undefined)
+        break
+      }
+      case 'gatehouse':
+        break
+      default:
+        modules[name] = {}
+    }
+  }
 
   return {
     projectName,

@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   mockCollectProjectState: vi.fn(),
+  mockCollectProjectStateFromFlags: vi.fn(),
   mockGenerateProject: vi.fn(),
 }))
 
 vi.mock('../prompts.js', () => ({
   collectProjectState: mocks.mockCollectProjectState,
+  collectProjectStateFromFlags: mocks.mockCollectProjectStateFromFlags,
 }))
 
 vi.mock('../generators/project.js', () => ({
@@ -32,6 +34,22 @@ describe('createCommand', () => {
     await createCommand()
 
     expect(mocks.mockCollectProjectState).toHaveBeenCalledOnce()
+    expect(mocks.mockGenerateProject).toHaveBeenCalledOnce()
+  })
+
+  it('uses flags to collect state when flags are provided', async () => {
+    mocks.mockCollectProjectStateFromFlags.mockResolvedValue({
+      projectName: 'test-app',
+      framework: 'next',
+      modules: {},
+      frameworkAnswers: {},
+    })
+    mocks.mockGenerateProject.mockResolvedValue(undefined)
+
+    await createCommand(['--name', 'test-app', '--modules', 'vault'])
+
+    expect(mocks.mockCollectProjectState).not.toHaveBeenCalled()
+    expect(mocks.mockCollectProjectStateFromFlags).toHaveBeenCalledOnce()
     expect(mocks.mockGenerateProject).toHaveBeenCalledOnce()
   })
 

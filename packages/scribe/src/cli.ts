@@ -42,7 +42,7 @@ export async function run(command: string | undefined, flags: string[], configPa
 
   switch (command) {
     case 'create':
-      await createCommand()
+      await createCommand(flags)
       return ok([])
     case 'about':
       return runAbout(configPath)
@@ -239,6 +239,7 @@ export function helpText(): string[] {
     '',
     'Commands:',
     '  create           Scaffold a new Tower application',
+    '  create --name my-app --modules vault,gatehouse  Scaffold non-interactively',
     '  about            Show application, module, runtime, and environment diagnostics',
     '  migrate          Run database and auth migrations',
     '  migrate --seed   Run migrations, then seeds',
@@ -251,8 +252,7 @@ export function helpText(): string[] {
 }
 
 const currentFile = fs.realpathSync(fileURLToPath(import.meta.url))
-const isMain =
-  process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === currentFile
+const isMain = process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === currentFile
 if (isMain) {
   const [command, ...flags] = process.argv.slice(2)
   run(command, flags).then(

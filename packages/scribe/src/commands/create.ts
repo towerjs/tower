@@ -1,10 +1,12 @@
-import { collectProjectState } from '../prompts.js'
+import { collectProjectState, collectProjectStateFromFlags } from '../prompts.js'
+import { parseCreateFlags } from '../create-flags.js'
 import { generateProject } from '../generators/project.js'
 import { detectPackageManager, devCommand, migrateCommand } from '../package-manager.js'
 
-/** CLI handler for `tower create` — prompts for project settings and scaffolds a new app. */
-export async function createCommand(): Promise<void> {
-  const state = await collectProjectState()
+/** CLI handler for `tower create` — scaffolds a new app, interactively or from flags. */
+export async function createCommand(flags: string[] = []): Promise<void> {
+  const state =
+    flags.length > 0 ? await collectProjectStateFromFlags(parseCreateFlags(flags)) : await collectProjectState()
   const cwd = process.cwd()
   const pm = detectPackageManager()
 

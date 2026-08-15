@@ -3,6 +3,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
+    "types": ["node"],
     "tsBuildInfoFile": "../../.cache/tower/create-tower.tsbuildinfo"
   },
   "include": ["src"],

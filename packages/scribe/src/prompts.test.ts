@@ -12,7 +12,7 @@ vi.mock('./checkbox.js', () => ({
 
 import { input, select, checkbox as featureCheckbox } from '@inquirer/prompts'
 import { checkbox as modulesCheckbox } from './checkbox.js'
-import { collectProjectState } from './prompts.js'
+import { collectProjectState, collectProjectStateFromFlags } from './prompts.js'
 
 describe('collectProjectState', () => {
   beforeEach(() => {
@@ -176,5 +176,100 @@ describe('collectProjectState', () => {
     expect(state.modules.courier).toEqual({
       email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' },
     })
+  })
+})
+
+describe('collectProjectStateFromFlags', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('builds state from flags without prompting', async () => {
+    const state = await collectProjectStateFromFlags({
+      name: 'test-app',
+      tailwind: false,
+      deployment: 'vercel',
+      modules: ['vault', 'gatehouse'],
+      vault: 'neon',
+      features: ['credentials', 'social'],
+    })
+
+    expect(state.projectName).toBe('test-app')
+    expect(state.framework).toBe('next')
+    expect(state.frameworkAnswers).toEqual({ tailwind: false })
+    expect(state.deployment).toBe('vercel')
+    expect(state.runtime).toBe('node')
+    expect(state.modules.vault).toEqual({ provider: 'neon', brand: 'neon' })
+    expect(state.modules.gatehouse).toEqual({ credentials: true, social: { google: {}, github: {} } })
+  })
+
+  it('derives edge runtime for cloudflare deployment', async () => {
+    const state = await collectProjectStateFromFlags({
+      name: 'test-app',
+      deployment: 'cloudflare',
+    })
+
+    expect(state.runtime).toBe('edge')
+  })
+
+  it('defaults to vercel, no tailwind, and no modules', async () => {
+    const state = await collectProjectStateFromFlags({ name: 'test-app' })
+
+    expect(state.deployment).toBe('vercel')
+    expect(state.runtime).toBe('node')
+    expect(state.frameworkAnswers).toEqual({ tailwind: false })
+    expect(state.modules).toEqual({})
+  })
+
+  it('keeps vault enabled when provider deferred', async () => {
+    const state = await collectProjectStateFromFlags({
+      modules: ['vault'],
+      vault: 'skip',
+    })
+
+    expect(state.modules.vault).toEqual({})
+  })
+
+  it('maps non-neon vault brand to pg provider', async () => {
+    const state = await collectProjectStateFromFlags({
+      modules: ['vault'],
+      vault: 'supabase',
+    })
+
+    expect(state.modules.vault).toEqual({ provider: 'pg', brand: 'supabase' })
+  })
+
+  it('configures courier email and sms when phone auth enabled', async () => {
+    const state = await collectProjectStateFromFlags({
+      modules: ['gatehouse', 'courier'],
+      features: ['phoneNumber'],
+      email: 'resend',
+      sms: 'twilio',
+    })
+
+    expect(state.modules.gatehouse).toEqual({ phoneNumber: true })
+    expect(state.modules.courier).toEqual({
+      email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' },
+      sms: { provider: 'twilio' },
+    })
+  })
+
+  it('ignores sms provider without phone auth', async () => {
+    const state = await collectProjectStateFromFlags({
+      modules: ['gatehouse', 'courier'],
+      features: ['credentials'],
+      email: 'resend',
+      sms: 'twilio',
+    })
+
+    expect(state.modules.courier).toEqual({
+      email: { provider: 'resend', from: 'My App <onboarding@resend.dev>' },
+    })
+  })
+
+  it('uses default project name when omitted', async () => {
+    const state = await collectProjectStateFromFlags({})
+
+    expect(state.projectName).toBe('my-app')
   })
 })

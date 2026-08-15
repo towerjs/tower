@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { FrameworkAdapter } from './adapter.js'
 import type { ProjectState } from '../state.js'
-import { detectPackageManager, nextAppFlag, addCommand } from '../package-manager.js'
+import { detectPackageManager, nextAppFlag, addCommand, type PackageManager } from '../package-manager.js'
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -102,13 +102,22 @@ export const nextAdapter: FrameworkAdapter = {
     for (const moduleName of ['vault', 'gatehouse', 'courier']) {
       if (state.modules[moduleName]) towerDeps.push(`@towerjs/${moduleName}`)
     }
-    await execa(pm, [...addCommand(pm).slice(1), ...towerDeps], { cwd: projectDir, stdio: 'inherit' })
+    await execa(pm, [...addCommand(pm).slice(1), ...towerInstallArgs(pm, towerDeps)], {
+      cwd: projectDir,
+      stdio: 'inherit',
+    })
 
     const cliDevDeps: string[] = ['@towerjs/scribe']
-    await execa(pm, [...addCommand(pm, true).slice(1), ...cliDevDeps], { cwd: projectDir, stdio: 'inherit' })
+    await execa(pm, [...addCommand(pm, true).slice(1), ...towerInstallArgs(pm, cliDevDeps)], {
+      cwd: projectDir,
+      stdio: 'inherit',
+    })
 
     if (isEdge) {
-      await execa(pm, [...addCommand(pm, true).slice(1), '@towerjs/edge'], { cwd: projectDir, stdio: 'inherit' })
+      await execa(pm, [...addCommand(pm, true).slice(1), ...towerInstallArgs(pm, ['@towerjs/edge'])], {
+        cwd: projectDir,
+        stdio: 'inherit',
+      })
     }
 
     const prettierDeps: string[] = ['prettier', 'prettier-plugin-organize-imports']
@@ -604,4 +613,40 @@ function agentsMd(state: ProjectState): string {
   )
 
   return lines.join('\n')
+}
+
+const ALL_TOWER_PACKAGES = [
+  'towerjs',
+  '@towerjs/foundation',
+  '@towerjs/blueprint',
+  '@towerjs/vault',
+  '@towerjs/gatehouse',
+  '@towerjs/courier',
+  '@towerjs/edge',
+  '@towerjs/scribe',
+]
+
+function towerTarball(packDir: string, name: string): string {
+  const suffix = name === 'towerjs' ? '' : name.replace('@towerjs/', '-')
+  return join(packDir, `towerjs${suffix}-0.1.0.tgz`)
+}
+
+/**
+ * Resolves tower package names to install args. When TOWER_PACK_DIR is set,
+ * installs from locally-packed tarballs instead of the npm registry. Every
+ * @towerjs/* package is installed explicitly because towerjs depends on all of
+ * them and npm would otherwise try to fetch the unpublished versions.
+ */
+function towerInstallArgs(pm: PackageManager, names: string[]): string[] {
+  const packDir = process.env.TOWER_PACK_DIR
+  if (!packDir) return names
+
+  if (pm === 'npm') {
+    const tarballs = new Set(names.map((n) => towerTarball(packDir, n)))
+    for (const name of ALL_TOWER_PACKAGES) tarballs.add(towerTarball(packDir, name))
+    return [...tarballs]
+  }
+  // pnpm/yarn/bun resolve `@towerjs/*` to the workspace registry in a monorepo;
+  // prefer the packed tarballs directly so the generated app is self-contained.
+  return [...new Set(ALL_TOWER_PACKAGES.map((n) => towerTarball(packDir, n)))]
 }

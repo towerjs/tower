@@ -17,6 +17,33 @@ This prompts for:
 - Which modules to include (Vault, Gatehouse, Courier)
 - Optional: social auth providers, email provider, etc.
 
+For non-interactive use (scripts, CI), pass flags instead:
+
+```bash
+pnpm create tower my-app \
+  --no-tailwind \
+  --modules vault,gatehouse \
+  --vault neon \
+  --features credentials,phoneNumber \
+  --email resend \
+  --sms twilio
+```
+
+Available flags:
+
+| Flag | Values | Default |
+| --- | --- | --- |
+| `--name`, or positional first arg | project name | `my-app` |
+| `--tailwind` / `--no-tailwind` | — | `--no-tailwind` |
+| `--deployment` | `vercel`, `cloudflare`, `other` | `vercel` |
+| `--modules` | comma-separated: `vault`, `gatehouse`, `courier` | none |
+| `--vault` | `neon`, `supabase`, `railway`, `other`, `skip` | `skip` |
+| `--features` | comma-separated: `credentials`, `social`, `phoneNumber` | none |
+| `--email` | `resend`, `smtp`, `ses`, `skip` | `skip` |
+| `--sms` | `twilio`, `skip` | `skip` |
+
+Passing any flag runs the whole flow without prompting.
+
 Once installed, projects also get the `tower` binary for database work:
 
 ```bash

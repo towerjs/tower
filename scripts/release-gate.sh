@@ -91,17 +91,26 @@ fi
 
 check "7. Generated app (requires network)"
 echo ""
-echo "  Manual steps — run these and verify each succeeds:"
-echo "    1. pnpm db:up  ← start Postgres container"
-echo "    2. pnpm create tower test-app"
-echo "    3. Select: no tailwind (or tailwind), modules: gatehouse + vault"
-echo "    4. cd test-app"
-echo "    5. pnpm install"
-echo "    6. Set DATABASE_URL in .env"
-echo "    7. pnpm build  ← THIS IS THE KEY GATE"
-echo "    8. pnpm dev    ← app should boot"
+echo "  Running: tower create test-app (from local packs) + pnpm install + pnpm build"
 echo ""
-echo "  If 'pnpm build' exits 0, this gate passes."
+TEST_APP_DIR="$(mktemp -d)"
+PACK_DIR="$TEST_APP_DIR/packs"
+mkdir -p "$PACK_DIR"
+for pkg in towerjs foundation blueprint vault gatehouse courier edge scribe; do
+  (cd "$ROOT/packages/$pkg" && pnpm pack --pack-destination "$PACK_DIR" >/dev/null 2>&1)
+done
+if cd "$TEST_APP_DIR" && \
+   TOWER_PACK_DIR="$PACK_DIR" \
+   node "$ROOT/packages/create-tower/dist/index.js" test-app --no-tailwind --modules vault,gatehouse --vault skip >/dev/null 2>&1 && \
+   cd "$TEST_APP_DIR/test-app" && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1; then
+  pass "Generated app builds (create tower + pnpm build)"
+  cd "$ROOT"
+  rm -rf "$TEST_APP_DIR"
+else
+  fail "Generated app build failed"
+  cd "$ROOT"
+  rm -rf "$TEST_APP_DIR"
+fi
 
 check "8. E2E auth flow (requires Docker + network)"
 echo ""
@@ -114,8 +123,8 @@ fi
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then
-  echo "=== AUTOMATED GATES PASSED ==="
-  echo "Complete the manual gate (#7, generated app) before releasing."
+  echo "=== ALL GATES PASSED ==="
+  echo "Release gate complete — ready to tag and publish."
 else
   echo "=== SOME GATES FAILED ==="
   exit 1
