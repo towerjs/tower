@@ -100,3 +100,7 @@ Tower is in active development. The core modules (Foundation, Blueprint, Vault, 
 ## License
 
 MIT
+
+## Contributing
+
+If you're interested in contributing to Tower, please read our [contributing docs](https://github.com/hyphenzero/tower/blob/main/CONTRIBUTING.md) **before submitting a pull request**.

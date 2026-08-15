@@ -1,8 +1,117 @@
-# Contributing
+# Contributing to Tower
+
+## Requirements
+
+Before getting started, ensure your system has access to the following tools:
+
+- [Node.js](https://nodejs.org/) (v22+)
+- [pnpm](https://pnpm.io/) (v11+)
+
+## Getting started
+
+```sh
+# Install dependencies
+pnpm install
+
+# Build the project
+pnpm build
+```
+
+## Development workflow
+
+During development, you can run tests in watch mode:
+
+```sh
+pnpm test:watch
+```
+
+The `examples/with-nextjs` directory contains a reference Next.js application you can use to test your changes. To start it:
+
+```sh
+cd examples/with-nextjs
+pnpm dev
+```
+
+## Bug fixes
+
+If you've found a bug in Tower that you'd like to fix, [submit a pull request](https://github.com/hyphenzero/tower/pulls) with your changes. Include a helpful description of the problem and how your changes address it, and provide tests so we can verify the fix works as expected.
+
+## New features
+
+If there's a new feature you'd like to see added to Tower, [share your idea with us](https://github.com/hyphenzero/tower/discussions/new?category=ideas) in our discussion forum to get it on our radar as something to consider for a future release before starting work on it.
+
+**Please note that we don't often accept pull requests for new features.** Adding a new feature to Tower requires us to think through the entire problem ourselves to make sure we agree with the proposed API, which means the feature needs to be high on our own priority list for us to be able to give it the attention it needs.
+
+If you open a pull request for a new feature, we're likely to close it not because it's a bad idea, but because we aren't ready to prioritize the feature and don't want the PR to sit open for months or even years.
+
+## Coding standards
+
+Our code formatting rules are defined in the `"prettier"` section of [package.json](https://github.com/hyphenzero/tower/blob/main/package.json). You can check your code against these standards by running:
+
+```sh
+pnpm lint
+```
+
+To automatically fix any style violations in your code, you can run:
+
+```sh
+pnpm format
+```
+
+## Running tests
+
+You can run the test suite using the following command:
+
+```sh
+pnpm test
+```
+
+To run the E2E tests (requires Docker for Postgres):
+
+```sh
+pnpm test:e2e
+```
+
+To run type checking:
+
+```sh
+pnpm typecheck
+```
+
+Please ensure that all tests are passing when submitting a pull request. If you're adding new features to Tower, always include tests.
+
+After a successful build, you can also use the npm package tarballs created inside the `dist/` folders to install your build in other local projects.
+
+## Pull request process
+
+When submitting a pull request:
+
+- Ensure the pull request title and description explain the changes you made and why you made them.
+- Include a test plan section that outlines how you tested your contributions. We do not accept contributions without tests.
+- Ensure all tests pass (`pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build`).
+
+When a pull request is created, Tower maintainers will be notified automatically.
+
+## Communication
+
+- **GitHub Discussions**: For feature ideas and general questions
+- **GitHub Issues**: For bug reports
+- **GitHub Pull Requests**: For code contributions
+
+## Architecture guidelines
+
+Tower follows a layered architecture where each module lives in its own package under `packages/` and communicates through well-defined interfaces. Please review [AGENTS.md](AGENTS.md) for architectural principles, dependency rules, and import conventions before making changes.
+
+Key principles:
+- **Provider-agnostic** — Modules abstract over specific providers behind a stable API
+- **Framework-first** — Works alongside the user's framework rather than replacing it
+- **Lazy initialization** — Tower apps initialize on first use, not at import time
+- **Minimal API surface** — Modules export only what users need
+- **No runtime dependencies on user-facing frameworks** — Framework adapters live in `packages/*/src/frameworks/`
 
 ## Commit style
 
-This project uses [conventional commits](https://www.conventionalcommits.org/) with the package name as scope:
+Use conventional commits with the package name as scope:
 
 ```
 feat(gatehouse): add passkey update action
@@ -10,92 +119,6 @@ fix(vault): handle pool close on shutdown
 refactor(gatehouse): extract api builder
 chore(deps): upgrade vitest
 docs(vault): document kysely-neon provider
-docs(root): update README
 ```
 
-### Scopes
-
-Scopes match package directory names:
-
-| Scope          | Package                                 |
-| -------------- | --------------------------------------- |
-| `foundation`   | `@towerjs/foundation`                   |
-| `blueprint`    | `@towerjs/blueprint`                    |
-| `vault`        | `@towerjs/vault`                        |
-| `gatehouse`    | `@towerjs/gatehouse`                    |
-| `courier`      | `@towerjs/courier`                      |
-| `scribe`       | `@towerjs/scribe`                       |
-| `create-tower` | `create-tower`                          |
-| `towerjs`      | `towerjs`                               |
-| `edge`         | `@towerjs/edge`                         |
-| `root`         | Root-level changes (config, CI, README) |
-
-### Types
-
-- `feat` — new feature
-- `fix` — bug fix
-- `refactor` — code change that neither fixes a bug nor adds a feature
-- `chore` — maintenance tasks, dependency updates, tooling
-- `docs` — documentation only (READMEs, module docs, guides). Scope is the package the docs describe: `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
-- `test` — adding or fixing tests
-- `style` — formatting, linting (no logic change)
-
-## Changesets
-
-Version bumps are managed by [Changesets](https://github.com/changesets/changesets). After making changes:
-
-```bash
-pnpm changeset
-```
-
-This prompts you to select bumped packages and write a summary. The summary should be plain English describing what changed (not conventional commit format). Commit the generated changeset file before running `pnpm version`.
-
-## Development
-
-```bash
-pnpm install        # install all dependencies
-pnpm build          # build all packages
-pnpm test           # run unit tests
-pnpm lint           # lint with oxlint
-pnpm typecheck      # TypeScript type checking
-pnpm test:e2e       # E2E tests (requires Docker Postgres)
-```
-
-## Project structure
-
-```
-tower/
-├── packages/           # Monorepo packages
-│   ├── foundation/     # Core runtime, DI, config
-│   ├── blueprint/      # App definition, module registration
-│   ├── vault/          # Database ORM (Kysely + PostgreSQL)
-│   ├── gatehouse/      # Authentication (Better Auth)
-│   ├── courier/        # Email, SMS, push
-│   ├── towerjs/        # Meta-package (user-facing)
-│   ├── scribe/         # CLI tooling
-│   ├── create-tower/   # Project scaffolding
-│   └── edge/           # Edge runtime integration
-├── examples/
-│   └── with-nextjs/    # Reference Next.js application
-├── tests/              # Cross-package acceptance tests
-└── scripts/            # Development scripts
-```
-
-## Testing
-
-- **Unit tests** — colocated with source in `packages/*/src/**/*.test.ts`
-- **Acceptance tests** — in `tests/` — boot test, build test, dependency rules
-- **E2E tests** — in `examples/with-nextjs/e2e/` — Playwright tests against the demo app
-
-## Dependency rules
-
-| Package      | Can depend on                        | Cannot depend on                        |
-| ------------ | ------------------------------------ | --------------------------------------- |
-| `foundation` | (nothing)                            | any `@towerjs/*`                        |
-| `blueprint`  | `foundation`                         | vault, gatehouse, courier, edge, scribe |
-| `vault`      | `blueprint`, `foundation`            | gatehouse, courier                      |
-| `courier`    | `blueprint`, `foundation`            | vault, gatehouse                        |
-| `gatehouse`  | `blueprint`, `foundation`, `courier` | vault                                   |
-| `towerjs`    | anything                             | —                                       |
-
-These are enforced by `tests/dependency-rules.test.ts`. No circular dependencies between packages.
+Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation.
