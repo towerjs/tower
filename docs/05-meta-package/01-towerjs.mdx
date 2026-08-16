@@ -16,14 +16,13 @@ pnpm add towerjs
 ### `towerjs`
 
 ```tsx
-import { createTower, createTowerApp, defineTower, getTowerApp, initTower, tower } from 'towerjs'
+import { createTower, createTowerApp, defineTower, getTowerApp, initTower } from 'towerjs'
 
 defineTower({ modules: { vault: {} } }) // type-safe config (from blueprint)
 createTower() // auto-resolves tower.config.ts
 createTowerApp({ modules: {} }) // explicit config
 initTower({ modules: {} }) // explicit init, returns TowerApp
 getTowerApp() // get cached TowerApp singleton
-tower // TowerApp proxy (throws if uninitialized)
 ```
 
 `createTower` and `createTowerApp` are re-exports from `@towerjs/foundation` — they do not wire module factories by themselves. Use `initTower()` or `getTowerApp()` (which resolve the config, wire `getModuleFactory`, and lazy-init on first access), or pass `getModuleFactory` from `@towerjs/blueprint` explicitly.
