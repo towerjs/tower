@@ -12,7 +12,7 @@ Keep abstracts local disk and S3-compatible object storage behind one facade. Sw
 
 ## Setup
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 keep: {
   defaultDisk: 'local',
   disks: {
@@ -38,7 +38,7 @@ keep: {
 
 ## Storing files
 
-```tsx
+```ts
 import { keep } from 'towerjs/keep'
 
 const file = await keep.storage.put('avatars/user-42.png', buffer, {
@@ -61,7 +61,7 @@ const signed = await keep.storage.signedUrl('reports/q3.pdf', {
 
 A **disk** is a named storage configuration. Use a specific disk through the facade:
 
-```tsx
+```ts
 await keep.storage.disk('prod').put('backups/db.sql', buffer)
 ```
 

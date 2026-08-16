@@ -15,7 +15,7 @@ Tower works alongside your framework rather than replacing it. Framework adapter
 
 Tower apps are initialized on first use, not at import time. This is critical for Edge and SSR compatibility where you may import module symbols at the top level but never use them.
 
-```typescript
+```ts
 import { gatehouse } from 'towerjs/gatehouse'
 
 // No initialization happens here

@@ -9,7 +9,7 @@ Authentication answers _who you are_; authorization answers _what you can do_. G
 
 The one function for permission checks:
 
-```tsx
+```ts
 await gatehouse.can({ user, permission: 'project.update' })
 // boolean
 ```
@@ -18,7 +18,7 @@ await gatehouse.can({ user, permission: 'project.update' })
 - `permission` — a `string` or `string[]`; an array is **any-of** (checks that the user has at least one)
 - `organizationId` — optional; when given, the check is scoped to the user's membership in that organization
 
-```tsx
+```ts
 const user = await gatehouse.requireUser()
 
 if (await gatehouse.can({ user, permission: 'project.update' })) {
@@ -38,7 +38,7 @@ A user's permissions are the union of:
 
 ## A `requireCan` helper
 
-```tsx
+```ts
 import { AuthorizationError } from '@towerjs/gatehouse'
 
 export async function requireCan(params) {
@@ -46,7 +46,7 @@ export async function requireCan(params) {
 }
 ```
 
-```tsx
+```ts
 await requireCan({ user, permission: 'project.update' })
 ```
 
@@ -54,7 +54,7 @@ await requireCan({ user, permission: 'project.update' })
 
 Combine with [organizations](/docs/gatehouse/organizations): check the user's role _inside_ a specific organization.
 
-```tsx
+```ts
 const canEdit = await gatehouse.can({
   user,
   permission: ['project.update', 'project.delete'],
@@ -64,7 +64,7 @@ const canEdit = await gatehouse.can({
 
 Create custom roles with permission maps and assign them via invites or members:
 
-```tsx
+```ts
 await gatehouse.organizations.roles.create({
   role: 'editor',
   permission: { project: ['update'] },
@@ -80,7 +80,7 @@ Built-in organization roles: `owner`, `admin`, `member` — `owner` and `admin` 
 
 ## User roles (admin)
 
-```tsx
+```ts
 await gatehouse.admin.setRole({ userId, role: 'admin' }) // or any custom role
 await gatehouse.roles.assign(userId, role) // same, module-level
 await gatehouse.can({ user, permission: 'user.delete' })
@@ -92,7 +92,7 @@ Actions: `assignRole` (`userId`, `role`), `removeRole` (`userId`).
 
 Role checks don't cover "is this _their_ record". Check ownership separately:
 
-```tsx
+```ts
 const project = await getProject(id)
 if (project.ownerId !== user.id) throw new AuthorizationError()
 ```

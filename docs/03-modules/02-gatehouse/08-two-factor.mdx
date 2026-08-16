@@ -7,7 +7,7 @@ Add a second factor: after the password, users must enter a TOTP code from their
 
 ## Enable
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -17,7 +17,7 @@ gatehouse: {
 
 ## Enabling 2FA for a user
 
-```tsx
+```ts
 const { totpURI, backupCodes } = await gatehouse.totp.enable(password)
 // totpURI      — feed to an authenticator app (QR code or manual entry)
 // backupCodes  — one-time recovery codes, show them once
@@ -29,7 +29,7 @@ The `enableTwoFactor` action takes `password` and returns both in its response.
 
 Two steps on the server:
 
-```tsx
+```ts
 await gatehouse.totp.verify({ code, trustDevice })
 ```
 
@@ -42,7 +42,7 @@ Action: `verifyTwoFactor` (`code`, `trustDevice`).
 
 Users who lose their authenticator can fall back to recovery codes:
 
-```tsx
+```ts
 await gatehouse.backupCodes.generate(password) // new codes
 await gatehouse.backupCodes.verify(code) // code is consumed on use
 ```
@@ -51,7 +51,7 @@ Actions: `generateBackupCodes` (`password`), `verifyBackupCode` (`code`).
 
 ## Disabling 2FA
 
-```tsx
+```ts
 await gatehouse.totp.disable(password)
 ```
 

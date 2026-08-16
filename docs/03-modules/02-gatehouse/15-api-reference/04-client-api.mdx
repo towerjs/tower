@@ -5,7 +5,7 @@ description: 'gatehouseClient for browser code: sign-in, sign-up, session hooks,
 
 The client API is a typed Better Auth client for browser code. Import it from the client entry:
 
-```tsx
+```ts
 import { gatehouseClient } from 'towerjs/gatehouse/client'
 ```
 
@@ -13,7 +13,7 @@ It talks to the auth API mounted at `/api/auth` and keeps a session cache on the
 
 ## Sign in / up
 
-```tsx
+```ts
 await gatehouseClient.signUp.email({
   name: 'Jasper',
   email: 'jasper@example.com',
@@ -28,7 +28,7 @@ await gatehouseClient.signOut()
 
 Results follow Better Auth's shape — `{ data, error }`:
 
-```tsx
+```ts
 const { data, error } = await gatehouseClient.signIn.email({ email, password })
 
 if (error) {
@@ -42,7 +42,7 @@ if (error) {
 
 `useSession()` subscribes to the session cache for client components:
 
-```tsx
+```tsx filename="src/app/dashboard/profile-button.tsx"
 'use client'
 
 import { gatehouseClient } from 'towerjs/gatehouse/client'
@@ -67,7 +67,7 @@ See [Passkeys](/docs/gatehouse/passkeys).
 
 ## Two-factor
 
-```tsx
+```ts
 const { data, error } = await gatehouseClient.twoFactor.enable({ password })
 // data.totpURI, data.backupCodes
 
@@ -79,7 +79,7 @@ See [Two-Factor Auth](/docs/gatehouse/two-factor).
 
 ## OTP and phone
 
-```tsx
+```ts
 await gatehouseClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' })
 await gatehouseClient.emailOtp.verifyVerificationOtp({ email, otp })
 

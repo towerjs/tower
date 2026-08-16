@@ -29,7 +29,7 @@ RESEND_API_KEY=re_...
 
 Gatehouse uses Better Auth's built-in CSRF protection. Configure trusted origins:
 
-```
+```ts
 gatehouse: {
   trustedOrigins: ['https://example.com'],
 }
@@ -37,7 +37,7 @@ gatehouse: {
 
 Disable CSRF check only when necessary:
 
-```tsx
+```ts
 advanced: {
   disableCSRFCheck: true
 }
@@ -47,7 +47,7 @@ advanced: {
 
 Configure secure cookies for production:
 
-```tsx
+```ts
 gatehouse: {
   advanced: {
     useSecureCookies: true
@@ -65,7 +65,7 @@ Always serve production sites over HTTPS. Vercel provides this automatically. Fo
 
 Better Auth provides built-in rate limiting:
 
-```
+```ts
 gatehouse: {
   rateLimit: {
     enabled: true,
@@ -79,7 +79,7 @@ gatehouse: {
 
 Add Content Security Policy headers in your `next.config.ts`:
 
-```tsx
+```ts
 headers: async () => [
   {
     source: '/(.*)',

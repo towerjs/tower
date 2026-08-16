@@ -7,7 +7,7 @@ Organizations let users belong to multiple workspaces, each with its own members
 
 ## Enable
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -19,7 +19,7 @@ gatehouse: {
 
 **Create** — the creator becomes the owner:
 
-```tsx
+```ts
 await gatehouse.organizations.create({ name: 'Acme', slug: 'acme' })
 ```
 
@@ -27,7 +27,7 @@ Action: `createOrganization` (`name`, `slug`).
 
 **Invite** — email invites with a role:
 
-```tsx
+```ts
 await gatehouse.organizations.invitations.create('org_id', {
   email: 'ada@example.com',
   role: 'member',
@@ -38,7 +38,7 @@ Action: `inviteMember` (`orgId`, `email`, `role`).
 
 **Accept** — the invitee accepts (or rejects) and joins:
 
-```tsx
+```ts
 await gatehouse.organizations.invitations.accept(invitationId)
 await gatehouse.organizations.invitations.reject(invitationId)
 await gatehouse.organizations.invitations.cancel(invitationId)
@@ -48,7 +48,7 @@ Actions: `acceptInvitation` / `rejectInvitation` (`invitationId`), `cancelInvita
 
 **Switch** — users work in one organization at a time:
 
-```tsx
+```ts
 await gatehouse.organizations.setActive(organizationId)
 ```
 
@@ -56,14 +56,14 @@ Action: `setActiveOrganization` (`organizationId`).
 
 **Check** — `requireUser()` is per-user; query the active org for context:
 
-```tsx
+```ts
 const orgs = await gatehouse.getOrganizations() // memberships
 const org = await gatehouse.getOrganization(orgId) // full: members + invitations
 ```
 
 ## Members
 
-```tsx
+```ts
 await gatehouse.organizations.members.add(organizationId, userId, 'member')
 await gatehouse.organizations.members.update(memberId, 'admin', organizationId)
 await gatehouse.organizations.members.remove(organizationId, memberId)
@@ -73,14 +73,14 @@ Actions: `addMember` (`organizationId`, `email`, `role`), `updateMemberRole` (`m
 
 ## Custom roles
 
-```tsx
+```ts
 await gatehouse.organizations.roles.create({
   role: 'editor',
   permission: { project: ['update'] },
 })
 ```
 
-```
+```ts
 await gatehouse.organizations.roles.list(organizationId?)
 await gatehouse.organizations.roles.get({ roleName: 'editor', organizationId })
 await gatehouse.organizations.roles.update(roleId, { roleName?, permission? })
@@ -93,7 +93,7 @@ Built-in roles: `owner`, `admin`, `member` — see [Authorization](/docs/gatehou
 
 ## Permission checks
 
-```tsx
+```ts
 await gatehouse.can({
   user,
   permission: 'project.update',
@@ -107,7 +107,7 @@ For the signed-in user in their active organization, check the session user with
 
 `OrganizationInvitation` carries `email`, `role`, `status` (`pending` / `accepted` / `rejected` / `canceled`), `inviterId`, `expiresAt`. List and inspect before rendering invite UI:
 
-```tsx
+```ts
 await gatehouse.organizations.invitations.list(organizationId)
 await gatehouse.organizations.invitations.get(invitationId)
 ```

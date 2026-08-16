@@ -12,7 +12,7 @@ Observatory gives every Tower app production-grade observability out of the box:
 
 ## Setup
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 observatory: {
   logLevel: 'info',
 }
@@ -20,7 +20,7 @@ observatory: {
 
 ## Logging
 
-```tsx
+```ts
 import { observatory } from 'towerjs/observatory'
 
 observatory.log.info('user signed in', { userId: 'usr_1' })
@@ -31,7 +31,7 @@ Levels: `debug`, `info`, `warn`, `error`.
 
 ## Metrics
 
-```tsx
+```ts
 const requests = observatory.metrics.counter('http_requests_total', {
   labels: ['method'],
 })
@@ -45,7 +45,7 @@ observatory.metrics.histogram('request_duration_ms', {
 
 ## Health checks
 
-```tsx
+```ts
 observatory.health.check('database', async () => {
   await vault.selectFrom('users').select('id').limit(1).execute()
 })
@@ -55,7 +55,7 @@ observatory.health.check('stripe', async () => {
 })
 ```
 
-```tsx filename="app/health/route.ts"
+```ts filename="src/app/health/route.ts"
 import { observatory } from 'towerjs/observatory/next'
 
 export const GET = observatory.health.GET
@@ -75,7 +75,7 @@ The endpoint returns:
 
 ## Tracing
 
-```tsx
+```ts
 const span = observatory.trace.startSpan('process-report')
 // ... work ...
 span.end()

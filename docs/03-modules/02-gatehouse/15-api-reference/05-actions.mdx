@@ -9,7 +9,7 @@ Gatehouse ships pre-built server actions for common auth operations. They run in
 
 Re-export them from your app's actions module:
 
-```tsx filename="app/actions.ts"
+```ts filename="src/app/actions.ts"
 'use server'
 
 export {
@@ -24,7 +24,7 @@ export {
 } from 'towerjs/gatehouse/actions'
 ```
 
-```tsx filename="app/sign-in/sign-in-form.tsx"
+```tsx filename="src/app/sign-in/sign-in-form.tsx"
 'use client'
 
 import { signIn } from '@/app/actions'

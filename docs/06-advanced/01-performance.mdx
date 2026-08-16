@@ -7,7 +7,7 @@ description: 'Performance considerations for Tower applications.'
 
 Tower modules are initialized on first use, not at import time. This means you can import module symbols at the top level without paying the initialization cost on every request:
 
-```tsx
+```ts
 import { gatehouse } from 'towerjs/gatehouse'
 
 // No initialization cost here
@@ -22,7 +22,7 @@ export async function handler() {
 
 Configure your database pool for your workload:
 
-```
+```ts
 vault: {
   connectionString: process.env.DATABASE_URL,
   pool: {
@@ -43,7 +43,7 @@ Guidelines:
 
 For API routes and auth middleware, use the Edge Runtime for fast cold starts:
 
-```tsx filename="next.config.ts"
+```ts filename="next.config.ts"
 import { withTowerEdge } from '@towerjs/edge'
 
 export default withTowerEdge({})

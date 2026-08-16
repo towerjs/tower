@@ -7,7 +7,7 @@ description: 'How to configure Tower modules through the config file and environ
 
 Tower reads configuration from `tower.config.ts` at your project root. It uses `defineTower` for type-safe config:
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 import { defineTower } from 'towerjs/blueprint'
 
 export default defineTower({
@@ -41,7 +41,7 @@ When `createTower()` is called without a config argument, `resolveConfig()` sear
 
 ### Vault
 
-```
+```ts
 vault: {
   connectionString?: string       // defaults to DATABASE_URL env var
   pool?: {
@@ -59,7 +59,7 @@ Provider auto-detection: `neon` for Neon serverless, `pg` for standard PostgreSQ
 
 ### Gatehouse
 
-```
+```ts
 gatehouse: {
   provider: 'better-auth'
 
@@ -91,7 +91,7 @@ Social provider credentials resolve from environment variables automatically:
 
 ### Courier
 
-```
+```ts
 courier: {
   email?: {
     provider: 'console' | 'resend' | 'smtp' | 'ses'

@@ -9,7 +9,7 @@ Blueprint provides the module system that ties all Tower packages together.
 
 Type-safe config helper. A runtime no-op — it provides TypeScript types. Module configs are `Record<string, unknown>`-shaped (per-module autocomplete lives in each module's own config helper):
 
-```tsx
+```ts
 import { defineTower } from 'towerjs/blueprint'
 
 export default defineTower({
@@ -27,7 +27,7 @@ export default defineTower({
 
 Modules self-register at import time:
 
-```tsx
+```ts
 // registers 'gatehouse' module
 import '@towerjs/courier'
 // registers 'vault' module
@@ -39,7 +39,7 @@ import '@towerjs/vault'
 
 Each registration includes a name, dependency list, and factory function:
 
-```tsx
+```ts
 registerModule({
   name: 'gatehouse',
   dependsOn: ['vault'],
@@ -51,7 +51,7 @@ The `towerjs` meta-package handles all imports automatically.
 
 ## Module Declaration
 
-```tsx
+```ts
 interface ModuleDeclaration {
   name: string
   dependsOn: string[]
@@ -61,7 +61,7 @@ interface ModuleDeclaration {
 
 ## Module Factory
 
-```tsx
+```ts
 import { getModuleFactory } from '@towerjs/blueprint'
 
 const factory = getModuleFactory('vault')
@@ -80,7 +80,7 @@ If validation fails, an error is thrown with details about the conflict.
 
 ## Programmatic Access
 
-```tsx
+```ts
 import {
   getModuleDeclarations,
   getModuleDependencies,

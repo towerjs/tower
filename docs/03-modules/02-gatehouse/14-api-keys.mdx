@@ -7,7 +7,7 @@ API keys let services (CLIs, webhooks, cron jobs) authenticate without a user se
 
 ## Enable
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -17,7 +17,7 @@ gatehouse: {
 
 ## Create a key
 
-```tsx
+```ts
 await gatehouse.apiKeys.create({
   name: 'Deploy CLI',
   userId: 'user_123', // required — the key's owner
@@ -34,7 +34,7 @@ Action: `createApiKey` (`name`, `expiresIn`) — returns `{ ok: true }` or `{ er
 
 Verify on every programmatic request:
 
-```tsx
+```ts
 await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
 // { valid, error, key } — runtime shape; key carries id, name, permissions, expiresAt, ...
 ```
@@ -43,7 +43,7 @@ Invalid, expired, or revoked keys return `{ valid: false, error }`.
 
 Route-handler guard:
 
-```tsx filename="app/api/deploy/route.ts"
+```ts filename="src/app/api/deploy/route.ts"
 export async function POST(request: Request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '')
   const { valid, key } = await gatehouse.apiKeys.verify({ key: token })
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
 ## List, rotate, revoke
 
-```tsx
+```ts
 await gatehouse.apiKeys.list(userId, { sortBy: 'createdAt' })
 await gatehouse.apiKeys.get(keyId)
 await gatehouse.apiKeys.update(id, { name, expiresIn }) // rotate: shorten expiry or change permissions

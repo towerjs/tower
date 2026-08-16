@@ -11,7 +11,7 @@ Tower uses [Vitest](https://vitest.dev) for unit tests and [Playwright](https://
 pnpm add -D vitest
 ```
 
-```tsx filename="vitest.config.ts"
+```ts filename="vitest.config.ts"
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -24,7 +24,7 @@ export default defineConfig({
 
 ### Testing with createTowerApp
 
-```tsx
+```ts
 import { getModuleFactory } from '@towerjs/blueprint'
 import { createTowerApp } from '@towerjs/foundation'
 
@@ -42,7 +42,7 @@ The second argument to `createTowerApp` is the module factory resolver. The `get
 
 ### Testing Gatehouse
 
-```tsx
+```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
 it('gets session', async () => {
@@ -64,7 +64,7 @@ pnpm test:e2e
 
 ### Test Patterns
 
-```tsx
+```ts
 import { expect, test } from '@playwright/test'
 
 test('user can sign up', async ({ page }) => {

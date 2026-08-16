@@ -7,7 +7,7 @@ Sorcerer provides headless React primitives for building AI interfaces.
 
 The primitives provide behavior, state management, and accessibility while leaving styling completely to the application.
 
-```tsx
+```ts
 import { Conversation, Message, PromptInput, PromptInputSubmit, PromptInputTextarea } from 'towerjs/sorcerer/react'
 ```
 
@@ -43,7 +43,7 @@ Every primitive accepts an `asChild` prop. With `asChild`, the primitive does no
 The prompt input handles common AI interaction patterns.
 
 ```tsx
-<PromptInput onSubmit={send}>
+;<PromptInput onSubmit={send}>
   <PromptInputTextarea />
 
   <PromptInputAttachments />
@@ -73,7 +73,7 @@ Prompt input primitives support:
 AI messages are structured content, not just text.
 
 ```tsx
-<Message message={message}>
+;<Message message={message}>
   <MessageContent>
     <MessageMarkdown />
   </MessageContent>
@@ -93,7 +93,7 @@ Messages can contain:
 Example:
 
 ```tsx
-<AssistantMessage message={message}>
+;<AssistantMessage message={message}>
   <MessageMarkdown />
 
   <ToolCalls />
@@ -107,7 +107,7 @@ Example:
 Sorcerer uses Streamdown internally for progressive markdown rendering.
 
 ```tsx
-<MessageMarkdown />
+;<MessageMarkdown />
 ```
 
 provides streaming-aware markdown rendering while remaining customizable.

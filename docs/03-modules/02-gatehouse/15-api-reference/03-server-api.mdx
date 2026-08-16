@@ -10,7 +10,7 @@ The server API has two shapes:
 
 ## The `gatehouse` singleton
 
-```tsx
+```ts
 import { gatehouse } from 'towerjs/gatehouse'
 ```
 
@@ -39,7 +39,7 @@ import { gatehouse } from 'towerjs/gatehouse'
 
 ## The per-request instance
 
-```tsx
+```ts
 import { Gatehouse } from '@towerjs/gatehouse'
 
 const gh = await Gatehouse.from(request)
@@ -49,7 +49,7 @@ Every method is bound to the request's session. The instance exposes the full op
 
 ### Sign in / up / out
 
-```tsx
+```ts
 await gh.signIn.email({ email, password })
 await gh.signIn.emailOtp({ email, otp })
 await gh.signIn.magicLink({ email, callbackURL })
@@ -63,7 +63,7 @@ await gh.requireUser() // session or AuthenticationError
 
 ### Sessions
 
-```tsx
+```ts
 await gh.sessions.list()
 await gh.sessions.revoke(token)
 await gh.sessions.revokeOther()
@@ -72,7 +72,7 @@ await gh.sessions.signOut()
 
 ### Account
 
-```tsx
+```ts
 await gh.account.update({ name, image })
 await gh.account.delete()
 await gh.account.setPassword(newPassword)
@@ -81,7 +81,7 @@ await gh.account.changeEmail(newEmail)
 
 ### Password
 
-```tsx
+```ts
 await gh.password.forgot({ email })
 await gh.password.reset({ newPassword, token })
 await gh.password.change({ currentPassword, newPassword })
@@ -90,7 +90,7 @@ await gh.password.confirm({ password }) // boolean
 
 ### Email & phone
 
-```tsx
+```ts
 await gh.email.sendVerification({ email })
 await gh.email.verify({ token })
 await gh.email.otp.send({ email, type }) // 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
@@ -101,7 +101,7 @@ await gh.phone.otp.confirm({ phoneNumber, code })
 
 ### Users, roles, identities
 
-```tsx
+```ts
 await gh.users.get(userId)
 await gh.users.findByEmail(email)
 await gh.roles.assign(userId, role)
@@ -114,7 +114,7 @@ await gh.identities.getAccessToken(providerId)
 
 ### Passkeys
 
-```tsx
+```ts
 await gh.passkeys.list()
 await gh.passkeys.update(id, { name })
 await gh.passkeys.delete(id)
@@ -124,7 +124,7 @@ Raw WebAuthn endpoints (`generatePasskeyRegistrationOptions`, `verifyPasskeyRegi
 
 ### Two-factor
 
-```tsx
+```ts
 await gh.totp.enable(password) // { totpURI, backupCodes }
 await gh.totp.uri(password) // TOTP URI only
 await gh.totp.verify({ code, trustDevice })
@@ -137,7 +137,7 @@ await gh.backupCodes.verify(code)
 
 ### Organizations
 
-```
+```ts
 await gh.organizations.create({ name, slug })
 await gh.organizations.list()
 await gh.organizations.getFull(id)                // includes members + invitations
@@ -166,7 +166,7 @@ await gh.organizations.roles.delete({ roleId | roleName, organizationId? })
 
 ### API keys
 
-```
+```ts
 await gh.apiKeys.create({ name, userId, expiresIn?, permissions? })
 await gh.apiKeys.list(userId, options?)
 await gh.apiKeys.get(keyId)
@@ -178,7 +178,7 @@ await gh.apiKeys.deleteAllExpired()
 
 ### Admin
 
-```
+```ts
 await gh.admin.createUser({ name, email, password, role? })
 await gh.admin.getUser(userId)
 await gh.admin.listUsers(options?)               // { users, total? }
@@ -196,7 +196,7 @@ await gh.admin.revokeUserSessions(userId)
 
 ### Authorization
 
-```tsx
+```ts
 await gh.can({ user, permission, organizationId? })   // boolean
 ```
 
@@ -210,7 +210,7 @@ await gh.can({ user, permission, organizationId? })   // boolean
 | `AuthorizationError`   | Permission check failed                                         |
 | `ContextRequiredError` | A `gatehouse.*` request method called outside a request context |
 
-```tsx
+```ts
 import { AuthenticationError, AuthorizationError } from '@towerjs/gatehouse'
 ```
 
@@ -218,7 +218,7 @@ import { AuthenticationError, AuthorizationError } from '@towerjs/gatehouse'
 
 `runWithRequest` provides the request context so the `gatehouse` singleton works in plain handlers:
 
-```tsx
+```ts filename="src/app/api/me/route.ts"
 import { runWithRequest } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {
@@ -232,7 +232,7 @@ export async function GET(request: Request) {
 
 ## Raw access
 
-```tsx
+```ts
 import { getAuth, getRoutes } from '@towerjs/gatehouse'
 
 const auth = getAuth() // { getSession(request) }

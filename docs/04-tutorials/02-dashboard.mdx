@@ -7,7 +7,7 @@ This tutorial builds a dashboard application with organization support — membe
 
 ## 1. Configure Organizations
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   credentials: { enabled: true },
@@ -20,7 +20,7 @@ gatehouse: {
 
 ## 2. Seed an Organization
 
-```tsx filename="src/vault/seeds/organization.ts"
+```ts filename="src/vault/seeds/organization.ts"
 import { type Vault } from '@towerjs/vault'
 
 export default async function seed(db: Vault) {
@@ -108,7 +108,7 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
 
 Server actions that touch the gatehouse instance need the `action()` wrapper from `towerjs/gatehouse/next` — it provides the request context the facade reads headers/session from:
 
-```tsx filename="src/app/actions.ts"
+```ts filename="src/app/actions.ts"
 'use server'
 
 import { gatehouse } from 'towerjs/gatehouse'
@@ -128,7 +128,7 @@ export const inviteMember = action(async (formData: FormData) => {
 
 ## 6. Set Active Organization
 
-```tsx filename="src/app/actions.ts"
+```ts filename="src/app/actions.ts"
 export const switchOrganization = action(async (formData: FormData) => {
   const orgId = formData.get('orgId') as string
   await gatehouse.organizations.setActive(orgId)
@@ -139,7 +139,7 @@ The active organization is used for session-scoped operations.
 
 ## 7. Permissions
 
-```tsx filename="src/app/actions.ts"
+```ts filename="src/app/actions.ts"
 export const deleteProject = action(async (formData: FormData) => {
   const projectId = formData.get('projectId') as string
   const orgId = formData.get('orgId') as string

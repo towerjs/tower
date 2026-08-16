@@ -12,7 +12,7 @@ Access control and session reads are two separate layers:
 
 Access control belongs in the proxy middleware, not on individual pages or layouts. Pages render; the proxy decides who gets to see them.
 
-```tsx filename="src/proxy.ts"
+```ts filename="src/proxy.ts"
 import { gatehouse } from '@towerjs/gatehouse'
 
 const { handler } = gatehouse.proxy({
@@ -42,7 +42,7 @@ The proxy resolves the session with `getSession()` — database-backed — and r
 
 Once the proxy has let a request through, pages read the session without any redirect logic — the proxy already handled it:
 
-```tsx filename="app/dashboard/page.tsx"
+```tsx filename="src/app/dashboard/page.tsx"
 import { gatehouse } from 'towerjs/gatehouse'
 
 export default async function Dashboard() {
@@ -54,7 +54,7 @@ export default async function Dashboard() {
 
 Pages that render both states use `getSession()`:
 
-```tsx
+```ts
 const session = await gatehouse.getSession()
 const user = session?.user ?? null // null when signed out
 ```
@@ -65,7 +65,7 @@ Routes the proxy doesn't redirect are public by default.
 
 API routes sit outside page rendering — check per request:
 
-```tsx filename="app/api/me/route.ts"
+```ts filename="src/app/api/me/route.ts"
 import { Gatehouse } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {

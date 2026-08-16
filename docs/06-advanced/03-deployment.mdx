@@ -35,7 +35,7 @@ TOWER_CONFIG_PATH=/path/to/config  # Custom config file path
 
 Use [Neon](https://neon.tech) for PostgreSQL with serverless support:
 
-```
+```ts
 vault: {
   connectionString: process.env.DATABASE_URL,
   // Neon is auto-detected and uses the kysely-neon HTTP dialect
@@ -46,7 +46,7 @@ vault: {
 
 Only needed if you deploy to an edge runtime (Vercel Edge, Cloudflare Workers). The Node.js runtime needs no extra config. For edge deployments, bundle the Tower config for Edge functions:
 
-```tsx filename="next.config.ts"
+```ts filename="next.config.ts"
 import { withTowerEdge } from '@towerjs/edge'
 
 export default withTowerEdge({})

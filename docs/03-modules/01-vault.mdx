@@ -7,7 +7,7 @@ Vault wraps [Kysely](https://kysely.dev) with connection pooling, migrations, se
 
 ## Setup
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 vault: {
   connectionString: process.env.DATABASE_URL,   // defaults to DATABASE_URL
   pool: {
@@ -19,7 +19,7 @@ vault: {
 
 ## Querying
 
-```tsx
+```ts
 import { vault } from 'towerjs/vault'
 
 // Select
@@ -37,7 +37,7 @@ await vault.deleteFrom('users').where('id', '=', userId).execute()
 
 ## Transactions
 
-```tsx
+```ts
 await vault.transaction(async (trx) => {
   const user = await trx.insertInto('users').values({ name: 'Alice' }).returningAll().executeTakeFirstOrThrow()
 
@@ -49,7 +49,7 @@ await vault.transaction(async (trx) => {
 
 Create migration files in `src/vault/migrations/`:
 
-```tsx filename="src/vault/migrations/0001_projects.ts"
+```ts filename="src/vault/migrations/0001_projects.ts"
 import { type Vault } from '@towerjs/vault'
 
 export async function up(db: Vault) {
@@ -76,7 +76,7 @@ npx tower migrate
 
 Create seed files in `src/vault/seeds/`:
 
-```tsx filename="src/vault/seeds/example.ts"
+```ts filename="src/vault/seeds/example.ts"
 import { type Vault } from '@towerjs/vault'
 
 export default async function seed(db: Vault) {
@@ -94,7 +94,7 @@ By default, migrations run before seeds. Skip migrations with `npx tower seed --
 
 ## Advanced: Using Kysely Functions
 
-```tsx
+```ts
 import { vault } from 'towerjs/vault'
 
 const result = await vault.selectFrom('users').select(vault.fn.countAll().as('count')).executeTakeFirst()
@@ -104,14 +104,14 @@ const result = await vault.selectFrom('users').select(vault.fn.countAll().as('co
 
 On Edge (Vercel Edge, Cloudflare Workers), Vault uses the same Neon HTTP dialect (`kysely-neon`) as everywhere else — no connection pool is involved. Migrations and seeds are unavailable on Edge (filesystem-dependent).
 
-```tsx
+```ts
 // vault.migrate()  // throws on Edge (filesystem unavailable)
 // vault.seed()     // throws on Edge (filesystem unavailable)
 ```
 
 ## Closing
 
-```tsx
+```ts
 await vault.close()
 ```
 

@@ -7,7 +7,7 @@ Agents are configured AI entities with instructions, tools, and a model. Unlike 
 
 ## Defining an Agent
 
-```tsx
+```ts
 import { agent, tool } from 'towerjs/sorcerer'
 
 const supportAgent = agent({
@@ -52,7 +52,7 @@ Agents provide:
 
 ## Running an Agent
 
-```tsx
+```ts
 const response = await supportAgent.run({
   input: 'Why was I charged twice?',
 })
@@ -60,7 +60,7 @@ const response = await supportAgent.run({
 
 Agents can also stream responses:
 
-```tsx
+```ts
 const stream = await supportAgent.stream({
   input: 'Explain how authentication works',
 })
@@ -72,7 +72,7 @@ This is where Sorcerer differs from using the AI SDK directly.
 
 An agent can integrate with Tower services through the application container.
 
-```tsx
+```ts
 const projectAgent = agent({
   name: 'project-assistant',
 
@@ -103,7 +103,7 @@ A Tower agent can understand:
 
 Agents can maintain conversation state:
 
-```tsx
+```ts
 const conversation = supportAgent.conversation()
 
 await conversation.send('What is my current subscription?')
@@ -115,7 +115,7 @@ const summary = conversation.summary()
 
 Conversation storage can be configured with different memory backends.
 
-```tsx
+```ts
 import { memory } from 'towerjs/sorcerer'
 
 const supportAgent = agent({

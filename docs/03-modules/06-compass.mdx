@@ -12,7 +12,7 @@ Compass makes search a first-class Tower feature. Declare an index in config, an
 
 ## Setup
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 compass: {
   provider: 'postgres',
   indexes: {
@@ -40,7 +40,7 @@ compass: {
 
 Indexes stay in sync with Vault automatically through internal events (`vault:record:*`). Backfill existing rows explicitly:
 
-```tsx
+```ts
 import { compass } from 'towerjs/compass'
 
 await compass.sync('posts')
@@ -48,7 +48,7 @@ await compass.sync('posts')
 
 ## Searching
 
-```tsx
+```ts
 const { hits, facets, total } = await compass.search('posts', {
   query: 'getting started with tower',
   filters: { published: true },

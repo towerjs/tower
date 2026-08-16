@@ -7,7 +7,7 @@ Social login lets users authenticate with their existing Google or GitHub accoun
 
 ## Enable
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -26,7 +26,7 @@ GITHUB_CLIENT_SECRET=...
 
 ## Add the sign-in buttons
 
-```tsx filename="app/sign-in/social-buttons.tsx"
+```tsx filename="src/app/sign-in/social-buttons.tsx"
 'use client'
 
 import { gatehouseClient } from 'towerjs/gatehouse/client'
@@ -47,7 +47,7 @@ The callback is handled by the mounted auth API at `/api/auth/callback/google` (
 
 With the [proxy](/docs/gatehouse/protected-routes), `redirectAfterSignIn` controls where new sessions land:
 
-```tsx filename="src/proxy.ts"
+```ts filename="src/proxy.ts"
 proxy({
   redirectIfAuthenticated: '/dashboard',
   redirectAfterSignIn: '/dashboard',
@@ -56,7 +56,7 @@ proxy({
 
 ## Provider options
 
-```
+```ts
 social: {
   google: {
     disableSignUp: true,          // only existing accounts
@@ -73,7 +73,7 @@ Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disab
 
 Users can connect providers to their existing account so the same identity works everywhere:
 
-```tsx
+```ts
 await gatehouse.identities.list() // connected providers
 await gatehouse.identities.link('github') // start linking flow
 await gatehouse.identities.unlink({ providerId, accountId }) // disconnect

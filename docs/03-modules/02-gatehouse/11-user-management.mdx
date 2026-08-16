@@ -7,7 +7,7 @@ Users manage their own profile from the account API; admins manage everyone from
 
 ## Profile
 
-```tsx
+```ts
 await gatehouse.account.update({ name, image })
 await gatehouse.user() // updated user
 ```
@@ -16,7 +16,7 @@ Action: `updateProfile` (`name`).
 
 ## Change email
 
-```tsx
+```ts
 await gatehouse.account.changeEmail(newEmail)
 ```
 
@@ -24,7 +24,7 @@ With `user.changeEmail.enabled`, the new address must be confirmed before it tak
 
 ## Change password
 
-```tsx
+```ts
 await gatehouse.password.change({ currentPassword, newPassword })
 await gatehouse.password.confirm({ password }) // boolean — verify before sensitive actions
 ```
@@ -33,13 +33,13 @@ Actions: `changePassword` (`currentPassword`, `newPassword`), `verifyPassword` (
 
 ## Delete account
 
-```tsx
+```ts
 await gatehouse.account.delete()
 ```
 
 The `deleteAccount` action requires the current `password` — destructive operations re-authenticate first. Configure cleanup hooks:
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   user: {
     deleteUser: {
@@ -54,13 +54,13 @@ gatehouse: {
 
 Enable it, then manage users from your admin UI:
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   admin: true,
 }
 ```
 
-```tsx
+```ts
 await gatehouse.admin.listUsers({ searchField: 'email', searchValue: 'ada@' })
 // { users, total }
 
@@ -72,7 +72,7 @@ await gatehouse.admin.setRole({ userId, role })
 
 ### Banning
 
-```tsx
+```ts
 await gatehouse.admin.banUser(userId, {
   banReason: 'Spam',
   banExpiresIn: 7 * 86400, // seconds; omit for permanent
@@ -84,7 +84,7 @@ Banned users are blocked at sign-in and lose their sessions. `user.banned` / `us
 
 ### Impersonation
 
-```tsx
+```ts
 await gatehouse.admin.impersonateUser(userId)
 await gatehouse.admin.stopImpersonating()
 ```
@@ -93,7 +93,7 @@ Impersonation shows up as `session.impersonatedBy` on the impersonated session �
 
 ### Sessions & permissions
 
-```tsx
+```ts
 await gatehouse.admin.listUserSessions(userId)
 await gatehouse.admin.revokeUserSession(sessionToken)
 await gatehouse.admin.revokeUserSessions(userId)

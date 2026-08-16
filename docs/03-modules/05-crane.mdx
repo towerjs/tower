@@ -12,7 +12,7 @@ Crane turns background work into plain function calls. Define a job, dispatch it
 
 ## Setup
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 crane: {
   provider: 'postgres',   // job tables in the Vault database
   concurrency: 5,
@@ -32,7 +32,7 @@ Run `tower migrate` — Crane's migrations create the job tables.
 
 ## Jobs
 
-```tsx
+```ts
 import { crane } from 'towerjs/crane'
 
 crane.job('send-email', async (payload: { to: string; subject: string }) => {
@@ -50,7 +50,7 @@ await crane.dispatch('send-email', payload, { runAt: '2026-09-01T09:00:00Z' })
 
 ## Cron
 
-```tsx
+```ts
 crane.cron('daily-report', '0 6 * * *', async () => {
   await generateReport()
 })
@@ -60,7 +60,7 @@ crane.cron('daily-report', '0 6 * * *', async () => {
 
 Crane polls for due jobs in-process — no separate worker process:
 
-```tsx
+```ts
 await crane.start() // start processing
 await crane.stop() // finish in-flight jobs, then exit
 ```
@@ -69,7 +69,7 @@ await crane.stop() // finish in-flight jobs, then exit
 
 Jobs that exhaust retries are marked failed and inspected through the facade:
 
-```tsx
+```ts
 const failed = await crane.failed('send-email')
 await crane.retry(failed[0].id)
 ```

@@ -16,7 +16,7 @@ Once a user signs in, a session cookie is set. Here's how to read it in every pa
 
 ## Server components
 
-```tsx filename="app/layout.tsx"
+```tsx filename="src/app/layout.tsx"
 import { gatehouse } from 'towerjs/gatehouse'
 
 export default async function RootLayout({ children }) {
@@ -33,7 +33,7 @@ export default async function RootLayout({ children }) {
 
 Server actions run inside an action context (`action()`), which wires up the request context automatically — `gatehouse.*` just works:
 
-```tsx
+```ts filename="src/app/actions.ts"
 'use server'
 
 import { gatehouse } from 'towerjs/gatehouse'
@@ -50,7 +50,7 @@ export async function updateProfileName(name: string) {
 
 Route handlers are outside the action context — create a per-request instance, or wrap with `runWithRequest`:
 
-```tsx filename="app/api/me/route.ts"
+```ts filename="src/app/api/me/route.ts"
 import { Gatehouse } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 }
 ```
 
-```tsx
+```ts
 import { runWithRequest } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
 
 ## The client
 
-```tsx
+```tsx filename="src/app/dashboard/profile-button.tsx"
 'use client'
 
 import { gatehouseClient } from 'towerjs/gatehouse/client'
@@ -92,7 +92,7 @@ Use `useSession` for presentation only — authorize on the server.
 
 ## Session behavior
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   session: {
     expiresIn: 604800,              // 7 days
@@ -108,7 +108,7 @@ gatehouse: {
 
 ## Revocation
 
-```tsx
+```ts
 await gatehouse.sessions.list() // all sessions for the user
 await gatehouse.sessions.revoke(token)
 await gatehouse.sessions.revokeOther() // everywhere except this device
@@ -121,7 +121,7 @@ Actions: `revokeSession` (`token`), `revokeOtherSessions`. Revocation is immedia
 
 `requireUser()` throws `AuthenticationError` when there's no session. The proxy normally keeps such requests out — catch the error when you want to render an alternative state instead of letting it propagate:
 
-```tsx
+```ts
 import { AuthenticationError } from '@towerjs/gatehouse'
 
 try {

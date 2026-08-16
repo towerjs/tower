@@ -1,11 +1,11 @@
 ---
-title: 'Configuration'
+title: 'Gatehouse Configuration'
 description: 'Every Gatehouse option in tower.config.ts: features, credentials, sessions, and provider details.'
 ---
 
 Gatehouse is configured under the `gatehouse` key in `tower.config.ts`. Features are opt-in — omit a feature to disable it.
 
-```filename="tower.config.ts"
+```ts filename="tower.config.ts"
 gatehouse: {
   provider: 'better-auth',
   appName: 'My App',
@@ -78,7 +78,7 @@ How users prove they own their email. `true` enables it with default behavior (l
 
 Provider list or map. Credentials resolve from env vars (`GOOGLE_CLIENT_ID`, etc.):
 
-```
+```ts
 social: ['google', 'github'],
 // or
 social: {

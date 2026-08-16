@@ -19,7 +19,7 @@ Gatehouse supports six ways to authenticate — plus two-factor auth for a secon
 
 **Forms** — the pre-built actions run on the server, take plain form fields, and return `{ ok }` or `{ error }`:
 
-```tsx filename="app/actions.ts"
+```ts filename="src/app/actions.ts"
 'use server'
 
 export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
@@ -29,7 +29,7 @@ See [Actions](/docs/gatehouse/api-reference/actions) for the full list.
 
 **Client code** — OAuth redirects, passkey registration, and session-aware UI need the browser:
 
-```tsx
+```ts
 import { gatehouseClient } from 'towerjs/gatehouse/client'
 
 const { data, error } = await gatehouseClient.signIn.email({ email, password })

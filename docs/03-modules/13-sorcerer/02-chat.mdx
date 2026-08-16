@@ -9,7 +9,7 @@ Chat covers the core conversational APIs in Sorcerer: one-shot generation with `
 
 For one-shot AI generation without conversations or tools:
 
-```tsx
+```ts
 import { generate } from 'towerjs/sorcerer'
 
 const { text } = await generate({
@@ -32,7 +32,7 @@ Use it for:
 
 For conversational AI experiences:
 
-```tsx
+```ts
 import { chat } from 'towerjs/sorcerer'
 
 const response = await chat({
@@ -57,7 +57,7 @@ Chat provides the foundation for building:
 
 Sorcerer provides streaming APIs built on top of the AI SDK.
 
-```tsx
+```ts
 const stream = await chat.stream({
   model: 'anthropic:claude-sonnet-4',
   messages,

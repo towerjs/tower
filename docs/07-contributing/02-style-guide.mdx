@@ -20,21 +20,21 @@ Tower uses TypeScript 7 with strict settings.
 
 Use `import type` for type-only imports:
 
-```tsx
+```ts
 import { createTowerApp } from './app'
 import type { TowerApp } from './types'
 ```
 
 Within a package use relative imports with `.js` extension (Node.js ESM):
 
-```tsx
+```ts
 import { thing } from './sibling.js'
 import { thing } from '../parent/file.js'
 ```
 
 Between packages import from the package name:
 
-```tsx
+```ts
 import { registerModule } from '@towerjs/blueprint'
 import { towerContext } from '@towerjs/foundation'
 ```

@@ -16,7 +16,7 @@ Choose your modules and providers below, then run the generated command:
 
 A freshly scaffolded Tower project includes:
 
-```
+```text
 my-app/
 ├── src/
 │   ├── proxy.ts                        # Auth middleware (gatehouse)
@@ -60,7 +60,7 @@ Add Tower to an existing Next.js project:
 
 ### 1. Configure tower.config.ts
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 import { defineTower } from 'towerjs/blueprint'
 
 export default defineTower({
@@ -79,7 +79,7 @@ export default defineTower({
 
 ### 2. Set up auth middleware
 
-```tsx filename="src/proxy.ts"
+```ts filename="src/proxy.ts"
 import { gatehouse } from '@towerjs/gatehouse'
 
 const { handler } = gatehouse.proxy({
@@ -95,13 +95,13 @@ export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] 
 
 ### 3. Add auth route handler
 
-```tsx filename="src/app/api/auth/[...all]/route.ts"
+```ts filename="src/app/api/auth/[...all]/route.ts"
 export { GET, POST } from 'towerjs/gatehouse/next'
 ```
 
 ### 4. Create server actions
 
-```tsx filename="src/app/actions.ts"
+```ts filename="src/app/actions.ts"
 'use server'
 
 export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
@@ -135,4 +135,3 @@ export default async function Dashboard() {
 - Learn about [Vault](/docs/vault) for database access
 - Dive into [Gatehouse](/docs/gatehouse) for auth configuration
 - Set up [Courier](/docs/courier) for email notifications
-- Read the [towerjs](/docs/towerjs) meta-package reference

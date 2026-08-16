@@ -7,7 +7,7 @@ This tutorial walks through building a todo application with Tower.
 
 ## 1. Create a Migration
 
-```tsx filename="src/vault/migrations/0001_todos.ts"
+```ts filename="src/vault/migrations/0001_todos.ts"
 import { type Vault } from '@towerjs/vault'
 
 export async function up(db: Vault) {
@@ -35,7 +35,7 @@ npx tower migrate
 
 ## 3. Server Actions
 
-```tsx filename="src/app/actions.ts"
+```ts filename="src/app/actions.ts"
 'use server'
 
 import { gatehouse } from 'towerjs/gatehouse'
@@ -110,7 +110,7 @@ export default async function TodosPage() {
 
 ## 5. Email Notification (Optional)
 
-```tsx filename="src/app/actions.ts"
+```ts filename="src/app/actions.ts"
 import { courier } from 'towerjs/courier'
 
 export async function addTodo(formData: FormData) {
@@ -126,6 +126,6 @@ export async function addTodo(formData: FormData) {
 
 Requires Courier config in `tower.config.ts`:
 
-```
+```ts
 courier: { email: { provider: 'console', from: 'noreply@example.com' } }
 ```

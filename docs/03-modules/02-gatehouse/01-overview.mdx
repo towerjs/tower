@@ -21,7 +21,7 @@ The module surfaces on three layers:
 
 1. **The `gatehouse` singleton** — server-side access to sessions, users, and every operation:
 
-```tsx
+```ts
 import { gatehouse } from 'towerjs/gatehouse'
 
 const user = await gatehouse.requireUser() // throws unless signed in
@@ -30,7 +30,7 @@ const session = await gatehouse.getSession()
 
 2. **Pre-built server actions** — ready-made `'use server'` actions for forms, re-exported from your app's actions module:
 
-```tsx filename="app/actions.ts"
+```ts filename="src/app/actions.ts"
 'use server'
 
 export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
@@ -38,7 +38,7 @@ export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
 
 3. **`gatehouseClient`** — a typed client for browser code (OAuth buttons, passkeys, `useSession`):
 
-```tsx
+```ts
 import { gatehouseClient } from 'towerjs/gatehouse/client'
 
 await gatehouseClient.signIn.social({ provider: 'google' })

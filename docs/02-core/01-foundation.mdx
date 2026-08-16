@@ -9,7 +9,7 @@ Foundation is the lowest-level package. It provides the runtime infrastructure t
 
 The primary way to create a Tower application. To use modules, pass `getModuleFactory` (from `@towerjs/blueprint`) as the second argument — without it, module configs are not registered or initialized:
 
-```tsx
+```ts
 import { getModuleFactory } from '@towerjs/blueprint'
 import { createTowerApp } from '@towerjs/foundation'
 
@@ -26,18 +26,18 @@ const app = await createTowerApp(
 
 Calling `createTower()` (no "App") adds config file resolution, but you still pass the module factory:
 
-```tsx
+```ts
 import { getModuleFactory } from '@towerjs/blueprint'
 import { createTower } from '@towerjs/foundation'
 
 const app = await createTower(undefined, getModuleFactory) // resolves tower.config.ts automatically
 ```
 
-The `towerjs` meta-package wires `getModuleFactory` automatically through `getTowerApp()` / `initTower()` — see [towerjs](/docs/towerjs) for the lazy-initialized facade.
+The `towerjs` meta-package wires `getModuleFactory` automatically through `getTowerApp()` / `initTower()`, so application code imports modules directly from `towerjs/*` subpaths.
 
 ### TowerApp interface
 
-```tsx
+```ts
 interface TowerApp {
   config: TowerConfig
   container: ServiceContainer
@@ -58,7 +58,7 @@ interface TowerApp {
 
 ## Runtime Detection
 
-```tsx
+```ts
 import { detectRuntime } from '@towerjs/foundation'
 
 const runtime = detectRuntime()
@@ -73,7 +73,7 @@ Detection checks environment variables: `VERCEL`, `AWS_LAMBDA_FUNCTION_NAME`, `A
 
 Per-app DI container:
 
-```tsx
+```ts
 container.register('key', instance)
 container.has('key') // → boolean
 container.get('key') // → T
@@ -86,7 +86,7 @@ Each module registers its service under its bare name (e.g. `vault`, `gatehouse`
 
 For cross-module access after initialization:
 
-```tsx
+```ts
 import { getService, registerService } from '@towerjs/foundation'
 
 registerService('database', pool)
@@ -97,7 +97,7 @@ const pool = getService<Pool>('database')
 
 Tower uses AsyncLocalStorage to provide request-scoped context:
 
-```tsx
+```ts
 import { towerContext } from '@towerjs/foundation'
 
 towerContext.run({ request, headers }, () => {
@@ -109,7 +109,7 @@ In Edge environments, AsyncLocalStorage is replaced with a no-op provider.
 
 ## Config Resolution
 
-```tsx
+```ts
 import { resolveConfig } from '@towerjs/foundation'
 
 const config = await resolveConfig()

@@ -7,7 +7,7 @@ This tutorial walks through setting up authentication in a Tower + Next.js appli
 
 ## 1. Configure Gatehouse
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 import { defineTower } from 'towerjs/blueprint'
 
 export default defineTower({
@@ -36,7 +36,7 @@ Courier is auto-wired — Gatehouse uses it for password reset, email verificati
 
 Create the required files:
 
-```tsx filename="src/proxy.ts"
+```ts filename="src/proxy.ts"
 import { gatehouse } from '@towerjs/gatehouse'
 
 const { handler } = gatehouse.proxy({
@@ -49,11 +49,11 @@ export const proxy = handler
 export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] }
 ```
 
-```tsx filename="src/app/api/auth/[...all]/route.ts"
+```ts filename="src/app/api/auth/[...all]/route.ts"
 export { GET, POST } from 'towerjs/gatehouse/next'
 ```
 
-```tsx filename="src/app/actions.ts"
+```ts filename="src/app/actions.ts"
 'use server'
 
 export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
@@ -126,13 +126,13 @@ export default async function OrganizationsPage() {
 
 Enable in config:
 
-```
+```ts
 twoFactor: true,
 ```
 
 Then in your app:
 
-```tsx
+```ts
 import { enableTwoFactor, verifyTwoFactor } from '@/app/actions'
 
 // In a settings page:

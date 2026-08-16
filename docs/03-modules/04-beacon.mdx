@@ -12,7 +12,7 @@ Beacon brings realtime to Tower applications: WebSocket pub/sub channels, presen
 
 ## Setup
 
-```tsx filename="tower.config.ts"
+```ts filename="tower.config.ts"
 beacon: {
   provider: 'postgres',   // LISTEN/NOTIFY on the Vault connection — no extra service
 }
@@ -31,7 +31,7 @@ beacon: {
 
 A **channel** is a named topic with a scope (e.g. `room:42`, `user:5`). Open channels through the `beacon` facade, mirroring how Vault and Gatehouse expose their APIs:
 
-```tsx
+```ts
 import { beacon } from 'towerjs/beacon'
 
 const chat = beacon.channel('room:42')
@@ -45,7 +45,7 @@ const unsubscribe = chat.subscribe((event) => {
 
 ## Presence
 
-```tsx
+```ts
 await chat.presence.join({ userId: 'usr_1' })
 const members = await chat.presence.list()
 ```
@@ -54,7 +54,7 @@ const members = await chat.presence.list()
 
 Beyond WebSocket traffic, Beacon exposes an in-process event bus for module-to-module communication. Vault emits `vault:record:*` events, which you can bridge to channels:
 
-```tsx
+```ts
 beacon.on('vault:record:created', async ({ table, id }) => {
   if (table === 'messages') {
     await beacon.channel(`room:${id}`).publish('message:created', { id })
@@ -64,7 +64,7 @@ beacon.on('vault:record:created', async ({ table, id }) => {
 
 ## WebSocket endpoint (Next.js)
 
-```tsx filename="app/api/beacon/route.ts"
+```ts filename="src/app/api/beacon/route.ts"
 import { beacon } from 'towerjs/beacon/next'
 
 export const GET = beacon.GET // WebSocket upgrade and message handling
