@@ -48,9 +48,11 @@ Once installed, projects also get the `tower` binary for database work:
 
 ```bash
 npx tower migrate          # Run database migrations
-npx tower migrate --seed   # Migrate then seed
+npx tower migrate --seed   # Migrate then seed (-s for shorthand)
 npx tower seed             # Run seeds (migrations first by default)
 npx tower seed --skip-migrate  # Seeds only
+npx tower --version        # Show version
+npx tower help             # List commands
 ```
 
 The scaffolded project includes:
@@ -63,7 +65,7 @@ The scaffolded project includes:
 
 ## Output
 
-```
+```text
 my-app/
 ├── src/
 │   ├── proxy.ts                     # gatehouse only

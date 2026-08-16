@@ -7,7 +7,7 @@ The Edge package configures Tower modules for edge runtime compatibility.
 
 ## Setup
 
-```tsx filename="next.config.ts"
+```ts filename="next.config.ts"
 import { withTowerEdge } from '@towerjs/edge'
 
 export default withTowerEdge({
@@ -31,7 +31,7 @@ On Vercel Edge, runtime detection returns `{ name: 'edge', isServerless: true }`
 
 ### Vault on Edge
 
-```tsx
+```ts
 // Querying works
 const users = await vault.selectFrom('users').selectAll().execute()
 
