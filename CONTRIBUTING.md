@@ -123,3 +123,15 @@ docs(vault): document kysely-neon provider
 ```
 
 Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation.
+
+**Commit message bodies** — The subject is the commit's identity: keep it to one line, imperative, no trailing period. Add a body only when the subject can't carry the _why_ — a non-obvious fix or tradeoff, a breaking change, an issue reference. Put it one blank line below the subject, wrap at 72 characters, and explain _why_, not _what_ (the diff shows what):
+
+```
+fix(vault): close pool on shutdown
+
+The pool held sockets open after SIGTERM, keeping the process alive.
+
+Closes #123
+```
+
+Skip the body when the change is self-explanatory (e.g. dependency bumps, pure formatting).

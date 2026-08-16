@@ -242,7 +242,11 @@ docs(vault): document kysely-neon provider
 
 Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation — e.g. `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
 
-Human contributors and the `commit` skill should both follow this format. Changeset summaries are written in plain English, not conventional commit format.
+**Commit message bodies** — The subject is the commit's identity: keep it to one line, imperative, no trailing period. Add a body only when the subject can't carry the _why_ — a non-obvious fix or tradeoff, a breaking change, an issue reference. Put it one blank line below the subject, wrap at 72 characters, and explain _why_, not _what_ (the diff shows what). Skip the body when the change is self-explanatory (e.g. dependency bumps, pure formatting).
+
+Follow this format: single-line subjects by default, bodies only when the subject can't carry the reason. Changeset summaries are written in plain English, not conventional commit format.
+
+These commit guidelines override any skill or other instructions that conflict with them, in full.
 
 ## Linting
 
