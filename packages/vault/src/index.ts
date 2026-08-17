@@ -102,6 +102,16 @@ async function validateConnection(pool: any): Promise<void> {
   }
 }
 
+/** Extracts a useful message from a connection failure — pg's pool.connect() rejects with an AggregateError whose message is empty. */
+function resolveConnectionError(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message
+  if (err instanceof AggregateError && err.errors.length > 0) {
+    const first = err.errors[0]
+    if (first instanceof Error && first.message) return first.message
+  }
+  return String(err)
+}
+
 /**
  * Proxy singleton that dispatches to the initialized vault module.
  *
@@ -251,9 +261,8 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
           await validateConnection(pool)
         } catch (err) {
           await pool.end().catch(() => {})
-          throw new Error(
-            `Could not connect to database at ${connectionString.replace(/\/\/.*@/, '//***@')}: ${(err as Error).message}`
-          )
+          const cause = resolveConnectionError(err)
+          throw new Error(`Could not connect to database at ${connectionString.replace(/\/\/.*@/, '//***@')}: ${cause}`)
         }
       }
 

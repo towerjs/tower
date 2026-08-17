@@ -253,6 +253,21 @@ describe('createVaultModule', () => {
     expect(err.message).toContain('//***@')
     expect(err.message).not.toContain('s3cret')
   })
+
+  it('surfaces the underlying cause from a pg AggregateError', async () => {
+    const aggregate = new AggregateError([new Error('connect ECONNREFUSED ::1:5432')])
+    mocks.mockConnect.mockRejectedValueOnce(aggregate)
+
+    const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
+    let err: any
+    try {
+      await mod.init!(mockCtx())
+    } catch (e) {
+      err = e
+    }
+
+    expect(err.message).toContain('connect ECONNREFUSED ::1:5432')
+  })
 })
 
 // ─── vault singleton proxy (after init) ────────────────────────────
