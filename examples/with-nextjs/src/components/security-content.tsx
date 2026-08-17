@@ -1,5 +1,10 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+
+import { useState } from 'react'
 import {
   disableTwoFactor,
   enableTwoFactor,
@@ -7,12 +12,7 @@ import {
   revokeOtherSessions,
   revokeSession,
   verifyTwoFactor,
-} from '@/app/actions'
-import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-
-import { useState } from 'react'
+} from 'towerjs/gatehouse/actions'
 
 type SecurityContentProps = {
   user: {

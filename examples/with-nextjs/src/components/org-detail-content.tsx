@@ -1,11 +1,17 @@
 'use client'
 
-import { cancelInvitation, deleteOrganization, inviteMember, removeMember, updateOrganization } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
 import { useActionState } from 'react'
+import {
+  cancelInvitation,
+  deleteOrganization,
+  inviteMember,
+  removeMember,
+  updateOrganization,
+} from 'towerjs/gatehouse/actions'
 
 type OrgDetailContentProps = {
   org: any

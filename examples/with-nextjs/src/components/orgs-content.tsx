@@ -1,6 +1,5 @@
 'use client'
 
-import { createOrganization } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,6 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useActionState } from 'react'
+import { createOrganization } from 'towerjs/gatehouse/actions'
 
 type OrgsContentProps = {
   orgs: Array<{ id: string; name: string; slug: string }>

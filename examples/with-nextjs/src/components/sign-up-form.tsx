@@ -1,12 +1,12 @@
 'use client'
 
-import { signUp } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useActionState, useEffect } from 'react'
+import { signUp } from 'towerjs/gatehouse/actions'
 
 export function SignUpForm() {
   const router = useRouter()

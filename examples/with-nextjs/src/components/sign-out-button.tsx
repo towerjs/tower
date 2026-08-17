@@ -1,9 +1,8 @@
 'use client'
 
-import { signOut } from '@/app/actions'
-
 import { useRouter } from 'next/navigation'
 import { useActionState, useEffect } from 'react'
+import { signOut } from 'towerjs/gatehouse/actions'
 
 export function SignOutButton() {
   const router = useRouter()

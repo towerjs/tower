@@ -1,11 +1,11 @@
 'use client'
 
-import { changePassword, updateProfile } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
 import { useActionState } from 'react'
+import { changePassword, updateProfile } from 'towerjs/gatehouse/actions'
 
 type SettingsContentProps = {
   user: { name: string; email: string }

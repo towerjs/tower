@@ -63,7 +63,8 @@ OAuth tests (`e2e/oauth.spec.ts`) are skipped unless `GOOGLE_CLIENT_ID` / `GITHU
 
 - `tower.config.ts` — Central Tower configuration
 - `src/proxy.ts` — Auth middleware (Next.js proxy)
-- `src/app/actions.ts` — Server actions wrapping Gatehouse and Courier
+- `src/actions/` — Application-specific server actions (Courier demo)
+- `towerjs/gatehouse/actions` — Pre-built Gatehouse auth server actions (imported directly)
 - `src/app/api/auth/[...all]/route.ts` — Auth API routes
 - `src/app/dashboard/` — Protected dashboard pages
 - `src/components/` — UI components and forms

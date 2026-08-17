@@ -1,6 +1,6 @@
 'use client'
 
-import { sendCourierEmail } from '@/app/actions'
+import { sendCourierEmail } from '@/actions/courier'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
