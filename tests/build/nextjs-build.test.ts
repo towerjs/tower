@@ -4,8 +4,8 @@ import { resolve } from 'node:path'
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
-const EXAMPLE_DIR = resolve(import.meta.dirname, '..', 'examples', 'with-nextjs')
-const ROOT_DIR = resolve(import.meta.dirname, '..')
+const EXAMPLE_DIR = resolve(import.meta.dirname, '..', '..', 'examples', 'with-nextjs')
+const ROOT_DIR = resolve(import.meta.dirname, '..', '..')
 const NEXT_DIR = resolve(EXAMPLE_DIR, '.next')
 
 describe('Next.js build acceptance', () => {

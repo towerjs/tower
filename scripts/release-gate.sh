@@ -114,8 +114,8 @@ fi
 
 check "8. E2E auth flow (requires Docker + network)"
 echo ""
-echo "  Running: pnpm test:e2e:docker  ← auto-starts Postgres, runs the suite, tears Postgres down"
-if pnpm test:e2e:docker >/dev/null 2>&1; then
+echo "  Running: pnpm test:e2e  ← provisions Postgres + browser, runs the suite, tears everything down"
+if pnpm test:e2e >/dev/null 2>&1; then
   pass "All e2e auth flows pass (Postgres auto-started and torn down)"
 else
   fail "E2E auth flows failed"

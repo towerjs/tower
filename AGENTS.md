@@ -91,8 +91,10 @@ The `towerjs` meta-package re-exports from the individual `@towerjs/*` packages,
 
 ```bash
 pnpm build        # Build all packages via Turborepo
-pnpm test         # Run all unit tests (vitest)
+pnpm test         # Run hermetic unit tests (vitest, no infrastructure)
 pnpm test:watch   # Vitest watch mode
+pnpm test:integration  # Provision Postgres, run DB integration tests, tear Postgres down
+pnpm test:build   # Verify the Next.js example app builds (production build)
 pnpm lint         # Lint with oxlint (--deny-warnings)
 pnpm typecheck    # TypeScript type checking (tsc --noEmit)
 pnpm format       # Format with Prettier
@@ -100,7 +102,7 @@ pnpm clean        # Remove all dist directories
 pnpm check:deps   # Validate dependency rules across packages
 pnpm db:up        # Start the Postgres container (docker compose up -d --wait postgres)
 pnpm db:down      # Stop and delete the Postgres container and its volume
-pnpm test:e2e:docker  # Start Postgres, run e2e tests, then tear Postgres down
+pnpm test:e2e     # Provision Postgres + browser, run Playwright tests, tear everything down
 pnpm changeset    # Create a new changeset for release
 pnpm version      # Apply changesets, bump versions, update changelogs, re-sync lockfile
 pnpm release      # Verify lockstep versions, build, and publish to npm
@@ -158,49 +160,30 @@ When writing application code, use the Tower APIs (`gatehouse.getSession()`, `va
 
 ## Testing
 
-- Unit tests: `packages/*/src/**/*.test.ts` — run via `pnpm test`
-- Acceptance tests: `tests/*.test.ts` — boot test, build test
-- E2E tests: `examples/with-nextjs/e2e/` — run via `pnpm test:e2e:docker` (auto-starts and tears down Docker Postgres)
+The test suite is split into explicit tiers so that `pnpm test` is hermetic and never starts infrastructure:
+
+- **Unit/acceptance tests (hermetic, no infrastructure):** `packages/*/src/**/*.test.ts` + `tests/**/*.test.ts` (excluding `tests/integration/**` and `tests/build/**`) — run via `pnpm test`
+- **Integration tests (live DB):** `tests/integration/**` — run via `pnpm test:integration` (provisions Postgres automatically); a global setup drops and recreates the schema so each run starts clean
+- **Build test:** `tests/build/nextjs-build.test.ts` — verifies the Next.js example app production-builds; run via `pnpm test:build`
+- **E2E tests:** `examples/with-nextjs/e2e/` — run via `pnpm test:e2e` (provisions Postgres + browser automatically)
 - Tests should NOT require external services unless tagged with `{ skip }` when unavailable
 - Database-dependent tests check for `DATABASE_URL` and skip gracefully
 
-### E2E testing patterns (Playwright)
-
-E2E tests live in `examples/with-nextjs/e2e/` and use Playwright against the demo Next.js app.
-
-**Core auth flows tested:**
-
-```
-auth.spec.ts
-  ✓ unauthenticated user redirected to sign in
-  ✓ user can sign up
-  ✓ email is verified after sign up
-  ✓ user can sign out
-  ✓ user can sign in after sign out
-  ✓ session persists after reload
-
-auth-extended.spec.ts
-  ✓ incorrect sign-in shows error message
-  ✓ update profile name with success feedback
-  ✓ change password then sign in with new and old passwords
-  ✓ create organization, invite member, cancel invitation
-  ✓ revoke all other sessions from security page
-  ✓ two-factor enable flow shows QR code
-```
+**Never** make `pnpm test` (the default, hermetic suite) depend on Docker, a running database, or any implicitly-started infrastructure. Infrastructure-backed tests run via their own explicit commands.
 
 **Running E2E tests:**
 
 ```bash
-# One command: starts Postgres, runs the suite, then removes the container
-pnpm test:e2e:docker
+# One command: provisions Postgres + browser, runs the suite, then tears everything down
+pnpm test:e2e
 ```
 
-This is the canonical way to run E2E tests. The `scripts/test-e2e-docker.sh` wrapper:
+Integration and E2E tests provision their required local infrastructure automatically (`scripts/test-integration.sh`, `scripts/test-e2e.sh`):
 
-1. Verifies Docker is installed and running (fails with a clear message otherwise).
-2. Reuses an already-running Postgres container if one exists; otherwise starts one and waits for its health check: `docker compose up -d --wait postgres`.
-3. Runs `pnpm test:e2e` (Playwright auto-starts the Next.js dev server via its `webServer` config).
-4. Tears Postgres down with `docker compose down -v` (removes the container and data volume) only if the script started it — an already-running container is left in place, even if tests fail.
+1. If `DATABASE_URL` is already set (e.g. a CI service), it is reused — no container is started.
+2. Otherwise Docker is verified, an already-running Postgres container is reused if one exists, or one is started and its health check awaited (`docker compose up -d --wait postgres`).
+3. The suite runs.
+4. Postgres is torn down (`docker compose down -v`) only if the script started it — an already-running container is left in place, even if tests fail.
 
 If you only need the database up or down without running tests, use the individual scripts:
 
@@ -211,20 +194,22 @@ pnpm db:down  # stop Postgres and delete its data volume
 
 To reset the database between runs: `pnpm db:down && pnpm db:up`.
 
-**Docker is available and expected** for E2E tests — it is not a boundary. If a script reports Docker isn't running, start Docker Desktop and re-run; do not skip or stub the Postgres dependency.
+**Docker is available and expected** for the integration and E2E tiers — it is not a boundary. If a script reports Docker isn't running, start Docker Desktop and re-run; do not skip or stub the Postgres dependency.
 
-**Email provider:** The demo app uses Courier's `console` provider (`provider: "console"`), which logs emails to stdout. No external credentials needed for development.
+**E2E test patterns:**
 
-**OAuth:** OAuth tests (`e2e/oauth.spec.ts`) are skipped unless `GOOGLE_CLIENT_ID` / `GITHUB_CLIENT_ID` env vars are set. This keeps the default test suite dependency-free.
-
-**Test isolation:** Each test generates a unique email (`test-${Date.now()}@example.com`) to avoid database state conflicts. No database cleanup is needed between tests.
+- Playwright runs against the demo Next.js app (`examples/with-nextjs/e2e/`), which auto-starts via the `webServer` config.
+- Core auth flows: sign-up, email verification, sign-in/out, session persistence (`auth.spec.ts`); error handling, profile updates, password changes, orgs/invites, session revocation, 2FA (`auth-extended.spec.ts`).
+- The demo app uses Courier's `console` email provider — emails log to stdout, no external credentials needed.
+- OAuth tests (`e2e/oauth.spec.ts`) are skipped unless `GOOGLE_CLIENT_ID` / `GITHUB_CLIENT_ID` env vars are set. This keeps the default suite dependency-free.
+- Each test generates a unique email (`test-${Date.now()}@example.com`) to avoid database state conflicts. No database cleanup is needed between tests.
 
 **Adding new E2E tests:**
 
 1. Add `*.spec.ts` to `examples/with-nextjs/e2e/`
 2. Use unique test data (timestamps, random values)
 3. Add `test.skip()` for provider-dependent tests
-4. Verify with `pnpm test:e2e:docker`
+4. Verify with `pnpm test:e2e`
 
 ## Commit style
 

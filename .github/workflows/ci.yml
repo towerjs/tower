@@ -49,6 +49,8 @@ jobs:
         working-directory: examples/with-nextjs
 
       - run: pnpm test
+      - run: pnpm test:integration
+      - run: pnpm test:build
 
   e2e:
     runs-on: ubuntu-latest

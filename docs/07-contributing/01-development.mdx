@@ -56,13 +56,29 @@ Tests are colocated with source code in `packages/*/src/**/*.test.ts`:
 pnpm test
 ```
 
+### Integration Tests
+
+Tests that need a live database live in `tests/integration/`. A global setup drops and recreates the schema before each run, so tests always start clean:
+
+```bash
+# Provisions Postgres, runs integration tests, then tears Postgres down
+pnpm test:integration
+```
+
 ### E2E Tests
 
 E2E tests use Playwright against the demo Next.js app:
 
 ```bash
-# Start Postgres
-docker compose up postgres
+# One command: provisions Postgres + browser, runs the suite, then removes the container
+pnpm test:e2e
+```
+
+Or manually:
+
+```bash
+# Start Postgres (from the repo root)
+pnpm db:up
 
 # Run tests (auto-starts Next.js dev server)
 pnpm test:e2e
@@ -72,7 +88,7 @@ Tests are in `examples/with-nextjs/e2e/` and cover auth flows: sign-up, sign-in,
 
 ### Environment for E2E
 
-- Database resets between runs: `docker compose down -v && docker compose up postgres`
+- Database resets between runs: `pnpm db:down && pnpm db:up`
 - Email uses `console` provider — logs to stdout
 - Each test generates a unique email to avoid state conflicts
 

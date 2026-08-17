@@ -14,10 +14,10 @@ pnpm install
 pnpm dev
 ```
 
-Requires PostgreSQL. Start one with Docker:
+Requires PostgreSQL. Start one from the repo root with Docker:
 
 ```bash
-docker compose up postgres
+pnpm db:up
 ```
 
 The app uses the Courier **console** email provider, which logs emails to stdout.
@@ -39,8 +39,8 @@ The E2E suite uses Playwright to verify the Tower stack end-to-end:
 Run the tests:
 
 ```bash
-# Terminal 1: start PostgreSQL
-docker compose up postgres
+# Terminal 1: start PostgreSQL (from the repo root)
+pnpm db:up
 
 # Terminal 2: run the tests
 pnpm test:e2e
@@ -54,7 +54,7 @@ Each test generates a unique email (`test-${Date.now()}@example.com`) to avoid s
 To manually reset the database:
 
 ```bash
-docker compose down -v && docker compose up postgres
+pnpm db:down && pnpm db:up
 ```
 
 OAuth tests (`e2e/oauth.spec.ts`) are skipped unless `GOOGLE_CLIENT_ID` / `GITHUB_CLIENT_ID` are set.

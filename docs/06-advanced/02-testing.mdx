@@ -51,13 +51,24 @@ it('gets session', async () => {
 })
 ```
 
-## E2E Tests
+## Integration Tests
 
-E2E tests live in `examples/with-nextjs/e2e/`:
+Integration tests exercise the live database and live in `tests/integration/`. They provision their required local infrastructure automatically:
 
 ```bash
-# starts Postgres, runs the suite, then tears it down
-pnpm test:e2e:docker
+# provisions Postgres, runs the suite, then tears it down
+pnpm test:integration
+```
+
+A global setup drops and recreates the database schema before each run, so integration tests always start from a clean slate. Database-dependent tests check for `DATABASE_URL` and skip gracefully when it's unset.
+
+## E2E Tests
+
+E2E tests live in `examples/with-nextjs/e2e/` and provision their required infrastructure automatically:
+
+```bash
+# provisions Postgres + browser, runs the suite, then tears everything down
+pnpm test:e2e
 ```
 
 ### Test Patterns
@@ -87,6 +98,9 @@ test('user can sign up', async ({ page }) => {
 ## Writing Tests
 
 - Unit tests are colocated with source files: `src/**/*.test.ts`
+- Integration tests (live DB) go in `tests/integration/`
+- Build tests (Next.js production build) go in `tests/build/`
 - E2E tests go in `examples/with-nextjs/e2e/`
 - Tests should not require external services unless guarded
 - Database-dependent tests check for `DATABASE_URL` and skip gracefully
+- `pnpm test` is hermetic — it never starts infrastructure. DB and build tiers run explicitly.
