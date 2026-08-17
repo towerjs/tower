@@ -1,4 +1,4 @@
-name: Trigger Docs Deploy
+name: Docs Deploy
 
 on:
   push:
