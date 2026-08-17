@@ -106,9 +106,9 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
 
 ## 5. Invite Members
 
-Server actions that touch the gatehouse instance need the `action()` wrapper from `towerjs/gatehouse/next` — it provides the request context the facade reads headers/session from:
+Server actions that touch the gatehouse instance need the `action()` wrapper from `towerjs/gatehouse/next` — it provides the request context the facade reads headers/session from. Put them in `src/actions/`:
 
-```ts filename="src/app/actions.ts"
+```ts filename="src/actions/organizations.ts"
 'use server'
 
 import { gatehouse } from 'towerjs/gatehouse'
@@ -128,7 +128,7 @@ export const inviteMember = action(async (formData: FormData) => {
 
 ## 6. Set Active Organization
 
-```ts filename="src/app/actions.ts"
+```ts filename="src/actions/organizations.ts"
 export const switchOrganization = action(async (formData: FormData) => {
   const orgId = formData.get('orgId') as string
   await gatehouse.organizations.setActive(orgId)
@@ -139,7 +139,7 @@ The active organization is used for session-scoped operations.
 
 ## 7. Permissions
 
-```ts filename="src/app/actions.ts"
+```ts filename="src/actions/organizations.ts"
 export const deleteProject = action(async (formData: FormData) => {
   const projectId = formData.get('projectId') as string
   const orgId = formData.get('orgId') as string

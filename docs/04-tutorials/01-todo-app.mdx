@@ -35,7 +35,7 @@ npx tower migrate
 
 ## 3. Server Actions
 
-```ts filename="src/app/actions.ts"
+```ts filename="src/actions/todos.ts"
 'use server'
 
 import { gatehouse } from 'towerjs/gatehouse'
@@ -65,7 +65,7 @@ export async function deleteTodo(formData: FormData) {
 ## 4. Todo Page
 
 ```tsx filename="src/app/todos/page.tsx"
-import { addTodo, deleteTodo, toggleTodo } from '@/app/actions'
+import { addTodo, deleteTodo, toggleTodo } from '@/actions/todos'
 
 import { gatehouse } from 'towerjs/gatehouse'
 import { vault } from 'towerjs/vault'
@@ -110,7 +110,7 @@ export default async function TodosPage() {
 
 ## 5. Email Notification (Optional)
 
-```ts filename="src/app/actions.ts"
+```ts filename="src/actions/todos.ts"
 import { courier } from 'towerjs/courier'
 
 export async function addTodo(formData: FormData) {

@@ -3,9 +3,17 @@ title: 'Setup'
 description: 'Install Gatehouse, mount the auth API, run migrations, and sign in your first user.'
 ---
 
-Get authentication running end to end: enable the module, mount the API, migrate, and sign in your first user.
+Get authentication running end to end: install the module, enable it, mount the API, migrate, and sign in your first user.
 
-## 1. Enable the module
+## 1. Install
+
+`towerjs` bundles every module. Install the individual `@towerjs/gatehouse` package too, because the proxy imports `gatehouse` from it directly:
+
+```bash
+pnpm add towerjs @towerjs/gatehouse
+```
+
+## 2. Enable the module
 
 Add `gatehouse` to `tower.config.ts`. Credentials and email verification are good defaults to start with:
 
@@ -18,7 +26,7 @@ gatehouse: {
 }
 ```
 
-## 2. Set environment variables
+## 3. Set environment variables
 
 ```bash
 # Optional — your app's base URL. Set `baseURL` in tower.config.ts, or use the
@@ -32,7 +40,7 @@ BETTER_AUTH_SECRET=your-secret
 
 Social provider credentials (`GOOGLE_CLIENT_ID`, `GITHUB_CLIENT_ID`, etc.) are picked up automatically from the environment when you enable social login.
 
-## 3. Mount the auth API
+## 4. Mount the auth API
 
 The framework adapter ships the route handlers — mount them where your framework expects:
 
@@ -44,29 +52,17 @@ export { GET, POST }
 
 This mounts the full Better Auth API under `/api/auth` — the `gatehouseClient` in your browser code talks to it.
 
-## 4. Run migrations
+## 5. Run migrations
 
-The auth tables (users, sessions, accounts, organizations, ...) live in the Vault database:
-
-```ts filename="scripts/migrate.ts"
-import { Gatehouse } from '@towerjs/gatehouse'
-
-import { initTower } from 'towerjs/runtime'
-
-async function main() {
-  const tower = await initTower()
-  await Gatehouse.migrate()
-  await tower.shutdown()
-}
-
-main()
-```
+The auth tables (users, sessions, accounts, organizations, ...) live in the Vault database. The `tower` CLI runs both the Vault and Gatehouse migrations for you:
 
 ```bash
-npx tsx scripts/migrate.ts
+npx tower migrate
 ```
 
-## 5. Create your first user
+If you're using a package manager other than npm, use `pnpm exec tower migrate`, `yarn exec tower migrate`, or `bunx tower migrate`. Set `DATABASE_URL` (or pass `connectionString` to `vault`) first.
+
+## 6. Create your first user
 
 Sign up through the client — or from the server:
 
@@ -80,7 +76,7 @@ await gatehouseClient.signUp.email({
 })
 ```
 
-## 6. Protect routes and verify
+## 7. Protect routes and verify
 
 Route access belongs in the proxy middleware — see [Protected Routes](/docs/gatehouse/protected-routes):
 

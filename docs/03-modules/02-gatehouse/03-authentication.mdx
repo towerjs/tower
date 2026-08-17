@@ -17,12 +17,27 @@ Gatehouse supports six ways to authenticate — plus two-factor auth for a secon
 
 ## Two call styles
 
-**Forms** — the pre-built actions run on the server, take plain form fields, and return `{ ok }` or `{ error }`:
+**Forms** — the pre-built actions run on the server, take plain form fields, and return `{ ok }` or `{ error }`. Import them directly from `towerjs/gatehouse/actions` into a client component:
 
-```ts filename="src/app/actions.ts"
-'use server'
+```tsx filename="src/components/sign-in-form.tsx"
+'use client'
 
-export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
+import { useActionState } from 'react'
+import { signIn } from 'towerjs/gatehouse/actions'
+
+export function SignInForm() {
+  const [state, action, pending] = useActionState(signIn, undefined)
+  return (
+    <form action={action}>
+      {state?.error && <p role="alert">{state.error}</p>}
+      <input name="email" type="email" required />
+      <input name="password" type="password" required />
+      <button type="submit" disabled={pending}>
+        Sign in
+      </button>
+    </form>
+  )
+}
 ```
 
 See [Actions](/docs/gatehouse/api-reference/actions) for the full list.

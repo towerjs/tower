@@ -53,10 +53,28 @@ export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] 
 export { GET, POST } from 'towerjs/gatehouse/next'
 ```
 
-```ts filename="src/app/actions.ts"
-'use server'
+Import the pre-built auth actions directly from `towerjs/gatehouse/actions` in your client components — do not create a `src/actions.ts` re-export wrapper (Turbopack cannot verify that re-exported values from a `'use server'` module are async, which breaks `next build`):
 
-export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
+```tsx filename="src/app/sign-in/sign-in-form.tsx"
+'use client'
+
+import { useActionState } from 'react'
+import { signIn } from 'towerjs/gatehouse/actions'
+
+export function SignInForm() {
+  const [state, action, pending] = useActionState(signIn, undefined)
+
+  return (
+    <form action={action}>
+      {state?.error && <p role="alert">{state.error}</p>}
+      <input name="email" type="email" placeholder="Email" required />
+      <input name="password" type="password" placeholder="Password" required />
+      <button type="submit" disabled={pending}>
+        Sign In
+      </button>
+    </form>
+  )
+}
 ```
 
 ## 3. Run Migrations
@@ -68,18 +86,10 @@ npx tower migrate
 ## 4. Sign-In Page
 
 ```tsx filename="src/app/sign-in/page.tsx"
-'use client'
-
-import { signIn } from '@/app/actions'
+import { SignInForm } from './sign-in-form'
 
 export default function SignInPage() {
-  return (
-    <form action={signIn}>
-      <input name="email" type="email" placeholder="Email" required />
-      <input name="password" type="password" placeholder="Password" required />
-      <button type="submit">Sign In</button>
-    </form>
-  )
+  return <SignInForm />
 }
 ```
 
@@ -88,6 +98,7 @@ export default function SignInPage() {
 ```tsx filename="src/app/dashboard/page.tsx"
 import { redirect } from 'next/navigation'
 import { gatehouse } from 'towerjs/gatehouse'
+import { signOut } from 'towerjs/gatehouse/actions'
 
 export default async function Dashboard() {
   const session = await gatehouse.getSession()
@@ -133,7 +144,7 @@ twoFactor: true,
 Then in your app:
 
 ```ts
-import { enableTwoFactor, verifyTwoFactor } from '@/app/actions'
+import { enableTwoFactor, verifyTwoFactor } from 'towerjs/gatehouse/actions'
 
 // In a settings page:
 const result = await enableTwoFactor(new FormData()) // shows QR code
