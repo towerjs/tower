@@ -20,16 +20,27 @@ A freshly scaffolded Tower project includes:
 my-app/
 ├── src/
 │   ├── proxy.ts                        # Auth middleware (gatehouse)
-│   ├── lib/auth/actions.ts             # Server actions (gatehouse)
-│   ├── app/
-│   │   ├── api/auth/[...all]/route.ts  # Auth API routes (gatehouse)
-│   │   ├── layout.tsx
-│   │   └── page.tsx
+│   └── app/
+│       ├── api/auth/[...all]/route.ts  # Auth API routes (gatehouse)
+│       ├── layout.tsx
+│       └── page.tsx                    # Minimal placeholder page
 ├── tower.config.ts
 ├── next.config.ts                      # Edge runtime only
 ├── package.json
 └── tsconfig.json
 ```
+
+Tower scaffolds the infrastructure — configuration, database, and auth wiring. It does not generate application UI: sign-in/sign-up pages, dashboards, and the rest are yours to build. The homepage is a minimal placeholder that says the application is ready.
+
+## Build Your App
+
+Tower is modular — pick the pieces your app needs. Each module page has complete, copy-paste setup including ready-made forms, so you can go from scaffold to working feature without styling:
+
+- **[Add a database](/docs/vault)** — connection, migrations, seeds, and queries
+- **[Add authentication](/docs/gatehouse/setup)** — sign-in, sign-up, sessions, organizations, and password reset, with copy-paste forms
+- **[Send email](/docs/courier)** — email, SMS, and push providers
+
+Want to see it assembled? The [Authentication with Gatehouse tutorial](/docs/tutorials/authentication) walks through a full sign-in → dashboard app.
 
 ## Manual Setup
 
@@ -38,13 +49,15 @@ Add Tower to an existing Next.js project:
 ### Install
 
 <CodeTabs>
-  <CodeTab title="pnpm">```bash pnpm add towerjs @towerjs/gatehouse pnpm add -D @towerjs/scribe ```</CodeTab>
-  <CodeTab title="npm">```bash npm install towerjs @towerjs/gatehouse npm install -D @towerjs/scribe ```</CodeTab>
-  <CodeTab title="yarn">```bash yarn add towerjs @towerjs/gatehouse yarn add -D @towerjs/scribe ```</CodeTab>
-  <CodeTab title="bun">```bash bun add towerjs @towerjs/gatehouse bun add -D @towerjs/scribe ```</CodeTab>
+  <CodeTab title="pnpm">```bash pnpm add towerjs pnpm add -D @towerjs/scribe ```</CodeTab>
+  <CodeTab title="npm">```bash npm install towerjs npm install -D @towerjs/scribe ```</CodeTab>
+  <CodeTab title="yarn">```bash yarn add towerjs yarn add -D @towerjs/scribe ```</CodeTab>
+  <CodeTab title="bun">```bash bun add towerjs bun add -D @towerjs/scribe ```</CodeTab>
 </CodeTabs>
 
 `@towerjs/scribe` provides the `tower` CLI (`tower migrate`, `tower seed`) — install it as a dev dependency.
+
+`towerjs` bundles every module, so subpaths like `towerjs/vault`, `towerjs/courier`, and `towerjs/gatehouse` all work from a single install. Install an individual `@towerjs/*` package only when you import from it directly — for example, the auth proxy imports `gatehouse` from `@towerjs/gatehouse`, so add that package when you set up authentication ([Gatehouse setup](/docs/gatehouse/setup)).
 
 > **Edge runtime only** — `@towerjs/edge` is only needed if you deploy to an edge runtime (Vercel Edge, Cloudflare Workers). Most apps run on the Node.js runtime and can skip it. If you do use an edge runtime, install it and wrap `next.config.ts`:
 >
@@ -60,78 +73,32 @@ Add Tower to an existing Next.js project:
 
 ### 1. Configure tower.config.ts
 
+Start with a minimal config and add the modules you need — each module page has the full configuration and copy-paste examples:
+
 ```ts filename="tower.config.ts"
 import { defineTower } from 'towerjs/blueprint'
 
 export default defineTower({
   modules: {
-    vault: {},
-    courier: { email: { provider: 'console', from: 'noreply@example.com' } },
-    gatehouse: {
-      provider: 'better-auth',
-      appName: 'My App',
-      baseURL: 'http://localhost:3000',
-      credentials: { enabled: true },
-    },
+    // Add modules as you need them.
+    // vault: {},             // database — /docs/vault
+    // gatehouse: {...},      // authentication — /docs/gatehouse/setup
+    // courier: {...},        // email, SMS, push — /docs/courier
   },
 })
 ```
 
-### 2. Set up auth middleware
+### 2. Run migrations
 
-```ts filename="src/proxy.ts"
-import { gatehouse } from '@towerjs/gatehouse'
-
-const { handler } = gatehouse.proxy({
-  public: ['/', '/sign-in', '/sign-up'],
-  redirectIfAuthenticated: ['/sign-in', '/sign-up'],
-  redirectTo: '/sign-in',
-  redirectAfterSignIn: '/dashboard',
-})
-
-export const proxy = handler
-export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] }
-```
-
-### 3. Add auth route handler
-
-```ts filename="src/app/api/auth/[...all]/route.ts"
-export { GET, POST } from 'towerjs/gatehouse/next'
-```
-
-### 4. Create server actions
-
-```ts filename="src/app/actions.ts"
-'use server'
-
-export { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'
-```
-
-### 5. Run migrations
-
-Set `DATABASE_URL` (or pass `connectionString` to `vault()`), then:
+If your app uses Vault — including Gatehouse's auth tables — set `DATABASE_URL` (or pass `connectionString` to `vault`), then:
 
 ```bash
 npx tower migrate
 ```
 
-This creates all auth tables (users, sessions, accounts, organizations, etc.).
-
-### 6. Use in server components
-
-```tsx
-import { gatehouse } from 'towerjs/gatehouse'
-
-export default async function Dashboard() {
-  const session = await gatehouse.getSession()
-  if (!session) return <p>Not signed in</p>
-
-  return <p>Welcome {session.user.name}</p>
-}
-```
-
 ## Next Steps
 
-- Learn about [Vault](/docs/vault) for database access
-- Dive into [Gatehouse](/docs/gatehouse) for auth configuration
-- Set up [Courier](/docs/courier) for email notifications
+- [Vault](/docs/vault) — database access, migrations, seeds
+- [Gatehouse setup](/docs/gatehouse/setup) — authentication middleware, API routes, and forms
+- [Courier](/docs/courier) — email, SMS, and push
+- [Authentication with Gatehouse](/docs/tutorials/authentication) — a full sign-in → dashboard walkthrough

@@ -31,16 +31,16 @@ pnpm create tower my-app \
 
 Available flags:
 
-| Flag                              | Values                                                  | Default         |
-| --------------------------------- | ------------------------------------------------------- | --------------- |
-| `--name`, or positional first arg | project name                                            | `my-app`        |
-| `--tailwind` / `--no-tailwind`    | —                                                       | `--no-tailwind` |
-| `--deployment`                    | `vercel`, `cloudflare`, `other`                         | `vercel`        |
-| `--modules`                       | comma-separated: `vault`, `gatehouse`, `courier`        | none            |
-| `--vault`                         | `neon`, `supabase`, `railway`, `other`, `skip`          | `skip`          |
-| `--features`                      | comma-separated: `credentials`, `social`, `phoneNumber` | none            |
-| `--email`                         | `resend`, `smtp`, `ses`, `skip`                         | `skip`          |
-| `--sms`                           | `twilio`, `skip`                                        | `skip`          |
+| Flag                              | Values                                                                                             | Default         |
+| --------------------------------- | -------------------------------------------------------------------------------------------------- | --------------- |
+| `--name`, or positional first arg | project name                                                                                       | `my-app`        |
+| `--tailwind` / `--no-tailwind`    | —                                                                                                  | `--no-tailwind` |
+| `--deployment`                    | `vercel`, `cloudflare`, `other`                                                                    | `vercel`        |
+| `--modules`                       | comma-separated: `vault`, `gatehouse`, `courier`                                                   | none            |
+| `--vault`                         | `neon`, `supabase`, `railway`, `other`, `skip`                                                     | `skip`          |
+| `--features`                      | comma-separated: `credentials`, `social`, `magicLinks`, `twoFactor`, `organization`, `phoneNumber` | none            |
+| `--email`                         | `resend`, `smtp`, `ses`, `skip`                                                                    | `skip`          |
+| `--sms`                           | `twilio`, `skip`                                                                                   | `skip`          |
 
 Passing any flag runs the whole flow without prompting.
 
@@ -59,9 +59,10 @@ The scaffolded project includes:
 
 - Next.js with App Router
 - Tower configuration (`tower.config.ts`)
-- Auth setup (proxy, actions, API routes)
+- Auth wiring (proxy, API routes) when gatehouse is selected
 - Database configuration
 - TypeScript and build tooling
+- A minimal placeholder homepage — Tower does not generate application UI
 
 ## Output
 
@@ -69,11 +70,13 @@ The scaffolded project includes:
 my-app/
 ├── src/
 │   ├── proxy.ts                     # gatehouse only
-│   ├── lib/auth/actions.ts          # gatehouse only
-│   ├── app/
-│   │   ├── api/auth/[...all]/route.ts   # gatehouse only
-│   │   ├── layout.tsx
-│   │   └── page.tsx
+│   └── app/
+│       ├── api/auth/[...all]/route.ts   # gatehouse only
+│       ├── layout.tsx
+│       └── page.tsx
+│   └── vault/
+│       ├── migrations/              # vault only (kept with .gitkeep)
+│       └── seeds/                   # vault only (kept with .gitkeep)
 ├── tower.config.ts
 ├── next.config.ts                   # edge runtime only
 ├── package.json
@@ -83,4 +86,4 @@ my-app/
 └── AGENTS.md
 ```
 
-Migration and seed folders (`src/vault/migrations/`, `src/vault/seeds/`) are not scaffolded — create them when you add your first migration or seed file.
+Vault projects get `src/vault/migrations/` and `src/vault/seeds/` out of the box — scaffolded with `.gitkeep` files so the folders exist before your first migration or seed. Drop your migration and seed files in there (see [Vault](/docs/vault)).
