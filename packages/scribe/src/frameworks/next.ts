@@ -47,6 +47,7 @@ export const nextAdapter: FrameworkAdapter = {
 
     const projectDir = join(targetDir, state.projectName)
 
+    await writeFile(join(projectDir, 'src', 'app', 'page.tsx'), homePage())
     await writeFile(join(projectDir, 'tower.config.ts'), towerConfig(state))
     if (isEdge) {
       await writeFile(join(projectDir, 'next.config.ts'), nextConfig())
@@ -66,18 +67,7 @@ export const nextAdapter: FrameworkAdapter = {
       await mkdir(authDir, { recursive: true })
       await writeFile(join(authDir, 'route.ts'), authRoute())
 
-      const actionsDir = join(projectDir, 'src', 'lib', 'auth')
-      await mkdir(actionsDir, { recursive: true })
-      await writeFile(join(actionsDir, 'actions.ts'), actionsFile())
-
       await writeFile(join(projectDir, 'src', 'proxy.ts'), proxyFile())
-
-      await mkdir(join(projectDir, 'src', 'app', 'sign-in'), { recursive: true })
-      await writeFile(join(projectDir, 'src', 'app', 'sign-in', 'page.tsx'), signInPage())
-      await mkdir(join(projectDir, 'src', 'app', 'sign-up'), { recursive: true })
-      await writeFile(join(projectDir, 'src', 'app', 'sign-up', 'page.tsx'), signUpPage())
-      await mkdir(join(projectDir, 'src', 'app', 'dashboard'), { recursive: true })
-      await writeFile(join(projectDir, 'src', 'app', 'dashboard', 'page.tsx'), dashboardPage())
     }
 
     if (state.modules.vault) {
@@ -229,6 +219,21 @@ ${modules}
 `
 }
 
+function homePage(): string {
+  return `export default function Home() {
+  return (
+    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '40rem', margin: '0 auto', padding: '4rem 1.5rem' }}>
+      <h1>Your Tower application is ready.</h1>
+      <p>
+        Tower scaffolds the infrastructure — configuration, database, and auth wiring. The pages
+        and UI are yours to build.
+      </p>
+    </main>
+  )
+}
+`
+}
+
 function authRoute(): string {
   return `export { GET, POST } from "towerjs/gatehouse/next";
 `
@@ -245,10 +250,7 @@ function proxyFile(): string {
   return `import { gatehouse } from "@towerjs/gatehouse";
 
 const { handler } = gatehouse.proxy({
-  public: ["/", "/sign-in", "/sign-up"],
-  redirectIfAuthenticated: ["/sign-in", "/sign-up"],
-  redirectTo: "/sign-in",
-  redirectAfterSignIn: "/dashboard",
+  public: ["/"],
 });
 
 export const proxy = handler;
@@ -324,178 +326,6 @@ export function envExample(state: ProjectState): string {
   return vars.join('\n') + '\n'
 }
 
-function actionsFile(): string {
-  // Emit const aliases instead of re-exporting. Turbopack cannot verify that
-  // re-exported `any`-typed values from a `use server` module are async, which
-  // breaks `next build`. Const aliases are concrete exports Turbopack accepts.
-  return `'use server'
-
-import {
-  signIn as _signIn,
-  signUp as _signUp,
-  signOut as _signOut,
-  updateProfile as _updateProfile,
-  changePassword as _changePassword,
-} from 'towerjs/gatehouse/actions'
-
-export const signIn = _signIn
-export const signUp = _signUp
-export const signOut = _signOut
-export const updateProfile = _updateProfile
-export const changePassword = _changePassword
-
-// Add more actions from the registry as needed:
-// import {
-//   createOrganization as _createOrganization,
-//   updateOrganization as _updateOrganization,
-//   deleteOrganization as _deleteOrganization,
-//   ...
-// } from 'towerjs/gatehouse/actions'
-//
-// export const createOrganization = _createOrganization
-// export const updateOrganization = _updateOrganization
-// ...
-
-// For actions with custom returns, use \`action\` directly:
-// import { action } from 'towerjs/gatehouse/next'
-// import { gatehouse } from 'towerjs/gatehouse'
-//
-// export const enableTwoFactor = action(async (formData: FormData) => {
-//   return gatehouse.totp.enable(formData.get('password') as string)
-// })
-`
-}
-
-function signInPage(): string {
-  return `'use client'
-
-import { useActionState } from 'react'
-import Link from 'next/link'
-import { signIn } from '@/lib/auth/actions'
-
-type State = { error?: string } | { ok: true }
-
-export default function SignInPage() {
-  const [state, formAction, pending] = useActionState<State | undefined, FormData>(signIn, undefined)
-
-  return (
-    <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-4 py-16">
-      <h1 className="mb-6 text-2xl font-semibold">Sign in</h1>
-      <form action={formAction} className="flex flex-col gap-3">
-        {state && 'error' in state ? <p className="text-sm text-red-600">{state.error}</p> : null}
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="rounded-md border border-neutral-300 px-3 py-2"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Password
-          <input
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className="rounded-md border border-neutral-300 px-3 py-2"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-2 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {pending ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-      <p className="mt-4 text-sm text-neutral-500">
-        No account yet? <Link className="underline" href="/sign-up">Sign up</Link>
-      </p>
-    </main>
-  )
-}
-`
-}
-
-function signUpPage(): string {
-  return `'use client'
-
-import { useActionState } from 'react'
-import Link from 'next/link'
-import { signUp } from '@/lib/auth/actions'
-
-type State = { error?: string } | { ok: true }
-
-export default function SignUpPage() {
-  const [state, formAction, pending] = useActionState<State | undefined, FormData>(signUp, undefined)
-
-  return (
-    <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-4 py-16">
-      <h1 className="mb-6 text-2xl font-semibold">Create your account</h1>
-      <form action={formAction} className="flex flex-col gap-3">
-        {state && 'error' in state ? <p className="text-sm text-red-600">{state.error}</p> : null}
-        <label className="flex flex-col gap-1 text-sm">
-          Name
-          <input name="name" type="text" required autoComplete="name" className="rounded-md border border-neutral-300 px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input name="email" type="email" required autoComplete="email" className="rounded-md border border-neutral-300 px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Password
-          <input
-            name="password"
-            type="password"
-            required
-            autoComplete="new-password"
-            className="rounded-md border border-neutral-300 px-3 py-2"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-2 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {pending ? 'Creating account…' : 'Sign up'}
-        </button>
-      </form>
-      <p className="mt-4 text-sm text-neutral-500">
-        Already have an account? <Link className="underline" href="/sign-in">Sign in</Link>
-      </p>
-    </main>
-  )
-}
-`
-}
-
-function dashboardPage(): string {
-  return `import { redirect } from 'next/navigation'
-import { gatehouse } from 'towerjs/gatehouse'
-import { signOut } from '@/lib/auth/actions'
-
-export default async function DashboardPage() {
-  const session = await gatehouse.getSession()
-  if (!session) redirect('/sign-in')
-
-  return (
-    <main className="mx-auto flex w-full max-w-md flex-col px-4 py-16">
-      <h1 className="text-2xl font-semibold">Welcome, {session.user.name}</h1>
-      <p className="mt-1 text-sm text-neutral-500">{session.user.email}</p>
-      <form action={signOut} className="mt-8">
-        <button type="submit" className="rounded-md border border-neutral-300 px-3 py-2 text-sm">
-          Sign out
-        </button>
-      </form>
-    </main>
-  )
-}
-`
-}
-
 function prettierConfig(tailwind: boolean): string {
   const plugins = ['prettier-plugin-organize-imports']
   if (tailwind) {
@@ -564,7 +394,7 @@ function agentsMd(state: ProjectState): string {
     '## Architecture',
     '',
     '- `src/app/` — Next.js App Router pages and API routes',
-    '- `src/lib/` — Shared logic, utilities, and server actions',
+    '- `src/lib/` — Shared logic and utilities',
     '- `src/proxy.ts` — Edge middleware (runs before every request)',
     '- `tower.config.ts` — Tower module configuration',
     '',
@@ -572,20 +402,10 @@ function agentsMd(state: ProjectState): string {
     '',
     '## Server actions',
     '',
-    'Common auth actions are available from `towerjs/gatehouse/actions`:',
+    'Import tower-supplied actions directly from `towerjs/gatehouse/actions`:',
     '',
     '```ts',
-    "'use server'",
-    '',
-    'export {',
-    '  signIn, signUp, signOut,',
-    '  updateProfile, changePassword,',
-    '  createOrganization, updateOrganization, deleteOrganization,',
-    '  inviteMember, removeMember, cancelInvitation, acceptInvitation,',
-    '  revokeSession, revokeOtherSessions,',
-    '  verifyTwoFactor, disableTwoFactor,',
-    '  assignRole, removeRole,',
-    "} from 'towerjs/gatehouse/actions'",
+    "import { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'",
     '```',
     '',
     'For actions with custom returns (e.g. `enableTwoFactor`, `generateBackupCodes`)',

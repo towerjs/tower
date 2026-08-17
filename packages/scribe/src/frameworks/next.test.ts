@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 import { execa } from 'execa'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -355,7 +356,7 @@ describe('nextAdapter.generate', () => {
     expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('proxy.ts'), expect.any(String))
   })
 
-  it('creates actions.ts when gatehouse is selected', async () => {
+  it('does not generate sign-in, sign-up, or dashboard pages', async () => {
     const stateWithGatehouse: ProjectState = {
       ...state,
       modules: { gatehouse: { credentials: true } },
@@ -363,17 +364,20 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
 
-    expect(mkdir).toHaveBeenCalledWith(expect.stringContaining('lib/auth'), { recursive: true })
-    expect(writeFile).toHaveBeenCalledWith(
-      expect.stringContaining('actions.ts'),
-      expect.stringContaining("from 'towerjs/gatehouse/actions'")
-    )
+    expect(mkdir).not.toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-in')), { recursive: true })
+    expect(mkdir).not.toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-up')), { recursive: true })
+    expect(mkdir).not.toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'dashboard')), {
+      recursive: true,
+    })
   })
 
-  it('does not create actions.ts when gatehouse is not selected', async () => {
+  it('writes a minimal homepage', async () => {
     await nextAdapter.generate(state, '/target')
 
-    expect(writeFile).not.toHaveBeenCalledWith(expect.stringContaining('actions.ts'), expect.any(String))
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining(join('src', 'app', 'page.tsx')),
+      expect.stringContaining('Your Tower application is ready')
+    )
   })
 
   it('writes .prettierrc for all projects', async () => {

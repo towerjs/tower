@@ -80,7 +80,6 @@ describe('scaffolding — real file output', () => {
     expect(existsSync(join(projectDir, '.env'))).toBe(true)
     expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'))).toBe(true)
     expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(true)
-    expect(existsSync(join(projectDir, 'src', 'lib', 'auth', 'actions.ts'))).toBe(true)
     expect(existsSync(join(projectDir, '.prettierrc'))).toBe(true)
     expect(existsSync(join(projectDir, 'AGENTS.md'))).toBe(true)
 
@@ -100,11 +99,8 @@ describe('scaffolding — real file output', () => {
     expect(env).toContain('GATEHOUSE_SECRET')
     expect(env).toContain('DATABASE_URL')
 
-    const actions = readFileSync(join(projectDir, 'src', 'lib', 'auth', 'actions.ts'), 'utf-8')
-    expect(actions).toContain('signIn')
-    expect(actions).toContain('signUp')
-    expect(actions).toContain('signOut')
-    expect(actions).toContain('towerjs/gatehouse/actions')
+    const home = readFileSync(join(projectDir, 'src', 'app', 'page.tsx'), 'utf-8')
+    expect(home).toContain('Your Tower application is ready')
 
     const agents = readFileSync(join(projectDir, 'AGENTS.md'), 'utf-8')
     expect(agents).toContain('my-tower-app')
@@ -147,7 +143,7 @@ describe('scaffolding — real file output', () => {
 
     const proxy = readFileSync(join(projectDir, 'src', 'proxy.ts'), 'utf-8')
     expect(proxy).toContain('gatehouse.proxy')
-    expect(proxy).toContain('/sign-in')
+    expect(proxy).not.toContain('/sign-in')
   })
 
   it('installs towerjs and the tower CLI', async () => {
@@ -240,7 +236,6 @@ describe('scaffolding — real file output', () => {
           const hasGatehouse = Boolean(modules.gatehouse)
           expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(hasGatehouse)
           expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'))).toBe(hasGatehouse)
-          expect(existsSync(join(projectDir, 'src', 'lib', 'auth', 'actions.ts'))).toBe(hasGatehouse)
 
           const towerAddCalls = vi
             .mocked(execa)
