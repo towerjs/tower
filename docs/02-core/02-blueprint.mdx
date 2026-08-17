@@ -28,13 +28,12 @@ export default defineTower({
 Modules self-register at import time:
 
 ```ts
-// registers 'gatehouse' module
-import '@towerjs/courier'
-// registers 'vault' module
-import '@towerjs/gatehouse'
-import '@towerjs/vault'
-
 // registers 'courier' module
+import '@towerjs/courier'
+// registers 'gatehouse' module
+import '@towerjs/gatehouse'
+// registers 'vault' module
+import '@towerjs/vault'
 ```
 
 Each registration includes a name, dependency list, and factory function:

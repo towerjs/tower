@@ -5,11 +5,13 @@ description: 'The design principles behind Tower.'
 
 ## Provider-Agnostic
 
-Modules abstract over specific providers (Neon, Better Auth, Resend, etc.) behind a stable API. Swap providers without changing application code.
+Modules define stable APIs over their capabilities, and providers implement them. Gatehouse talks to Better Auth, Vault to Kysely, Courier to email/SMS providers — but application code talks to the module, not the provider. Provider choice is a configuration decision, made in `tower.config.ts`, and the module API stays the same.
+
+This is not a universal abstraction that hides every provider behind identical surfaces — different providers have different capabilities. Instead, Tower exposes a stable module API and lets you reach the underlying engine directly when you need provider-specific power.
 
 ## Framework-First
 
-Tower works alongside your framework rather than replacing it. Framework adapters (`frameworks/next.ts`) are separate from core logic, so adding Express, Hono, or other framework support doesn't touch core code.
+Tower works alongside your web framework rather than replacing it. Next.js stays the web layer — pages, layouts, route handlers, server components, and server actions are all yours. Tower provides the application architecture underneath. Framework adapters (`frameworks/next.ts`) are separate from core logic, so adding support for other frameworks doesn't touch core code.
 
 ## Lazy Initialization
 
@@ -28,7 +30,7 @@ export async function handler() {
 
 ## Minimal API Surface
 
-Modules export only what users need. Internal implementation details stay in the module.
+Modules export only what users need. Internal implementation details stay in the module. The API you see in the docs is the API you get — there's no hidden configuration surface to discover later.
 
 ## No Runtime Dependencies on User-Facing Frameworks
 
@@ -37,6 +39,14 @@ The core packages (`foundation`, `blueprint`) don't depend on Next.js, Express, 
 ## Composable by Default
 
 Each module can be used independently. Modules communicate through well-defined interfaces, not shared state. The `towerjs` meta-package is optional — import from individual `@towerjs/*` packages for a leaner dependency tree.
+
+## Underlying Engines Stay Exposed
+
+Tower doesn't wrap you in a leaky abstraction. It exposes the real tools — Kysely for SQL, Better Auth for authentication — so you keep their power and can drop down to raw queries, custom options, or provider-specific features when a module API isn't enough.
+
+## Start Monolithic, Split Later
+
+Tower is one deployable unit. If your application outgrows a single process, the module boundaries become your service boundaries — each module has a clean API surface and explicit dependencies, so splitting is a deployment decision, not a rewrite.
 
 ## Convention over Configuration
 

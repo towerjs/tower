@@ -1,13 +1,33 @@
 ---
 title: 'What is Tower?'
-description: 'Tower is a composable monolithic stack for JavaScript applications. It provides a full-featured backend framework — database, auth, email — while keeping the option to split into smaller services when you outgrow a single process.'
+description: 'Tower is a composable monolithic stack for JavaScript and TypeScript applications — application-level infrastructure (database, auth, email) as composable modules that live alongside your web framework.'
 ---
 
-## Composable Monolith
+Tower is a **composable monolithic stack** for JavaScript and TypeScript applications. It provides the application-level infrastructure most products need — database access, authentication, and communication — as composable modules that sit alongside your web framework instead of replacing it.
 
-A composable monolith is a single deployable unit built from well-factored, independently-testable modules. Tower provides these modules as first-party packages so you don't spend weekends researching which ORM pairs with which auth library.
+Tower is not a web framework. It does not replace Next.js (or any other framework). Your framework remains the web layer; Tower supplies the application architecture underneath it — the modules, providers, and conventions that give you a consistent backend without assembling an ORM, an auth library, and an email provider by hand.
 
-If your application grows enough to need separate services, Tower's module boundaries become your service boundaries — each module has a clean API surface and explicit dependencies.
+## The assembly problem
+
+Without Tower, every application assembles the same stack: pick an ORM, pick an auth library, pick an email provider. Each is a solid choice on its own — but they don't know about each other. Authentication needs a database to store sessions and an email service for verification; email verification needs a database write and a delivery channel at the same time. Wiring those concerns together is where the real work lives.
+
+With Tower, that stack comes pre-assembled. The modules are first-party, versioned and tested together, and share a single contract:
+
+- **Register at import time** — modules declare themselves and their dependencies
+- **Initialize on first use** — nothing runs at import, so Tower works in edge and SSR contexts
+- **Expose a consistent API** — the same shapes, names, and patterns across modules
+
+You configure providers instead of maintaining integrations.
+
+## Why not assemble it yourself?
+
+- **Choosing** — a dozen ORMs, a dozen auth libraries, a dozen email providers, each with its own mental model
+- **Wiring** — cross-cutting flows (auth → sessions → email) require modules to know about each other
+- **Versioning** — every dependency releases on its own cadence; breaking changes arrive independently
+- **Testing** — integration boundaries are where bugs live, and testing glue is harder than testing modules
+- **Consistency** — every developer reinvents the same auth flows, permission checks, and migration scripts
+
+Tower trades the freedom to assemble for the speed and consistency of a well-factored whole. If your application later outgrows a single process, the module boundaries are your service boundaries — each module has a clean API surface and explicit dependencies.
 
 ## Modules
 
@@ -18,11 +38,14 @@ If your application grows enough to need separate services, Tower's module bound
 | **Vault**      | `@towerjs/vault`      | Database ORM (Kysely), migrations, seeds              |
 | **Gatehouse**  | `@towerjs/gatehouse`  | Authentication, sessions, organizations, API keys     |
 | **Courier**    | `@towerjs/courier`    | Email, SMS, push notifications                        |
-| **Sorcerer**   | `@towerjs/sorcerer`   | AI agents, chat, tools, and workflows _(coming soon)_ |
 
-Each module follows the same contract: register at import time, initialize on first use, and expose a consistent API.
+## Tower today vs. Tower's direction
 
-## Framework-Agnostic Core
+**Tower today (v0.1.0).** Next.js with the App Router is the supported web framework. Foundation and Blueprint form the core runtime; Vault, Gatehouse, and Courier ship as production modules; Scribe provides the `tower` CLI (`tower create`, `tower migrate`, `tower seed`). Gatehouse works on the Node.js and serverless runtimes, with Edge support planned.
+
+**Tower's direction.** Future modules (job queues, storage, billing, search, observability) and additional framework integrations will follow the same contract: register at import, initialize lazily, expose a consistent API. The roadmap does not dictate today's decisions — the modules that exist now are the stable foundation.
+
+## Framework Integration
 
 Foundation and Blueprint have no framework dependencies. The core runtime adapts to any JavaScript environment — Node.js, serverless, or Edge — through automatic runtime detection.
 
@@ -31,9 +54,9 @@ Framework adapters live in each module's `frameworks/` directory. Currently only
 - **Auth**: `getSession`, server actions, middleware proxy, API routes
 - **Config**: Edge runtime bundling via `withTowerEdge`
 
-The `tower` CLI (`tower create`, `tower migrate`, `tower seed`) ships as a standalone package, `@towerjs/scribe`.
-
 ## Installation
+
+The `towerjs` meta-package bundles every module, so a single install gives you the whole stack:
 
 ```bash
 pnpm add towerjs
@@ -45,9 +68,11 @@ Or install individual modules:
 pnpm add @towerjs/foundation @towerjs/blueprint @towerjs/vault @towerjs/gatehouse @towerjs/courier
 ```
 
+The `tower` CLI ships as a separate dev dependency, `@towerjs/scribe`.
+
 ## When to Use Tower
 
-- You want a batteries-included framework without microservice complexity
+- You want a batteries-included stack without microservice complexity
 - You need production-grade database access, auth, and notifications out of the box
 - You value vertical slice architecture and clean module boundaries
 - You want to start monolithic and preserve the option to split later

@@ -92,6 +92,14 @@ When submitting a pull request:
 
 When a pull request is created, Tower maintainers will be notified automatically.
 
+## Documentation updates
+
+Docs live in `docs/` (MDX, one page per file) plus package READMEs and the repo `README.md`. They document the consumer/developer-facing surface: module APIs, configuration, features, and workflows.
+
+Update the docs in the **same PR** as the code change whenever the change alters that surface — a new or changed public API, config option, action, provider, generated-project output, or feature. This includes changes to scaffolded output (e.g. `packages/scribe`), which must stay in sync with `docs/03-modules/11-scribe.mdx` and `docs/01-introduction/01-getting-started.mdx`.
+
+Internal changes (refactors, dependency bumps, bug fixes that don't change behavior, tests) do not need doc updates.
+
 ## Communication
 
 - **GitHub Discussions**: For feature ideas and general questions

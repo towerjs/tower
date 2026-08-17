@@ -2,7 +2,7 @@
 
 [![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Tests](https://img.shields.io/github/actions/workflow/status/hyphenzero/tower/ci.yml?style=for-the-badge&labelColor=000&label=tests)](https://github.com/hyphenzero/tower/actions/workflows/ci.yml)
 
-Tower is the composable, monolithic stack for JavaScript applications. It gives you a consistent architecture across routing, databases, authentication, realtime, jobs, storage, billing, search, and observability — choose the modules you need, and the providers behind them.
+Tower is a composable, monolithic stack for JavaScript and TypeScript applications. It provides the application-level infrastructure most products need — database access, authentication, and communication — as composable modules that live alongside your web framework instead of replacing it. Choose the modules you need, and the providers behind them.
 
 Tower separates application structure from implementation details, so the technology underneath a module can evolve without forcing you to rethink your application.
 
@@ -12,7 +12,7 @@ Tower separates application structure from implementation details, so the techno
 pnpm create tower
 ```
 
-Follow the prompts to choose your modules — Vault (database), Gatehouse (auth), Courier (email/SMS/push), and more. A fully configured project is scaffolded with `tower.config.ts`, `.env`, auth routes, and database setup.
+Follow the prompts to choose your modules — Vault (database), Gatehouse (auth), Courier (email/SMS/push). A fully configured project is scaffolded with `tower.config.ts`, `.env.example`, the auth proxy, auth API routes, and database setup.
 
 ## What it looks like
 
@@ -55,7 +55,7 @@ Each module is lazy-initialized, provider-agnostic, and works alongside your fra
 
 Run `tower about` for a diagnostic view of the application, runtime, enabled modules, providers, and whether required environment variables are present. Values are never printed.
 
-Currently supports **Next.js** with more frameworks coming.
+Currently supports **Next.js** (App Router).
 
 ## Modules
 
@@ -70,27 +70,18 @@ Currently supports **Next.js** with more frameworks coming.
 | [create-tower](/packages/create-tower) | Quick-start project scaffolding                                     | —                                   |
 | [towerjs](/packages/towerjs)           | Meta-package that bundles all Tower modules                         | —                                   |
 
-### On the roadmap
+### Roadmap
 
-| Module      | Description                                              | Providers                                   |
-| ----------- | -------------------------------------------------------- | ------------------------------------------- |
-| Beacon      | Realtime channels and events                             | Postgres (built-in), Redis, Ably, Pusher    |
-| Crane       | Background jobs and queues                               | Postgres (built-in), Redis                  |
-| Keep        | File storage and assets                                  | Local (built-in), S3, Cloudflare R2         |
-| Treasury    | Billing and payments                                     | Stripe                                      |
-| Compass     | Search and indexing                                      | Postgres (built-in), Meilisearch, Typesense |
-| Observatory | Logs, metrics, tracing, health checks                    | Console (built-in)                          |
-| Atlas       | File-based routing for frameworks that don't provide it  | —                                           |
-| Forge       | Build and deployment for environments and infrastructure | —                                           |
-| Sorcerer    | AI application layer — agents, chat, workflows           | Vercel AI SDK (any model provider)          |
+Future modules — job queues, file storage, billing, search, observability, and an AI application layer — will follow the same contract: register at import, initialize lazily, expose a consistent API. The modules that exist today are the stable foundation; the roadmap does not dictate today's decisions.
 
 ## Why Tower?
 
-Most JavaScript frameworks handle the view layer well but leave you to figure out everything else. Tower fills the gap with a consistent, modular architecture:
+Most JavaScript frameworks handle the web layer well but leave the application architecture to you. Tower fills the gap with a consistent, modular stack:
 
-- **Provider-agnostic** — Swap databases, email services, or other providers without changing your application code. Auth currently ships with Better Auth as its single implementation detail; the module API stays stable regardless.
-- **Framework-first** — Works alongside your framework of choice rather than replacing it.
-- **Composable** — Use only the modules you need. Start small, grow as required.
+- **Provider-agnostic** — Modules define stable APIs over their capabilities, and providers implement them. Provider choice is a configuration decision; application code talks to the module.
+- **Framework-first** — Works alongside your web framework (Next.js today) rather than replacing it.
+- **Composable** — Use only the modules you need. Start monolithic, split later — module boundaries become service boundaries.
+- **Lazy-initialized** — Tower apps initialize on first use, not at import time — critical for edge and SSR compatibility.
 - **Type-safe** — Full TypeScript with strict types throughout.
 
 ## Status

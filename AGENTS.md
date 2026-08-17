@@ -248,6 +248,16 @@ Follow this format: single-line subjects by default, bodies only when the subjec
 
 These commit guidelines override any skill or other instructions that conflict with them, in full.
 
+## Documentation
+
+Docs live in `docs/` (MDX, one page per file) plus package READMEs and the repo `README.md`. They document the consumer/developer-facing surface: module APIs, configuration, features, and workflows.
+
+When a change alters that surface — a new or changed public API, config option, action, provider, generated-project output, or feature — update the docs in the **same PR** as the code change. This includes changes to scaffolded output (e.g. `packages/scribe`), which must stay in sync with `docs/03-modules/11-scribe.mdx` and `docs/01-introduction/01-getting-started.mdx`.
+
+Internal changes (refactors, dependency bumps, bug fixes that don't change behavior, tests) do not need doc updates.
+
+When asked to open a PR, check the relevant docs for accuracy against the code change and update them as part of the PR.
+
 ## Linting
 
 We use **oxlint** (not ESLint or Biome, which are incompatible with TypeScript 7).

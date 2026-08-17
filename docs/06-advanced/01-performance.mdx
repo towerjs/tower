@@ -41,7 +41,7 @@ Guidelines:
 
 ## Edge Runtime
 
-For API routes and auth middleware, use the Edge Runtime for fast cold starts:
+For API routes that need fast cold starts, use the Edge Runtime:
 
 ```ts filename="next.config.ts"
 import { withTowerEdge } from '@towerjs/edge'
@@ -49,7 +49,7 @@ import { withTowerEdge } from '@towerjs/edge'
 export default withTowerEdge({})
 ```
 
-On Edge, Vault uses Neon's serverless driver with HTTP-based queries (no persistent connections needed).
+On Edge, Vault uses Neon's serverless driver with HTTP-based queries (no persistent connections needed). Auth-dependent routes stay on the Node.js runtime — Gatehouse doesn't support Edge (see [Edge Runtime](/docs/advanced/edge)).
 
 ## Database Queries
 

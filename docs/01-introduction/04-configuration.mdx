@@ -3,17 +3,24 @@ title: 'Configuration'
 description: 'How to configure Tower modules through the config file and environment variables.'
 ---
 
+Tower separates two kinds of configuration:
+
+- **`tower.config.ts`** — architecture: which modules are enabled, which providers they use, and how they behave
+- **Environment variables** — environment-specific values: credentials, connection strings, secrets
+
+Keep architecture in the config file and environment-specific values in `.env` files or your deployment environment.
+
 ## The Config File
 
-Tower reads configuration from `tower.config.ts` at your project root. It uses `defineTower` for type-safe config:
+Tower reads configuration from `tower.config.ts` at your project root. Use `defineTower` from `towerjs/blueprint` for type-safe config:
 
 ```ts filename="tower.config.ts"
-import { defineTower } from 'towerjs/blueprint'
+import { defineTower, env } from 'towerjs/blueprint'
 
 export default defineTower({
   modules: {
     vault: {
-      connectionString: process.env.DATABASE_URL,
+      connectionString: env('DATABASE_URL'),
     },
     courier: {
       email: { provider: 'console', from: 'noreply@example.com' },
@@ -21,7 +28,7 @@ export default defineTower({
     gatehouse: {
       provider: 'better-auth',
       appName: 'My App',
-      baseURL: 'http://localhost:3000',
+      baseURL: env.url('APP_URL', 'http://localhost:3000'),
       credentials: { enabled: true },
       emailVerification: { sendOnSignUp: true },
     },
@@ -29,24 +36,29 @@ export default defineTower({
 })
 ```
 
+`env` reads lazily (so importing the config stays safe in SSR and edge runtimes) and provides typed helpers: `env.string()`, `env.optional()`, `env.url()`, `env.boolean()`, `env.number()`. Without a fallback, a missing variable throws a clear error.
+
 ## Config Resolution Order
 
-When `createTower()` is called without a config argument, `resolveConfig()` searches in order:
+When a Tower app initializes without a config argument, `resolveConfig()` searches in order:
 
-1. Registered config providers (edge package registers one for bundler compat)
+1. Registered config providers (the edge package registers one for bundler compat)
 2. `TOWER_CONFIG_PATH` environment variable (explicit path)
 3. Walks up the directory tree (up to 20 levels) looking for `tower.config.ts`, `.mjs`, `.js`, `.mts`
 
 ## Module Configuration
 
+Each module validates its config when it initializes, so a malformed config fails fast with a clear message.
+
 ### Vault
 
 ```ts
 vault: {
-  connectionString?: string       // defaults to DATABASE_URL env var
+  provider?: 'neon' | 'pg'      // auto-detected from connectionString
+  connectionString?: string     // defaults to DATABASE_URL
   pool?: {
-    max?: number                  // pg default: 10
-    idleTimeoutMillis?: number    // pg default: 10000
+    max?: number                // pg default: 10
+    idleTimeoutMillis?: number  // pg default: 10000
     connectionTimeoutMillis?: number
     ssl?: boolean | { rejectUnauthorized?: boolean }
   }
@@ -55,7 +67,7 @@ vault: {
 }
 ```
 
-Provider auto-detection: `neon` for Neon serverless, `pg` for standard PostgreSQL.
+Provider auto-detection: connection strings containing `.neon.tech` resolve to `neon` (serverless), everything else to `pg` (standard PostgreSQL). Set `provider` explicitly to override.
 
 ### Gatehouse
 
@@ -70,24 +82,31 @@ gatehouse: {
     sendOnSignUp, autoSignInAfterVerification, expiresIn, sendVerificationEmail, sendVerificationOTP }
   social?: string[] | Record<string, SocialProviderEntry | true>
   passkeys?: boolean | GatehousePasskeyOptions
-  magicLinks?: boolean | Partial<GatehouseMagicLinkOptions>
-  phoneNumber?: boolean | Partial<GatehousePhoneNumberOptions>
+  magicLinks?: boolean | GatehouseMagicLinkOptions
+  phoneNumber?: boolean | GatehousePhoneNumberOptions
   twoFactor?: boolean | GatehouseTwoFactorOptions
   organization?: boolean | GatehouseOrganizationOptions
   admin?: boolean | GatehouseAdminOptions
   apiKey?: boolean | GatehouseApiKeyOptions
 
-  baseURL?: string | { allowedHosts, protocol, fallback }
+  baseURL?: string | { allowedHosts, protocol: 'http' | 'https' | 'auto', fallback }
   appName?: string
   trustedOrigins?: string[]
   plugins?: BetterAuthPlugin[]
-  rateLimit?: { enabled, window, max, storage, customRules }
-  advanced?: { useSecureCookies, disableCSRFCheck, cookiePrefix, database }
+  rateLimit?: { enabled, window, max, storage: 'memory' | 'database' | 'secondary-storage', customRules }
+  advanced?: Record<string, unknown>
+  passThrough?: Record<string, unknown>
 }
 ```
 
-Social provider credentials resolve from environment variables automatically:
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, etc.
+Gatehouse config is intentionally loose — it maps almost one-to-one onto Better Auth options, and unknown keys pass through untouched. Options like `user.additionalFields`, `session`, `account`, callbacks, and plugin options can be set directly.
+
+The secret and base URL resolve from configuration or environment:
+
+- Secret: `passThrough.secret` → `GATEHOUSE_SECRET` → `BETTER_AUTH_SECRET` (a dev fallback applies outside production)
+- baseURL: `baseURL` → `GATEHOUSE_URL` → `BETTER_AUTH_URL` → `http://localhost:3000` outside production
+
+Social provider credentials resolve automatically from environment variables: for each key, Gatehouse checks `{KEY}_CLIENT_ID`, `GATEHOUSE_{KEY}_CLIENT_ID`, `AUTH_{KEY}_CLIENT_ID`, and `BETTER_AUTH_{KEY}_CLIENT_ID` (same for `_CLIENT_SECRET`).
 
 ### Courier
 
@@ -104,21 +123,34 @@ courier: {
   }
   push?: {
     provider: 'web-push'
-    // web-push options...
+    vapid?: { subject, publicKey, privateKey }
   }
 }
 ```
 
+Each provider reads its credentials from the environment when not set in config (see below).
+
 ## Environment Variables
 
-| Variable               | Required for              | Default            |
-| ---------------------- | ------------------------- | ------------------ |
-| `DATABASE_URL`         | Vault                     | —                  |
-| `GATEHOUSE_SECRET`     | Gatehouse cookie signing  | dev fallback       |
-| `BETTER_AUTH_SECRET`   | Gatehouse secret alias    | `GATEHOUSE_SECRET` |
-| `RESEND_API_KEY`       | Courier (Resend)          | —                  |
-| `GOOGLE_CLIENT_ID`     | Gatehouse (Google social) | —                  |
-| `GOOGLE_CLIENT_SECRET` | Gatehouse (Google social) | —                  |
-| `GITHUB_CLIENT_ID`     | Gatehouse (GitHub social) | —                  |
-| `GITHUB_CLIENT_SECRET` | Gatehouse (GitHub social) | —                  |
-| `TOWER_CONFIG_PATH`    | Config resolution         | —                  |
+| Variable                       | Used by            | Purpose                                   |
+| ------------------------------ | ------------------ | ----------------------------------------- |
+| `DATABASE_URL`                 | Vault              | Connection string                         |
+| `GATEHOUSE_SECRET`             | Gatehouse          | Cookie/session signing secret             |
+| `BETTER_AUTH_SECRET`           | Gatehouse          | Alias for `GATEHOUSE_SECRET`              |
+| `GATEHOUSE_URL`                | Gatehouse          | Alias for `baseURL`                       |
+| `BETTER_AUTH_URL`              | Gatehouse          | Alias for `baseURL`                       |
+| `RESEND_API_KEY`               | Courier (Resend)   | API key                                   |
+| `SMTP_HOST`, `SMTP_PORT`       | Courier (SMTP)     | Server + port                             |
+| `SMTP_USER`, `SMTP_PASSWORD`   | Courier (SMTP)     | Credentials                               |
+| `AWS_REGION`                   | Courier (SES)      | Region (`AWS_DEFAULT_REGION` alt)         |
+| `AWS_ACCESS_KEY_ID`            | Courier (SES)      | Credentials                               |
+| `AWS_SECRET_ACCESS_KEY`        | Courier (SES)      | Credentials                               |
+| `TWILIO_ACCOUNT_SID`           | Courier (Twilio)   | Account                                   |
+| `TWILIO_AUTH_TOKEN`            | Courier (Twilio)   | Auth token                                |
+| `TWILIO_MESSAGING_SERVICE_SID` | Courier (Twilio)   | Messaging service                         |
+| `WEB_PUSH_VAPID_*`             | Courier (Web Push) | VAPID keys (`SUBJECT`/`PUBLIC`/`PRIVATE`) |
+| `COURIER_EMAIL_FROM`           | Courier (email)    | Default `from` address                    |
+| `COURIER_SMS_FROM`             | Courier (Twilio)   | Default `from` number                     |
+| `GOOGLE_CLIENT_ID` / `_SECRET` | Gatehouse (Google) | Social credentials                        |
+| `GITHUB_CLIENT_ID` / `_SECRET` | Gatehouse (GitHub) | Social credentials                        |
+| `TOWER_CONFIG_PATH`            | Config resolution  | Explicit config path                      |

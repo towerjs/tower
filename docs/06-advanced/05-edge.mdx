@@ -47,6 +47,9 @@ When using Neon, Vault uses the HTTP dialect from `kysely-neon` on every runtime
 ## When to Use Edge
 
 - API routes that need fast cold starts
-- Auth middleware (the Gatehouse proxy runs on Edge by default)
 - Read-only database queries with Neon
 - Pages that don't need migration/seed operations
+
+## Gatehouse on Edge
+
+Gatehouse (which wraps Better Auth) requires Node.js-compatible runtime APIs for session and cookie handling. It works on the Node.js runtime and Vercel Serverless, but **not** on Vercel Edge or Cloudflare Workers. Edge support for Gatehouse is planned. Keep auth-dependent routes on the Node.js runtime.
