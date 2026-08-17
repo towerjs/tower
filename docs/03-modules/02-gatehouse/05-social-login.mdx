@@ -49,7 +49,7 @@ With the [proxy](/docs/gatehouse/protected-routes), `redirectAfterSignIn` contro
 
 ```ts filename="src/proxy.ts"
 proxy({
-  redirectIfAuthenticated: '/dashboard',
+  redirectIfAuthenticated: ['/dashboard'],
   redirectAfterSignIn: '/dashboard',
 })
 ```
