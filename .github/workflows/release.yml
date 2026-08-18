@@ -9,15 +9,14 @@ on:
       force-publish:
         description: >-
           Publish the current main branch to npm even when the push was not a
-          "release: version packages" merge. Used for the initial release or to
-          retry a failed publish.
+          "release/vX.Y.Z" merge. Used for the initial release or to retry a
+          failed publish.
         type: boolean
         required: false
         default: false
 
 permissions:
   contents: write
-  pull-requests: write
   id-token: write
 
 concurrency:
@@ -49,38 +48,47 @@ jobs:
         env:
           FORCE_PUBLISH: ${{ github.event.inputs.force-publish || 'false' }}
         run: |
-          # Only publish on a "release: version packages" merge (or an explicit
-          # force-publish). changesets/action would otherwise publish on every
-          # push to main.
-          version_merge="false"
+          # Only publish on a "release/vX.Y.Z" merge (or an explicit
+          # force-publish). The release PR is created by running
+          # `pnpm version:patch|minor|major` on a release/vX.Y.Z branch, so the
+          # merge commit message is the PR title, e.g. "release/v0.2.0 (#123)".
+          publish="false"
+          version=""
           head_msg="$(git log -1 --pretty=%s)"
-          if [ "$head_msg" = "release: version packages" ]; then
-            version_merge="true"
+          if [[ "$head_msg" =~ ^release/v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            publish="true"
+            version="${BASH_REMATCH[1]}"
           fi
-          for parent in $(git log -1 --pretty=%P); do
-            if [ "$(git log -1 "$parent" --pretty=%s)" = "release: version packages" ]; then
-              version_merge="true"
-            fi
-          done
-
-          if [ "$version_merge" = "true" ] || [ "$FORCE_PUBLISH" = "true" ]; then
-            echo "publish=pnpm run release" >> "$GITHUB_OUTPUT"
-            echo "create-releases=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "publish=" >> "$GITHUB_OUTPUT"
-            echo "create-releases=false" >> "$GITHUB_OUTPUT"
+          if [ "$FORCE_PUBLISH" = "true" ]; then
+            publish="true"
+            version="$(node -e "console.log(require('./packages/towerjs/package.json').version)")"
           fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - uses: changesets/action@v1
-        with:
-          # `pnpm version` is pnpm's built-in semver command. Explicitly use
-          # `pnpm run` so the repository's Changesets script is executed.
-          version: pnpm run version
-          # Empty when this push is not a version-packages merge, so the action
-          # only opens/updates the version PR and never attempts to publish.
-          publish: ${{ steps.release.outputs.publish }}
-          commit: 'release: version packages'
-          title: 'release: version packages'
-          createGithubReleases: ${{ steps.release.outputs.create-releases }}
+      - name: Build
+        if: steps.release.outputs.publish == 'true'
+        run: pnpm build
+
+      - name: Publish to npm
+        if: steps.release.outputs.publish == 'true'
+        # Tokenless publishing via npm trusted publishing (OIDC): the workflow
+        # declares id-token: write and each package has a trusted publisher for
+        # this workflow file configured on npmjs.com. No NPM_TOKEN is stored.
+        run: pnpm -r publish --no-git-checks
+
+      - name: Tag and push v${{ steps.release.outputs.version }}
+        if: steps.release.outputs.publish == 'true'
+        run: |
+          git tag "v${{ steps.release.outputs.version }}"
+          git push origin "v${{ steps.release.outputs.version }}"
+
+      - name: Create GitHub Release
+        if: steps.release.outputs.publish == 'true'
+        run: |
+          notes="$(node scripts/release-notes.mjs "${{ steps.release.outputs.version }}")"
+          gh release create "v${{ steps.release.outputs.version }}" \
+            --title "v${{ steps.release.outputs.version }}" \
+            --notes "$notes"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

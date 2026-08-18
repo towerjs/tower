@@ -18,12 +18,13 @@
     "check:deps": "npx tsx scripts/check-dependencies.ts",
     "check:versions": "node scripts/check-release-versions.mjs",
     "check:initial-version": "node scripts/check-release-versions.mjs --initial",
-    "changeset": "changeset",
-    "version": "changeset version && pnpm install",
-    "release": "pnpm check:versions && pnpm build && changeset publish"
+    "version:patch": "node scripts/version-packages.mjs patch",
+    "version:minor": "node scripts/version-packages.mjs minor",
+    "version:major": "node scripts/version-packages.mjs major",
+    "version:set": "node scripts/version-packages.mjs",
+    "release:notes": "node scripts/release-notes.mjs"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "expect-type": "^1.4.0",
     "oxlint": "1.77.0",

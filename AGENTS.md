@@ -103,9 +103,9 @@ pnpm check:deps   # Validate dependency rules across packages
 pnpm db:up        # Start the Postgres container (docker compose up -d --wait postgres)
 pnpm db:down      # Stop and delete the Postgres container and its volume
 pnpm test:e2e     # Provision Postgres + browser, run Playwright tests, tear everything down
-pnpm changeset    # Create a new changeset for release
-pnpm version      # Apply changesets, bump versions, update changelogs, re-sync lockfile
-pnpm release      # Verify lockstep versions, build, and publish to npm
+pnpm version:patch|minor|major  # Bump all publishable Tower packages in lockstep
+pnpm version:set <x.y.z>  # Bump to an explicit version (e.g. a prerelease)
+pnpm release:notes  # Print the current version's CHANGELOG section (release notes)
 ```
 
 Always prefer `pnpm build` over `turbo build` and `pnpm test` over `vitest run`. The package.json scripts are the canonical interface.
@@ -114,20 +114,19 @@ The `pnpm build` pipeline runs monorepo packages first (via Turborepo), then the
 
 ### Release workflow
 
-Releases are automated by Changesets in CI. The flow is:
+All Tower packages are versioned in lockstep, so the release is a single "Tower vX.Y.Z" event. The flow is:
 
-1. `pnpm changeset` — select bumped packages and describe changes, then commit and push the changeset.
-2. The **Release** GitHub Action (`.github/workflows/release.yml`) opens or updates a `release: version packages` PR on `main` whenever changesets are present.
-3. Merging that PR publishes the bumped versions to npm, pushes the git tags, and creates GitHub releases from the package changelogs.
+1. `pnpm version:patch|minor|major` (or `pnpm version:set <x.y.z>` for an explicit version) — bumps every publishable package to the same version, promotes the `## [Unreleased]` CHANGELOG section to `## [X.Y.Z] - <date>`, and re-syncs the pnpm lockfile. The script never commits, tags, pushes, or publishes.
+2. Commit the result on a `release/vX.Y.Z` branch and open a PR titled `release/vX.Y.Z` against `main`.
+3. Merging that PR triggers the **Release** GitHub Action (`.github/workflows/release.yml`): it builds, publishes all packages to npm, pushes the `vX.Y.Z` git tag, and creates the GitHub Release from the version's CHANGELOG section.
 
 Details:
 
-- Publishing only runs when the push is a `release: version packages` merge (or an explicit `workflow_dispatch` run with `force-publish`). Unrelated pushes to `main` never trigger a publish.
-- `pnpm version` applies changesets and then runs `pnpm install` so the pnpm lockfile stays in sync with the version bumps; `pnpm release` verifies lockstep versions with `check:versions`, builds, and runs `changeset publish`.
-- Publishing uses npm trusted publishing (OIDC): no `NPM_TOKEN` is stored. Each package must already exist on the registry with a trusted publisher configured for `hyphenzero/tower` + `release.yml` before the automated workflow can publish it.
-- The workflow declares `id-token: write` so that `changeset publish` → `pnpm publish` publishes tokenlessly via OIDC automatically (pnpm 11+ does the exchange). A `release: version packages` merge publishes automatically (or run the workflow manually with `force-publish`). Provenance attestations are only generated once the repository is public.
+- Publishing only runs when the merge commit message starts with `release/vX.Y.Z` (or an explicit `workflow_dispatch` run with `force-publish`, which publishes the version currently in `packages/towerjs/package.json`). Unrelated pushes to `main` never trigger a publish.
+- Publishing uses npm trusted publishing (OIDC): no `NPM_TOKEN` is stored. Each package must already exist on the registry with a trusted publisher configured for `hyphenzero/tower` + this `release.yml` workflow before the automated workflow can publish it.
+- The workflow declares `id-token: write`; `pnpm publish` delegates to the npm CLI, which does the OIDC exchange automatically (npm 11.5+). Provenance attestations are only generated once the repository is public.
 
-**⚠️ Critical: Never run `pnpm release`, publish to npm, push release tags, or create GitHub releases yourself unless the user explicitly instructs you to do so and confirms.** Publishing to npm is irreversible — a mistaken release would publish all packages to the public registry. The human gate on automated releases is merging the version PR or manually triggering the workflow; always wait for explicit, confirmed user instruction before running any release commands.
+**⚠️ Critical: Never run `pnpm publish`, publish to npm, push release tags, or create GitHub releases yourself unless the user explicitly instructs you to do so and confirms.** Publishing to npm is irreversible — a mistaken release would publish all packages to the public registry. The human gate on automated releases is merging the release PR or manually triggering the workflow; always wait for explicit, confirmed user instruction before running any release commands.
 
 ## TypeScript
 
@@ -229,7 +228,7 @@ Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gateh
 
 **Commit message bodies** — The subject is the commit's identity: keep it to one line, imperative, no trailing period. Add a body only when the subject can't carry the _why_ — a non-obvious fix or tradeoff, a breaking change, an issue reference. Put it one blank line below the subject, wrap at 72 characters, and explain _why_, not _what_ (the diff shows what). Skip the body when the change is self-explanatory (e.g. dependency bumps, pure formatting).
 
-Follow this format: single-line subjects by default, bodies only when the subject can't carry the reason. Changeset summaries are written in plain English, not conventional commit format.
+Follow this format: single-line subjects by default, bodies only when the subject can't carry the reason. CHANGELOG entries are written in plain English, not conventional commit format.
 
 These commit guidelines override any skill or other instructions that conflict with them, in full.
 
