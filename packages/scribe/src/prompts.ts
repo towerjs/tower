@@ -78,6 +78,17 @@ async function promptProjectName(): Promise<string> {
   })
 }
 
+async function promptTypeScript(): Promise<boolean> {
+  return select({
+    message: 'TypeScript',
+    default: true,
+    choices: [
+      { name: 'Yes', value: true },
+      { name: 'No', value: false },
+    ],
+  })
+}
+
 async function promptTailwind(): Promise<boolean> {
   return select({
     message: 'Tailwind CSS',
@@ -198,6 +209,7 @@ export async function collectProjectState(): Promise<ProjectState> {
   console.log('\n  Tower — Create application\n')
 
   const projectName = await promptProjectName()
+  const typescript = await promptTypeScript()
   const tailwind = await promptTailwind()
   const deployment = await promptDeployment()
   const runtime = deriveRuntime(deployment)
@@ -209,7 +221,7 @@ export async function collectProjectState(): Promise<ProjectState> {
     projectName,
     framework: DEFAULT_FRAMEWORK,
     modules,
-    frameworkAnswers: { tailwind },
+    frameworkAnswers: { tailwind, typescript },
     deployment,
     runtime,
   }
@@ -220,6 +232,7 @@ export async function collectProjectStateFromFlags(flags: CreateFlags): Promise<
   const projectName = flags.name ?? 'my-app'
   const deployment = flags.deployment ?? 'vercel'
   const runtime = deriveRuntime(deployment)
+  const typescript = flags.typescript ?? true
   const tailwind = flags.tailwind ?? false
   const modules: ProviderMap = {}
 
@@ -251,7 +264,7 @@ export async function collectProjectStateFromFlags(flags: CreateFlags): Promise<
     projectName,
     framework: DEFAULT_FRAMEWORK,
     modules,
-    frameworkAnswers: { tailwind },
+    frameworkAnswers: { tailwind, typescript },
     deployment,
     runtime,
   }

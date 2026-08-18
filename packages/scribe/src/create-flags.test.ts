@@ -20,6 +20,12 @@ describe('parseCreateFlags', () => {
     expect(parseCreateFlags(['--no-tailwind'])).toEqual({ tailwind: false })
   })
 
+  it('parses ts, no-ts, and js', () => {
+    expect(parseCreateFlags(['--ts'])).toEqual({ typescript: true })
+    expect(parseCreateFlags(['--no-ts'])).toEqual({ typescript: false })
+    expect(parseCreateFlags(['--js'])).toEqual({ typescript: false })
+  })
+
   it('parses deployment', () => {
     expect(parseCreateFlags(['--deployment', 'cloudflare'])).toEqual({ deployment: 'cloudflare' })
   })
@@ -51,6 +57,7 @@ describe('parseCreateFlags', () => {
     expect(
       parseCreateFlags([
         'test-app',
+        '--js',
         '--no-tailwind',
         '--deployment',
         'vercel',
@@ -65,6 +72,7 @@ describe('parseCreateFlags', () => {
       ])
     ).toEqual({
       name: 'test-app',
+      typescript: false,
       tailwind: false,
       deployment: 'vercel',
       modules: ['vault', 'gatehouse'],

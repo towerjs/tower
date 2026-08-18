@@ -21,7 +21,11 @@ describe('collectProjectState', () => {
 
   it('collects project name, tailwind, deployment, runtime, and modules', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('neon')
+    vi.mocked(select)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce('vercel')
+      .mockResolvedValueOnce('neon')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['vault', 'gatehouse'])
     vi.mocked(featureCheckbox).mockResolvedValueOnce(['credentials', 'social'])
 
@@ -29,7 +33,7 @@ describe('collectProjectState', () => {
 
     expect(state.projectName).toBe('my-app')
     expect(state.framework).toBe('next')
-    expect(state.frameworkAnswers).toEqual({ tailwind: true })
+    expect(state.frameworkAnswers).toEqual({ tailwind: true, typescript: true })
     expect(state.deployment).toBe('vercel')
     expect(state.runtime).toBe('node')
     expect(state.modules.vault).toEqual({ provider: 'neon', brand: 'neon' })
@@ -38,18 +42,29 @@ describe('collectProjectState', () => {
 
   it('uses next framework and TypeScript by default', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
 
     expect(state.framework).toBe('next')
-    expect(state.frameworkAnswers.typescript).toBeUndefined()
+    expect(state.frameworkAnswers.typescript).toBe(true)
+  })
+
+  it('collects a no-typescript answer as JavaScript', async () => {
+    vi.mocked(input).mockResolvedValueOnce('my-app')
+    vi.mocked(select).mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
+    vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
+
+    const state = await collectProjectState()
+
+    expect(state.frameworkAnswers.typescript).toBe(false)
+    expect(state.frameworkAnswers.tailwind).toBe(true)
   })
 
   it('derives node runtime for vercel without prompting', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -61,7 +76,7 @@ describe('collectProjectState', () => {
 
   it('derives edge runtime for cloudflare without prompting', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('cloudflare')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce(true).mockResolvedValueOnce('cloudflare')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -72,7 +87,7 @@ describe('collectProjectState', () => {
 
   it('derives node runtime for other deployment without prompting', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('other')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce(true).mockResolvedValueOnce('other')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -83,7 +98,7 @@ describe('collectProjectState', () => {
 
   it('skips module providers when no modules selected', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     const state = await collectProjectState()
@@ -93,7 +108,7 @@ describe('collectProjectState', () => {
 
   it('validates project name', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
+    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce([])
 
     await collectProjectState()
@@ -107,7 +122,11 @@ describe('collectProjectState', () => {
 
   it('maps vault provider to pg for non-neon', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('supabase')
+    vi.mocked(select)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce('vercel')
+      .mockResolvedValueOnce('supabase')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['vault'])
 
     const state = await collectProjectState()
@@ -117,7 +136,11 @@ describe('collectProjectState', () => {
 
   it('keeps vault enabled when provider is deferred', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('skip')
+    vi.mocked(select)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce('vercel')
+      .mockResolvedValueOnce('skip')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['vault'])
 
     const state = await collectProjectState()
@@ -127,7 +150,11 @@ describe('collectProjectState', () => {
 
   it('prompts for courier email provider when courier is selected', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('resend')
+    vi.mocked(select)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce('vercel')
+      .mockResolvedValueOnce('resend')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['courier'])
 
     const state = await collectProjectState()
@@ -137,7 +164,11 @@ describe('collectProjectState', () => {
 
   it('keeps courier enabled when email provider is deferred', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('skip')
+    vi.mocked(select)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce('vercel')
+      .mockResolvedValueOnce('skip')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['courier'])
 
     const state = await collectProjectState()
@@ -148,6 +179,7 @@ describe('collectProjectState', () => {
   it('prompts for sms provider when courier and phone auth are enabled', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
     vi.mocked(select)
+      .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce('vercel')
       .mockResolvedValueOnce('resend')
@@ -166,7 +198,11 @@ describe('collectProjectState', () => {
 
   it('does not prompt for sms provider without phone auth', async () => {
     vi.mocked(input).mockResolvedValueOnce('my-app')
-    vi.mocked(select).mockResolvedValueOnce(true).mockResolvedValueOnce('vercel').mockResolvedValueOnce('resend')
+    vi.mocked(select)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce('vercel')
+      .mockResolvedValueOnce('resend')
     vi.mocked(modulesCheckbox).mockResolvedValueOnce(['gatehouse', 'courier'])
     vi.mocked(featureCheckbox).mockResolvedValueOnce(['credentials'])
 
@@ -196,7 +232,7 @@ describe('collectProjectStateFromFlags', () => {
 
     expect(state.projectName).toBe('test-app')
     expect(state.framework).toBe('next')
-    expect(state.frameworkAnswers).toEqual({ tailwind: false })
+    expect(state.frameworkAnswers).toEqual({ tailwind: false, typescript: true })
     expect(state.deployment).toBe('vercel')
     expect(state.runtime).toBe('node')
     expect(state.modules.vault).toEqual({ provider: 'neon', brand: 'neon' })
@@ -217,7 +253,7 @@ describe('collectProjectStateFromFlags', () => {
 
     expect(state.deployment).toBe('vercel')
     expect(state.runtime).toBe('node')
-    expect(state.frameworkAnswers).toEqual({ tailwind: false })
+    expect(state.frameworkAnswers).toEqual({ tailwind: false, typescript: true })
     expect(state.modules).toEqual({})
   })
 
@@ -271,5 +307,11 @@ describe('collectProjectStateFromFlags', () => {
     const state = await collectProjectStateFromFlags({})
 
     expect(state.projectName).toBe('my-app')
+  })
+
+  it('uses JavaScript when typescript is disabled', async () => {
+    const state = await collectProjectStateFromFlags({ name: 'test-app', typescript: false })
+
+    expect(state.frameworkAnswers).toEqual({ tailwind: false, typescript: false })
   })
 })

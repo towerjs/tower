@@ -2,6 +2,7 @@ import type { DeploymentTarget } from './state.js'
 
 export interface CreateFlags {
   name?: string
+  typescript?: boolean
   tailwind?: boolean
   deployment?: DeploymentTarget
   modules?: string[]
@@ -52,6 +53,15 @@ export function parseCreateFlags(args: string[]): CreateFlags {
         break
       case '--no-tailwind':
         flags.tailwind = false
+        i++
+        break
+      case '--ts':
+        flags.typescript = true
+        i++
+        break
+      case '--no-ts':
+      case '--js':
+        flags.typescript = false
         i++
         break
       case '--deployment': {

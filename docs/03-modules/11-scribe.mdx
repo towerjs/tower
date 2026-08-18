@@ -14,6 +14,8 @@ pnpm create tower
 This prompts for:
 
 - Project name
+- TypeScript or JavaScript
+- Tailwind CSS
 - Which modules to include (Vault, Gatehouse, Courier)
 - Optional: social auth providers, email provider, etc.
 
@@ -34,6 +36,7 @@ Available flags:
 | Flag                                                 | Values                                                                                             | Default         |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------- |
 | `--name` / `--project-name`, or positional first arg | project name                                                                                       | `my-app`        |
+| `--ts` / `--js`                                      | —                                                                                                  | `--ts`          |
 | `--tailwind` / `--no-tailwind`                       | —                                                                                                  | `--no-tailwind` |
 | `--deployment`                                       | `vercel`, `cloudflare`, `other`                                                                    | `vercel`        |
 | `--modules`                                          | comma-separated: `vault`, `gatehouse`, `courier`                                                   | none            |
@@ -58,29 +61,31 @@ npx tower help             # List commands
 The scaffolded project includes:
 
 - Next.js with App Router
-- Tower configuration (`tower.config.ts`)
+- Tower configuration (`tower.config.ts`, or `tower.config.js` for JavaScript projects)
 - Auth wiring (proxy, API routes) when gatehouse is selected
 - Database configuration
-- TypeScript and build tooling
+- TypeScript (default) or JavaScript, plus build tooling
 - A minimal placeholder homepage — Tower does not generate application UI
+
+JavaScript projects work the same as TypeScript ones: all Tower code — `tower.config.js`, `page.jsx`, `proxy.js`, and the auth `route.js` — is generated without type annotations, and the `tower` CLI loads `tower.config.js` natively.
 
 ## Output
 
 ```text
 my-app/
 ├── src/
-│   ├── proxy.ts                     # gatehouse only
+│   ├── proxy.ts                     # gatehouse only (proxy.js in JS projects)
 │   └── app/
-│       ├── api/auth/[...all]/route.ts   # gatehouse only
+│       ├── api/auth/[...all]/route.ts   # gatehouse only (route.js in JS projects)
 │       ├── layout.tsx
-│       └── page.tsx
+│       └── page.tsx                 # page.jsx in JS projects
 │   └── vault/
 │       ├── migrations/              # vault only (kept with .gitkeep)
 │       └── seeds/                   # vault only (kept with .gitkeep)
-├── tower.config.ts
-├── next.config.ts                   # edge runtime only
+├── tower.config.ts                  # tower.config.js in JS projects
+├── next.config.ts                   # edge runtime only (next.config.mjs in JS projects)
 ├── package.json
-├── tsconfig.json
+├── tsconfig.json                    # omitted in JS projects
 ├── .env.example
 ├── .prettierrc
 └── AGENTS.md

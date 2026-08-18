@@ -243,6 +243,7 @@ export function helpText(): string[] {
     'Commands:',
     '  create           Scaffold a new Tower application',
     '  create --name my-app --modules vault,gatehouse  Scaffold non-interactively',
+    '  create --js my-app          Scaffold a plain JavaScript app (default is TypeScript)',
     '  about            Show application, module, runtime, and environment diagnostics',
     '  migrate          Run database and auth migrations',
     '  migrate --seed   Run migrations, then seeds',

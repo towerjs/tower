@@ -16,8 +16,9 @@ export const nextAdapter: FrameworkAdapter = {
   name: 'next',
 
   async generate(state: ProjectState, targetDir: string) {
-    const answers = state.frameworkAnswers as { tailwind?: boolean }
+    const answers = state.frameworkAnswers as { tailwind?: boolean; typescript?: boolean }
     const useTailwind = answers.tailwind === true
+    const useTypeScript = answers.typescript !== false
     const isEdge = state.runtime === 'edge'
     const pm = detectPackageManager()
 
@@ -31,7 +32,7 @@ export const nextAdapter: FrameworkAdapter = {
       '--no-react-compiler',
       '--agents-md',
       nextAppFlag(pm),
-      '--ts',
+      useTypeScript ? '--ts' : '--js',
     ]
 
     if (useTailwind) {
@@ -46,11 +47,13 @@ export const nextAdapter: FrameworkAdapter = {
     })
 
     const projectDir = join(targetDir, state.projectName)
+    const configFile = useTypeScript ? 'tower.config.ts' : 'tower.config.js'
+    const pageFile = useTypeScript ? 'page.tsx' : 'page.jsx'
 
-    await writeFile(join(projectDir, 'src', 'app', 'page.tsx'), homePage())
-    await writeFile(join(projectDir, 'tower.config.ts'), towerConfig(state))
+    await writeFile(join(projectDir, 'src', 'app', pageFile), homePage())
+    await writeFile(join(projectDir, configFile), towerConfig(state))
     if (isEdge) {
-      await writeFile(join(projectDir, 'next.config.ts'), nextConfig())
+      await writeFile(join(projectDir, useTypeScript ? 'next.config.ts' : 'next.config.mjs'), nextConfig())
     }
     const environmentContract = envExample(state)
     await writeFile(join(projectDir, '.env.example'), environmentContract)
@@ -65,9 +68,9 @@ export const nextAdapter: FrameworkAdapter = {
     if (state.modules.gatehouse) {
       const authDir = join(projectDir, 'src', 'app', 'api', 'auth', '[...all]')
       await mkdir(authDir, { recursive: true })
-      await writeFile(join(authDir, 'route.ts'), authRoute())
+      await writeFile(join(authDir, useTypeScript ? 'route.ts' : 'route.js'), authRoute())
 
-      await writeFile(join(projectDir, 'src', 'proxy.ts'), proxyFile())
+      await writeFile(join(projectDir, useTypeScript ? 'src/proxy.ts' : 'src/proxy.js'), proxyFile())
     }
 
     if (state.modules.vault) {
@@ -192,7 +195,7 @@ function formatSocialConfig(social: Record<string, unknown>, indent: number): st
   return [`${' '.repeat(indent)}social: {`, inner, `${' '.repeat(indent)}},`]
 }
 
-/** Generates the tower.config.ts content for a new project. */
+/** Generates the tower.config content for a new project. */
 export function towerConfig(state: ProjectState): string {
   const modules = Object.entries(state.modules)
     .map(([name, cfg]) => {
@@ -261,9 +264,9 @@ export const config = {
 `
 }
 
-function courierEnvHints(cfg: Record<string, unknown>): string[] {
+function courierEnvHints(cfg: Record<string, unknown>, configFile: string): string[] {
   const email = cfg.email as Record<string, unknown> | undefined
-  if (!email?.provider) return ['# Email — Courier', '# Add a provider in tower.config.ts to get started']
+  if (!email?.provider) return ['# Email — Courier', `# Add a provider in ${configFile} to get started`]
   const hints: Record<string, string[]> = {
     resend: ['# Email — Resend', '# RESEND_API_KEY='],
     smtp: ['# Email — SMTP', '# SMTP_HOST=', '# SMTP_USER=', '# SMTP_PASS='],
@@ -294,6 +297,7 @@ function vaultEnvHints(brand?: string): string[] {
 
 /** Generates the .env.example content for the new project. */
 export function envExample(state: ProjectState): string {
+  const configFile = state.frameworkAnswers.typescript === false ? 'tower.config.js' : 'tower.config.ts'
   const vars: string[] = []
 
   for (const [name, cfg] of Object.entries(state.modules)) {
@@ -319,7 +323,7 @@ export function envExample(state: ProjectState): string {
     }
     if (name === 'courier') {
       if (vars.length > 0) vars.push('')
-      vars.push(...courierEnvHints(cfg ?? {}))
+      vars.push(...courierEnvHints(cfg ?? {}, configFile))
     }
   }
 
@@ -348,6 +352,10 @@ function prettierConfig(tailwind: boolean): string {
 }
 
 function agentsMd(state: ProjectState): string {
+  const useTypeScript = state.frameworkAnswers.typescript !== false
+  const configFile = useTypeScript ? 'tower.config.ts' : 'tower.config.js'
+  const proxyFile = useTypeScript ? 'src/proxy.ts' : 'src/proxy.js'
+  const fence = useTypeScript ? 'ts' : 'js'
   const lines: string[] = [
     '# Project: ' + state.projectName,
     '',
@@ -383,7 +391,7 @@ function agentsMd(state: ProjectState): string {
     '',
     'Import Tower modules from the `towerjs` meta-package:',
     '',
-    '```ts',
+    '```' + fence + ' ',
     "import { defineTower } from 'towerjs/blueprint'",
     "import { gatehouse } from 'towerjs/gatehouse'",
     "import { vault } from 'towerjs/vault'",
@@ -395,8 +403,8 @@ function agentsMd(state: ProjectState): string {
     '',
     '- `src/app/` — Next.js App Router pages and API routes',
     '- `src/lib/` — Shared logic and utilities',
-    '- `src/proxy.ts` — Edge middleware (runs before every request)',
-    '- `tower.config.ts` — Tower module configuration',
+    `- \`${proxyFile}\` — Edge middleware (runs before every request)`,
+    `- \`${configFile}\` — Tower module configuration`,
     '',
     'Tower modules are initialized lazily on first use. There is no global setup step.',
     '',
@@ -404,22 +412,30 @@ function agentsMd(state: ProjectState): string {
     '',
     'Import tower-supplied actions directly from `towerjs/gatehouse/actions`:',
     '',
-    '```ts',
+    '```' + fence + ' ',
     "import { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'",
     '```',
     '',
     'For actions with custom returns (e.g. `enableTwoFactor`, `generateBackupCodes`)',
     'or custom logic, use `action` from `towerjs/gatehouse/next`:',
     '',
-    '```ts',
+    '```' + fence + ' ',
     "'use server'",
     '',
     "import { action } from 'towerjs/gatehouse/next'",
     "import { gatehouse } from 'towerjs/gatehouse'",
     '',
-    'export const enableTwoFactor = action(async (formData: FormData) => {',
-    "  return gatehouse.totp.enable(formData.get('password') as string)",
-    '})',
+    ...(useTypeScript
+      ? [
+          'export const enableTwoFactor = action(async (formData: FormData) => {',
+          "  return gatehouse.totp.enable(formData.get('password') as string)",
+          '})',
+        ]
+      : [
+          'export const enableTwoFactor = action(async (formData) => {',
+          "  return gatehouse.totp.enable(formData.get('password'))",
+          '})',
+        ]),
     '```',
     '',
     '`action.form` handles FormData extraction automatically so you can destructure',

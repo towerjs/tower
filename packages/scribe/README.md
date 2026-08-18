@@ -26,7 +26,7 @@ Scaffolds a new Tower application with interactive prompts.
 tower create
 ```
 
-Prompts for project name, framework (Next.js), modules (Vault, Gatehouse, Courier, etc.), and deployment target.
+Prompts for project name, TypeScript or JavaScript, Tailwind, framework (Next.js), modules (Vault, Gatehouse, Courier, etc.), and deployment target.
 
 ### `migrate`
 

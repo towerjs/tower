@@ -50,6 +50,7 @@ describe('scaffolding — real file output', () => {
         )
         writeFileSync(join(tmpDir, baseState.projectName, 'tsconfig.json'), '{}')
         writeFileSync(join(tmpDir, baseState.projectName, 'next.config.ts'), '')
+        writeFileSync(join(tmpDir, baseState.projectName, 'next.config.mjs'), '')
       }
     })
 
@@ -146,6 +147,37 @@ describe('scaffolding — real file output', () => {
     expect(proxy).not.toContain('/sign-in')
   })
 
+  it('scaffolds JavaScript files when typescript is disabled', async () => {
+    const state: ProjectState = {
+      ...baseState,
+      frameworkAnswers: { tailwind: true, typescript: false },
+      runtime: 'edge',
+      modules: {
+        vault: { provider: 'neon', brand: 'neon' },
+        gatehouse: { credentials: true },
+      },
+    }
+    await nextAdapter.generate(state, tmpDir)
+
+    expect(existsSync(join(projectDir, 'tower.config.js'))).toBe(true)
+    expect(existsSync(join(projectDir, 'tower.config.ts'))).toBe(false)
+    expect(existsSync(join(projectDir, 'src', 'app', 'page.jsx'))).toBe(true)
+    expect(existsSync(join(projectDir, 'src', 'app', 'page.tsx'))).toBe(false)
+    expect(existsSync(join(projectDir, 'next.config.mjs'))).toBe(true)
+    expect(existsSync(join(projectDir, 'src', 'proxy.js'))).toBe(true)
+    expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(false)
+    expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.js'))).toBe(true)
+    expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'))).toBe(false)
+
+    const nextConfig = readFileSync(join(projectDir, 'next.config.mjs'), 'utf-8')
+    expect(nextConfig).toContain('withTowerEdge')
+
+    const agents = readFileSync(join(projectDir, 'AGENTS.md'), 'utf-8')
+    expect(agents).toContain('src/proxy.js')
+    expect(agents).toContain('tower.config.js')
+    expect(agents).not.toContain('tower.config.ts')
+  })
+
   it('installs towerjs and the tower CLI', async () => {
     await nextAdapter.generate(baseState, tmpDir)
     expect(execa).toHaveBeenCalledWith(
@@ -187,7 +219,7 @@ describe('scaffolding — real file output', () => {
     }
   })
 
-  it('writes consistent output for every tailwind/module/runtime combination', async () => {
+  it('writes consistent output for every tailwind/typescript/module/runtime combination', async () => {
     const moduleCombos: Partial<ProjectState['modules']>[] = [
       {},
       { vault: { provider: 'neon', brand: 'neon' } },
@@ -199,74 +231,82 @@ describe('scaffolding — real file output', () => {
       },
     ]
     const tailwindChoices = [true, false]
+    const typescriptChoices = [true, false]
     const runtimeChoices = ['node', 'edge'] as const
 
     for (const useTailwind of tailwindChoices) {
-      for (const runtime of runtimeChoices) {
-        for (const modules of moduleCombos) {
-          const state: ProjectState = {
-            ...baseState,
-            modules,
-            frameworkAnswers: { tailwind: useTailwind },
-            runtime,
-          }
-          await nextAdapter.generate(state, tmpDir)
+      for (const useTypeScript of typescriptChoices) {
+        for (const runtime of runtimeChoices) {
+          for (const modules of moduleCombos) {
+            const state: ProjectState = {
+              ...baseState,
+              modules,
+              frameworkAnswers: { tailwind: useTailwind, typescript: useTypeScript },
+              runtime,
+            }
+            await nextAdapter.generate(state, tmpDir)
 
-          expect(existsSync(join(projectDir, 'tower.config.ts'))).toBe(true)
-          expect(existsSync(join(projectDir, '.env.example'))).toBe(true)
+            const configFile = useTypeScript ? 'tower.config.ts' : 'tower.config.js'
+            const nextConfigFile = useTypeScript ? 'next.config.ts' : 'next.config.mjs'
+            const proxyFile = useTypeScript ? 'src/proxy.ts' : 'src/proxy.js'
+            const routeFile = useTypeScript ? 'route.ts' : 'route.js'
 
-          const isEdge = runtime === 'edge'
-          const nextConfig = readFileSync(join(projectDir, 'next.config.ts'), 'utf-8')
-          if (isEdge) {
-            expect(nextConfig).toContain('withTowerEdge')
-          } else {
-            expect(nextConfig).not.toContain('withTowerEdge')
-          }
+            expect(existsSync(join(projectDir, configFile))).toBe(true)
+            expect(existsSync(join(projectDir, '.env.example'))).toBe(true)
 
-          const prettier = readFileSync(join(projectDir, '.prettierrc'), 'utf-8')
-          expect(prettier).toContain('prettier-plugin-organize-imports')
-          if (useTailwind) {
-            expect(prettier).toContain('prettier-plugin-tailwindcss')
-            expect(prettier).toContain('prettier-plugin-tailwindcss-canonical-classes')
-          } else {
-            expect(prettier).not.toContain('prettier-plugin-tailwindcss')
-            expect(prettier).not.toContain('tailwindcss-canonical')
-          }
+            const isEdge = runtime === 'edge'
+            const nextConfig = readFileSync(join(projectDir, nextConfigFile), 'utf-8')
+            if (isEdge) {
+              expect(nextConfig).toContain('withTowerEdge')
+            } else {
+              expect(nextConfig).not.toContain('withTowerEdge')
+            }
 
-          const hasGatehouse = Boolean(modules.gatehouse)
-          expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(hasGatehouse)
-          expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'))).toBe(hasGatehouse)
+            const prettier = readFileSync(join(projectDir, '.prettierrc'), 'utf-8')
+            expect(prettier).toContain('prettier-plugin-organize-imports')
+            if (useTailwind) {
+              expect(prettier).toContain('prettier-plugin-tailwindcss')
+              expect(prettier).toContain('prettier-plugin-tailwindcss-canonical-classes')
+            } else {
+              expect(prettier).not.toContain('prettier-plugin-tailwindcss')
+              expect(prettier).not.toContain('tailwindcss-canonical')
+            }
 
-          const towerAddCalls = vi
-            .mocked(execa)
-            .mock.calls.filter(([bin, args]) => bin === 'pnpm' && Array.isArray(args) && args[0] === 'add')
-          // Selected @towerjs/* modules are direct deps so pnpm's strict
-          // dependency isolation works for real generated applications.
-          for (const pkg of ['@towerjs/gatehouse', '@towerjs/vault', '@towerjs/courier']) {
-            const directDep = towerAddCalls.some(([, args]) => (args as string[]).includes(pkg))
-            expect(directDep).toBe(Boolean(modules[pkg.split('/').pop()!]))
-          }
+            const hasGatehouse = Boolean(modules.gatehouse)
+            expect(existsSync(join(projectDir, proxyFile))).toBe(hasGatehouse)
+            expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', routeFile))).toBe(hasGatehouse)
 
-          const edgeDevDep = towerAddCalls.some(
-            ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/edge')
-          )
-          expect(edgeDevDep).toBe(isEdge)
+            const towerAddCalls = vi
+              .mocked(execa)
+              .mock.calls.filter(([bin, args]) => bin === 'pnpm' && Array.isArray(args) && args[0] === 'add')
+            // Selected @towerjs/* modules are direct deps so pnpm's strict
+            // dependency isolation works for real generated applications.
+            for (const pkg of ['@towerjs/gatehouse', '@towerjs/vault', '@towerjs/courier']) {
+              const directDep = towerAddCalls.some(([, args]) => (args as string[]).includes(pkg))
+              expect(directDep).toBe(Boolean(modules[pkg.split('/').pop()!]))
+            }
 
-          const scribeDevDep = towerAddCalls.some(
-            ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/scribe')
-          )
-          expect(scribeDevDep).toBe(true)
-
-          const tailwindPluginInstall = vi
-            .mocked(execa)
-            .mock.calls.some(
-              ([bin, args]) =>
-                bin === 'pnpm' && Array.isArray(args) && (args as string[]).includes('prettier-plugin-tailwindcss')
+            const edgeDevDep = towerAddCalls.some(
+              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/edge')
             )
-          expect(tailwindPluginInstall).toBe(useTailwind)
+            expect(edgeDevDep).toBe(isEdge)
 
-          rmSync(projectDir, { recursive: true, force: true })
-          vi.clearAllMocks()
+            const scribeDevDep = towerAddCalls.some(
+              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/scribe')
+            )
+            expect(scribeDevDep).toBe(true)
+
+            const tailwindPluginInstall = vi
+              .mocked(execa)
+              .mock.calls.some(
+                ([bin, args]) =>
+                  bin === 'pnpm' && Array.isArray(args) && (args as string[]).includes('prettier-plugin-tailwindcss')
+              )
+            expect(tailwindPluginInstall).toBe(useTailwind)
+
+            rmSync(projectDir, { recursive: true, force: true })
+            vi.clearAllMocks()
+          }
         }
       }
     }

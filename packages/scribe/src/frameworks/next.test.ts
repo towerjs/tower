@@ -239,6 +239,17 @@ describe('envExample', () => {
     expect(result).toContain('Add a provider in tower.config.ts')
   })
 
+  it('references tower.config.js in courier hint for JavaScript projects', () => {
+    const state: ProjectState = {
+      ...baseState,
+      frameworkAnswers: { tailwind: true, typescript: false },
+      modules: { courier: {} },
+    }
+    const result = envExample(state)
+
+    expect(result).toContain('Add a provider in tower.config.js')
+  })
+
   it('shows Resend env vars when resend is configured', () => {
     const state: ProjectState = {
       ...baseState,
@@ -325,6 +336,71 @@ describe('nextAdapter.generate', () => {
     )
   })
 
+  it('passes --js to create-next-app when typescript is disabled', async () => {
+    const jsState: ProjectState = {
+      ...state,
+      frameworkAnswers: { tailwind: true, typescript: false },
+    }
+
+    await nextAdapter.generate(jsState, '/target')
+
+    expect(execa).toHaveBeenCalledWith(
+      'npx',
+      expect.arrayContaining(['create-next-app@latest', '--js', '--tailwind']),
+      { cwd: '/target', stdio: 'inherit' }
+    )
+  })
+
+  it('writes tower.config.js and page.jsx when typescript is disabled', async () => {
+    const jsState: ProjectState = {
+      ...state,
+      frameworkAnswers: { tailwind: true, typescript: false },
+    }
+
+    await nextAdapter.generate(jsState, '/target')
+
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('tower.config.js'), expect.any(String))
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'page.jsx')), expect.any(String))
+    const configWrite = vi
+      .mocked(writeFile)
+      .mock.calls.find(([p]) => typeof p === 'string' && p.includes('tower.config'))
+    expect(configWrite![0]).not.toContain('tower.config.ts')
+  })
+
+  it('writes route.js and proxy.js for gatehouse when typescript is disabled', async () => {
+    const jsState: ProjectState = {
+      ...state,
+      frameworkAnswers: { tailwind: true, typescript: false },
+      modules: { gatehouse: { credentials: true } },
+    }
+
+    await nextAdapter.generate(jsState, '/target')
+
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('route.js'), expect.stringContaining('GET'))
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('proxy.js'), expect.any(String))
+    const proxyWrite = vi.mocked(writeFile).mock.calls.find(([p]) => typeof p === 'string' && p.includes('proxy'))
+    expect(proxyWrite![0]).not.toContain('proxy.ts')
+  })
+
+  it('writes next.config.mjs for edge runtime when typescript is disabled', async () => {
+    const jsState: ProjectState = {
+      ...state,
+      frameworkAnswers: { tailwind: true, typescript: false },
+      runtime: 'edge',
+    }
+
+    await nextAdapter.generate(jsState, '/target')
+
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('next.config.mjs'),
+      expect.stringContaining('withTowerEdge')
+    )
+    const configWrite = vi
+      .mocked(writeFile)
+      .mock.calls.find(([p]) => typeof p === 'string' && p.includes('next.config'))
+    expect(configWrite![0]).not.toContain('next.config.ts')
+  })
+
   it('writes tower.config.ts and .env.example', async () => {
     await nextAdapter.generate(state, '/target')
 
@@ -409,6 +485,26 @@ describe('nextAdapter.generate', () => {
     expect(agentsContent).toContain('my-app')
     expect(agentsContent).toContain('gatehouse')
     expect(agentsContent).toContain('vault')
+  })
+
+  it('AGENTS.md references js files and fences for JavaScript projects', async () => {
+    const jsState: ProjectState = {
+      ...state,
+      frameworkAnswers: { tailwind: true, typescript: false },
+      modules: { gatehouse: { credentials: true } },
+    }
+
+    await nextAdapter.generate(jsState, '/target')
+
+    const [, agentsContent] = vi
+      .mocked(writeFile)
+      .mock.calls.find(([path]) => typeof path === 'string' && path.includes('AGENTS.md')) ?? ['']
+    expect(agentsContent).toContain('src/proxy.js')
+    expect(agentsContent).toContain('tower.config.js')
+    expect(agentsContent).not.toContain('src/proxy.ts')
+    expect(agentsContent).not.toContain('tower.config.ts')
+    expect(agentsContent).toContain('```js')
+    expect(agentsContent).toContain("formData.get('password'))")
   })
 
   it('AGENTS.md appends Tower content after the generated Next.js content', async () => {
