@@ -54,6 +54,20 @@ else
   fail "Tests failed"
 fi
 
+check "2b. Integration tests"
+if pnpm test:integration >/dev/null 2>&1; then
+  pass "Integration tests pass (Postgres auto-provisioned and torn down)"
+else
+  fail "Integration tests failed"
+fi
+
+check "2c. Build test"
+if pnpm test:build >/dev/null 2>&1; then
+  pass "Next.js build test passes"
+else
+  fail "Build test failed"
+fi
+
 check "3. Typecheck"
 if pnpm typecheck >/dev/null 2>&1; then
   pass "Typecheck clean"
