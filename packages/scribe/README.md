@@ -49,8 +49,11 @@ tower seed
 Shows the current Tower version, configuration path, environment, runtime, enabled modules, providers, and required environment-variable presence. It never prints secret values.
 
 ```bash
-tower about
+npx tower about        # in a Tower project (resolves the local @towerjs/scribe bin)
+pnpm dlx @towerjs/scribe about  # standalone, without installing
 ```
+
+> Note: a package named `tower` also exists on npm, and `pnpm dlx` always fetches the package named on the command line (it does not check local bins). So in a project use `npx tower` or `pnpm exec tower`; with `dlx`, always name the package explicitly: `pnpm dlx @towerjs/scribe`.
 
 ### `help` / `--version`
 

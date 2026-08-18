@@ -50,13 +50,16 @@ Passing any flag runs the whole flow without prompting.
 Once installed, projects also get the `tower` binary for database work:
 
 ```bash
-npx tower migrate          # Run database migrations
-npx tower migrate --seed   # Migrate then seed (-s for shorthand)
-npx tower seed             # Run seeds (migrations first by default)
+npx tower about                # Show app, module, runtime, and environment diagnostics
+npx tower migrate              # Run database migrations
+npx tower migrate --seed       # Migrate then seed (-s for shorthand)
+npx tower seed                 # Run seeds (migrations first by default)
 npx tower seed --skip-migrate  # Seeds only
-npx tower --version        # Show version
-npx tower help             # List commands
+npx tower --version            # Show version
+npx tower help                 # List commands
 ```
+
+Alternatively, with pnpm: `pnpm exec tower about` inside a project, or `pnpm dlx @towerjs/scribe about` without one. Note that `npx tower` works in a project because npx prefers the local `node_modules/.bin` — but `pnpm dlx tower` always fetches the npm package literally named `tower`, which is a different, unrelated package, so always name `@towerjs/scribe` with `dlx`.
 
 The scaffolded project includes:
 
