@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -n "${DATABASE_URL:-}" ]; then
   cd "$ROOT"
   echo "==> Running integration tests against existing DATABASE_URL"
-  pnpm exec vitest run --config vitest.integration.config.ts
+  pnpm exec vitest run --project integration
   exit 0
 fi
 
@@ -41,4 +41,4 @@ trap cleanup EXIT
 export DATABASE_URL="${DATABASE_URL:-postgres://tower:tower@localhost:5432/tower}"
 
 echo "==> Running integration tests"
-pnpm exec vitest run --config vitest.integration.config.ts
+pnpm exec vitest run --project integration
