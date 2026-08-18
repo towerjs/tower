@@ -188,48 +188,6 @@ describe('getCurrentGatehouse', () => {
 
 // ─── api-builder ─────────────────────────────────────────────
 
-describe('buildProxiedApi', () => {
-  it('wraps method to inject headers', async () => {
-    const { buildProxiedApi } = await import('./api-builder.js')
-    const headers = new Headers({ authorization: 'Bearer x' })
-    const inner = vi.fn().mockResolvedValue('ok')
-    const api = { someMethod: inner }
-    const proxied = buildProxiedApi(api, headers)
-
-    await proxied.someMethod({ email: 'a@b.com' })
-    expect(inner).toHaveBeenCalledWith(expect.objectContaining({ headers, body: { email: 'a@b.com' } }))
-  })
-
-  it('passes GET-method params as query', async () => {
-    const { buildProxiedApi } = await import('./api-builder.js')
-    const headers = new Headers()
-    const inner = vi.fn().mockResolvedValue([])
-    const api = { listSessions: inner }
-    const proxied = buildProxiedApi(api, headers)
-
-    await proxied.listSessions({ userId: '1' })
-    expect(inner).toHaveBeenCalledWith(expect.objectContaining({ query: { userId: '1' } }))
-  })
-
-  it('allows raw params via body/query/headers keys', async () => {
-    const { buildProxiedApi } = await import('./api-builder.js')
-    const headers = new Headers()
-    const inner = vi.fn().mockResolvedValue('ok')
-    const api = { someMethod: inner }
-    const proxied = buildProxiedApi(api, headers)
-
-    await proxied.someMethod({ body: { raw: true }, headers: new Headers() })
-    expect(inner).toHaveBeenCalledWith(expect.objectContaining({ body: { raw: true } }))
-  })
-
-  it('passes non-function properties through', async () => {
-    const { buildProxiedApi } = await import('./api-builder.js')
-    const api = { staticVal: 42 }
-    const proxied = buildProxiedApi(api, new Headers())
-    expect(proxied.staticVal).toBe(42)
-  })
-})
-
 describe('buildApi', () => {
   it('maps API methods to nested paths', async () => {
     const { buildApi } = await import('./api-builder.js')
@@ -284,6 +242,16 @@ describe('buildApi', () => {
     expect(inner).toHaveBeenCalledWith({ headers, body: { token: 'token-1' } })
   })
 
+  it('maps revoke-all-sessions to the revokeSessions endpoint', async () => {
+    const { buildApi } = await import('./api-builder.js')
+    const headers = new Headers()
+    const inner = vi.fn().mockResolvedValue(undefined)
+    const gatehouse = buildApi({ revokeSessions: inner } as any, headers)
+
+    await gatehouse.sessions.revokeAll()
+    expect(inner).toHaveBeenCalledWith({ headers, body: {} })
+  })
+
   it('shapes string TOTP arguments into body objects', async () => {
     const { buildApi } = await import('./api-builder.js')
     const headers = new Headers()
@@ -313,17 +281,7 @@ describe('buildApi', () => {
     const headers = new Headers()
     const source = { customPlugin: vi.fn(), signInEmail: vi.fn() }
     const gatehouse = buildApi(source as any, headers)
-    expect(typeof gatehouse.api?.customPlugin).toBe('function')
-  })
-
-  it('excludes SKIP_INTERNAL from passthrough', async () => {
-    const { buildApi } = await import('./api-builder.js')
-    const headers = new Headers()
-    const source = { getSession: vi.fn(), callbackOAuth: vi.fn(), randomFn: vi.fn() }
-    const gatehouse = buildApi(source as any, headers)
-    expect(gatehouse.api?.getSession).toBeUndefined()
-    expect(gatehouse.api?.callbackOAuth).toBeUndefined()
-    expect(typeof gatehouse.api?.randomFn).toBe('function')
+    expect(gatehouse.api).toBeUndefined()
   })
 
   it('skips mappings for undefined methods', async () => {

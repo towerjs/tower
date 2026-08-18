@@ -1,14 +1,3 @@
-import type { ApiKeyOptions as BetterAuthApiKeyOptions } from '@better-auth/api-key'
-import type { PasskeyOptions as BetterAuthPasskeyOptions } from '@better-auth/passkey'
-import type {
-  AdminOptions as BetterAuthAdminOptions,
-  MagicLinkOptions as BetterAuthMagicLinkOptions,
-  OrganizationOptions as BetterAuthOrganizationOptions,
-  PhoneNumberOptions as BetterAuthPhoneNumberOptions,
-  TwoFactorOptions as BetterAuthTwoFactorOptions,
-} from 'better-auth/plugins'
-import type { SocialProviders as BetterAuthSocialProviders } from 'better-auth/types'
-
 /** A user managed by Gatehouse. */
 export interface GatehouseUser {
   id: string
@@ -320,8 +309,12 @@ export interface OrganizationInviteParams {
   role: string
 }
 
-/** Options for magic-link authentication. Maps to the better-auth magic link plugin. */
-export type GatehouseMagicLinkOptions = BetterAuthMagicLinkOptions
+/** Options for magic-link authentication. */
+export type GatehouseMagicLinkOptions = {
+  /** Custom magic-link email handler. Overrides Courier. */
+  sendMagicLink?: (data: { email: string; url: string; token: string }) => void | Promise<void>
+}
+
 /** How users prove ownership of their email address. */
 export type GatehouseEmailVerificationMethod = 'link' | 'otp'
 
@@ -353,20 +346,67 @@ export interface GatehouseEmailVerificationConfig {
   /** Custom OTP email handler. Overrides Courier. Applies to the `otp` method. */
   sendVerificationOTP?: (data: { email: string; otp: string; type: string }, ctx?: unknown) => void | Promise<void>
 }
-/** Options for phone number OTP authentication. Maps to the better-auth phone number plugin. */
-export type GatehousePhoneNumberOptions = BetterAuthPhoneNumberOptions
-/** Options for two-factor authentication. Maps to the better-auth 2FA plugin. */
-export type GatehouseTwoFactorOptions = BetterAuthTwoFactorOptions
-/** Options for organizations. Maps to the better-auth organization plugin. */
-export type GatehouseOrganizationOptions = BetterAuthOrganizationOptions
-/** Options for admin user management. Maps to the better-auth admin plugin. */
-export type GatehouseAdminOptions = BetterAuthAdminOptions
-/** Supported social provider identifiers. Maps to better-auth social provider types. */
-export type GatehouseSocialProviders = BetterAuthSocialProviders
-/** Options for passkey (WebAuthn) authentication. Maps to `@better-auth/passkey`. */
-export type GatehousePasskeyOptions = BetterAuthPasskeyOptions
-/** Options for API key management. Maps to `@better-auth/api-key`. */
-export type GatehouseApiKeyOptions = BetterAuthApiKeyOptions
+/** Options for phone number OTP authentication. */
+export type GatehousePhoneNumberOptions = {
+  /** Custom SMS handler. Overrides Courier. */
+  sendOTP?: (data: { phoneNumber: string; code: string }) => void | Promise<void>
+}
+
+/** Options for passkey (WebAuthn) authentication. */
+export type GatehousePasskeyOptions = {
+  /** Relying party display name. Defaults to the app name. */
+  rpName?: string
+  /** Relying party ID (the site domain passkeys are bound to). */
+  rpID?: string
+}
+
+/**
+ * WebAuthn registration options returned by `passkeys.generateRegistrationOptions`.
+ * Pass these directly to `navigator.credentials.create({ publicKey: opts })`.
+ */
+export interface PasskeyRegistrationOptions {
+  challenge: string
+  rp: { id?: string; name: string }
+  user: { id: string; name: string; displayName: string }
+  pubKeyCredParams: Array<{ type: string; alg: number }>
+  timeout?: number
+  attestation?: string
+  authenticatorSelection?: {
+    authenticatorAttachment?: string
+    residentKey?: string
+    requireResidentKey?: boolean
+    userVerification?: string
+  }
+  excludeCredentials?: Array<{ type: string; id: string; transports?: string[] }>
+  extensions?: Record<string, unknown>
+}
+
+/**
+ * WebAuthn request options returned by `passkeys.generateAuthenticationOptions`.
+ * Pass these directly to `navigator.credentials.get({ publicKey: opts })`.
+ */
+export interface PasskeyAuthenticationOptions {
+  challenge: string
+  rpId?: string
+  timeout?: number
+  allowCredentials?: Array<{ type: string; id: string; transports?: string[] }>
+  userVerification?: string
+  extensions?: Record<string, unknown>
+}
+
+/** Params for completing a passkey registration ceremony. */
+export interface PasskeyVerifyRegistrationParams {
+  /** The credential returned by `navigator.credentials.create`. */
+  response: Record<string, unknown>
+  /** Optional display name for the passkey. */
+  name?: string
+}
+
+/** Params for completing a passkey authentication ceremony. */
+export interface PasskeyVerifyAuthenticationParams {
+  /** The credential returned by `navigator.credentials.get`. */
+  response: Record<string, unknown>
+}
 
 type SocialProviderEntry = {
   clientId?: string | string[]
@@ -386,16 +426,16 @@ type SocialProviderEntry = {
 
 export type GatehouseSocialConfig = string[] | Record<string, SocialProviderEntry | true>
 
-type BetterAuthGenerateIdFn = (options: { model: string; size?: number | undefined }) => string | false
-
 /**
- * Configuration for the gatehouse auth module backed by better-auth.
+ * Configuration for the gatehouse auth module.
  *
  * Controls which authentication features are enabled (email/password, social,
  * magic links, OTP, passkeys, TOTP, organizations, admin, API keys) and how
- * they behave. Each feature maps to a better-auth plugin.
+ * they behave.
  *
- * Most config fields are optional — omit a feature to disable it.
+ * The provider is selected with `provider: 'better-auth'`. Feature options are
+ * Tower-owned; provider-specific settings (secrets, model names, custom
+ * plugins) pass through via `passThrough` and `plugins`.
  */
 export interface GatehouseConfig {
   provider: 'better-auth'
@@ -434,10 +474,10 @@ export interface GatehouseConfig {
   passkeys?: boolean | GatehousePasskeyOptions
   magicLinks?: boolean | Partial<GatehouseMagicLinkOptions>
   phoneNumber?: boolean | Partial<GatehousePhoneNumberOptions>
-  twoFactor?: boolean | GatehouseTwoFactorOptions
-  organization?: boolean | GatehouseOrganizationOptions
-  admin?: boolean | GatehouseAdminOptions
-  apiKey?: boolean | GatehouseApiKeyOptions
+  twoFactor?: boolean
+  organization?: boolean
+  admin?: boolean
+  apiKey?: boolean
 
   baseURL?:
     | string
@@ -524,7 +564,7 @@ export interface GatehouseConfig {
     disableCSRFCheck?: boolean
     cookiePrefix?: string
     database?: {
-      generateId?: BetterAuthGenerateIdFn | false | 'serial' | 'uuid'
+      generateId?: ((options: { model: string; size?: number }) => string | false) | false | 'serial' | 'uuid'
       defaultFindManyLimit?: number
     }
   }
@@ -561,6 +601,12 @@ export interface GatehouseInstance {
   session(): Promise<Session | null>
   user(): Promise<GatehouseUser | null>
   readonly headers: Headers
+  /**
+   * Raw provider instance.
+   *
+   * Escape hatch only — not part of the stable contract. Accessing provider
+   * internals bypasses Gatehouse's Tower-owned semantics.
+   */
   readonly provider: any
 
   /**
@@ -585,6 +631,7 @@ export interface GatehouseInstance {
     list(): Promise<GatehouseSession[]>
     revoke(token: string): Promise<void>
     revokeOther(): Promise<void>
+    revokeAll(): Promise<void>
     signOut(): Promise<void>
   }
 
@@ -632,6 +679,18 @@ export interface GatehouseInstance {
     list(): Promise<PasskeyInfo[]>
     update(id: string, params: PasskeyUpdateParams): Promise<PasskeyInfo>
     delete(id: string): Promise<void>
+    /** Starts the WebAuthn registration ceremony. Requires a session. */
+    generateRegistrationOptions(params?: {
+      authenticatorAttachment?: 'platform' | 'cross-platform'
+      name?: string
+      context?: string
+    }): Promise<PasskeyRegistrationOptions>
+    /** Completes the WebAuthn registration ceremony. Requires a session. */
+    verifyRegistration(params: PasskeyVerifyRegistrationParams): Promise<PasskeyInfo>
+    /** Starts the WebAuthn authentication ceremony. */
+    generateAuthenticationOptions(): Promise<PasskeyAuthenticationOptions>
+    /** Completes the WebAuthn authentication ceremony and signs the user in. */
+    verifyAuthentication(params: PasskeyVerifyAuthenticationParams): Promise<Session>
   }
 
   admin: {
@@ -657,7 +716,6 @@ export interface GatehouseInstance {
     update(id: string, params: ApiKeyUpdateParams): Promise<ApiKeyInfo>
     delete(id: string): Promise<void>
     verify(params: ApiKeyVerifyParams): Promise<ApiKeyInfo | null>
-    deleteAllExpired(): Promise<number>
   }
 
   identities: {
@@ -723,6 +781,12 @@ export interface GatehouseInstance {
  * auth middleware, and `migrate()` during deployment setup.
  */
 export interface GatehouseModule {
+  /**
+   * Raw provider instance.
+   *
+   * Escape hatch only — not part of the stable contract. Accessing provider
+   * internals bypasses Gatehouse's Tower-owned semantics.
+   */
   provider: any
 
   routes: {

@@ -40,10 +40,10 @@ export const gatehouseConfigSchema = z
     passkeys: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
     magicLinks: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
     phoneNumber: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
-    twoFactor: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
-    organization: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
-    admin: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
-    apiKey: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
+    twoFactor: z.boolean().optional(),
+    organization: z.boolean().optional(),
+    admin: z.boolean().optional(),
+    apiKey: z.boolean().optional(),
 
     baseURL: z
       .union([

@@ -17,7 +17,7 @@ gatehouse: {
 
 ## Register a passkey
 
-Passkey registration is a WebAuthn ceremony driven from a signed-in context. `gatehouseClient` has no passkey plugin, so use the server API's raw passkey endpoints through `gatehouse.api`:
+Passkey registration is a WebAuthn ceremony driven from a signed-in context. Generate the registration options server-side, run the ceremony in the browser, then verify the credential:
 
 ```ts filename="src/app/settings/passkeys/actions.ts"
 'use server'
@@ -25,28 +25,40 @@ Passkey registration is a WebAuthn ceremony driven from a signed-in context. `ga
 import { gatehouse } from 'towerjs/gatehouse'
 
 export async function generateRegistrationOptions() {
-  return gatehouse.api.generatePasskeyRegistrationOptions()
+  return gatehouse.passkeys.generateRegistrationOptions()
+}
+
+export async function verifyRegistration(response: Record<string, unknown>) {
+  return gatehouse.passkeys.verifyRegistration({ response })
 }
 ```
 
 ```tsx filename="src/app/settings/passkeys/register-passkey.tsx"
 'use client'
 
+import { generateRegistrationOptions, verifyRegistration } from './actions'
+
 export function RegisterPasskey() {
   async function handleRegister() {
     const opts = await generateRegistrationOptions()
     const credential = await navigator.credentials.create({ publicKey: opts })
-    await verifyRegistration('/api/auth/passkey/verify-registration', credential)
+    await verifyRegistration(credential)
   }
   return <button onClick={handleRegister}>Add passkey</button>
 }
 ```
 
-The raw endpoints — `generatePasskeyRegistrationOptions`, `verifyPasskeyRegistration`, `generatePasskeyAuthenticationOptions`, `verifyPasskeyAuthentication` — handle the WebAuthn flow and are available on `gatehouse.api`.
+The ceremony methods — `generateRegistrationOptions`, `verifyRegistration`, `generateAuthenticationOptions`, `verifyAuthentication` — handle the WebAuthn flow as typed `passkeys.*` operations. `verifyRegistration` returns the created passkey; it requires an existing session.
 
 ## Sign in with a passkey
 
-Passkey sign-in runs the WebAuthn ceremony in the browser via `gatehouse.api.generatePasskeyAuthenticationOptions` / `gatehouse.api.verifyPasskeyAuthentication`; the browser prompts for the device credential and the session is created on success.
+Passkey sign-in runs the WebAuthn ceremony in the browser: `generateAuthenticationOptions` returns the request options, and `verifyAuthentication` verifies the credential and returns the new `{ user, session }`:
+
+```ts
+const opts = await gatehouse.passkeys.generateAuthenticationOptions()
+const credential = await navigator.credentials.get({ publicKey: opts })
+const { user, session } = await gatehouse.passkeys.verifyAuthentication({ response: credential })
+```
 
 ## Manage passkeys
 

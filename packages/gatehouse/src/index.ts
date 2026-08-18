@@ -34,8 +34,12 @@ import type {
   OrganizationRoleCreateParams,
   OrganizationRoleUpdateParams,
   OrganizationUpdateParams,
+  PasskeyAuthenticationOptions,
   PasskeyInfo,
+  PasskeyRegistrationOptions,
   PasskeyUpdateParams,
+  PasskeyVerifyAuthenticationParams,
+  PasskeyVerifyRegistrationParams,
   PhoneOtpConfirmParams,
   PhoneOtpSendParams,
   ProxyOptions,
@@ -74,16 +78,11 @@ export type {
 } from './types.js'
 
 export type {
-  GatehouseMagicLinkOptions,
   GatehouseEmailVerificationConfig,
   GatehouseEmailVerificationMethod,
+  GatehouseMagicLinkOptions,
   GatehousePhoneNumberOptions,
-  GatehouseTwoFactorOptions,
-  GatehouseOrganizationOptions,
-  GatehouseAdminOptions,
-  GatehouseSocialProviders,
   GatehousePasskeyOptions,
-  GatehouseApiKeyOptions,
 } from './types.js'
 
 export type {
@@ -92,6 +91,10 @@ export type {
   PhoneOtpConfirmParams,
   PasskeyInfo,
   PasskeyUpdateParams,
+  PasskeyRegistrationOptions,
+  PasskeyAuthenticationOptions,
+  PasskeyVerifyRegistrationParams,
+  PasskeyVerifyAuthenticationParams,
   AdminUserCreateParams,
   AdminUserBanParams,
   AdminSetRoleParams,

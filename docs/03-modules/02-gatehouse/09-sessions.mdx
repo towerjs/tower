@@ -112,10 +112,11 @@ gatehouse: {
 await gatehouse.sessions.list() // all sessions for the user
 await gatehouse.sessions.revoke(token)
 await gatehouse.sessions.revokeOther() // everywhere except this device
+await gatehouse.sessions.revokeAll() // sign out everywhere
 await gatehouse.sessions.signOut() // current session
 ```
 
-Actions: `revokeSession` (`token`), `revokeOtherSessions`. Revocation is immediate — the session is deleted from the database.
+Actions: `revokeSession` (`token`), `revokeOtherSessions`, `revokeAllSessions`. Revocation is immediate — the session is deleted from the database.
 
 ## Errors
 

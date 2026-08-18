@@ -81,13 +81,13 @@ gatehouse: {
   emailVerification?: boolean | { enabled, method: 'link' | 'otp', required,
     sendOnSignUp, autoSignInAfterVerification, expiresIn, sendVerificationEmail, sendVerificationOTP }
   social?: string[] | Record<string, SocialProviderEntry | true>
-  passkeys?: boolean | GatehousePasskeyOptions
-  magicLinks?: boolean | GatehouseMagicLinkOptions
-  phoneNumber?: boolean | GatehousePhoneNumberOptions
-  twoFactor?: boolean | GatehouseTwoFactorOptions
-  organization?: boolean | GatehouseOrganizationOptions
-  admin?: boolean | GatehouseAdminOptions
-  apiKey?: boolean | GatehouseApiKeyOptions
+  passkeys?: boolean | { rpName?, rpID? }
+  magicLinks?: boolean | { sendMagicLink? }
+  phoneNumber?: boolean | { sendOTP? }
+  twoFactor?: boolean
+  organization?: boolean
+  admin?: boolean
+  apiKey?: boolean
 
   baseURL?: string | { allowedHosts, protocol: 'http' | 'https' | 'auto', fallback }
   appName?: string
@@ -99,7 +99,7 @@ gatehouse: {
 }
 ```
 
-Gatehouse config is intentionally loose — it maps almost one-to-one onto Better Auth options, and unknown keys pass through untouched. Options like `user.additionalFields`, `session`, `account`, callbacks, and plugin options can be set directly.
+Feature options are Tower-owned and typed — they describe what authentication means to the application, not how a provider implements it. Provider-specific settings (custom plugins, model names, session/account details, secrets) pass through via `plugins`, `advanced`, and `passThrough` untouched.
 
 The secret and base URL resolve from configuration or environment:
 

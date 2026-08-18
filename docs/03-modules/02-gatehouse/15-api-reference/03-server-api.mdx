@@ -34,7 +34,7 @@ import { gatehouse } from 'towerjs/gatehouse'
 | `proxy(options?)` | Creates the proxy middleware — see [Protected Routes](/docs/gatehouse/protected-routes) |
 | `from(request)`   | Creates a per-request instance                                                          |
 | `migrate()`       | Runs the auth schema migration                                                          |
-| `provider`        | The underlying Better Auth adapter                                                      |
+| `provider`        | Raw provider instance — escape hatch only, not part of the stable contract              |
 | `routes`          | Raw `GET` / `POST` route handlers                                                       |
 
 ## The per-request instance
@@ -67,6 +67,7 @@ await gh.requireUser() // session or AuthenticationError
 await gh.sessions.list()
 await gh.sessions.revoke(token)
 await gh.sessions.revokeOther()
+await gh.sessions.revokeAll()
 await gh.sessions.signOut()
 ```
 
@@ -118,15 +119,20 @@ await gh.identities.getAccessToken(providerId)
 await gh.passkeys.list()
 await gh.passkeys.update(id, { name })
 await gh.passkeys.delete(id)
+
+// WebAuthn ceremony
+await gh.passkeys.generateRegistrationOptions(params?)  // navigator.credentials.create({ publicKey: opts })
+await gh.passkeys.verifyRegistration({ response, name? }) // completes registration, returns the passkey
+await gh.passkeys.generateAuthenticationOptions()        // navigator.credentials.get({ publicKey: opts })
+await gh.passkeys.verifyAuthentication({ response })     // verifies the credential, returns { user, session }
 ```
 
-Raw WebAuthn endpoints (`generatePasskeyRegistrationOptions`, `verifyPasskeyRegistration`, ...) are on `gh.api` — see [Passkeys](/docs/gatehouse/passkeys).
+See [Passkeys](/docs/gatehouse/passkeys) for the full ceremony flow.
 
 ### Two-factor
 
 ```ts
 await gh.totp.enable(password) // { totpURI, backupCodes }
-await gh.totp.uri(password) // TOTP URI only
 await gh.totp.verify({ code, trustDevice })
 await gh.totp.disable(password)
 await gh.totp.otp.send({ trustDevice })
@@ -173,7 +179,6 @@ await gh.apiKeys.get(keyId)
 await gh.apiKeys.update(id, params)
 await gh.apiKeys.delete(id)
 await gh.apiKeys.verify({ key })
-await gh.apiKeys.deleteAllExpired()
 ```
 
 ### Admin

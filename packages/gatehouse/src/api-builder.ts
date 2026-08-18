@@ -1,5 +1,5 @@
-import { mapUser } from './map-user.js'
-import type { SignInResult } from './types.js'
+import { mapSession, mapUser } from './map-user.js'
+import type { Session, SignInResult } from './types.js'
 
 // ─── Mapping: Better Auth method → Gatehouse path ─────────────────
 // Every path is a dot-separated sequence of keys.
@@ -49,7 +49,6 @@ const MAPPINGS: Mapping[] = [
   { path: 'sessions.revoke', source: 'revokeSession', verb: 'POST', build: (h, token) => body(h, { token }) },
   { path: 'sessions.revokeOther', source: 'revokeOtherSessions', verb: 'POST' },
   { path: 'sessions.revokeAll', source: 'revokeSessions', verb: 'POST' },
-  { path: 'sessions.update', source: 'updateSession', verb: 'POST' },
 
   // ── Account (self-service) ──────────────────────────────────────
   { path: 'account.update', source: 'updateUser', verb: 'POST' },
@@ -75,20 +74,10 @@ const MAPPINGS: Mapping[] = [
   // ── Email OTP ───────────────────────────────────────────────────
   { path: 'email.otp.send', source: 'sendVerificationOTP', verb: 'POST' },
   { path: 'email.otp.confirm', source: 'verifyEmailOTP', verb: 'POST' },
-  { path: 'email.otp.verifyEmail', source: 'verifyEmailOTP', verb: 'POST' },
-  { path: 'email.otp.check', source: 'checkVerificationOTP', verb: 'POST' },
-  { path: 'email.otp.forgotPassword', source: 'forgetPasswordEmailOTP', verb: 'POST' },
-  { path: 'email.otp.requestChange', source: 'requestEmailChangeEmailOTP', verb: 'POST' },
-  { path: 'email.otp.confirmChange', source: 'changeEmailEmailOTP', verb: 'POST' },
-  { path: 'email.otp.requestReset', source: 'requestPasswordResetEmailOTP', verb: 'POST' },
-  { path: 'email.otp.resetPassword', source: 'resetPasswordEmailOTP', verb: 'POST' },
 
   // ── Phone OTP ───────────────────────────────────────────────────
   { path: 'phone.otp.send', source: 'sendPhoneNumberOTP', verb: 'POST' },
   { path: 'phone.otp.confirm', source: 'verifyPhoneNumber', verb: 'POST' },
-  { path: 'phone.verify', source: 'verifyPhoneNumber', verb: 'POST' },
-  { path: 'phone.otp.requestReset', source: 'requestPasswordResetPhoneNumber', verb: 'POST' },
-  { path: 'phone.otp.resetPassword', source: 'resetPasswordPhoneNumber', verb: 'POST' },
 
   // ── Passkeys ────────────────────────────────────────────────────
   { path: 'passkeys.list', source: 'listPasskeys', verb: 'GET' },
@@ -99,6 +88,14 @@ const MAPPINGS: Mapping[] = [
     build: (h, id, params) => body(h, { id, ...params }),
   },
   { path: 'passkeys.delete', source: 'deletePasskey', verb: 'POST', build: (h, id) => body(h, { id }) },
+  {
+    path: 'passkeys.generateRegistrationOptions',
+    source: 'generatePasskeyRegistrationOptions',
+    verb: 'GET',
+  },
+  { path: 'passkeys.verifyRegistration', source: 'verifyPasskeyRegistration', verb: 'POST' },
+  { path: 'passkeys.generateAuthenticationOptions', source: 'generatePasskeyAuthenticationOptions', verb: 'GET' },
+  { path: 'passkeys.verifyAuthentication', source: 'verifyPasskeyAuthentication', verb: 'POST' },
   // ── Users ───────────────────────────────────────────────────────
   { path: 'users.get', source: 'getUser', verb: 'GET', build: (h, id) => query(h, { id }) },
   { path: 'users.findByEmail', source: 'findUserByEmail', verb: 'GET', build: (h, email) => query(h, { email }) },
@@ -164,7 +161,6 @@ const MAPPINGS: Mapping[] = [
   },
   { path: 'apiKeys.delete', source: 'deleteApiKey', verb: 'POST', build: (h, id) => body(h, { keyId: id }) },
   { path: 'apiKeys.verify', source: 'verifyApiKey', verb: 'POST' },
-  { path: 'apiKeys.deleteAllExpired', source: 'deleteAllExpiredApiKeys', verb: 'POST' },
 
   // ── Identities (social providers) ───────────────────────────────
   { path: 'identities.list', source: 'listUserAccounts', verb: 'GET' },
@@ -205,7 +201,6 @@ const MAPPINGS: Mapping[] = [
     verb: 'POST',
     build: (h, p) => body(h, typeof p === 'string' ? { code: p } : (p ?? {})),
   },
-  { path: 'totp.uri', source: 'getTOTPURI', verb: 'POST', build: (h, password) => body(h, { password }) },
   { path: 'totp.otp.send', source: 'sendTwoFactorOTP', verb: 'POST' },
   { path: 'totp.otp.verify', source: 'verifyTwoFactorOTP', verb: 'POST' },
 
@@ -217,7 +212,6 @@ const MAPPINGS: Mapping[] = [
     build: (h, password) => body(h, typeof password === 'string' ? { password } : (password ?? {})),
   },
   { path: 'backupCodes.verify', source: 'verifyBackupCode', verb: 'POST', build: (h, code) => body(h, { code }) },
-  { path: 'backupCodes.view', source: 'viewBackupCodes', verb: 'POST' },
 
   // ── Organizations ───────────────────────────────────────────────
   { path: 'organizations.create', source: 'createOrganization', verb: 'POST' },
@@ -246,7 +240,6 @@ const MAPPINGS: Mapping[] = [
     verb: 'POST',
     build: (h, id) => body(h, { organizationId: id }),
   },
-  { path: 'organizations.checkSlug', source: 'checkOrganizationSlug', verb: 'POST' },
 
   // Members
   {
@@ -334,74 +327,6 @@ const MAPPINGS: Mapping[] = [
   { path: 'organizations.checkPermission', source: 'hasPermission', verb: 'POST' },
 ]
 
-// Methods used internally by their wrappers — not user-facing.
-const SKIP_INTERNAL = new Set([
-  'getSession',
-  'callbackOAuth',
-  'deleteUserCallback',
-  'requestPasswordResetCallback',
-  'error',
-  'ok',
-])
-
-// Better Auth methods that use query params instead of body (raw passthrough only).
-const GET_METHODS = new Set([
-  'getSession',
-  'listSessions',
-  'listPasskeys',
-  'listOrganizations',
-  'listMembers',
-  'listInvitations',
-  'listOrgRoles',
-  'listUsers',
-  'getUser',
-  'getFullOrganization',
-  'getInvitation',
-  'getOrganization',
-  'getOrgRole',
-  'getApiKey',
-  'listApiKeys',
-  'listUserAccounts',
-  'listUserSessions',
-  'getAccessToken',
-  'getTOTPURI',
-  'accountInfo',
-  'getActiveMember',
-  'getActiveMemberRole',
-  'getVerificationOTP',
-  'listUserInvitations',
-  'viewBackupCodes',
-  'checkOrganizationSlug',
-])
-
-const BA_TOP_LEVEL = new Set(['body', 'query', 'asResponse', 'returnHeaders', 'returnStatus', 'headers', 'method'])
-
-/**
- * Wraps a Better Auth API object to auto-inject headers and route raw params
- * to query/body based on the HTTP verb convention. Used for the passthrough
- * `gatehouse.api` surface, where callers provide verb-level params directly.
- */
-export function buildProxiedApi(api: any, headers: Headers) {
-  return new Proxy(api, {
-    get(target: any, prop: string) {
-      if (typeof target[prop] !== 'function') return target[prop]
-      const useQuery = GET_METHODS.has(prop)
-      return (params?: Record<string, unknown>) => {
-        const callParams: Record<string, unknown> = { headers }
-        if (params && typeof params === 'object' && !Array.isArray(params)) {
-          const hasRaw = Object.keys(params).some((k) => BA_TOP_LEVEL.has(k))
-          if (hasRaw) {
-            Object.assign(callParams, params)
-          } else {
-            callParams[useQuery ? 'query' : 'body'] = params
-          }
-        }
-        return target[prop](callParams)
-      }
-    },
-  })
-}
-
 /**
  * Builds the nested, typed Gatehouse API from a Better Auth API object.
  *
@@ -431,6 +356,27 @@ function toSignInResult(raw: Record<string, unknown>): SignInResult {
   }
 }
 
+// Paths whose better-auth response ({ user, session }) should be normalized
+// into Tower's Session shape.
+const SESSION_RESULT_PATHS = new Set(['passkeys.verifyAuthentication'])
+
+function toSessionResult(raw: Record<string, unknown>): Session {
+  return {
+    user: mapUser(raw.user as Record<string, unknown>),
+    session: mapSession(raw.session as Record<string, unknown>),
+  }
+}
+
+function wrapResponse(path: string, fn: (...args: any[]) => Promise<unknown>): (...args: any[]) => Promise<any> {
+  if (SIGN_IN_RESULT_PATHS.has(path)) {
+    return async (...args: any[]) => toSignInResult((await fn(...args)) as Record<string, unknown>)
+  }
+  if (SESSION_RESULT_PATHS.has(path)) {
+    return async (...args: any[]) => toSessionResult((await fn(...args)) as Record<string, unknown>)
+  }
+  return fn
+}
+
 export function buildApi(api: Record<string, Function>, headers: Headers): Record<string, any> {
   const built: Record<string, any> = {}
 
@@ -449,28 +395,12 @@ export function buildApi(api: Record<string, Function>, headers: Headers): Recor
 
     if (mapping.build) {
       const builtFn = (...args: any[]) => fn(mapping.build!(headers, ...args))
-      current[key] = SIGN_IN_RESULT_PATHS.has(mapping.path)
-        ? async (...args: any[]) => toSignInResult((await builtFn(...args)) as Record<string, unknown>)
-        : builtFn
+      current[key] = wrapResponse(mapping.path, builtFn)
     } else {
       const putIn = mapping.verb === 'GET' ? 'query' : 'body'
       const bareFn = (params?: Record<string, unknown>) => fn({ headers, [putIn]: params ?? {} })
-      current[key] = SIGN_IN_RESULT_PATHS.has(mapping.path)
-        ? async (params?: Record<string, unknown>) => toSignInResult((await bareFn(params)) as Record<string, unknown>)
-        : bareFn
+      current[key] = wrapResponse(mapping.path, bareFn)
     }
-  }
-
-  const proxied = buildProxiedApi(api, headers)
-  const passthrough: Record<string, any> = {}
-  for (const key of Object.keys(api)) {
-    if (typeof api[key] !== 'function') continue
-    if (MAPPINGS.some((m) => m.source === key)) continue
-    if (SKIP_INTERNAL.has(key)) continue
-    passthrough[key] = (...args: any[]) => proxied[key](...args)
-  }
-  if (Object.keys(passthrough).length > 0) {
-    built.api = passthrough
   }
 
   return built

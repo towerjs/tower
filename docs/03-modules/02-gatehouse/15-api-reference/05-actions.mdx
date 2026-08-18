@@ -52,6 +52,7 @@ Field names map directly to `<input name="...">` attributes.
 | --------------------- | ----------- |
 | `revokeSession`       | `token`     |
 | `revokeOtherSessions` | —           |
+| `revokeAllSessions`   | —           |
 
 ## Account & password
 
@@ -89,7 +90,6 @@ Field names map directly to `<input name="...">` attributes.
 | `enableTwoFactor`     | `password` — returns `{ totpURI, backupCodes }` directly |
 | `verifyTwoFactor`     | `code`, `trustDevice`                                    |
 | `disableTwoFactor`    | `password`                                               |
-| `generateTOTP`        | `password`                                               |
 | `sendTwoFactorOTP`    | `trustDevice`                                            |
 | `verifyTwoFactorOTP`  | `code`, `trustDevice`                                    |
 | `generateBackupCodes` | `password` — returns new codes directly                  |
@@ -126,13 +126,12 @@ Field names map directly to `<input name="...">` attributes.
 
 ## API keys
 
-| Action                 | Form fields                                               |
-| ---------------------- | --------------------------------------------------------- |
-| `createApiKey`         | `name`, `expiresIn` — returns `{ ok: true }`, not the key |
-| `updateApiKey`         | `id`, `name`                                              |
-| `deleteApiKey`         | `id`                                                      |
-| `verifyApiKey`         | `key`                                                     |
-| `deleteExpiredApiKeys` | —                                                         |
+| Action         | Form fields                                               |
+| -------------- | --------------------------------------------------------- |
+| `createApiKey` | `name`, `expiresIn` — returns `{ ok: true }`, not the key |
+| `updateApiKey` | `id`, `name`                                              |
+| `deleteApiKey` | `id`                                                      |
+| `verifyApiKey` | `key`                                                     |
 
 ## Organizations
 

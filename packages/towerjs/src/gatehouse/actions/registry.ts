@@ -27,6 +27,7 @@ export const authActions: AuthActionConfig[] = [
   // ── Sessions ─────────────────────────────────────────────────────
   { name: 'revokeSession', path: 'sessions.revoke', fields: ['token'], idFirst: true },
   { name: 'revokeOtherSessions', path: 'sessions.revokeOther', noForm: true },
+  { name: 'revokeAllSessions', path: 'sessions.revokeAll', noForm: true },
 
   // ── Account ──────────────────────────────────────────────────────
   { name: 'updateProfile', path: 'account.update', fields: ['name', 'image'] },
@@ -73,14 +74,12 @@ export const authActions: AuthActionConfig[] = [
   { name: 'updateApiKey', path: 'apiKeys.update', fields: ['id', 'name'], idFirst: true },
   { name: 'deleteApiKey', path: 'apiKeys.delete', fields: ['id'], idFirst: true },
   { name: 'verifyApiKey', path: 'apiKeys.verify', fields: ['key'] },
-  { name: 'deleteExpiredApiKeys', path: 'apiKeys.deleteAllExpired', noForm: true },
 
   // ── Identities ───────────────────────────────────────────────────
   { name: 'unlinkAccount', path: 'identities.unlink', fields: ['providerId', 'accountId'] },
 
   // ── TOTP / 2FA ───────────────────────────────────────────────────
   { name: 'disableTwoFactor', path: 'totp.disable', fields: ['password'] },
-  { name: 'generateTOTP', path: 'totp.uri', fields: ['password'], idFirst: true },
   { name: 'sendTwoFactorOTP', path: 'totp.otp.send', fields: ['trustDevice'] },
   { name: 'verifyTwoFactorOTP', path: 'totp.otp.verify', fields: ['code', 'trustDevice'] },
 

@@ -56,6 +56,7 @@ export const {
   // Sessions
   revokeSession,
   revokeOtherSessions,
+  revokeAllSessions,
 
   // Account
   updateProfile,
@@ -102,14 +103,12 @@ export const {
   updateApiKey,
   deleteApiKey,
   verifyApiKey,
-  deleteExpiredApiKeys,
 
   // Identities
   unlinkAccount,
 
   // TOTP / 2FA
   disableTwoFactor,
-  generateTOTP,
   sendTwoFactorOTP,
   verifyTwoFactorOTP,
 

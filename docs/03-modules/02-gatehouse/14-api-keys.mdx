@@ -62,10 +62,9 @@ await gatehouse.apiKeys.list(userId, { sortBy: 'createdAt' })
 await gatehouse.apiKeys.get(keyId)
 await gatehouse.apiKeys.update(id, { name, expiresIn }) // rotate: shorten expiry or change permissions
 await gatehouse.apiKeys.delete(id)
-await gatehouse.apiKeys.deleteAllExpired()
 ```
 
-Actions: `updateApiKey` (`id`, `name`), `deleteApiKey` (`id`), `verifyApiKey` (`key`), `deleteExpiredApiKeys`.
+Actions: `updateApiKey` (`id`, `name`), `deleteApiKey` (`id`), `verifyApiKey` (`key`).
 
 ## Key properties
 
