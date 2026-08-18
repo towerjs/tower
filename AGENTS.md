@@ -103,10 +103,7 @@ pnpm check:deps   # Validate dependency rules across packages
 pnpm db:up        # Start the Postgres container (docker compose up -d --wait postgres)
 pnpm db:down      # Stop and delete the Postgres container and its volume
 pnpm test:e2e     # Provision Postgres + browser, run Playwright tests, tear everything down
-pnpm version:patch|minor|major  # Bump all publishable Tower packages in lockstep
-pnpm version:set <x.y.z>  # Bump to an explicit version (e.g. a prerelease)
 pnpm release:patch|minor|major  # Prepare a release end to end: branch, bump, commit, push, PR
-pnpm release:notes  # Print the current version's CHANGELOG section (release notes)
 ```
 
 Always prefer `pnpm build` over `turbo build` and `pnpm test` over `vitest run`. The package.json scripts are the canonical interface.
@@ -117,7 +114,7 @@ The `pnpm build` pipeline runs monorepo packages first (via Turborepo), then the
 
 All Tower packages are versioned in lockstep, so the release is a single "Tower vX.Y.Z" event. The flow is:
 
-1. `pnpm release:patch|minor|major` — verifies the working tree is clean, the current branch is `main` and up to date with `origin/main`, and no release PR is already open. It then creates branch `release/vX.Y.Z`, bumps every publishable package (delegating to `scripts/version-packages.mjs`), promotes the `## [Unreleased]` CHANGELOG section to `## [X.Y.Z] - <date>`, re-syncs the pnpm lockfile, commits as `vX.Y.Z`, pushes the branch, and opens a PR titled `vX.Y.Z`. `pnpm version:patch|minor|major` (or `pnpm version:set <x.y.z>` for an explicit version) is the lower-level command that only modifies the local tree; `release:*` requires the `gh` CLI and never publishes anything.
+1. `pnpm release:patch|minor|major` — verifies the working tree is clean, the current branch is `main` and up to date with `origin/main`, and no release PR is already open. It then creates branch `release/vX.Y.Z`, bumps every publishable package (delegating to `scripts/version-packages.mjs`), promotes the `## [Unreleased]` CHANGELOG section to `## [X.Y.Z] - <date>`, re-syncs the pnpm lockfile, commits as `vX.Y.Z`, pushes the branch, and opens a PR titled `vX.Y.Z`. `release:*` requires the `gh` CLI and never publishes anything.
 2. Review and merge the PR. A squash merge commits as `vX.Y.Z (#NNN)` on `main`.
 3. Merging that PR triggers the **Release** GitHub Action (`.github/workflows/release.yml`): it verifies the merged package versions and CHANGELOG entry match the commit title, builds, publishes all packages to npm, pushes the `vX.Y.Z` git tag, and creates the GitHub Release from the version's CHANGELOG section.
 

@@ -49,7 +49,9 @@ export function nextVersion(current, bump) {
 async function main() {
   const arg = process.argv[2]
   if (!arg) {
-    console.error('Usage: pnpm version:patch|minor|major   or   pnpm version:set <x.y.z>')
+    console.error(
+      'Usage: node scripts/version-packages.mjs patch|minor|major   or   node scripts/version-packages.mjs <x.y.z>'
+    )
     process.exit(1)
   }
 

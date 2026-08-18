@@ -18,14 +18,9 @@
     "check:deps": "npx tsx scripts/check-dependencies.ts",
     "check:versions": "node scripts/check-release-versions.mjs",
     "check:initial-version": "node scripts/check-release-versions.mjs --initial",
-    "version:patch": "node scripts/version-packages.mjs patch",
-    "version:minor": "node scripts/version-packages.mjs minor",
-    "version:major": "node scripts/version-packages.mjs major",
-    "version:set": "node scripts/version-packages.mjs",
     "release:patch": "node scripts/release.mjs patch",
     "release:minor": "node scripts/release.mjs minor",
-    "release:major": "node scripts/release.mjs major",
-    "release:notes": "node scripts/release-notes.mjs"
+    "release:major": "node scripts/release.mjs major"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
