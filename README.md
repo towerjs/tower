@@ -18,9 +18,11 @@
 
 ---
 
-Tower gives JavaScript and TypeScript applications a consistent architecture for the parts of an application that sit beyond the web framework — database, authentication, communication, and more. It brings these capabilities together as integrated modules with consistent APIs, configuration, and tooling.
+Tower gives JavaScript applications a consistent way to build the application capabilities that sit beyond the web framework: databases, authentication, communication, and more.
 
-Choose the modules you need and the providers behind them. Tower works alongside your web framework rather than replacing it, so your application is built around Tower’s architecture without being tied to the infrastructure underneath.
+Tower provides the architecture, APIs, conventions, and tooling that sit between your application and its underlying infrastructure. Your application is built around Tower, while infrastructure choices remain replaceable.
+
+Tower works alongside your web framework rather than replacing it.
 
 ## Quick start
 
@@ -28,9 +30,11 @@ Choose the modules you need and the providers behind them. Tower works alongside
 pnpm create tower
 ```
 
-Follow the prompts to configure your application. Tower scaffolds the project structure, configuration, environment contract, and selected integrations for you.
+Follow the prompts to configure your application. Tower creates the project structure, configuration, environment contract, and selected integrations for you. Then run `pnpm dev`.
 
 ## What it looks like
+
+Define the application once:
 
 ```ts
 // tower.config.ts
@@ -55,43 +59,84 @@ export default defineTower({
 })
 ```
 
-Then use the modules directly in your application:
+Use Tower's application APIs directly:
 
 ```ts
 import { gatehouse } from 'towerjs/gatehouse'
 import { vault } from 'towerjs/vault'
 
 const session = await gatehouse.getSession()
+
 const users = await vault.selectFrom('user').selectAll().execute()
 ```
 
-Tower currently supports **Next.js (App Router)**.
-
-## Modules
-
-| Module                                                                       | Description                                                         | Providers                           |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
-| [Foundation](https://github.com/towerjs/tower/tree/main/packages/foundation) | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
-| [Blueprint](https://github.com/towerjs/tower/tree/main/packages/blueprint)   | Application definition, module registration, context                | —                                   |
-| [Vault](https://github.com/towerjs/tower/tree/main/packages/vault)           | PostgreSQL database API with Kysely, migrations, and seeds          | Neon, pg                            |
-| [Gatehouse](https://github.com/towerjs/tower/tree/main/packages/gatehouse)   | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
-| [Courier](https://github.com/towerjs/tower/tree/main/packages/courier)       | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
-| [Scribe](https://github.com/towerjs/tower/tree/main/packages/scribe)         | CLI for scaffolding and managing Tower applications                 | —                                   |
-
-More modules for AI, storage, realtime, jobs, billing, search, and observability are planned.
+Your application code uses Tower. The infrastructure underneath is configured separately.
 
 ## Why Tower?
 
-Most JavaScript frameworks handle the web layer well but leave the rest of your application architecture to you. Tower provides a consistent way to build the application around it.
+A web framework gives you the foundation for building and serving a web application. The rest is usually left to a collection of libraries, providers, and project-specific conventions.
 
-- **Provider-agnostic** — Choose supported infrastructure without coupling your application to the provider.
-- **Framework-first** — Works alongside your web framework rather than replacing it.
-- **Composable** — Use the modules you need while keeping them part of one application architecture.
-- **Type-safe** — Built for TypeScript with strict types throughout.
+That often leads to an application like:
+
+```text
+Framework
+├── database library
+├── authentication library
+├── email provider
+├── storage SDK
+├── realtime service
+├── job system
+└── your own conventions
+```
+
+Tower brings those application concerns into one architecture.
+
+### Consistent architecture
+
+Tower provides conventions and APIs for common application capabilities so they work together as parts of the same application.
+
+### Replaceable foundations
+
+Your application uses Tower's APIs rather than being built directly around a particular infrastructure provider. Supported providers can change without forcing your application architecture to change with them.
+
+### Framework-first
+
+Tower works with your web framework instead of replacing it. It provides the application layer around the framework.
+
+### Type-safe
+
+Tower is built for TypeScript, with typed configuration and APIs throughout the application.
+
+### Opinionated by design
+
+Tower is not an attempt to abstract every possible technology. It provides a curated set of integrations and conventions that work well together, while leaving the underlying infrastructure choices open where they matter.
+
+## Modules
+
+| Module                                                                       | Description                                                                          | Integrations                        |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------- |
+| [Foundation](https://github.com/towerjs/tower/tree/main/packages/foundation) | Application composition, lifecycle, configuration, and shared primitives             | —                                   |
+| [Blueprint](https://github.com/towerjs/tower/tree/main/packages/blueprint)   | Application definition, module registration, and provider configuration              | —                                   |
+| [Vault](https://github.com/towerjs/tower/tree/main/packages/vault)           | Database API, queries, migrations, and transactions                                  | PostgreSQL, Neon, Kysely            |
+| [Gatehouse](https://github.com/towerjs/tower/tree/main/packages/gatehouse)   | Authentication and authorization                                                     | Better Auth                         |
+| [Courier](https://github.com/towerjs/tower/tree/main/packages/courier)       | Communication layer for email, SMS, push notifications, and other messaging services | Resend, SES, SMTP, Twilio, Web Push |
+| [Scribe](https://github.com/towerjs/tower/tree/main/packages/scribe)         | CLI for creating and managing Tower applications                                     | —                                   |
+
+More application modules for storage, realtime, jobs, billing, search, and observability are planned.
+
+## Framework support
+
+Tower currently supports **Next.js App Router**.
+
+Tower is designed to work alongside the framework rather than replace it. Framework-specific integrations adapt Tower's application model to the runtime and conventions of the framework.
+
+## Example application
+
+The [Next.js example](https://github.com/towerjs/tower/tree/main/examples/with-nextjs) is a complete Tower application demonstrating authentication, email verification, sessions, profile management, organizations, 2FA, passkeys, and other application features.
 
 ## Contributing
 
-If you’re interested in contributing, please read our [contributing guide](https://github.com/towerjs/tower/blob/main/CONTRIBUTING.md) first.
+See the [contributing guide](https://github.com/towerjs/tower/blob/main/CONTRIBUTING.md) to get started.
 
 ## Status
 
