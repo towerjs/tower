@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Bumps every publishable Tower package to the same version and moves the
 // CHANGELOG [Unreleased] section under the new version header. Never commits,
-// tags, pushes, or publishes — Git operations belong to the release workflow.
+// tags, pushes, or publishes — Git operations belong to scripts/release.mjs
+// and the release workflow.
 //
 // Usage:
 //   node scripts/version-packages.mjs patch|minor|major   (relative bump)
@@ -9,12 +10,13 @@
 import { execSync } from 'node:child_process'
 import { readFile, readdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const root = resolve(import.meta.dirname, '..')
 
 const EXPLICIT_VERSION = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/
 
-async function findPublishablePackages() {
+export async function findPublishablePackages() {
   const files = ['package.json']
   for (const workspace of ['packages', 'examples']) {
     try {
@@ -36,7 +38,7 @@ async function findPublishablePackages() {
   return packages
 }
 
-function nextVersion(current, bump) {
+export function nextVersion(current, bump) {
   const [major, minor, patch] = current.split('.').map(Number)
   if (bump === 'major') return `${major + 1}.0.0`
   if (bump === 'minor') return `${major}.${minor + 1}.0`
@@ -44,51 +46,57 @@ function nextVersion(current, bump) {
   throw new Error(`Unknown bump: ${bump}`)
 }
 
-const arg = process.argv[2]
-if (!arg) {
-  console.error('Usage: pnpm version:patch|minor|major   or   pnpm version:set <x.y.z>')
-  process.exit(1)
+async function main() {
+  const arg = process.argv[2]
+  if (!arg) {
+    console.error('Usage: pnpm version:patch|minor|major   or   pnpm version:set <x.y.z>')
+    process.exit(1)
+  }
+
+  const packages = await findPublishablePackages()
+  const current = packages[0].pkg.version
+  const versions = new Set(packages.map(({ pkg }) => pkg.version))
+  if (versions.size !== 1) {
+    console.error(`Expected all publishable packages to share one version, found ${versions.size}:`)
+    for (const { pkg } of packages) console.error(`  ${pkg.name} ${pkg.version}`)
+    process.exit(1)
+  }
+
+  const target = EXPLICIT_VERSION.test(arg) ? arg : nextVersion(current, arg)
+  if (target === current) {
+    console.error(`Target version ${target} is the current version`)
+    process.exit(1)
+  }
+
+  const changelogFile = resolve(root, 'CHANGELOG.md')
+  const changelog = await readFile(changelogFile, 'utf8')
+  if (!changelog.includes('## [Unreleased]')) {
+    throw new Error('CHANGELOG.md has no "## [Unreleased]" section to promote')
+  }
+
+  for (const { file, pkg } of packages) {
+    pkg.version = target
+    await writeFile(resolve(root, file), `${JSON.stringify(pkg, null, 2)}\n`)
+  }
+
+  const date = new Date().toISOString().slice(0, 10)
+  await writeFile(changelogFile, changelog.replace('## [Unreleased]', `## [${target}] - ${date}`))
+
+  execSync('pnpm install', { cwd: root, stdio: 'inherit' })
+
+  const updated = await findPublishablePackages()
+  const mismatches = updated.filter(({ pkg }) => pkg.version !== target)
+  if (mismatches.length > 0) {
+    console.error(`Expected all publishable packages to be ${target}, but found:`)
+    for (const { pkg } of mismatches) console.error(`  ${pkg.name} ${pkg.version}`)
+    process.exit(1)
+  }
+
+  console.log(`Versioning Tower\n\n  ${current} → ${target}\n`)
+  for (const { pkg } of updated) console.log(`  ${pkg.name.padEnd(28)} ${pkg.version}`)
+  console.log(`\nDone. Review the diff, then open a release/v${target} PR.`)
 }
 
-const packages = await findPublishablePackages()
-const current = packages[0].pkg.version
-const versions = new Set(packages.map(({ pkg }) => pkg.version))
-if (versions.size !== 1) {
-  console.error(`Expected all publishable packages to share one version, found ${versions.size}:`)
-  for (const { pkg } of packages) console.error(`  ${pkg.name} ${pkg.version}`)
-  process.exit(1)
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
 }
-
-const target = EXPLICIT_VERSION.test(arg) ? arg : nextVersion(current, arg)
-if (target === current) {
-  console.error(`Target version ${target} is the current version`)
-  process.exit(1)
-}
-
-const changelogFile = resolve(root, 'CHANGELOG.md')
-const changelog = await readFile(changelogFile, 'utf8')
-if (!changelog.includes('## [Unreleased]')) {
-  throw new Error('CHANGELOG.md has no "## [Unreleased]" section to promote')
-}
-
-for (const { file, pkg } of packages) {
-  pkg.version = target
-  await writeFile(resolve(root, file), `${JSON.stringify(pkg, null, 2)}\n`)
-}
-
-const date = new Date().toISOString().slice(0, 10)
-await writeFile(changelogFile, changelog.replace('## [Unreleased]', `## [${target}] - ${date}`))
-
-execSync('pnpm install', { cwd: root, stdio: 'inherit' })
-
-const updated = await findPublishablePackages()
-const mismatches = updated.filter(({ pkg }) => pkg.version !== target)
-if (mismatches.length > 0) {
-  console.error(`Expected all publishable packages to be ${target}, but found:`)
-  for (const { pkg } of mismatches) console.error(`  ${pkg.name} ${pkg.version}`)
-  process.exit(1)
-}
-
-console.log(`Versioning Tower\n\n  ${current} → ${target}\n`)
-for (const { pkg } of updated) console.log(`  ${pkg.name.padEnd(28)} ${pkg.version}`)
-console.log(`\nDone. Review the diff, then open a release/v${target} PR.`)

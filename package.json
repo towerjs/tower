@@ -22,6 +22,9 @@
     "version:minor": "node scripts/version-packages.mjs minor",
     "version:major": "node scripts/version-packages.mjs major",
     "version:set": "node scripts/version-packages.mjs",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major",
     "release:notes": "node scripts/release-notes.mjs"
   },
   "devDependencies": {
