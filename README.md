@@ -1,6 +1,6 @@
 # Tower
 
-[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Tests](https://img.shields.io/github/actions/workflow/status/hyphenzero/tower/ci.yml?style=for-the-badge&labelColor=000&label=tests)](https://github.com/hyphenzero/tower/actions/workflows/ci.yml)
+[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Tests](https://img.shields.io/github/actions/workflow/status/towerjs/tower/ci.yml?style=for-the-badge&labelColor=000&label=tests)](https://github.com/towerjs/tower/actions/workflows/ci.yml)
 
 Tower is a composable, monolithic stack for JavaScript and TypeScript applications. It provides the application-level infrastructure most products need — database access, authentication, and communication — as composable modules that live alongside your web framework instead of replacing it. Choose the modules you need, and the providers behind them.
 
@@ -94,4 +94,4 @@ MIT
 
 ## Contributing
 
-If you're interested in contributing to Tower, please read our [contributing docs](https://github.com/hyphenzero/tower/blob/main/CONTRIBUTING.md) **before submitting a pull request**.
+If you're interested in contributing to Tower, please read our [contributing docs](https://github.com/towerjs/tower/blob/main/CONTRIBUTING.md) **before submitting a pull request**.

@@ -39,10 +39,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyphenzero/tower.git",
+    "url": "https://github.com/towerjs/tower.git",
     "directory": "packages/courier"
   },
-  "homepage": "https://github.com/hyphenzero/tower#readme",
+  "homepage": "https://github.com/towerjs/tower#readme",
   "engines": {
     "node": ">=22.6"
   }

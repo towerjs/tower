@@ -34,11 +34,11 @@ pnpm dev
 
 ## Bug fixes
 
-If you've found a bug in Tower that you'd like to fix, [submit a pull request](https://github.com/hyphenzero/tower/pulls) with your changes. Include a helpful description of the problem and how your changes address it, and provide tests so we can verify the fix works as expected.
+If you've found a bug in Tower that you'd like to fix, [submit a pull request](https://github.com/towerjs/tower/pulls) with your changes. Include a helpful description of the problem and how your changes address it, and provide tests so we can verify the fix works as expected.
 
 ## New features
 
-If there's a new feature you'd like to see added to Tower, [share your idea with us](https://github.com/hyphenzero/tower/discussions/new?category=ideas) in our discussion forum to get it on our radar as something to consider for a future release before starting work on it.
+If there's a new feature you'd like to see added to Tower, [share your idea with us](https://github.com/towerjs/tower/discussions/new?category=ideas) in our discussion forum to get it on our radar as something to consider for a future release before starting work on it.
 
 **Please note that we don't often accept pull requests for new features.** Adding a new feature to Tower requires us to think through the entire problem ourselves to make sure we agree with the proposed API, which means the feature needs to be high on our own priority list for us to be able to give it the attention it needs.
 
@@ -46,7 +46,7 @@ If you open a pull request for a new feature, we're likely to close it not becau
 
 ## Coding standards
 
-Our code formatting rules are defined in the `"prettier"` section of [package.json](https://github.com/hyphenzero/tower/blob/main/package.json). You can check your code against these standards by running:
+Our code formatting rules are defined in the `"prettier"` section of [package.json](https://github.com/towerjs/tower/blob/main/package.json). You can check your code against these standards by running:
 
 ```sh
 pnpm lint
