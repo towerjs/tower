@@ -1,15 +1,15 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [closed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       force-publish:
         description: >-
-          Publish the current main branch to npm even when the push was not a
-          "release/vX.Y.Z" merge. Used for the initial release or to retry a
+          Publish the current main branch to npm even when the last event was
+          not a release PR merge. Used for the initial release or to retry a
           failed publish.
         type: boolean
         required: false
@@ -20,7 +20,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -43,34 +43,64 @@ jobs:
 
       - run: pnpm check:versions
 
-      - name: Decide whether to publish
+      # The authoritative release signal is PR metadata, not the commit title:
+      # a merged PR whose head branch is exactly release/vX.Y.Z with title
+      # vX.Y.Z. Every convention must hold or nothing is published.
+      - name: Determine whether this is a release
         id: release
         env:
           FORCE_PUBLISH: ${{ github.event.inputs.force-publish || 'false' }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          # Only publish on a release merge (or an explicit force-publish).
-          # The release PR is created by `pnpm release:patch|minor|major` with
-          # title "vX.Y.Z", so a squash merge commits as "vX.Y.Z (#123)".
           publish="false"
           version=""
-          head_msg="$(git log -1 --pretty=%s)"
-          if [[ "$head_msg" =~ ^v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?) ]]; then
-            publish="true"
-            version="${BASH_REMATCH[1]}"
-          fi
+          reason=""
           if [ "$FORCE_PUBLISH" = "true" ]; then
             publish="true"
             version="$(node -e "console.log(require('./packages/towerjs/package.json').version)")"
+            reason="force-publish requested"
+          elif [ "$PR_MERGED" != "true" ]; then
+            reason="PR was closed without merging"
+          elif [ "$PR_FROM_FORK" = "true" ]; then
+            reason="PR originates from a fork"
+          elif [[ ! "$HEAD_REF" =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            reason="head branch \"${HEAD_REF:-<none>}\" is not release/vX.Y.Z"
+          elif [ "$PR_TITLE" != "v${BASH_REMATCH[1]}" ]; then
+            reason="PR title \"$PR_TITLE\" does not match v${BASH_REMATCH[1]}"
+          else
+            publish="true"
+            version="${BASH_REMATCH[1]}"
+            reason="release/v${version} merged as v${version} (#$PR_NUMBER)"
           fi
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+
+      - name: Release decision
+        run: echo "${{ steps.release.outputs.reason }}"
+
+      # The commit title is historical metadata, not the release trigger, but
+      # it must be consistent with the PR convention (squash merge).
+      - name: Verify commit title
+        if: steps.release.outputs.publish == 'true'
+        run: |
+          expected="v${{ steps.release.outputs.version }} (#${{ github.event.pull_request.number }})"
+          actual="$(git log -1 --pretty=%s)"
+          if [ "$actual" != "$expected" ]; then
+            echo "Merge commit title \"$actual\" does not match \"$expected\"" >&2
+            exit 1
+          fi
 
       - name: Verify version and changelog
         if: steps.release.outputs.publish == 'true'
         run: |
           version="$(node -e "console.log(require('./packages/towerjs/package.json').version)")"
           if [ "$version" != "${{ steps.release.outputs.version }}" ]; then
-            echo "Merge claims v${{ steps.release.outputs.version }} but packages are at $version" >&2
+            echo "Release claims v${{ steps.release.outputs.version }} but packages are at $version" >&2
             exit 1
           fi
           if ! grep -q "^## \[$version\] - " CHANGELOG.md; then
@@ -87,6 +117,7 @@ jobs:
         # Tokenless publishing via npm trusted publishing (OIDC): the workflow
         # declares id-token: write and each package has a trusted publisher for
         # this workflow file configured on npmjs.com. No NPM_TOKEN is stored.
+        # Same-repo pull_request events receive the id-token; fork PRs do not.
         run: pnpm -r publish --no-git-checks
 
       - name: Tag and push v${{ steps.release.outputs.version }}
