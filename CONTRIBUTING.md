@@ -21,7 +21,7 @@ Build all packages:
 pnpm build
 ```
 
-Before making changes, read [AGENTS.md](AGENTS.md) for the repository's architecture, package boundaries, dependency rules, and development conventions.
+Before making changes, read [AGENTS.md](https://github.com/towerjs/tower/blob/main/AGENTS.md) for the repository's architecture, package boundaries, dependency rules, and development conventions.
 
 ## Development
 

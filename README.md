@@ -1,8 +1,8 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset=".github/logo-light.svg">
-    <img alt="Tower" src=".github/logo-light.svg" height="70" style="max-width: 100%;">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/towerjs/tower/main/.github/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/towerjs/tower/main/.github/logo-light.svg">
+    <img alt="Tower" src="https://raw.githubusercontent.com/towerjs/tower/main/.github/logo-light.svg" height="70" style="max-width: 100%;">
   </picture>
 </div>
 
@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/towerjs"><img src="https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000" alt="NPM version"></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000" alt="License"></a>
+  <a href="https://github.com/towerjs/tower/blob/main/LICENSE.md"><img src="https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000" alt="License"></a>
   <a href="https://github.com/towerjs/tower/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/towerjs/tower/ci.yml?style=for-the-badge&labelColor=000&label=tests" alt="Tests"></a>
 </p>
 
@@ -69,14 +69,14 @@ Tower currently supports **Next.js (App Router)**.
 
 ## Modules
 
-| Module                             | Description                                                         | Providers                           |
-| ---------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
-| [Foundation](/packages/foundation) | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
-| [Blueprint](/packages/blueprint)   | Application definition, module registration, context                | —                                   |
-| [Vault](/packages/vault)           | PostgreSQL database API with Kysely, migrations, and seeds          | Neon, pg                            |
-| [Gatehouse](/packages/gatehouse)   | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
-| [Courier](/packages/courier)       | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
-| [Scribe](/packages/scribe)         | CLI for scaffolding and managing Tower applications                 | —                                   |
+| Module                                                                       | Description                                                         | Providers                           |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
+| [Foundation](https://github.com/towerjs/tower/tree/main/packages/foundation) | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
+| [Blueprint](https://github.com/towerjs/tower/tree/main/packages/blueprint)   | Application definition, module registration, context                | —                                   |
+| [Vault](https://github.com/towerjs/tower/tree/main/packages/vault)           | PostgreSQL database API with Kysely, migrations, and seeds          | Neon, pg                            |
+| [Gatehouse](https://github.com/towerjs/tower/tree/main/packages/gatehouse)   | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
+| [Courier](https://github.com/towerjs/tower/tree/main/packages/courier)       | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
+| [Scribe](https://github.com/towerjs/tower/tree/main/packages/scribe)         | CLI for scaffolding and managing Tower applications                 | —                                   |
 
 More modules for AI, storage, realtime, jobs, billing, search, and observability are planned.
 
@@ -91,7 +91,7 @@ Most JavaScript frameworks handle the web layer well but leave the rest of your 
 
 ## Contributing
 
-If you’re interested in contributing, please read our [contributing guide](CONTRIBUTING.md) first.
+If you’re interested in contributing, please read our [contributing guide](https://github.com/towerjs/tower/blob/main/CONTRIBUTING.md) first.
 
 ## Status
 
@@ -99,4 +99,4 @@ Tower is in active development. APIs may change as we approach 1.0.
 
 ## License
 
-[MIT](CONTRIBUTING.md)
+[MIT](https://github.com/towerjs/tower/blob/main/LICENSE.md)
