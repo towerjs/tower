@@ -1,10 +1,26 @@
-# Tower
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/logo-light.svg">
+    <img alt="Tower" src=".github/logo-light.svg" height="70" style="max-width: 100%;">
+  </picture>
+</div>
 
-[![NPM version](https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000)](https://www.npmjs.com/package/towerjs) [![License](https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000)](LICENSE.md) [![Tests](https://img.shields.io/github/actions/workflow/status/towerjs/tower/ci.yml?style=for-the-badge&labelColor=000&label=tests)](https://github.com/towerjs/tower/actions/workflows/ci.yml)
+<p align="center">
+  The composable, monolithic stack for JavaScript.
+</p>
 
-Tower is a composable, monolithic stack for JavaScript and TypeScript applications. It provides the application-level infrastructure most products need — database access, authentication, and communication — as composable modules that live alongside your web framework instead of replacing it. Choose the modules you need, and the providers behind them.
+<p align="center">
+  <a href="https://www.npmjs.com/package/towerjs"><img src="https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000" alt="NPM version"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000" alt="License"></a>
+  <a href="https://github.com/towerjs/tower/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/towerjs/tower/ci.yml?style=for-the-badge&labelColor=000&label=tests" alt="Tests"></a>
+</p>
 
-Tower separates application structure from implementation details, so the technology underneath a module can evolve without forcing you to rethink your application.
+---
+
+Tower gives JavaScript and TypeScript applications a consistent architecture for the parts of an application that sit beyond the web framework — database, authentication, communication, and more. It brings these capabilities together as integrated modules with consistent APIs, configuration, and tooling.
+
+Choose the modules you need and the providers behind them. Tower works alongside your web framework rather than replacing it, so your application is built around Tower’s architecture without being tied to the infrastructure underneath.
 
 ## Quick start
 
@@ -12,11 +28,9 @@ Tower separates application structure from implementation details, so the techno
 pnpm create tower
 ```
 
-Follow the prompts to choose your modules — Vault (database), Gatehouse (auth), Courier (email/SMS/push). A fully configured project is scaffolded with `tower.config.ts`, `.env.example`, the auth proxy, auth API routes, and database setup.
+Follow the prompts to configure your application. Tower scaffolds the project structure, configuration, environment contract, and selected integrations for you.
 
 ## What it looks like
-
-Tower configures itself in one file and keeps environment-specific values out:
 
 ```ts
 // tower.config.ts
@@ -24,74 +38,65 @@ import { defineTower, env } from 'towerjs/blueprint'
 
 export default defineTower({
   modules: {
-    vault: { provider: 'neon', connectionString: env.string('DATABASE_URL') },
-    gatehouse: { provider: 'better-auth' },
-    courier: { email: { provider: 'resend', apiKey: env.string('RESEND_API_KEY') } },
+    vault: {
+      provider: 'neon',
+      connectionString: env.string('DATABASE_URL'),
+    },
+    gatehouse: {
+      provider: 'better-auth',
+    },
+    courier: {
+      email: {
+        provider: 'resend',
+        apiKey: env.string('RESEND_API_KEY'),
+      },
+    },
   },
 })
 ```
 
-Then import the modules you need, anywhere in your app:
+Then use the modules directly in your application:
 
 ```ts
-// src/app/api/users/route.ts
 import { gatehouse } from 'towerjs/gatehouse'
 import { vault } from 'towerjs/vault'
 
-export async function GET() {
-  const session = await gatehouse.getSession()
-  const users = await vault.selectFrom('user').selectAll().execute()
-  return Response.json({ session, users })
-}
+const session = await gatehouse.getSession()
+const users = await vault.selectFrom('user').selectAll().execute()
 ```
 
-Each module is lazy-initialized, provider-agnostic, and works alongside your framework — not instead of it.
-
-### Configuration contract
-
-- `tower.config.ts` defines which modules and providers the application uses. It must not contain secrets or environment-specific credentials.
-- `.env` and deployment environment variables provide values such as `DATABASE_URL`, `GATEHOUSE_SECRET`, and provider API keys.
-- `.env.example` is the generated, authoritative contract for the selected modules and providers. It is safe to commit and contains names, hints, and placeholders — not secrets.
-
-Run `tower about` for a diagnostic view of the application, runtime, enabled modules, providers, and whether required environment variables are present. Values are never printed.
-
-Currently supports **Next.js** (App Router).
+Tower currently supports **Next.js (App Router)**.
 
 ## Modules
 
-| Module                                 | Description                                                         | Providers                           |
-| -------------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
-| [Foundation](/packages/foundation)     | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
-| [Blueprint](/packages/blueprint)       | Application definition, module registration, context                | —                                   |
-| [Vault](/packages/vault)               | PostgreSQL database API with Kysely, migrations, and seeds          | Neon, pg                            |
-| [Gatehouse](/packages/gatehouse)       | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
-| [Courier](/packages/courier)           | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
-| [Scribe](/packages/scribe)             | CLI for scaffolding and managing Tower applications                 | —                                   |
-| [create-tower](/packages/create-tower) | Quick-start project scaffolding                                     | —                                   |
-| [towerjs](/packages/towerjs)           | Meta-package that bundles all Tower modules                         | —                                   |
+| Module                             | Description                                                         | Providers                           |
+| ---------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
+| [Foundation](/packages/foundation) | Core runtime, lifecycle, DI, config discovery, runtime detection    | —                                   |
+| [Blueprint](/packages/blueprint)   | Application definition, module registration, context                | —                                   |
+| [Vault](/packages/vault)           | PostgreSQL database API with Kysely, migrations, and seeds          | Neon, pg                            |
+| [Gatehouse](/packages/gatehouse)   | Full auth — social, magic links, OTP, passkeys, 2FA, orgs, API keys | Better Auth                         |
+| [Courier](/packages/courier)       | Multi-channel communication — email, SMS, push                      | Resend, SES, SMTP, Twilio, Web Push |
+| [Scribe](/packages/scribe)         | CLI for scaffolding and managing Tower applications                 | —                                   |
 
-### Roadmap
-
-Future modules — job queues, file storage, billing, search, observability, and an AI application layer — will follow the same contract: register at import, initialize lazily, expose a consistent API. The modules that exist today are the stable foundation; the roadmap does not dictate today's decisions.
+More modules for AI, storage, realtime, jobs, billing, search, and observability are planned.
 
 ## Why Tower?
 
-Most JavaScript frameworks handle the web layer well but leave the application architecture to you. Tower fills the gap with a consistent, modular stack:
+Most JavaScript frameworks handle the web layer well but leave the rest of your application architecture to you. Tower provides a consistent way to build the application around it.
 
-- **Provider-agnostic** — Modules define stable APIs over their capabilities, and providers implement them. Provider choice is a configuration decision; application code talks to the module.
-- **Framework-first** — Works alongside your web framework (Next.js today) rather than replacing it.
-- **Composable** — Use only the modules you need. Start monolithic, split later — module boundaries become service boundaries.
-- **Lazy-initialized** — Tower apps initialize on first use, not at import time — critical for edge and SSR compatibility.
-- **Type-safe** — Full TypeScript with strict types throughout.
-
-## Status
-
-Tower is in active development. The core modules (Foundation, Blueprint, Vault, Gatehouse, Courier) are functional with test coverage. Module APIs may change as we approach 1.0.
-
-## License
-
-MIT
+- **Provider-agnostic** — Choose supported infrastructure without coupling your application to the provider.
+- **Framework-first** — Works alongside your web framework rather than replacing it.
+- **Composable** — Use the modules you need while keeping them part of one application architecture.
+- **Type-safe** — Built for TypeScript with strict types throughout.
 
 ## Contributing
 
-If you're interested in contributing to Tower, please read our [contributing docs](https://github.com/towerjs/tower/blob/main/CONTRIBUTING.md) **before submitting a pull request**.
+If you’re interested in contributing, please read our [contributing guide](CONTRIBUTING.md) first.
+
+## Status
+
+Tower is in active development. APIs may change as we approach 1.0.
+
+## License
+
+[MIT](CONTRIBUTING.md)

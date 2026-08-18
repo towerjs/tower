@@ -2,139 +2,186 @@
 
 ## Requirements
 
-Before getting started, ensure your system has access to the following tools:
+Tower development requires:
 
-- [Node.js](https://nodejs.org/) (v22+)
-- [pnpm](https://pnpm.io/) (v11+)
+- [Node.js](https://nodejs.org/) 22+
+- [pnpm](https://pnpm.io/) 11+
 
 ## Getting started
 
-```sh
-# Install dependencies
-pnpm install
+Clone the repository and install its dependencies:
 
-# Build the project
+```sh
+pnpm install
+```
+
+Build all packages:
+
+```sh
 pnpm build
 ```
 
-## Development workflow
+Before making changes, read [AGENTS.md](AGENTS.md) for the repository's architecture, package boundaries, dependency rules, and development conventions.
 
-During development, you can run tests in watch mode:
+## Development
+
+Tower is a monorepo. Most work happens in `packages/`, with applications in `examples/` used to exercise Tower as a real application.
+
+Run the test suite in watch mode while developing:
 
 ```sh
 pnpm test:watch
 ```
 
-The `examples/with-nextjs` directory contains a reference Next.js application you can use to test your changes. To start it:
+The `examples/with-nextjs` application is the primary integration example. Start it with:
 
 ```sh
 cd examples/with-nextjs
 pnpm dev
 ```
 
-## Bug fixes
+When changing a package that affects application behavior, use the example application to verify the change in a real Tower application rather than relying only on isolated package tests.
 
-If you've found a bug in Tower that you'd like to fix, [submit a pull request](https://github.com/towerjs/tower/pulls) with your changes. Include a helpful description of the problem and how your changes address it, and provide tests so we can verify the fix works as expected.
+## Making changes
 
-## New features
+### Bug fixes
 
-If there's a new feature you'd like to see added to Tower, [share your idea with us](https://github.com/towerjs/tower/discussions/new?category=ideas) in our discussion forum to get it on our radar as something to consider for a future release before starting work on it.
+Bug fixes are welcome. Open a pull request with:
 
-**Please note that we don't often accept pull requests for new features.** Adding a new feature to Tower requires us to think through the entire problem ourselves to make sure we agree with the proposed API, which means the feature needs to be high on our own priority list for us to be able to give it the attention it needs.
+- a clear description of the problem;
+- the change that fixes it;
+- a regression test when practical;
+- any relevant documentation updates.
 
-If you open a pull request for a new feature, we're likely to close it not because it's a bad idea, but because we aren't ready to prioritize the feature and don't want the PR to sit open for months or even years.
+For larger or architectural changes, open an issue or discussion first so the approach can be reviewed before implementation.
 
-## Coding standards
+### New features
 
-Our code formatting rules are defined in the `"prettier"` section of [package.json](https://github.com/towerjs/tower/blob/main/package.json). You can check your code against these standards by running:
+Please discuss substantial new features before opening a pull request.
+
+Tower is an opinionated framework, so a feature is not evaluated only on whether it can be implemented. We also need to consider whether it belongs in Tower, how it fits the existing application model, and what API it should establish for future applications.
+
+A pull request may therefore be closed even when the implementation itself is good if the feature is not currently planned or the API needs further design.
+
+## Code quality
+
+Run the project's checks before submitting a pull request:
 
 ```sh
 pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
 ```
 
-To automatically fix any style violations in your code, you can run:
+To format the repository:
 
 ```sh
 pnpm format
 ```
 
-## Running tests
+Formatting rules are defined by the repository's Prettier configuration.
 
-You can run the test suite using the following command:
-
-```sh
-pnpm test
-```
-
-To run the E2E tests (requires Docker for Postgres):
+For end-to-end tests, Docker with PostgreSQL is required:
 
 ```sh
 pnpm test:e2e
 ```
 
-To run type checking:
+When a build succeeds, the package tarballs in the `dist/` directories can also be used to test local package installations.
+
+## Architecture
+
+Tower is designed as a cohesive application framework with modular, replaceable foundations. Packages should have clear responsibilities and communicate through deliberate public interfaces.
+
+Before changing an existing module or adding a new one, understand where the behavior belongs. In particular:
+
+- **Foundation** provides application composition, configuration, dependency injection, and initialization.
+- **Blueprint** defines the structure and configuration of a Tower application.
+- **Atlas** provides application routing conventions where the underlying framework does not already provide them.
+- **Vault** provides database access and infrastructure abstractions; application-owned data models remain under application control.
+- **Tower modules** such as Gatehouse, Archive, Beacon, Crane, Messenger, Treasury, and Watchtower provide higher-level capabilities Tower owns.
+- **Adapters and providers** keep infrastructure choices behind stable Tower APIs where appropriate.
+- **Framework integrations** belong in their framework-specific boundaries rather than in core packages.
+
+Tower is intended to work across modern execution environments, including serverless environments. Do not introduce assumptions that require a persistent application process unless the feature explicitly requires one.
+
+When making architectural changes, preserve these principles:
+
+- **Opinionated** — Tower should make useful application-level decisions rather than abstract every possible approach.
+- **Composable** — Applications can use the Tower capabilities they need.
+- **Portable** — Supported infrastructure implementations can change without forcing an application to change its overall architecture.
+- **Framework-friendly** — Tower works with application frameworks rather than unnecessarily replacing them.
+- **Serverless-compatible** — Core modules should not assume a long-running process.
+- **Small, deliberate interfaces** — Public APIs should be designed for application developers, not merely expose underlying implementation details.
+
+## Documentation
+
+Documentation lives in `docs/`, package READMEs, and the repository `README.md`.
+
+Update documentation in the same pull request whenever a change affects the developer-facing surface, including:
+
+- public APIs;
+- configuration;
+- providers or adapters;
+- CLI commands;
+- generated project structure;
+- module behavior;
+- application conventions;
+- new or changed features.
+
+Changes to generated output must remain consistent with the documentation that describes it, including the Scribe and getting-started documentation.
+
+Internal refactors, dependency updates, tests, and other changes that do not affect behavior generally do not require documentation updates.
+
+## Pull requests
+
+A good pull request should make it easy to understand **what changed, why it changed, and how it was verified**.
+
+Include:
+
+- a concise title and description;
+- the motivation and relevant context;
+- a test plan;
+- documentation updates when needed.
+
+Before opening the pull request, make sure the relevant checks pass:
 
 ```sh
+pnpm lint
 pnpm typecheck
+pnpm test
+pnpm build
 ```
 
-Please ensure that all tests are passing when submitting a pull request. If you're adding new features to Tower, always include tests.
+Contributions that change behavior should include tests. New public APIs should also include appropriate type-level coverage.
 
-After a successful build, you can also use the npm package tarballs created inside the `dist/` folders to install your build in other local projects.
+Open pull requests through the repository's [pull request page](https://github.com/towerjs/tower/pulls).
 
-## Pull request process
+## Commit messages
 
-When submitting a pull request:
+Use conventional commits with the affected package as the scope:
 
-- Ensure the pull request title and description explain the changes you made and why you made them.
-- Include a test plan section that outlines how you tested your contributions. We do not accept contributions without tests.
-- Ensure all tests pass (`pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build`).
-
-When a pull request is created, Tower maintainers will be notified automatically.
-
-## Documentation updates
-
-Docs live in `docs/` (MDX, one page per file) plus package READMEs and the repo `README.md`. They document the consumer/developer-facing surface: module APIs, configuration, features, and workflows.
-
-Update the docs in the **same PR** as the code change whenever the change alters that surface — a new or changed public API, config option, action, provider, generated-project output, or feature. This includes changes to scaffolded output (e.g. `packages/scribe`), which must stay in sync with `docs/03-modules/11-scribe.mdx` and `docs/01-introduction/01-getting-started.mdx`.
-
-Internal changes (refactors, dependency bumps, bug fixes that don't change behavior, tests) do not need doc updates.
-
-## Communication
-
-- **GitHub Discussions**: For feature ideas and general questions
-- **GitHub Issues**: For bug reports
-- **GitHub Pull Requests**: For code contributions
-
-## Architecture guidelines
-
-Tower follows a layered architecture where each module lives in its own package under `packages/` and communicates through well-defined interfaces. Please review [AGENTS.md](AGENTS.md) for architectural principles, dependency rules, and import conventions before making changes.
-
-Key principles:
-
-- **Provider-agnostic** — Modules abstract over specific providers behind a stable API
-- **Framework-first** — Works alongside the user's framework rather than replacing it
-- **Lazy initialization** — Tower apps initialize on first use, not at import time
-- **Minimal API surface** — Modules export only what users need
-- **No runtime dependencies on user-facing frameworks** — Framework adapters live in `packages/*/src/frameworks/`
-
-## Commit style
-
-Use conventional commits with the package name as scope:
-
-```
+```text
 feat(gatehouse): add passkey update action
 fix(vault): handle pool close on shutdown
 refactor(gatehouse): extract api builder
 chore(deps): upgrade vitest
-docs(vault): document kysely-neon provider
+docs(vault): document kysely provider
 ```
 
-Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation.
+Use the package directory name as the scope. Use `root` for repository-level changes such as CI, configuration, or the README, and `docs` with the owning package when appropriate.
 
-**Commit message bodies** — The subject is the commit's identity: keep it to one line, imperative, no trailing period. Add a body only when the subject can't carry the _why_ — a non-obvious fix or tradeoff, a breaking change, an issue reference. Put it one blank line below the subject, wrap at 72 characters, and explain _why_, not _what_ (the diff shows what):
+Keep the subject:
 
-```
+- imperative;
+- concise;
+- on one line;
+- without a trailing period.
+
+Add a body only when the subject does not adequately explain the change, such as for a non-obvious fix, tradeoff, breaking change, or issue reference. Explain **why**, not what the diff already makes clear.
+
+```text
 fix(vault): close pool on shutdown
 
 The pool held sockets open after SIGTERM, keeping the process alive.
@@ -142,4 +189,14 @@ The pool held sockets open after SIGTERM, keeping the process alive.
 Closes #123
 ```
 
-Skip the body when the change is self-explanatory (e.g. dependency bumps, pure formatting).
+Keep commit bodies wrapped at 72 characters.
+
+## Communication
+
+Use the appropriate GitHub channel:
+
+- **Discussions** — feature ideas, architectural questions, and general questions
+- **Issues** — confirmed bugs and actionable problems
+- **Pull requests** — proposed code and documentation changes
+
+For significant architectural work, start with a discussion before investing in a large implementation.
