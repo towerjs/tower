@@ -105,25 +105,11 @@ fi
 
 check "7. Generated app (requires network)"
 echo ""
-echo "  Running: tower create test-app (from local packs) + pnpm install + pnpm build"
-echo ""
-TEST_APP_DIR="$(mktemp -d)"
-PACK_DIR="$TEST_APP_DIR/packs"
-mkdir -p "$PACK_DIR"
-for pkg in towerjs foundation blueprint vault gatehouse courier edge scribe; do
-  (cd "$ROOT/packages/$pkg" && pnpm pack --pack-destination "$PACK_DIR" >/dev/null 2>&1)
-done
-if cd "$TEST_APP_DIR" && \
-   TOWER_PACK_DIR="$PACK_DIR" \
-   node "$ROOT/packages/create-tower/dist/index.js" test-app --no-tailwind --modules vault,gatehouse --vault skip >/dev/null 2>&1 && \
-   cd "$TEST_APP_DIR/test-app" && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1; then
-  pass "Generated app builds (create tower + pnpm build)"
-  cd "$ROOT"
-  rm -rf "$TEST_APP_DIR"
+echo "  Running: scripts/test-generated-app.sh  (tower create TS + JS, tower about, next build)"
+if bash scripts/test-generated-app.sh >/dev/null 2>&1; then
+  pass "Generated apps scaffold, load config, and build (TypeScript + JavaScript)"
 else
-  fail "Generated app build failed"
-  cd "$ROOT"
-  rm -rf "$TEST_APP_DIR"
+  fail "Generated app test failed"
 fi
 
 check "8. E2E auth flow (requires Docker + network)"

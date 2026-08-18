@@ -4,13 +4,16 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { createTowerApp } from '@towerjs/foundation'
-import type { TowerApp } from '@towerjs/foundation'
+import { createTowerApp, detectRuntime } from '@towerjs/foundation'
+import type { TowerApp, TowerConfig } from '@towerjs/foundation'
 
 import { createJiti } from 'jiti'
 
 import { createCommand } from './commands/create.js'
+import { helpText } from './help.js'
 import { getModuleFactory } from './runtime.js'
+
+export { helpText }
 
 const { version } = createRequire(import.meta.url)('../package.json')
 
@@ -45,6 +48,7 @@ export async function run(command: string | undefined, flags: string[], configPa
 
   switch (command) {
     case 'create':
+      if (flags.includes('--help') || flags.includes('-h')) return ok(helpText())
       await createCommand(flags)
       return ok([])
     case 'about':
@@ -78,30 +82,32 @@ function moduleProvider(config: Record<string, unknown>): string {
 }
 
 async function runAbout(configPath?: string): Promise<CliResult> {
-  const app = await loadApp(configPath)
-  const runtime = app.runtime ?? { name: 'unknown', isServerless: false }
+  const resolvedPath = configPath ?? findConfig()
+  const config = await loadConfig(resolvedPath)
+  const runtime = detectRuntime()
+  const modules = (config.modules ?? {}) as Record<string, unknown>
   const lines = [
     versionText(),
     '',
     'Application',
-    `  Config     ${configPath ?? findConfig()}`,
+    `  Config     ${resolvedPath}`,
     `  Environment ${process.env.NODE_ENV ?? 'development'}`,
     `  Runtime    ${runtime.name}${runtime.isServerless ? ' (serverless)' : ''}`,
     '',
     'Modules',
   ]
 
-  for (const [name, config] of Object.entries(app.config.modules)) {
-    lines.push(`  ${name.padEnd(11)} ✓ ${moduleProvider(config)}`)
+  for (const [name, moduleConfig] of Object.entries(modules)) {
+    lines.push(`  ${name.padEnd(11)} ✓ ${moduleProvider(moduleConfig as Record<string, unknown>)}`)
   }
-  if (Object.keys(app.config.modules).length === 0) lines.push('  (none)')
+  if (Object.keys(modules).length === 0) lines.push('  (none)')
 
   lines.push('', 'Environment')
   const envKeys = new Set<string>()
-  if (app.config.modules.vault) envKeys.add('DATABASE_URL')
-  if (app.config.modules.gatehouse) envKeys.add('GATEHOUSE_SECRET')
-  if (app.config.modules.courier) {
-    const email = app.config.modules.courier.email as Record<string, unknown> | undefined
+  if (modules.vault) envKeys.add('DATABASE_URL')
+  if (modules.gatehouse) envKeys.add('GATEHOUSE_SECRET')
+  if (modules.courier) {
+    const email = (modules.courier as Record<string, unknown>).email as Record<string, unknown> | undefined
     if (email?.provider === 'resend') envKeys.add('RESEND_API_KEY')
     if (email?.provider === 'smtp') {
       envKeys.add('SMTP_HOST')
@@ -112,7 +118,6 @@ async function runAbout(configPath?: string): Promise<CliResult> {
   for (const key of envKeys) lines.push(`  ${key.padEnd(19)} ${envStatus(key)}`)
   if (envKeys.size === 0) lines.push('  (no module environment variables)')
 
-  await closeModules(app)
   return ok(lines)
 }
 
@@ -171,12 +176,17 @@ export function getModule(app: TowerApp, name: string): CliModule | undefined {
   return undefined
 }
 
-export async function loadApp(configPath?: string): Promise<TowerApp> {
-  if (!configPath) configPath = findConfig()
+/** Loads the raw tower config without initializing any modules. */
+export async function loadConfig(configPath: string): Promise<TowerConfig> {
   loadEnvFor(configPath)
   const jiti = createJiti(import.meta.url, { interopDefault: true })
-  const config = await jiti.import(configPath)
-  const resolvedConfig = (config as any).default ?? config
+  const loaded = await jiti.import(configPath)
+  return ((loaded as { default?: TowerConfig }).default ?? loaded) as TowerConfig
+}
+
+export async function loadApp(configPath?: string): Promise<TowerApp> {
+  if (!configPath) configPath = findConfig()
+  const resolvedConfig = await loadConfig(configPath)
   return createTowerApp(resolvedConfig, (name) => getModuleFactory(name, new Set(Object.keys(resolvedConfig.modules))))
 }
 
@@ -233,26 +243,6 @@ export function findConfig(cwd?: string): string {
 
 export function versionText(): string {
   return `tower v${version}`
-}
-
-export function helpText(): string[] {
-  return [
-    '',
-    'Usage: tower <command>',
-    '',
-    'Commands:',
-    '  create           Scaffold a new Tower application',
-    '  create --name my-app --modules vault,gatehouse  Scaffold non-interactively',
-    '  create --js my-app          Scaffold a plain JavaScript app (default is TypeScript)',
-    '  about            Show application, module, runtime, and environment diagnostics',
-    '  migrate          Run database and auth migrations',
-    '  migrate --seed   Run migrations, then seeds',
-    '  seed             Run seeds (runs migrations first unless --skip-migrate)',
-    '  seed --skip-migrate  Run seeds without running migrations first',
-    '  help             Show this message',
-    '  --version, -v    Show version',
-    '',
-  ]
 }
 
 const currentFile = fs.realpathSync(fileURLToPath(import.meta.url))

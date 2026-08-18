@@ -99,6 +99,26 @@ describe('createCommand', () => {
     else process.env.npm_config_user_agent = originalUserAgent
   })
 
+  it('prints help and does not scaffold for --help', async () => {
+    const stdoutWrite = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    await createCommand(['--help'])
+
+    expect(stdoutWrite).toHaveBeenCalledWith(expect.stringContaining('Usage: tower <command>'))
+    expect(mocks.mockCollectProjectState).not.toHaveBeenCalled()
+    expect(mocks.mockCollectProjectStateFromFlags).not.toHaveBeenCalled()
+    stdoutWrite.mockRestore()
+  })
+
+  it('prints help for -h', async () => {
+    const stdoutWrite = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    await createCommand(['-h'])
+
+    expect(stdoutWrite).toHaveBeenCalledWith(expect.stringContaining('Usage: tower <command>'))
+    stdoutWrite.mockRestore()
+  })
+
   it('re-throws errors from generateProject', async () => {
     mocks.mockCollectProjectState.mockResolvedValue({
       projectName: 'my-app',

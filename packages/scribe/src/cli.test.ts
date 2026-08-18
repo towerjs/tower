@@ -49,11 +49,12 @@ function resetMockApp() {
 
 vi.mock('@towerjs/foundation', () => ({
   createTowerApp: vi.fn(() => Promise.resolve(mockApp)),
+  detectRuntime: vi.fn(() => ({ name: 'node', isServerless: false })),
 }))
 
 vi.mock('jiti', () => ({
   createJiti: vi.fn(() => ({
-    import: vi.fn(() => Promise.resolve({ modules: {} })),
+    import: vi.fn(() => Promise.resolve({ modules: { vault: {}, gatehouse: {} } })),
   })),
 }))
 
@@ -140,6 +141,12 @@ describe('help', () => {
   it('returns helpText()', () => {
     const lines = helpText()
     expect(lines[1]).toBe('Usage: tower <command>')
+  })
+
+  it('shows help for create --help without scaffolding', async () => {
+    const result = await run('create', ['--help'])
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout.join('\n')).toContain('Usage: tower <command>')
   })
 })
 
