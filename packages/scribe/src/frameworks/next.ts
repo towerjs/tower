@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
 import { execa } from 'execa'
@@ -7,6 +8,8 @@ import { execa } from 'execa'
 import { type PackageManager, addCommand, detectPackageManager, nextAppFlag } from '../package-manager.js'
 import type { ProjectState } from '../state.js'
 import type { FrameworkAdapter } from './adapter.js'
+
+const { version } = createRequire(import.meta.url)('../../package.json')
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -466,7 +469,7 @@ const ALL_TOWER_PACKAGES = [
 
 function towerTarball(packDir: string, name: string): string {
   const suffix = name === 'towerjs' ? '' : name.replace('@towerjs/', '-')
-  return join(packDir, `towerjs${suffix}-0.1.0.tgz`)
+  return join(packDir, `towerjs${suffix}-${version}.tgz`)
 }
 
 /**
