@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Bumps every publishable Tower package to the same version and moves the
-// CHANGELOG [Unreleased] section under the new version header. Never commits,
-// tags, pushes, or publishes — Git operations belong to scripts/release.mjs
-// and the release workflow.
+// CHANGELOG [Unreleased] section under the new version header, re-creating a
+// fresh [Unreleased] section with a "- Nothing yet!" placeholder. Never
+// commits, tags, pushes, or publishes — Git operations belong to
+// scripts/release.mjs and the release workflow.
 //
 // Usage:
 //   node scripts/version-packages.mjs patch|minor|major   (relative bump)
@@ -82,7 +83,13 @@ async function main() {
   }
 
   const date = new Date().toISOString().slice(0, 10)
-  await writeFile(changelogFile, changelog.replace('## [Unreleased]', `## [${target}] - ${date}`))
+  // Drop a leftover placeholder from the section being promoted (it belongs to
+  // the fresh section only), then re-create the Unreleased section above the
+  // promoted version header.
+  const promoted = changelog
+    .replace('\n- Nothing yet!\n', '\n')
+    .replace('## [Unreleased]', `## [Unreleased]\n\n- Nothing yet!\n\n## [${target}] - ${date}`)
+  await writeFile(changelogFile, promoted)
 
   execSync('pnpm install', { cwd: root, stdio: 'inherit' })
 
