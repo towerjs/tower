@@ -18,11 +18,11 @@
 
 ---
 
-Tower gives JavaScript applications a consistent way to build the application capabilities that sit beyond the web framework: databases, authentication, communication, and more.
+Tower gives JavaScript and TypeScript applications a consistent architecture for everything beyond the web framework: databases, authentication, communication, and more.
 
-Tower provides the architecture, APIs, conventions, and tooling that sit between your application and its underlying infrastructure. Your application is built around Tower, while infrastructure choices remain replaceable.
+It provides the APIs, conventions, and tooling for building an application around those capabilities while keeping the infrastructure underneath replaceable. You choose the technologies that power your application without having to reinvent its architecture.
 
-Tower works alongside your web framework rather than replacing it.
+Tower works alongside your web framework rather than replacing it. The result is one coherent application model instead of a collection of disconnected libraries — a model that is easier for both developers and AI agents to understand, build on, and maintain.
 
 ## Quick start
 
@@ -30,7 +30,15 @@ Tower works alongside your web framework rather than replacing it.
 pnpm create tower
 ```
 
-Follow the prompts to configure your application. Tower creates the project structure, configuration, environment contract, and selected integrations for you. Then run `pnpm dev`.
+Follow the prompts to configure your application. Tower creates the project structure, configuration, environment contract, and selected integrations for you.
+
+Then start the development server:
+
+```bash
+pnpm dev
+```
+
+Using another package manager? Run `create tower` with it instead.
 
 ## What it looks like
 
