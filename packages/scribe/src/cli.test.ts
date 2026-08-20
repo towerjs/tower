@@ -1,8 +1,11 @@
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { closeModules, findConfig, getModule, helpText, run, versionText } from './cli.js'
+
+const { version } = createRequire(import.meta.url)('../package.json')
 
 const mockMigrate = vi.fn()
 const mockSeed = vi.fn()
@@ -154,17 +157,17 @@ describe('version', () => {
   it('returns version for --version', async () => {
     const result = await run('--version', [])
     expect(result.exitCode).toBe(0)
-    expect(result.stdout[0]).toContain('v0.1.0')
+    expect(result.stdout[0]).toContain(`v${version}`)
   })
 
   it('returns version for -v', async () => {
     const result = await run('-v', [])
     expect(result.exitCode).toBe(0)
-    expect(result.stdout[0]).toContain('v0.1.0')
+    expect(result.stdout[0]).toContain(`v${version}`)
   })
 
   it('returns versionText()', () => {
-    expect(versionText()).toContain('v0.1.0')
+    expect(versionText()).toContain(`v${version}`)
   })
 })
 
