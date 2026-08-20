@@ -1,5 +1,5 @@
-import type { TowerContext, TowerModule } from '@towerjs/blueprint'
-import { registerModule } from '@towerjs/blueprint'
+import type { TowerContext, TowerModule } from '@towerjs/tower/foundation'
+import { createLazyModule } from '@towerjs/tower/runtime'
 
 import type { Migrator } from 'kysely/migration'
 
@@ -22,6 +22,9 @@ export async function runSeeds(db: Vault, config: VaultSeedConfig, name?: string
   const mod = await import('./seed.js')
   return mod.runSeeds(db, config, name)
 }
+
+// Export VaultProvider and VaultPoolConfig for consumers (bug #25)
+export type { VaultProvider, VaultPoolConfig } from './types.js'
 
 let _vault: VaultModule | undefined
 let _pool: { end(): Promise<void> } | undefined
@@ -119,13 +122,7 @@ function resolveConnectionError(err: unknown): string {
  * `vault.insertInto()`, etc. for queries. All Kysely methods (fn, schema,
  * raw, dynamic, etc.) are forwarded directly — no vault.db needed.
  */
-export const vault: VaultModule = new Proxy({} as VaultModule, {
-  get(_, prop) {
-    if (!_vault) throw new Error('Vault not initialized. Tower must be started first.')
-    const value = (_vault as any)[prop]
-    return typeof value === 'function' ? (...args: any[]) => (value as Function)(...args) : value
-  },
-})
+const vaultRuntime = createLazyModule<VaultModule>('vault')
 
 function buildProxyUnconfigured(): VaultModule {
   return new Proxy({} as VaultModule, {
@@ -201,26 +198,30 @@ async function buildProxyForRuntime(
 }
 
 /**
- * Creates a Tower module that registers the vault database service.
+ * Creates a Tower module definition for Vault.
  *
  * @example
  * ```ts
- * defineTower({
- *   modules: {
- *     vault: { connectionString: process.env.DATABASE_URL },
- *   },
+ * import { vault } from '@towerjs/vault'
+ * import { defineTower } from '@towerjs/tower'
+ *
+ * export default defineTower({
+ *   modules: [
+ *     vault({ connectionString: process.env.DATABASE_URL }),
+ *   ],
  * })
  * ```
  */
-export function createVaultModule(options?: VaultConfig): TowerModule & { init: (ctx: TowerContext) => Promise<void> } {
+function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
   parseVaultConfig(options)
 
   return {
     name: 'vault',
+    dependsOn: [],
 
     register(ctx: TowerContext) {
       _vault = buildProxyUnconfigured()
-      ctx.services.register('vault', _vault)
+      ctx.services.register('vault', vaultRuntime)
     },
 
     async initialize(ctx: TowerContext) {
@@ -228,7 +229,7 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
 
       if (!connectionString) {
         _vault = buildProxyUnconfigured()
-        ctx.services.register('vault', _vault)
+        ctx.services.register('vault', vaultRuntime)
         return
       }
 
@@ -249,7 +250,7 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
         _pool = NOOP_POOL
         _vault = await buildProxyForRuntime(db, NOOP_POOL, isEdge, options)
         ;(_vault as any)._kysely = db
-        ctx.services.register('vault', _vault)
+        ctx.services.register('vault', vaultRuntime)
         return
       }
 
@@ -272,17 +273,37 @@ export function createVaultModule(options?: VaultConfig): TowerModule & { init: 
       _vault = await buildProxyForRuntime(db, pool, isEdge, options)
       ;(_vault as any)._kysely = db
 
-      ctx.services.register('vault', _vault)
-    },
-
-    init(ctx: TowerContext) {
-      return this.initialize!(ctx)
+      ctx.services.register('vault', vaultRuntime)
     },
   }
 }
 
-registerModule({
-  name: 'vault',
-  dependsOn: [],
-  factory: (config) => createVaultModule(config as VaultConfig),
-})
+/**
+ * Vault module - callable for config, property face for runtime API.
+ *
+ * Usage:
+ * ```ts
+ * // In tower.config.ts - config factory
+ * import { vault } from '@towerjs/vault'
+ * export default defineTower({ modules: [vault({ connectionString: process.env.DATABASE_URL })] })
+ * ```
+ *
+ * ```ts
+ * // In application code - runtime API
+ * import { vault } from '@towerjs/vault'
+ * const users = await vault.selectFrom('users').selectAll().execute()
+ * ```
+ */
+export const vault = new Proxy(createVaultModuleDefinition, {
+  get(_target, prop) {
+    // The call face returns the module definition
+    if (prop === 'apply' || prop === 'name' || prop === 'length') {
+      return (_target as any)[prop]
+    }
+    // Property face delegates to the lazy runtime proxy
+    return (vaultRuntime as any)[prop]
+  },
+  apply(_target, _thisArg, args) {
+    return _target(...args)
+  },
+}) as ((options?: VaultConfig) => TowerModule) & VaultModule
