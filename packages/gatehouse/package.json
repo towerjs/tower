@@ -1,6 +1,6 @@
 {
   "name": "@towerjs/gatehouse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Authentication and authorization for Tower — email/password, social, 2FA, organizations, and more",
   "type": "module",
   "exports": {

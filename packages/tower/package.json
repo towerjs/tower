@@ -1,6 +1,6 @@
 {
   "name": "@towerjs/tower",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Meta-package that bundles all Tower modules for convenient access",
   "type": "module",
   "exports": {
