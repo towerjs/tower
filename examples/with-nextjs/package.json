@@ -13,11 +13,11 @@
     "@towerjs/courier": "workspace:*",
     "@towerjs/edge": "workspace:*",
     "@towerjs/gatehouse": "workspace:*",
+    "@towerjs/tower": "workspace:*",
     "@towerjs/vault": "workspace:*",
     "next": "16.3.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "@towerjs/tower": "workspace:*"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

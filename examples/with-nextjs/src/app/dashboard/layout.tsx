@@ -1,6 +1,8 @@
 import { SignOutButton } from '@/components/sign-out-button'
 
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
+
+export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { redirect } from 'next/navigation'

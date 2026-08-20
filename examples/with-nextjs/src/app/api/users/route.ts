@@ -1,4 +1,4 @@
-import { vault } from '@towerjs/tower/vault'
+import { vault } from '@towerjs/vault'
 import type { VaultModule } from '@towerjs/vault'
 
 interface Project {

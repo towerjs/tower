@@ -3,7 +3,8 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-import { requestMagicLink, sendVerificationOTP, signIn, signInWithOTP } from '@towerjs/tower/gatehouse/actions'
+import { requestMagicLink, sendVerificationOTP, signIn, signInWithOTP } from '@towerjs/gatehouse/actions'
+import type { ActionResult } from '@towerjs/gatehouse/next'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -14,8 +15,6 @@ const TABS = [
   { id: 'magic-link', label: 'Magic Link' },
   { id: 'email-otp', label: 'Email OTP' },
 ] as const
-
-type ActionResult = { error?: string; ok?: true }
 
 export function SignInForm() {
   const router = useRouter()

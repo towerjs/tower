@@ -11,7 +11,7 @@ import {
   revokeOtherSessions,
   revokeSession,
   verifyTwoFactor,
-} from '@towerjs/tower/gatehouse/actions'
+} from '@towerjs/gatehouse/actions'
 
 import { useState } from 'react'
 
@@ -102,7 +102,7 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
                 </div>
                 <form
                   action={async (fd: FormData) => {
-                    await verifyTwoFactor(fd)
+                    await verifyTwoFactor(undefined, fd)
                     setTotpQr(null)
                   }}
                   className="space-y-4"
@@ -122,7 +122,7 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
             {user.twoFactorEnabled && (
               <form
                 action={async (fd: FormData) => {
-                  await disableTwoFactor(fd)
+                  await disableTwoFactor(undefined, fd)
                   setTotpQr(null)
                 }}
                 className="space-y-4"
@@ -219,7 +219,7 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
                 </div>
                 <form
                   action={(formData) => {
-                    revokeSession(formData)
+                    revokeSession(undefined, formData)
                   }}
                 >
                   <input type="hidden" name="token" value={s.token} />
@@ -231,10 +231,10 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
             ))}
           </div>
           <div className="mt-4">
-            <form
-              action={(formData) => {
-                revokeOtherSessions(formData)
-              }}
+<form
+                  action={(formData) => {
+                    revokeOtherSessions(undefined, formData)
+                  }}
             >
               <Button type="submit" variant="secondary" size="sm">
                 Revoke all other sessions

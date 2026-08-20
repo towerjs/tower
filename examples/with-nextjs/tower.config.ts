@@ -1,17 +1,20 @@
-import { defineTower } from '@towerjs/tower/blueprint'
+import { defineTower } from '@towerjs/tower'
+import { vault } from '@towerjs/vault'
+import { gatehouse } from '@towerjs/gatehouse'
+import { courier } from '@towerjs/courier'
 
 export default defineTower({
-  modules: {
-    vault: {},
+  modules: [
+    vault(),
 
-    courier: {
+    courier({
       email: {
         provider: 'console',
         from: 'Tower <no-reply@example.com>',
       },
-    },
+    }),
 
-    gatehouse: {
+    gatehouse({
       provider: 'better-auth',
 
       appName: 'Tower Example',
@@ -41,6 +44,6 @@ export default defineTower({
       passkeys: true,
       twoFactor: true,
       organization: true,
-    },
-  },
+    }),
+  ],
 })

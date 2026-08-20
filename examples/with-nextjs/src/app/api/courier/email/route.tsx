@@ -1,6 +1,6 @@
 import { AuthEmailTemplate } from '@/lib/emails/auth-email'
 
-import { courier } from '@towerjs/tower/courier'
+import { courier } from '@towerjs/courier'
 
 type SendEmailBody = {
   to: string

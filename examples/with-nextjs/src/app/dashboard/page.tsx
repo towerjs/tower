@@ -1,7 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
+
+export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 

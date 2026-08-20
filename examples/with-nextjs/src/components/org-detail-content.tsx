@@ -10,7 +10,7 @@ import {
   inviteMember,
   removeMember,
   updateOrganization,
-} from '@towerjs/tower/gatehouse/actions'
+} from '@towerjs/gatehouse/actions'
 
 import { useActionState } from 'react'
 

@@ -42,7 +42,10 @@ async function main() {
   console.log('[setup] Schema reset complete')
 
   const { initTower } = await import('@towerjs/tower/runtime')
-  await initTower()
+  const { vault } = await import('@towerjs/vault')
+  const { gatehouse } = await import('@towerjs/gatehouse')
+  const { courier } = await import('@towerjs/courier')
+  await initTower([vault(), gatehouse({ provider: 'better-auth' }), courier({ email: { provider: 'console' } })])
   const { Gatehouse } = await import('@towerjs/gatehouse')
   await Gatehouse.migrate()
   console.log('[setup] Migration complete')

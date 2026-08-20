@@ -1,6 +1,8 @@
 import { SecurityContent } from '@/components/security-content'
 
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
+
+export const dynamic = 'force-dynamic'
 
 export default async function SecurityPage() {
   const session = await gatehouse.getSession()

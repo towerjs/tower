@@ -1,7 +1,7 @@
 'use server'
 
-import { courier } from '@towerjs/tower/courier'
-import { action } from '@towerjs/tower/gatehouse/next'
+import { courier } from '@towerjs/courier'
+import { action } from '@towerjs/gatehouse/next'
 
 export const sendCourierEmail = action(async (formData: FormData) => {
   const result = await courier.email.send({

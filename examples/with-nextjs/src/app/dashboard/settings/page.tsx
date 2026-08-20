@@ -1,6 +1,8 @@
 import { SettingsContent } from '@/components/settings-content'
 
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
+
+export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
   const session = await gatehouse.getSession()
