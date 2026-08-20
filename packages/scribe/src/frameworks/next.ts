@@ -53,7 +53,7 @@ export const nextAdapter: FrameworkAdapter = {
     const configFile = useTypeScript ? 'tower.config.ts' : 'tower.config.js'
     const pageFile = useTypeScript ? 'page.tsx' : 'page.jsx'
 
-    await writeFile(join(projectDir, 'src', 'app', pageFile), homePage())
+    await writeFile(join(projectDir, 'src', 'app', pageFile), homePage(state))
     await writeFile(join(projectDir, configFile), towerConfig(state))
     if (isEdge) {
       await writeFile(join(projectDir, useTypeScript ? 'next.config.ts' : 'next.config.mjs'), nextConfig())
@@ -93,10 +93,8 @@ export const nextAdapter: FrameworkAdapter = {
     const towerSection = agentsMd(state)
     await writeFile(agentsPath, generated + '\n\n' + towerSection)
 
+    // Install tower core + selected modules
     const towerDeps: string[] = ['@towerjs/tower']
-    // Generated code and Tower's lazy module loader are evaluated by the
-    // consumer's package manager, so every selected module must be a direct
-    // dependency. This is important for pnpm's strict dependency isolation.
     for (const moduleName of ['vault', 'gatehouse', 'courier']) {
       if (state.modules[moduleName]) towerDeps.push(`@towerjs/${moduleName}`)
     }
@@ -207,33 +205,89 @@ export function towerConfig(state: ProjectState): string {
         .filter(([k, v]) => !CLI_ONLY_KEYS.has(k) && v !== undefined)
         .flatMap(([k, v]) =>
           k === 'social' && v && typeof v === 'object'
-            ? formatSocialConfig(v as Record<string, unknown>, 6)
-            : formatConfigLine(k, v, 6)
+            ? formatSocialConfig(v as Record<string, unknown>, 4)
+            : formatConfigLine(k, v, 4)
         )
-      if (lines.length === 0) return `    ${name}: {},`
-      return `    ${name}: {\n${lines.join('\n')}\n    },`
+      if (lines.length === 0) return `  ${name}({}),`
+      return `  ${name}({\n${lines.join('\n')}\n  }),`
     })
     .join('\n')
 
-  return `import { defineTower, env } from "@towerjs/tower/blueprint";
+  return `import { defineTower } from "@towerjs/tower"
+import { vault } from "@towerjs/vault"
+import { gatehouse } from "@towerjs/gatehouse"
+import { courier } from "@towerjs/courier"
 
 export default defineTower({
-  modules: {
+  modules: [
 ${modules}
-  },
-});
+  ],
+})
 `
 }
 
-function homePage(): string {
-  return `export default function Home() {
+function homePage(state: ProjectState): string {
+  const moduleNames = Object.keys(state.modules)
+  const moduleDescriptions: Record<string, string> = {
+    vault: 'Vault (PostgreSQL + Kysely)',
+    gatehouse: 'Gatehouse (Better Auth)',
+    courier: 'Courier (Console Email)',
+  }
+  const providers: Record<string, string> = {}
+  for (const [name, cfg] of Object.entries(state.modules)) {
+    if (cfg?.provider) providers[name] = cfg.provider as string
+  }
+
+  return `import Link from 'next/link'
+
+export default function Home() {
+  const modules = [
+    ${moduleNames.map((n) => `{ name: '${n}', description: '${moduleDescriptions[n]}', provider: '${providers[n] ?? 'default'}' }`).join(',\n    ')}
+  ]
+
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '40rem', margin: '0 auto', padding: '4rem 1.5rem' }}>
-      <h1>Your Tower application is ready.</h1>
-      <p>
-        Tower scaffolds the infrastructure — configuration, database, and auth wiring. The pages
-        and UI are yours to build.
-      </p>
+    <main className="min-h-screen bg-white dark:bg-neutral-950 flex flex-col items-center justify-center px-4 py-20">
+      <div className="max-w-2xl w-full space-y-8 text-center">
+        <div className="flex flex-col items-center gap-2">
+          <svg className="w-12 h-12 text-neutral-900 dark:text-neutral-100" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="currentColor"/>
+            <path d="M8 16L14 22L24 10" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Tower</span>
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+          Tower + Next.js
+        </h1>
+        <p className="text-lg text-neutral-500 dark:text-neutral-400">
+          Your Tower application is ready. Selected modules:
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {modules.map((mod) => (
+            <div key={mod.name} className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-left dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
+                  {mod.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">{mod.name}</span>
+              </div>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                {mod.description + (mod.provider ? ' \u2014 ' + mod.provider : '')}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="pt-4">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+            </svg>
+            Go to Dashboard
+          </Link>
+        </div>
+      </div>
     </main>
   )
 }
@@ -241,7 +295,7 @@ function homePage(): string {
 }
 
 function authRoute(): string {
-  return `export { GET, POST } from "@towerjs/tower/gatehouse/next";
+  return `export { GET, POST } from "@towerjs/gatehouse/next";
 `
 }
 
@@ -392,14 +446,14 @@ function agentsMd(state: ProjectState): string {
     '',
     '## Import conventions',
     '',
-    'Import Tower modules from the `@towerjs/tower` meta-package:',
+    'Import Tower core from `@towerjs/tower` and modules from their respective packages:',
     '',
     '```' + fence + ' ',
-    "import { defineTower } from '@towerjs/tower/blueprint'",
-    "import { gatehouse } from '@towerjs/tower/gatehouse'",
-    "import { vault } from '@towerjs/tower/vault'",
-    "import { courier } from '@towerjs/tower/courier'",
-    "import { getSession, action } from '@towerjs/tower/gatehouse/next'",
+    "import { defineTower } from '@towerjs/tower'",
+    "import { vault } from '@towerjs/vault'",
+    "import { gatehouse } from '@towerjs/gatehouse'",
+    "import { courier } from '@towerjs/courier'",
+    "import { getSession, action } from '@towerjs/gatehouse/next'",
     '```',
     '',
     '## Architecture',
@@ -413,20 +467,20 @@ function agentsMd(state: ProjectState): string {
     '',
     '## Server actions',
     '',
-    'Import tower-supplied actions directly from `@towerjs/tower/gatehouse/actions`:',
+    'Import tower-supplied actions directly from `@towerjs/gatehouse/actions`:',
     '',
     '```' + fence + ' ',
-    "import { signIn, signUp, signOut } from '@towerjs/tower/gatehouse/actions'",
+    "import { signIn, signUp, signOut } from '@towerjs/gatehouse/actions'",
     '```',
     '',
     'For actions with custom returns (e.g. `enableTwoFactor`, `generateBackupCodes`)',
-    'or custom logic, use `action` from `@towerjs/tower/gatehouse/next`:',
+    'or custom logic, use `action` from `@towerjs/gatehouse/next`:',
     '',
     '```' + fence + ' ',
     "'use server'",
     '',
-    "import { action } from '@towerjs/tower/gatehouse/next'",
-    "import { gatehouse } from '@towerjs/tower/gatehouse'",
+    "import { action } from '@towerjs/gatehouse/next'",
+    "import { gatehouse } from '@towerjs/gatehouse'",
     '',
     ...(useTypeScript
       ? [
@@ -458,8 +512,6 @@ function agentsMd(state: ProjectState): string {
 
 const ALL_TOWER_PACKAGES = [
   '@towerjs/tower',
-  '@towerjs/foundation',
-  '@towerjs/blueprint',
   '@towerjs/vault',
   '@towerjs/gatehouse',
   '@towerjs/courier',

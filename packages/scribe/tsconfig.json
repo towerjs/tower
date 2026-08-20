@@ -8,5 +8,10 @@
   },
   "include": ["src"],
   "exclude": ["**/*.test.ts"],
-  "references": [{ "path": "../foundation" }]
+  "references": [
+    { "path": "../tower" },
+    { "path": "../vault" },
+    { "path": "../gatehouse" },
+    { "path": "../courier" }
+  ]
 }

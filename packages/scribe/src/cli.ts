@@ -4,14 +4,14 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { createTowerApp, detectRuntime } from '@towerjs/foundation'
-import type { TowerApp, TowerConfig } from '@towerjs/foundation'
+import { detectRuntime } from '@towerjs/tower/foundation'
+import type { TowerApp, TowerConfig } from '@towerjs/tower/foundation'
 
 import { createJiti } from 'jiti'
 
 import { createCommand } from './commands/create.js'
 import { helpText } from './help.js'
-import { getModuleFactory } from './runtime.js'
+import { createModuleDefinitions } from './runtime.js'
 
 export { helpText }
 
@@ -187,7 +187,9 @@ export async function loadConfig(configPath: string): Promise<TowerConfig> {
 export async function loadApp(configPath?: string): Promise<TowerApp> {
   if (!configPath) configPath = findConfig()
   const resolvedConfig = await loadConfig(configPath)
-  return createTowerApp(resolvedConfig, (name) => getModuleFactory(name, new Set(Object.keys(resolvedConfig.modules))))
+  const modules = await createModuleDefinitions(resolvedConfig.modules)
+  const { initTower } = await import('@towerjs/tower/runtime')
+  return initTower(modules, resolvedConfig)
 }
 
 /**
