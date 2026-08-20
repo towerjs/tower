@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Nothing yet!
+### Fixed
+
+- Republished all packages at 0.1.1 with tarballs built from the current codebase — the 0.1.0 tarballs shipped stale pre-rename output that broke `pnpm create tower` by installing the never-published `towerjs` package ([#98](https://github.com/towerjs/tower/issues/98)).
 
 ## [0.1.0] - 2026-08-19
 
