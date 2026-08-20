@@ -11,33 +11,12 @@ const WORKSPACE_ROOT = new URL('..', import.meta.url).pathname
 const PACKAGES_DIR = join(WORKSPACE_ROOT, 'packages')
 
 const ALLOWED_DEPENDENCIES: Record<string, string[]> = {
-  '@towerjs/foundation': [],
-  '@towerjs/blueprint': ['@towerjs/foundation'],
-  '@towerjs/vault': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/courier': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/gatehouse': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/edge': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/archive': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/beacon': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/crane': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/treasury': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/observatory': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/watchtower': ['@towerjs/foundation', '@towerjs/blueprint'],
-  '@towerjs/scribe': [
-    '@towerjs/foundation',
-    '@towerjs/blueprint',
-    '@towerjs/vault',
-    '@towerjs/gatehouse',
-    '@towerjs/courier',
-  ],
-  '@towerjs/tower': [
-    '@towerjs/foundation',
-    '@towerjs/blueprint',
-    '@towerjs/vault',
-    '@towerjs/gatehouse',
-    '@towerjs/courier',
-    '@towerjs/edge',
-  ],
+  '@towerjs/tower': [],
+  '@towerjs/vault': ['@towerjs/tower'],
+  '@towerjs/courier': ['@towerjs/tower'],
+  '@towerjs/gatehouse': ['@towerjs/tower', '@towerjs/courier'],
+  '@towerjs/edge': ['@towerjs/tower'],
+  '@towerjs/scribe': ['@towerjs/tower', '@towerjs/vault', '@towerjs/gatehouse', '@towerjs/courier'],
   'create-tower': ['@towerjs/scribe'],
 }
 

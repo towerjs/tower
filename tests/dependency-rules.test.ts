@@ -15,29 +15,34 @@ interface Rule {
 
 const rules: Rule[] = [
   {
-    source: 'foundation',
+    source: 'tower',
     allowed: [],
-    forbidden: ['@towerjs/'],
-  },
-  {
-    source: 'blueprint',
-    allowed: ['@towerjs/foundation'],
     forbidden: ['@towerjs/vault', '@towerjs/gatehouse', '@towerjs/courier', '@towerjs/edge', '@towerjs/scribe'],
   },
   {
     source: 'vault',
-    allowed: ['@towerjs/blueprint', '@towerjs/foundation'],
+    allowed: ['@towerjs/tower'],
     forbidden: ['@towerjs/gatehouse', '@towerjs/courier'],
   },
   {
     source: 'courier',
-    allowed: ['@towerjs/blueprint', '@towerjs/foundation'],
+    allowed: ['@towerjs/tower'],
     forbidden: ['@towerjs/vault', '@towerjs/gatehouse'],
   },
   {
     source: 'gatehouse',
-    allowed: ['@towerjs/blueprint', '@towerjs/foundation', '@towerjs/courier'],
+    allowed: ['@towerjs/tower', '@towerjs/courier'],
     forbidden: ['@towerjs/vault'],
+  },
+  {
+    source: 'edge',
+    allowed: ['@towerjs/tower'],
+    forbidden: ['@towerjs/vault', '@towerjs/gatehouse', '@towerjs/courier'],
+  },
+  {
+    source: 'scribe',
+    allowed: ['@towerjs/tower', '@towerjs/vault', '@towerjs/gatehouse', '@towerjs/courier'],
+    forbidden: [],
   },
 ]
 
