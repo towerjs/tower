@@ -1,6 +1,6 @@
-import type { TowerContext, TowerModule } from '@towerjs/blueprint'
-import { registerModule } from '@towerjs/blueprint'
-import { getRequestContextResolver, towerContext } from '@towerjs/foundation'
+import type { TowerContext, TowerModule } from '@towerjs/tower/foundation'
+import { createLazyModule } from '@towerjs/tower/runtime'
+import { getRequestContextResolver, towerContext } from '@towerjs/tower/foundation'
 
 import { ContextRequiredError } from './context.js'
 import type { BetterAuthAdapter } from './providers/better-auth.js'
@@ -256,19 +256,6 @@ export async function runWithRequest<T>(
   return towerContext.run({ gatehouse: instance }, handler)
 }
 
-type GatehouseApiMethods = {
-  getSession(): Promise<Session | null>
-  session(): Promise<Session | null>
-  user(): Promise<GatehouseUser | null>
-  requireUser(): Promise<GatehouseUser>
-  getUserSessions(): Promise<GatehouseSession[]>
-  getApiKeys(userId: string): Promise<ApiKeyInfo[]>
-  getOrganizations(): Promise<Organization[]>
-  getOrganization(id: string): Promise<OrganizationFull | null>
-}
-
-type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
-
 async function withRequestContext<T>(fn: (instance: GatehouseInstance) => Promise<T>): Promise<T> {
   const resolver = getRequestContextResolver()
   if (!resolver) throw new ContextRequiredError('No request context available.')
@@ -290,105 +277,47 @@ async function requestRequireUser(): Promise<GatehouseUser> {
   return s.user
 }
 
-/**
- * Proxy singleton for accessing gatehouse.
- *
- * Inside an ALS context (action, withGatehouse, runWithRequest) it delegates to
- * the per-request instance. Outside ALS, request-based methods
- * (`getSession`, `session`, `user`, `requireUser`) use the registered
- * framework adapter to resolve the request context.
- */
-function notInitialized(prop: string) {
-  return () => {
-    throw new Error(
-      `gatehouse.${prop}() called before Gatehouse was initialized. Ensure tower.config.ts includes gatehouse module and Tower is started.`
-    )
-  }
+type GatehouseApiMethods = {
+  getSession(): Promise<Session | null>
+  session(): Promise<Session | null>
+  user(): Promise<GatehouseUser | null>
+  requireUser(): Promise<GatehouseUser>
+  getUserSessions(): Promise<GatehouseSession[]>
+  getApiKeys(userId: string): Promise<ApiKeyInfo[]>
+  getOrganizations(): Promise<Organization[]>
+  getOrganization(id: string): Promise<OrganizationFull | null>
 }
 
-export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
-  get(_, prop) {
-    const instance = towerContext.get<GatehouseInstance>('gatehouse')
-    if (instance && prop in instance) {
-      const value = (instance as any)[prop]
-      if (typeof value === 'function') {
-        return (...args: any[]) => (value as Function)(...args)
-      }
-      return value
-    }
+type GatehouseRuntimeAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
 
-    if (prop === 'proxy') {
-      return (options?: any) => {
-        if (getAdapter()) return getAdapter()!.createProxy(options)
-        return {
-          handler: async (_request: Request) => {
-            return undefined
-          },
-        }
-      }
-    }
-
-    if (prop === 'from') return getAdapter() ? (request: any) => getAdapter()!.from(request) : notInitialized('from')
-    if (prop === 'fromHeaders')
-      return getAdapter() ? (headers: Headers) => getAdapter()!.from({ headers }) : notInitialized('fromHeaders')
-    if (prop === 'migrate') return getAdapter() ? () => getAdapter()!.migrate() : notInitialized('migrate')
-
-    if (getAdapter()) {
-      if (prop === 'provider') return getAdapter()!.provider
-      if (prop === 'routes') return getAdapter()!.routes
-
-      if (prop === 'getSession' || prop === 'session') return requestGetSession
-      if (prop === 'user') return async () => withRequestContext((instance) => instance.user()).catch(() => null)
-      if (prop === 'requireUser') return requestRequireUser
-      if (prop === 'getUserSessions') return () => withRequestContext((instance) => instance.sessions.list())
-      if (prop === 'getApiKeys')
-        return (userId: string) =>
-          withRequestContext(async (instance) => {
-            const { keys } = await instance.apiKeys.list(userId)
-            return keys
-          })
-      if (prop === 'getOrganizations') return () => withRequestContext((instance) => instance.organizations.list())
-      if (prop === 'getOrganization')
-        return (id: string) => withRequestContext((instance) => instance.organizations.getFull(id))
-    }
-
-    if (prop === Symbol.toPrimitive) return undefined
-    if (prop === 'then') return undefined
-    throw new ContextRequiredError(
-      `gatehouse.${String(prop)} requires an active request context. ` +
-        `Use inside an action() or withGatehouse() wrapper, ` +
-        `or use gatehouse.from() directly in route handlers.`
-    )
-  },
-}) as GatehouseAPI
+const gatehouseRuntime = createLazyModule<GatehouseRuntimeAPI>('gatehouse')
 
 /**
- * Creates a Tower module that registers the gatehouse auth service.
+ * Creates a Tower module definition for Gatehouse.
  *
  * @example
  * ```ts
  * defineTower({
- *   modules: {
- *     vault: { connectionString: process.env.DATABASE_URL },
- *     gatehouse: {
- *       provider: "better-auth",
+ *   modules: [
+ *     vault(),
+ *     gatehouse({
+ *       provider: 'better-auth',
  *       credentials: true,
- *       social: ["google", "github"],
- *     },
- *   },
+ *     }),
+ *     courier({ email: { provider: 'console' } }),
+ *   ],
  * })
  * ```
  */
-export function defineGatehouse(
-  config: GatehouseConfig
-): TowerModule & GatehouseModule & { init: (ctx: TowerContext) => Promise<void> } {
+function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule & GatehouseModule {
   parseGatehouseConfig(config as unknown as Record<string, unknown>)
 
   return {
     name: 'gatehouse',
+    dependsOn: ['vault', 'courier'],
 
     register(ctx: TowerContext) {
-      ctx.services.register('gatehouse', this)
+      ctx.services.register('gatehouse', gatehouseRuntime)
     },
 
     async initialize(ctx: TowerContext) {
@@ -423,18 +352,41 @@ export function defineGatehouse(
     async migrate() {
       return getAdapter()!.migrate()
     },
-
-    init(ctx: TowerContext) {
-      return this.initialize!(ctx)
-    },
-  } satisfies TowerModule & GatehouseModule & { init: (ctx: TowerContext) => Promise<void> }
+  } satisfies TowerModule & GatehouseModule
 }
 
-registerModule({
-  name: 'gatehouse',
-  dependsOn: ['vault'],
-  factory: (config) => defineGatehouse(config as unknown as GatehouseConfig),
-})
+/**
+ * Gatehouse module - callable for config, property face for runtime API.
+ *
+ * Usage:
+ * ```ts
+ * // In tower.config.ts - config factory
+ * import { gatehouse } from '@towerjs/gatehouse'
+ * export default defineTower({ modules: [gatehouse({ provider: 'better-auth', credentials: true })] })
+ * ```
+ *
+ * ```ts
+ * // In application code - runtime API
+ * import { gatehouse } from '@towerjs/gatehouse'
+ * const session = await gatehouse.getSession()
+ * await gatehouse.signIn.email({ email, password })
+ * ```
+ */
+export const gatehouse = new Proxy(createGatehouseModuleDefinition, {
+  get(_target, prop) {
+    // The call face returns the module definition
+    if (prop === 'apply' || prop === 'name' || prop === 'length') {
+      return (_target as any)[prop]
+    }
+    // Property face delegates to the lazy runtime proxy
+    return (gatehouseRuntime as any)[prop]
+  },
+  apply(_target, _thisArg, args: unknown[]) {
+    return (_target as (...args: unknown[]) => unknown)(...args)
+  },
+}) as ((
+  config: GatehouseConfig
+) => TowerModule & GatehouseModule) & GatehouseRuntimeAPI
 
 function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
   if (!courier) return config

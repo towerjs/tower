@@ -1,4 +1,4 @@
-import { setRequestContextResolver, towerContext } from '@towerjs/foundation'
+import { setRequestContextResolver, towerContext } from '@towerjs/tower/foundation'
 
 import { Gatehouse, getRoutes } from '../index.js'
 
@@ -14,7 +14,7 @@ type NextRouteContext = {
   params: Promise<Record<string, string>>
 }
 
-type ActionResult = { error: string } | { ok: true }
+export type ActionResult = { error?: string; ok?: true }
 
 function withGatehouseContext<TResult, TArgs extends unknown[]>(
   handler: (...args: TArgs) => Promise<TResult>
@@ -54,10 +54,7 @@ function withGatehouseContext<TResult, TArgs extends unknown[]>(
  * })
  * ```
  */
-type FormActionFn = {
-  (formData: FormData): Promise<void>
-  (prevState: ActionResult | undefined, formData: FormData): Promise<ActionResult>
-}
+export type FormActionFn = (prevState: ActionResult | undefined, formData: FormData) => Promise<ActionResult | undefined>
 
 export const action = withGatehouseContext as typeof withGatehouseContext & {
   form: (handler: (data: Record<string, string>) => Promise<void>) => FormActionFn
@@ -75,7 +72,7 @@ action.form = (handler: (data: Record<string, string>) => Promise<void>): FormAc
 
   const fn = async (arg0: unknown, arg1?: FormData): Promise<ActionResult> => {
     const formData = arg0 instanceof FormData ? arg0 : (arg1 as FormData)
-    const prevState = arg0 instanceof FormData ? undefined : (arg0 as ActionResult | undefined)
+    const prevState = arg0 instanceof FormData ? undefined : arg0
     try {
       return await inner(prevState, formData)
     } catch (e) {
@@ -83,7 +80,7 @@ action.form = (handler: (data: Record<string, string>) => Promise<void>): FormAc
     }
   }
 
-  return fn as FormActionFn
+  return fn
 }
 
 /**
@@ -102,7 +99,7 @@ export function withGatehouse<T extends Response>(
   }
 }
 
-// ─── Route handler (lazily resolved) ──────────────────────────────
+// ─── Route handler (lazily resolved) ───
 
 function lazy(method: 'GET' | 'POST'): (req: Request) => Promise<Response> {
   return (req: Request) => getRoutes()[method](req)
@@ -113,6 +110,7 @@ function lazy(method: 'GET' | 'POST'): (req: Request) => Promise<Response> {
  * Imported by `app/api/auth/[...all]/route.ts` in user projects.
  */
 export const GET = lazy('GET') as (req: Request) => Promise<Response>
+
 /**
  * Lazy POST handler that delegates to the gatehouse auth routes.
  * Imported by `app/api/auth/[...all]/route.ts` in user projects.

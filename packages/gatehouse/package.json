@@ -1,6 +1,6 @@
 {
   "name": "@towerjs/gatehouse",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Authentication and authorization for Tower — email/password, social, 2FA, organizations, and more",
   "type": "module",
   "exports": {
@@ -15,6 +15,14 @@
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
+    },
+    "./actions": {
+      "types": "./dist/frameworks/actions/index.d.ts",
+      "default": "./dist/frameworks/actions/index.js"
+    },
+    "./react-server": {
+      "types": "./dist/frameworks/react-server.d.ts",
+      "default": "./dist/frameworks/react-server.js"
     }
   },
   "files": [
@@ -26,8 +34,7 @@
   "dependencies": {
     "@better-auth/api-key": "^1.6.26",
     "@better-auth/passkey": "^1.6.26",
-    "@towerjs/blueprint": "workspace:*",
-    "@towerjs/foundation": "workspace:*",
+    "@towerjs/tower": "workspace:*",
     "better-auth": "^1.6.26",
     "kysely": "^0.29.5",
     "zod": "^4.4.3"
