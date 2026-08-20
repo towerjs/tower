@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Verify the published towerjs package structure and exports map.
+# Verify the published @towerjs/tower package structure and exports map.
 #
 # Because the @towerjs/* packages are unpublished (workspace:* deps), this test
 # extracts tarballs directly and verifies the artifact that consumers receive:
@@ -26,7 +26,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Expected public subpaths (must match towerjs/package.json exports)
+# Expected public subpaths (must match packages/tower/package.json exports)
 SUBPATHS=(
   "."
   "./blueprint"
@@ -41,13 +41,13 @@ SUBPATHS=(
   "./runtime"
 )
 
-echo "=== Packing towerjs ==="
+echo "=== Packing @towerjs/tower ==="
 cd "$ROOT"
-(cd packages/towerjs && pnpm pack --pack-destination "$PACK_DIR" 2>/dev/null)
+(cd packages/tower && pnpm pack --pack-destination "$PACK_DIR" 2>/dev/null)
 
 TARBALL=$(ls "$PACK_DIR"/towerjs-*.tgz 2>/dev/null | head -1)
 if [ -z "$TARBALL" ]; then
-  echo "ERROR: towerjs tarball not found"
+  echo "ERROR: @towerjs/tower tarball not found"
   exit 1
 fi
 

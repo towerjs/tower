@@ -31,7 +31,7 @@ export default defineTower({
 Run queries:
 
 ```ts
-import { vault } from 'towerjs/vault'
+import { vault } from '@towerjs/tower/vault'
 
 await vault.insertInto('users').values({ name: 'Alice', email: 'alice@example.com' }).execute()
 ```
@@ -66,9 +66,8 @@ tower migrate
 Or programmatically:
 
 ```ts
+import { vault } from '@towerjs/tower/vault'
 import { migrateToLatest } from '@towerjs/vault'
-
-import { vault } from 'towerjs/vault'
 
 await migrateToLatest(vault, { folder: 'src/vault/migrations' })
 ```
@@ -113,4 +112,4 @@ On Edge Runtime, the `pg` provider is unavailable (no TCP connections) — use t
 
 ## Included in
 
-- [towerjs](https://www.npmjs.com/package/towerjs) — meta-package
+- [@towerjs/tower](https://www.npmjs.com/package/@towerjs/tower) — meta-package

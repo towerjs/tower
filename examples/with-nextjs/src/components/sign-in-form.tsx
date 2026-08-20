@@ -3,10 +3,11 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+import { requestMagicLink, sendVerificationOTP, signIn, signInWithOTP } from '@towerjs/tower/gatehouse/actions'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useActionState, useEffect, useState } from 'react'
-import { requestMagicLink, sendVerificationOTP, signIn, signInWithOTP } from 'towerjs/gatehouse/actions'
 
 const TABS = [
   { id: 'password', label: 'Password' },

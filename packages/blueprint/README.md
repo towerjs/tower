@@ -51,4 +51,4 @@ interface TowerModule {
 
 ## Included in
 
-- [towerjs](https://www.npmjs.com/package/towerjs) — meta-package
+- [@towerjs/tower](https://www.npmjs.com/package/@towerjs/tower) — meta-package

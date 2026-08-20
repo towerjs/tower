@@ -27,4 +27,4 @@ Gatehouse (auth) currently requires a Node.js-compatible runtime and does not wo
 
 ## Included in
 
-- [towerjs](https://www.npmjs.com/package/towerjs) — meta-package
+- [@towerjs/tower](https://www.npmjs.com/package/@towerjs/tower) — meta-package

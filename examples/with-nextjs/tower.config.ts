@@ -1,4 +1,4 @@
-import { defineTower } from 'towerjs/blueprint'
+import { defineTower } from '@towerjs/tower/blueprint'
 
 export default defineTower({
   modules: {

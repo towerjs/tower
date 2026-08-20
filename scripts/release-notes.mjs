@@ -3,7 +3,7 @@
 //
 // Usage:
 //   node scripts/release-notes.mjs [x.y.z]
-// Omitting the version reads the current version from packages/towerjs.
+// Omitting the version reads the current version from packages/tower.
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -11,7 +11,7 @@ const root = resolve(import.meta.dirname, '..')
 
 let version = process.argv[2]
 if (!version) {
-  const pkg = JSON.parse(await readFile(resolve(root, 'packages/towerjs/package.json'), 'utf8'))
+  const pkg = JSON.parse(await readFile(resolve(root, 'packages/tower/package.json'), 'utf8'))
   version = pkg.version
 }
 

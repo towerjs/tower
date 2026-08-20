@@ -28,7 +28,7 @@ describe('towerConfig', () => {
   it('generates config with no modules', () => {
     const result = towerConfig(baseState)
 
-    expect(result).toContain('import { defineTower, env } from "towerjs/blueprint"')
+    expect(result).toContain('import { defineTower, env } from "@towerjs/tower/blueprint"')
     expect(result).toContain('modules:')
   })
 
@@ -518,10 +518,10 @@ describe('nextAdapter.generate', () => {
     expect(agentsContent).toContain('composable monolithic stack')
   })
 
-  it('installs towerjs dependency', async () => {
+  it('installs @towerjs/tower dependency', async () => {
     await nextAdapter.generate(state, '/target')
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', 'towerjs'], {
+    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '@towerjs/tower'], {
       cwd: expect.stringContaining('my-app'),
       stdio: 'inherit',
     })
@@ -535,7 +535,7 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', 'towerjs', '@towerjs/gatehouse'], {
+    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '@towerjs/tower', '@towerjs/gatehouse'], {
       cwd: expect.stringContaining('my-app'),
       stdio: 'inherit',
     })
@@ -549,7 +549,7 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithModules, '/target')
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', 'towerjs', '@towerjs/vault', '@towerjs/courier'], {
+    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '@towerjs/tower', '@towerjs/vault', '@towerjs/courier'], {
       cwd: expect.stringContaining('my-app'),
       stdio: 'inherit',
     })

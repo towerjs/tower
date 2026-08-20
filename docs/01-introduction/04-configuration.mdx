@@ -12,10 +12,10 @@ Keep architecture in the config file and environment-specific values in `.env` f
 
 ## The Config File
 
-Tower reads configuration from `tower.config.ts` at your project root. Use `defineTower` from `towerjs/blueprint` for type-safe config:
+Tower reads configuration from `tower.config.ts` at your project root. Use `defineTower` from `@towerjs/tower/blueprint` for type-safe config:
 
 ```ts filename="tower.config.ts"
-import { defineTower, env } from 'towerjs/blueprint'
+import { defineTower, env } from '@towerjs/tower/blueprint'
 
 export default defineTower({
   modules: {

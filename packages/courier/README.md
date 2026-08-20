@@ -31,7 +31,7 @@ export default defineTower({
 Send messages:
 
 ```ts
-import { courier } from 'towerjs/courier'
+import { courier } from '@towerjs/tower/courier'
 
 await courier.email.send({
   to: 'user@example.com',
@@ -73,7 +73,7 @@ await courier.sms.send({
 Courier renders React email templates natively:
 
 ```tsx
-import { courier } from 'towerjs/courier'
+import { courier } from '@towerjs/tower/courier'
 
 import WelcomeEmail from './emails/welcome.tsx'
 
@@ -104,4 +104,4 @@ await courier.email.send({
 
 ## Included in
 
-- [towerjs](https://www.npmjs.com/package/towerjs) — meta-package
+- [@towerjs/tower](https://www.npmjs.com/package/@towerjs/tower) — meta-package

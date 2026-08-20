@@ -41,7 +41,7 @@ async function main() {
   await pool.end()
   console.log('[setup] Schema reset complete')
 
-  const { initTower } = await import('towerjs/runtime')
+  const { initTower } = await import('@towerjs/tower/runtime')
   await initTower()
   const { Gatehouse } = await import('@towerjs/gatehouse')
   await Gatehouse.migrate()

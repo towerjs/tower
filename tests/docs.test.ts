@@ -126,8 +126,8 @@ describe('documentation code blocks', () => {
             lib: ['ES2022', 'DOM'],
             types: [],
             paths: {
-              towerjs: [join(ROOT_DIR, 'packages/towerjs/src/index.ts')],
-              'towerjs/*': [join(ROOT_DIR, 'packages/towerjs/src/*')],
+              '@towerjs/tower': [join(ROOT_DIR, 'packages/tower/src/index.ts')],
+              '@towerjs/tower/*': [join(ROOT_DIR, 'packages/tower/src/*')],
               '@towerjs/*': [join(ROOT_DIR, 'packages/*/src/index.ts')],
             },
           },

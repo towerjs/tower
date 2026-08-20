@@ -22,19 +22,20 @@ The module surfaces on three layers:
 1. **The `gatehouse` singleton** — server-side access to sessions, users, and every operation:
 
 ```ts
-import { gatehouse } from 'towerjs/gatehouse'
+import { gatehouse } from '@towerjs/tower/gatehouse'
 
 const user = await gatehouse.requireUser() // throws unless signed in
 const session = await gatehouse.getSession()
 ```
 
-2. **Pre-built server actions** — ready-made `'use server'` actions for forms, imported directly from `towerjs/gatehouse/actions` in client components:
+2. **Pre-built server actions** — ready-made `'use server'` actions for forms, imported directly from `@towerjs/tower/gatehouse/actions` in client components:
 
 ```tsx filename="src/components/sign-in-form.tsx"
 'use client'
 
+import { signIn } from '@towerjs/tower/gatehouse/actions'
+
 import { useActionState } from 'react'
-import { signIn } from 'towerjs/gatehouse/actions'
 
 export function SignInForm() {
   const [state, action, pending] = useActionState(signIn, undefined)
@@ -56,7 +57,7 @@ Do not create a `src/actions.ts` re-export wrapper — Turbopack cannot verify t
 3. **`gatehouseClient`** — a typed client for browser code (OAuth buttons, passkeys, `useSession`):
 
 ```ts
-import { gatehouseClient } from 'towerjs/gatehouse/client'
+import { gatehouseClient } from '@towerjs/tower/gatehouse/client'
 
 await gatehouseClient.signIn.social({ provider: 'google' })
 ```

@@ -44,6 +44,9 @@ importers:
       '@towerjs/gatehouse':
         specifier: workspace:*
         version: link:../../packages/gatehouse
+      '@towerjs/tower':
+        specifier: workspace:*
+        version: link:../../packages/tower
       '@towerjs/vault':
         specifier: workspace:*
         version: link:../../packages/vault
@@ -56,9 +59,6 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
-      towerjs:
-        specifier: workspace:*
-        version: link:../../packages/towerjs
     devDependencies:
       '@playwright/test':
         specifier: ^1.62.1
@@ -241,7 +241,7 @@ importers:
         specifier: ^26.2.0
         version: 26.2.0
 
-  packages/towerjs:
+  packages/tower:
     dependencies:
       '@towerjs/blueprint':
         specifier: workspace:*

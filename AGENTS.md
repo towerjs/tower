@@ -25,7 +25,7 @@ tower/
 │   ├── gatehouse/        # Auth: social, magic links, OTP, passkeys, 2FA, orgs, API keys
 │   │   └── frameworks/   # Framework adapters (next.ts, etc.)
 │   ├── courier/          # Multi-channel communication: email, SMS, push
-│   ├── towerjs/          # Meta-package that bundles all modules for convenient access
+│   ├── tower/           # Meta-package that bundles all modules for convenient access
 │   │   └── gatehouse/    # Re-exports for gatehouse subpaths (actions, next, client)
 │   ├── edge/             # Edge runtime integration (Vercel Edge, etc.)
 │   ├── scribe/           # CLI: scaffolding (create), migrations and seeding (migrate/seed)
@@ -48,7 +48,7 @@ These rules are enforced by `tests/dependency-rules.test.ts`:
 | `courier`    | `@towerjs/blueprint`, `@towerjs/foundation`                     | vault, gatehouse                        |
 | `gatehouse`  | `@towerjs/blueprint`, `@towerjs/foundation`, `@towerjs/courier` | vault                                   |
 
-The `towerjs` meta-package re-exports from all others and can depend on anything. It also owns the composition root: the module-factory registry (`MODULE_DEFS`), the app singleton (`getTowerApp`/`initTower`), and the lazy-initialization orchestration (`runtime.ts`). Per-module feature logic stays in the individual `@towerjs/*` packages; `towerjs` wires them together.
+The `@towerjs/tower` meta-package re-exports from all others and can depend on anything. It also owns the composition root: the module-factory registry (`MODULE_DEFS`), the app singleton (`getTowerApp`/`initTower`), and the lazy-initialization orchestration (`runtime.ts`). Per-module feature logic stays in the individual `@towerjs/*` packages; `@towerjs/tower` wires them together.
 
 **Never** create circular dependencies between packages. If two packages need to share types, put them in a common dependency (foundation or a new shared package).
 
@@ -75,15 +75,15 @@ import { gatehouse } from '@towerjs/gatehouse'
 
 ### User-facing meta-package
 
-User code in generated projects imports from `towerjs`:
+User code in generated projects imports from `@towerjs/tower`:
 
 ```ts
-import { defineTower } from 'towerjs/blueprint'
-import { gatehouse } from 'towerjs/gatehouse'
-import { getSession } from 'towerjs/gatehouse/next'
+import { defineTower } from '@towerjs/tower/blueprint'
+import { gatehouse } from '@towerjs/tower/gatehouse'
+import { getSession } from '@towerjs/tower/gatehouse/next'
 ```
 
-The `towerjs` meta-package re-exports from the individual `@towerjs/*` packages, adding lazy initialization where needed.
+The `@towerjs/tower` meta-package re-exports from the individual `@towerjs/*` packages, adding lazy initialization where needed.
 
 **Exception**: The proxy middleware file (`src/proxy.ts`) imports directly from `@towerjs/gatehouse` because the proxy module is evaluated at cold-start and needs synchronous access to `gatehouse.proxy()`.
 
@@ -120,7 +120,7 @@ All Tower packages are versioned in lockstep, so the release is a single "Tower 
 
 Details:
 
-- Publishing only runs when a **merged** PR satisfies every convention: head branch exactly `release/vX.Y.Z`, PR title exactly `vX.Y.Z`, a squash-merge commit title of `vX.Y.Z (#NNN)`, all package versions equal to `X.Y.Z`, and a `CHANGELOG.md` entry for `X.Y.Z`. The version is derived from the branch name; if any check fails, the job fails without publishing, tagging, or creating a release. Unmerged PRs, fork PRs, unrelated PRs, and pushes to `main` never trigger a publish. An explicit `workflow_dispatch` run with `force-publish` bypasses the PR checks and publishes the version currently in `packages/towerjs/package.json`.
+- Publishing only runs when a **merged** PR satisfies every convention: head branch exactly `release/vX.Y.Z`, PR title exactly `vX.Y.Z`, a squash-merge commit title of `vX.Y.Z (#NNN)`, all package versions equal to `X.Y.Z`, and a `CHANGELOG.md` entry for `X.Y.Z`. The version is derived from the branch name; if any check fails, the job fails without publishing, tagging, or creating a release. Unmerged PRs, fork PRs, unrelated PRs, and pushes to `main` never trigger a publish. An explicit `workflow_dispatch` run with `force-publish` bypasses the PR checks and publishes the version currently in `packages/tower/package.json`.
 - Publishing uses npm trusted publishing (OIDC): no `NPM_TOKEN` is stored. Each package must already exist on the registry with a trusted publisher configured for `towerjs/tower` + this `release.yml` workflow before the automated workflow can publish it. Same-repo `pull_request` events receive the `id-token`; fork PRs do not, so fork-originated PRs can never publish even if merged.
 - The workflow declares `id-token: write`; `pnpm publish` delegates to the npm CLI, which does the OIDC exchange automatically (npm 11.5+). Provenance attestations are only generated once the repository is public.
 
@@ -222,7 +222,7 @@ chore(deps): upgrade vitest
 docs(vault): document kysely-neon provider
 ```
 
-Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `towerjs`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation — e.g. `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
+Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `tower`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation — e.g. `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
 
 **Commit message bodies** — The subject is the commit's identity: keep it to one line, imperative, no trailing period. Add a body only when the subject can't carry the _why_ — a non-obvious fix or tradeoff, a breaking change, an issue reference. Put it one blank line below the subject, wrap at 72 characters, and explain _why_, not _what_ (the diff shows what). Skip the body when the change is self-explanatory (e.g. dependency bumps, pure formatting).
 
@@ -246,11 +246,11 @@ We use **oxlint** (not ESLint or Biome, which are incompatible with TypeScript 7
 
 Config is in `oxlint.json` at the root. Run via `pnpm lint`.
 
-## The meta-package pattern (towerjs)
+## The meta-package pattern (@towerjs/tower)
 
-`packages/towerjs` is the user-facing entry point. It re-exports from all `@towerjs/*` packages and adds:
+`packages/tower` is the user-facing entry point. It re-exports from all `@towerjs/*` packages and adds:
 
-1. **Lazy initialization** — The `towerjs` wrappers call `getTowerApp()` before delegating, ensuring the app is initialized on first use.
-2. **Bundled modules** — `towerjs` bundles all modules as dependencies, so `npm install towerjs` installs every module. Users then import via sub-path exports (`towerjs/vault`, `towerjs/gatehouse`) instead of installing individual `@towerjs/*` packages separately.
+1. **Lazy initialization** — The `@towerjs/tower` wrappers call `getTowerApp()` before delegating, ensuring the app is initialized on first use.
+2. **Bundled modules** — `@towerjs/tower` bundles all modules as dependencies, so `npm install @towerjs/tower` installs every module. Users then import via sub-path exports (`@towerjs/tower/vault`, `@towerjs/tower/gatehouse`) instead of installing individual `@towerjs/*` packages separately.
 
-The wrappers in `packages/towerjs/src/gatehouse.ts` and similar files use `Proxy` objects to intercept property access and add initialization logic.
+The wrappers in `packages/tower/src/gatehouse.ts` and similar files use `Proxy` objects to intercept property access and add initialization logic.

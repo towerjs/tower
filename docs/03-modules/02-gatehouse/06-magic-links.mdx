@@ -22,8 +22,9 @@ The email goes through [Courier](/docs/courier) when configured — no callback 
 ```tsx filename="src/app/sign-in/magic-link-form.tsx"
 'use client'
 
+import { requestMagicLink } from '@towerjs/tower/gatehouse/actions'
+
 import { useActionState } from 'react'
-import { requestMagicLink } from 'towerjs/gatehouse/actions'
 
 export function MagicLinkForm() {
   const [state, action, pending] = useActionState(requestMagicLink, undefined)

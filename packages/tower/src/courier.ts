@@ -10,7 +10,7 @@ import { createLazyModule } from './lazy-module.js'
  *
  * @example
  * ```ts
- * import { courier } from 'towerjs/courier'
+ * import { courier } from '@towerjs/tower/courier'
  * await courier.email.send({ to, subject, text })
  * ```
  */

@@ -1,6 +1,5 @@
+import { vault } from '@towerjs/tower/vault'
 import type { VaultModule } from '@towerjs/vault'
-
-import { vault } from 'towerjs/vault'
 
 interface Project {
   id: string

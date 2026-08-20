@@ -112,8 +112,9 @@ fi
 echo ""
 echo "=== Compiling extracted examples ==="
 
-# Docs import from bare 'towerjs' and 'towerjs/*' (the package name as users
-# write it), not '@towerjs/*'. Add path mappings so tsc can resolve them.
+# Docs import from bare '@towerjs/tower' and '@towerjs/tower/*' (the package name
+# as users write it), not individual '@towerjs/*' packages. Add path mappings so
+# tsc can resolve them.
 node -e "
 const fs = require('fs');
 const path = require('path');
@@ -130,8 +131,8 @@ const config = {
     jsx: 'react-jsx',
     lib: ['ES2022', 'DOM'],
     paths: {
-      'towerjs': [path.join(root, 'packages/towerjs/src/index.ts')],
-      'towerjs/*': [path.join(root, 'packages/towerjs/src/*'), path.join(root, 'packages/towerjs/src/*/index.ts')],
+      '@towerjs/tower': [path.join(root, 'packages/tower/src/index.ts')],
+      '@towerjs/tower/*': [path.join(root, 'packages/tower/src/*'), path.join(root, 'packages/tower/src/*/index.ts')],
       '@towerjs/*': [path.join(root, 'packages/*/src/index.ts')]
     }
   },

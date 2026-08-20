@@ -1,8 +1,9 @@
 import { SignOutButton } from '@/components/sign-out-button'
 
+import { gatehouse } from '@towerjs/tower/gatehouse'
+
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { gatehouse } from 'towerjs/gatehouse'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home' },

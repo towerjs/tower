@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.resetModules()
 })
 
-describe('towerjs/gatehouse react-server variant', () => {
+describe('@towerjs/tower/gatehouse react-server variant', () => {
   it('registers a request context resolver at module load', async () => {
     await import('./react-server')
     expect(mocks.resolver).toHaveBeenCalledTimes(1)

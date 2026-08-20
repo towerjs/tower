@@ -47,7 +47,7 @@ if (run('git rev-parse HEAD', true) !== run('git rev-parse origin/main', true)) 
   fail('main is not up to date with origin/main — pull or push first')
 }
 
-const current = JSON.parse(await readFile(resolve(root, 'packages/towerjs/package.json'), 'utf8')).version
+const current = JSON.parse(await readFile(resolve(root, 'packages/tower/package.json'), 'utf8')).version
 const target = nextVersion(current, bump)
 const releaseBranch = `release/v${target}`
 

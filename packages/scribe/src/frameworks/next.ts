@@ -93,7 +93,7 @@ export const nextAdapter: FrameworkAdapter = {
     const towerSection = agentsMd(state)
     await writeFile(agentsPath, generated + '\n\n' + towerSection)
 
-    const towerDeps: string[] = ['towerjs']
+    const towerDeps: string[] = ['@towerjs/tower']
     // Generated code and Tower's lazy module loader are evaluated by the
     // consumer's package manager, so every selected module must be a direct
     // dependency. This is important for pnpm's strict dependency isolation.
@@ -215,7 +215,7 @@ export function towerConfig(state: ProjectState): string {
     })
     .join('\n')
 
-  return `import { defineTower, env } from "towerjs/blueprint";
+  return `import { defineTower, env } from "@towerjs/tower/blueprint";
 
 export default defineTower({
   modules: {
@@ -241,7 +241,7 @@ function homePage(): string {
 }
 
 function authRoute(): string {
-  return `export { GET, POST } from "towerjs/gatehouse/next";
+  return `export { GET, POST } from "@towerjs/tower/gatehouse/next";
 `
 }
 
@@ -392,14 +392,14 @@ function agentsMd(state: ProjectState): string {
     '',
     '## Import conventions',
     '',
-    'Import Tower modules from the `towerjs` meta-package:',
+    'Import Tower modules from the `@towerjs/tower` meta-package:',
     '',
     '```' + fence + ' ',
-    "import { defineTower } from 'towerjs/blueprint'",
-    "import { gatehouse } from 'towerjs/gatehouse'",
-    "import { vault } from 'towerjs/vault'",
-    "import { courier } from 'towerjs/courier'",
-    "import { getSession, action } from 'towerjs/gatehouse/next'",
+    "import { defineTower } from '@towerjs/tower/blueprint'",
+    "import { gatehouse } from '@towerjs/tower/gatehouse'",
+    "import { vault } from '@towerjs/tower/vault'",
+    "import { courier } from '@towerjs/tower/courier'",
+    "import { getSession, action } from '@towerjs/tower/gatehouse/next'",
     '```',
     '',
     '## Architecture',
@@ -413,20 +413,20 @@ function agentsMd(state: ProjectState): string {
     '',
     '## Server actions',
     '',
-    'Import tower-supplied actions directly from `towerjs/gatehouse/actions`:',
+    'Import tower-supplied actions directly from `@towerjs/tower/gatehouse/actions`:',
     '',
     '```' + fence + ' ',
-    "import { signIn, signUp, signOut } from 'towerjs/gatehouse/actions'",
+    "import { signIn, signUp, signOut } from '@towerjs/tower/gatehouse/actions'",
     '```',
     '',
     'For actions with custom returns (e.g. `enableTwoFactor`, `generateBackupCodes`)',
-    'or custom logic, use `action` from `towerjs/gatehouse/next`:',
+    'or custom logic, use `action` from `@towerjs/tower/gatehouse/next`:',
     '',
     '```' + fence + ' ',
     "'use server'",
     '',
-    "import { action } from 'towerjs/gatehouse/next'",
-    "import { gatehouse } from 'towerjs/gatehouse'",
+    "import { action } from '@towerjs/tower/gatehouse/next'",
+    "import { gatehouse } from '@towerjs/tower/gatehouse'",
     '',
     ...(useTypeScript
       ? [
@@ -457,7 +457,7 @@ function agentsMd(state: ProjectState): string {
 }
 
 const ALL_TOWER_PACKAGES = [
-  'towerjs',
+  '@towerjs/tower',
   '@towerjs/foundation',
   '@towerjs/blueprint',
   '@towerjs/vault',
@@ -468,15 +468,15 @@ const ALL_TOWER_PACKAGES = [
 ]
 
 function towerTarball(packDir: string, name: string): string {
-  const suffix = name === 'towerjs' ? '' : name.replace('@towerjs/', '-')
-  return join(packDir, `towerjs${suffix}-${version}.tgz`)
+  const base = name.startsWith('@') ? name.replace('@towerjs/', 'towerjs-') : name
+  return join(packDir, `${base}-${version}.tgz`)
 }
 
 /**
  * Resolves tower package names to install args. When TOWER_PACK_DIR is set,
  * installs from locally-packed tarballs instead of the npm registry. Every
- * @towerjs/* package is installed explicitly because towerjs depends on all of
- * them and npm would otherwise try to fetch the unpublished versions.
+ * @towerjs/* package is installed explicitly because @towerjs/tower depends on
+ * all of them and npm would otherwise try to fetch the unpublished versions.
  */
 function towerInstallArgs(pm: PackageManager, names: string[]): string[] {
   const packDir = process.env.TOWER_PACK_DIR

@@ -1,5 +1,5 @@
 {
-  "name": "towerjs",
+  "name": "@towerjs/tower",
   "version": "0.1.0",
   "description": "Meta-package that bundles all Tower modules for convenient access",
   "type": "module",
@@ -65,7 +65,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist ../../.cache/tower/towerjs.tsbuildinfo && tsc -b"
+    "build": "rm -rf dist ../../.cache/tower/tower.tsbuildinfo && tsc -b"
   },
   "peerDependencies": {
     "next": "^16"
@@ -90,7 +90,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/towerjs/tower.git",
-    "directory": "packages/towerjs"
+    "directory": "packages/tower"
   },
   "homepage": "https://github.com/towerjs/tower#readme",
   "engines": {

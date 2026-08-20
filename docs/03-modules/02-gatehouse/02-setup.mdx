@@ -7,10 +7,10 @@ Get authentication running end to end: install the module, enable it, mount the 
 
 ## 1. Install
 
-`towerjs` bundles every module. Install the individual `@towerjs/gatehouse` package too, because the proxy imports `gatehouse` from it directly:
+`@towerjs/tower` bundles every module. Install the individual `@towerjs/gatehouse` package too, because the proxy imports `gatehouse` from it directly:
 
 ```bash
-pnpm add towerjs @towerjs/gatehouse
+pnpm add @towerjs/tower @towerjs/gatehouse
 ```
 
 ## 2. Enable the module
@@ -45,7 +45,7 @@ Social provider credentials (`GOOGLE_CLIENT_ID`, `GITHUB_CLIENT_ID`, etc.) are p
 The framework adapter ships the route handlers — mount them where your framework expects:
 
 ```ts filename="src/app/api/auth/[...all]/route.ts"
-import { GET, POST } from 'towerjs/gatehouse/next'
+import { GET, POST } from '@towerjs/tower/gatehouse/next'
 
 export { GET, POST }
 ```
@@ -67,7 +67,7 @@ If you're using a package manager other than npm, use `pnpm exec tower migrate`,
 Sign up through the client — or from the server:
 
 ```ts
-import { gatehouseClient } from 'towerjs/gatehouse/client'
+import { gatehouseClient } from '@towerjs/tower/gatehouse/client'
 
 await gatehouseClient.signUp.email({
   name: 'Ada',
@@ -98,7 +98,7 @@ export const config = {
 Signed-out visitors are redirected to `/sign-in` before any page renders. The session read in your dashboard then just works:
 
 ```tsx filename="src/app/dashboard/page.tsx"
-import { gatehouse } from 'towerjs/gatehouse'
+import { gatehouse } from '@towerjs/tower/gatehouse'
 
 export default async function Dashboard() {
   const user = await gatehouse.requireUser()

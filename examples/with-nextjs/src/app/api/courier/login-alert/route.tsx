@@ -1,6 +1,6 @@
 import { AuthEmailTemplate } from '@/lib/emails/auth-email'
 
-import { courier } from 'towerjs/courier'
+import { courier } from '@towerjs/tower/courier'
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {

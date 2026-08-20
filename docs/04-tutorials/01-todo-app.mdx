@@ -38,8 +38,8 @@ npx tower migrate
 ```ts filename="src/actions/todos.ts"
 'use server'
 
-import { gatehouse } from 'towerjs/gatehouse'
-import { vault } from 'towerjs/vault'
+import { gatehouse } from '@towerjs/tower/gatehouse'
+import { vault } from '@towerjs/tower/vault'
 
 export async function addTodo(formData: FormData) {
   const session = await gatehouse.getSession()
@@ -67,8 +67,8 @@ export async function deleteTodo(formData: FormData) {
 ```tsx filename="src/app/todos/page.tsx"
 import { addTodo, deleteTodo, toggleTodo } from '@/actions/todos'
 
-import { gatehouse } from 'towerjs/gatehouse'
-import { vault } from 'towerjs/vault'
+import { gatehouse } from '@towerjs/tower/gatehouse'
+import { vault } from '@towerjs/tower/vault'
 
 export default async function TodosPage() {
   const session = await gatehouse.requireUser()
@@ -111,7 +111,7 @@ export default async function TodosPage() {
 ## 5. Email Notification (Optional)
 
 ```ts filename="src/actions/todos.ts"
-import { courier } from 'towerjs/courier'
+import { courier } from '@towerjs/tower/courier'
 
 export async function addTodo(formData: FormData) {
   // ... save todo

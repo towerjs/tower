@@ -3,10 +3,11 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+import { signUp } from '@towerjs/tower/gatehouse/actions'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useActionState, useEffect } from 'react'
-import { signUp } from 'towerjs/gatehouse/actions'
 
 export function SignUpForm() {
   const router = useRouter()

@@ -20,7 +20,7 @@ export { registerService } from './registry.js'
  *
  * @example
  * ```ts
- * import { getService } from 'towerjs/foundation'
+ * import { getService } from '@towerjs/tower/foundation'
  * const vault = getService('vault')
  * ```
  */

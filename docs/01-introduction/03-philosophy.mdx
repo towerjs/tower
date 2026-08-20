@@ -18,7 +18,7 @@ Tower works alongside your web framework rather than replacing it. Next.js stays
 Tower apps are initialized on first use, not at import time. This is critical for Edge and SSR compatibility where you may import module symbols at the top level but never use them.
 
 ```ts
-import { gatehouse } from 'towerjs/gatehouse'
+import { gatehouse } from '@towerjs/tower/gatehouse'
 
 // No initialization happens here
 
@@ -38,7 +38,7 @@ The core packages (`foundation`, `blueprint`) don't depend on Next.js, Express, 
 
 ## Composable by Default
 
-Each module can be used independently. Modules communicate through well-defined interfaces, not shared state. The `towerjs` meta-package is optional — import from individual `@towerjs/*` packages for a leaner dependency tree.
+Each module can be used independently. Modules communicate through well-defined interfaces, not shared state. The `@towerjs/tower` meta-package is optional — import from individual `@towerjs/*` packages for a leaner dependency tree.
 
 ## Underlying Engines Stay Exposed
 

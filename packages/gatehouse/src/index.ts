@@ -171,7 +171,7 @@ export const Gatehouse = {
    * ```ts
    * // app/dashboard/page.tsx
    * import { headers } from 'next/headers'
-   * import { gatehouse } from 'towerjs/gatehouse'
+   *   import { gatehouse } from '@towerjs/tower/gatehouse'
    *
    * export default async function DashboardPage() {
    *   const gh = await gatehouse.fromHeaders(await headers())

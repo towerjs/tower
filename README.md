@@ -12,8 +12,8 @@
 
 <p align="center">
   <a href="https://github.com/towerjs/tower/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/towerjs/tower/ci.yml?style=for-the-badge&labelColor=000" alt="Build"></a>
-  <a href="https://www.npmjs.com/package/towerjs"><img src="https://img.shields.io/npm/v/towerjs?style=for-the-badge&labelColor=000" alt="NPM version"></a>
-  <a href="https://github.com/towerjs/tower/blob/main/LICENSE.md"><img src="https://img.shields.io/npm/l/towerjs?style=for-the-badge&labelColor=000" alt="License"></a>
+  <a href="https://www.npmjs.com/package/@towerjs/tower"><img src="https://img.shields.io/npm/v/@towerjs/tower?style=for-the-badge&labelColor=000" alt="NPM version"></a>
+  <a href="https://github.com/towerjs/tower/blob/main/LICENSE.md"><img src="https://img.shields.io/npm/l/@towerjs/tower?style=for-the-badge&labelColor=000" alt="License"></a>
 </p>
 
 ---
@@ -46,7 +46,7 @@ Define the application once:
 
 ```ts
 // tower.config.ts
-import { defineTower, env } from 'towerjs/blueprint'
+import { defineTower, env } from '@towerjs/tower/blueprint'
 
 export default defineTower({
   modules: {
@@ -70,8 +70,8 @@ export default defineTower({
 Use Tower's application APIs directly:
 
 ```ts
-import { gatehouse } from 'towerjs/gatehouse'
-import { vault } from 'towerjs/vault'
+import { gatehouse } from '@towerjs/tower/gatehouse'
+import { vault } from '@towerjs/tower/vault'
 
 const session = await gatehouse.getSession()
 

@@ -7,9 +7,9 @@ import { join, resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const ROOT_DIR = resolve(import.meta.dirname, '..')
-const TOWERJS_DIR = resolve(ROOT_DIR, 'packages', 'towerjs')
+const TOWER_DIR = resolve(ROOT_DIR, 'packages', 'tower')
 
-// Must match towerjs/package.json exports (public subpaths)
+// Must match packages/tower/package.json exports (public subpaths)
 const SUBPATHS = [
   '.',
   './blueprint',
@@ -24,13 +24,13 @@ const SUBPATHS = [
   './runtime',
 ]
 
-describe('towerjs tarball structure', () => {
+describe('@towerjs/tower tarball structure', () => {
   let extractDir: string
 
   beforeAll(() => {
     execSync('pnpm build', { cwd: ROOT_DIR, stdio: 'pipe' })
     const packDir = mkdtempSync(join(tmpdir(), 'tower-pack-'))
-    execSync('pnpm pack --pack-destination ' + packDir, { cwd: TOWERJS_DIR, stdio: 'pipe' })
+    execSync('pnpm pack --pack-destination ' + packDir, { cwd: TOWER_DIR, stdio: 'pipe' })
     const tarball = readdirSync(packDir).find((f) => f.endsWith('.tgz'))
     expect(tarball).toBeTruthy()
     extractDir = mkdtempSync(join(tmpdir(), 'tower-extract-'))

@@ -31,7 +31,7 @@ export default defineTower({
 Access auth in your application:
 
 ```ts
-import { gatehouse } from 'towerjs/gatehouse'
+import { gatehouse } from '@towerjs/tower/gatehouse'
 
 const session = await gatehouse.getSession()
 if (session) {
@@ -99,4 +99,4 @@ export const config = {
 
 ## Included in
 
-- [towerjs](https://www.npmjs.com/package/towerjs) — meta-package
+- [@towerjs/tower](https://www.npmjs.com/package/@towerjs/tower) — meta-package

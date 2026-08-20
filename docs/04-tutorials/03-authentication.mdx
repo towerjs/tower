@@ -8,7 +8,7 @@ This tutorial walks through setting up authentication in a Tower + Next.js appli
 ## 1. Configure Gatehouse
 
 ```ts filename="tower.config.ts"
-import { defineTower } from 'towerjs/blueprint'
+import { defineTower } from '@towerjs/tower/blueprint'
 
 export default defineTower({
   modules: {
@@ -50,16 +50,17 @@ export const config = { matcher: ['/((?!_next/static|favicon.ico|api/auth).*)'] 
 ```
 
 ```ts filename="src/app/api/auth/[...all]/route.ts"
-export { GET, POST } from 'towerjs/gatehouse/next'
+export { GET, POST } from '@towerjs/tower/gatehouse/next'
 ```
 
-Import the pre-built auth actions directly from `towerjs/gatehouse/actions` in your client components — do not create a `src/actions.ts` re-export wrapper (Turbopack cannot verify that re-exported values from a `'use server'` module are async, which breaks `next build`):
+Import the pre-built auth actions directly from `@towerjs/tower/gatehouse/actions` in your client components — do not create a `src/actions.ts` re-export wrapper (Turbopack cannot verify that re-exported values from a `'use server'` module are async, which breaks `next build`):
 
 ```tsx filename="src/app/sign-in/sign-in-form.tsx"
 'use client'
 
+import { signIn } from '@towerjs/tower/gatehouse/actions'
+
 import { useActionState } from 'react'
-import { signIn } from 'towerjs/gatehouse/actions'
 
 export function SignInForm() {
   const [state, action, pending] = useActionState(signIn, undefined)
@@ -96,9 +97,10 @@ export default function SignInPage() {
 ## 5. Protected Dashboard
 
 ```tsx filename="src/app/dashboard/page.tsx"
+import { gatehouse } from '@towerjs/tower/gatehouse'
+import { signOut } from '@towerjs/tower/gatehouse/actions'
+
 import { redirect } from 'next/navigation'
-import { gatehouse } from 'towerjs/gatehouse'
-import { signOut } from 'towerjs/gatehouse/actions'
 
 export default async function Dashboard() {
   const session = await gatehouse.getSession()
@@ -118,7 +120,7 @@ export default async function Dashboard() {
 ## 6. Using Organizations
 
 ```tsx filename="src/app/dashboard/organizations/page.tsx"
-import { gatehouse } from 'towerjs/gatehouse'
+import { gatehouse } from '@towerjs/tower/gatehouse'
 
 export default async function OrganizationsPage() {
   const orgs = await gatehouse.getOrganizations()
@@ -144,7 +146,7 @@ twoFactor: true,
 Then in your app:
 
 ```ts
-import { enableTwoFactor, verifyTwoFactor } from 'towerjs/gatehouse/actions'
+import { enableTwoFactor, verifyTwoFactor } from '@towerjs/tower/gatehouse/actions'
 
 // In a settings page:
 const result = await enableTwoFactor(new FormData()) // shows QR code

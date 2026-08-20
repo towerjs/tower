@@ -7,7 +7,7 @@
     { "path": "./packages/courier" },
     { "path": "./packages/foundation" },
     { "path": "./packages/edge" },
-    { "path": "./packages/towerjs" },
+    { "path": "./packages/tower" },
     { "path": "./packages/scribe" },
     { "path": "./packages/create-tower" }
   ]

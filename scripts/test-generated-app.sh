@@ -32,7 +32,7 @@ echo ""
 TEST_APP_DIR="$(mktemp -d)"
 PACK_DIR="$TEST_APP_DIR/packs"
 mkdir -p "$PACK_DIR"
-for pkg in towerjs foundation blueprint vault gatehouse courier edge scribe; do
+for pkg in tower foundation blueprint vault gatehouse courier edge scribe; do
   (cd "$ROOT/packages/$pkg" && pnpm pack --pack-destination "$PACK_DIR" >/dev/null 2>&1)
 done
 

@@ -31,7 +31,10 @@ export async function findPublishablePackages() {
   const packages = []
   for (const file of files) {
     const pkg = JSON.parse(await readFile(resolve(root, file), 'utf8'))
-    if (!pkg.private && (pkg.name?.startsWith('@towerjs/') || pkg.name === 'towerjs' || pkg.name === 'create-tower')) {
+    if (
+      !pkg.private &&
+      (pkg.name?.startsWith('@towerjs/') || pkg.name === '@towerjs/tower' || pkg.name === 'create-tower')
+    ) {
       packages.push({ file, pkg })
     }
   }

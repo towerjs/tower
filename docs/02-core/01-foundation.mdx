@@ -33,7 +33,7 @@ import { createTower } from '@towerjs/foundation'
 const app = await createTower(undefined, getModuleFactory) // resolves tower.config.ts automatically
 ```
 
-The `towerjs` meta-package wires `getModuleFactory` automatically through `getTowerApp()` / `initTower()`, so application code imports modules directly from `towerjs/*` subpaths.
+The `@towerjs/tower` meta-package wires `getModuleFactory` automatically through `getTowerApp()` / `initTower()`, so application code imports modules directly from `@towerjs/tower/*` subpaths.
 
 ### TowerApp interface
 

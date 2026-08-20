@@ -8,7 +8,7 @@ description: 'Performance considerations for Tower applications.'
 Tower modules are initialized on first use, not at import time. This means you can import module symbols at the top level without paying the initialization cost on every request:
 
 ```ts
-import { gatehouse } from 'towerjs/gatehouse'
+import { gatehouse } from '@towerjs/tower/gatehouse'
 
 // No initialization cost here
 
