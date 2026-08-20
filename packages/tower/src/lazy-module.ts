@@ -30,10 +30,6 @@ export function createLazyModule<T>(moduleName: string): T {
     return promise
   }
 
-  // Kick off initialization eagerly so the service is ready by the time user
-  // code runs (matches the `tower` proxy behavior).
-  get()
-
   return new Proxy(function () {} as any, {
     get(_, prop) {
       if (prop === 'then') {
@@ -41,10 +37,18 @@ export function createLazyModule<T>(moduleName: string): T {
           get().then(onFulfilled, onRejected)
       }
       if (prop === Symbol.toPrimitive) return undefined
+      // Don't throw on uninitialized - return a promise that resolves when ready
       if (resolved === undefined) {
-        throw new Error(
-          'Tower app is still initializing. Use getTowerApp() from @towerjs/tower/runtime for async access.'
-        )
+        // Return a thenable that resolves when the service is ready
+        return new Proxy(() => {}, {
+          get(_, p) {
+            if (p === 'then') {
+              return (onFulfilled: ((v: any) => any) | undefined) =>
+                get().then(onFulfilled)
+            }
+            return undefined
+          },
+        })
       }
       const value = resolved[prop]
       return typeof value === 'function' ? value.bind(resolved) : value

@@ -1,78 +1,12 @@
-import type { TowerBlueprint } from '@towerjs/blueprint'
-import { registerEdgeConfigProvider } from '@towerjs/edge/register'
-import type { TowerApp, TowerConfig, TowerContext, TowerModule } from '@towerjs/foundation'
-import { registerService } from '@towerjs/foundation'
-
-if (process.env.NODE_ENV !== 'test') void registerEdgeConfigProvider().catch(() => undefined)
-
-type ModuleFactoryFn = (options: Record<string, unknown>) => TowerModule
-
-const MODULE_DEFS: Record<string, { pkg: string; dependsOn: string[]; factoryFn: string }> = {
-  vault: { pkg: '@towerjs/vault', dependsOn: [], factoryFn: 'createVaultModule' },
-  gatehouse: { pkg: '@towerjs/gatehouse', dependsOn: ['vault', 'courier'], factoryFn: 'defineGatehouse' },
-  courier: { pkg: '@towerjs/courier', dependsOn: [], factoryFn: 'defineCourier' },
-}
-
-// Function-based import to prevent Next.js/Turbopack from tracing
-// server-only transitive deps (pg, nodemailer, etc.) into client bundles.
-export const importModule = Function('f', 'return import(f)') as (f: string) => Promise<any>
-
-function createModuleFactory(name: string, enabled?: ReadonlySet<string>): ModuleFactoryFn {
-  const def = MODULE_DEFS[name]
-  if (!def) return undefined as unknown as ModuleFactoryFn
-  const dependsOn = def.dependsOn.filter((d) => !enabled || enabled.has(d))
-  return (options: Record<string, unknown>): TowerModule => {
-    let real: TowerModule | undefined
-    let pending: Promise<TowerModule | undefined> | undefined
-    const loadReal = async (_ctx: TowerContext): Promise<TowerModule | undefined> => {
-      if (real) return real
-      if (!pending) {
-        pending = importModule(def.pkg).then((mod) => {
-          real = mod[def.factoryFn](options)
-          return real
-        })
-      }
-      await pending
-      return real
-    }
-    return {
-      name,
-      dependsOn,
-      async register(ctx: TowerContext) {
-        const mod = await loadReal(ctx)
-        if (mod && typeof mod.register === 'function') await mod.register(ctx)
-      },
-      async initialize(ctx: TowerContext) {
-        const mod = await loadReal(ctx)
-        if (mod && typeof mod.initialize === 'function') await mod.initialize(ctx)
-      },
-    }
-  }
-}
-
-export function getModuleFactory(name: string) {
-  return createModuleFactory(name)
-}
-
-export function getModuleFactoryForConfig(config: TowerConfig): (name: string) => ModuleFactoryFn | undefined {
-  const enabled = new Set(Object.keys(config.modules))
-  return (name: string) => createModuleFactory(name, enabled)
-}
+import type { TowerBlueprint } from './blueprint/index.js'
+import type { TowerApp } from './foundation/app.js'
+import type { TowerConfig, TowerModule } from './foundation/types.js'
+import { createTowerApp } from './foundation/app.js'
+import { resolveConfig } from './foundation/resolve-config.js'
+import { registerService } from './foundation/registry.js'
+import { createLazyModule } from './lazy-module.js'
 
 const APP_PROMISE_KEY = '___tower_app_promise___'
-
-async function getFoundation() {
-  return import('@towerjs/foundation')
-}
-
-async function registerModuleServices(app: TowerApp) {
-  const config = app.container.get('tower.config') as { modules: Record<string, unknown> }
-  for (const modName of Object.keys(config.modules)) {
-    if (app.container.has(modName)) {
-      registerService(modName, app.container.get(modName))
-    }
-  }
-}
 
 function setAppPromise(promise: Promise<TowerApp> | undefined) {
   ;(globalThis as any)[APP_PROMISE_KEY] = promise
@@ -82,25 +16,30 @@ function getAppPromise(): Promise<TowerApp> | undefined {
   return (globalThis as any)[APP_PROMISE_KEY]
 }
 
-function buildApp(config: TowerConfig): Promise<TowerApp> {
-  return getFoundation().then(async ({ createTowerApp }) => {
-    const app = await createTowerApp(config, getModuleFactoryForConfig(config))
-    await registerModuleServices(app)
-    return app
+async function buildApp(config: TowerConfig, modules: TowerModule[]): Promise<TowerApp> {
+  const app = await createTowerApp(config, (name: string) => {
+    const mod = modules.find((m) => m.name === name)
+    return mod ? (_options: Record<string, unknown>) => mod : undefined
   })
+  await registerModuleServices(app, modules)
+  return app
+}
+
+async function registerModuleServices(app: TowerApp, modules: TowerModule[]) {
+  for (const mod of modules) {
+    if (app.container.has(mod.name)) {
+      registerService(mod.name, app.container.get(mod.name))
+    }
+  }
 }
 
 export function getTowerApp(): Promise<TowerApp> {
   const existing = getAppPromise()
   if (existing) return existing
 
-  const promise = getFoundation()
-    .then(async ({ resolveConfig }) => {
-      const config = await resolveConfig()
-      return buildApp(config as TowerConfig)
-    })
+  const promise = resolveConfig()
+    .then((config) => buildApp(config, []))
     .catch((err) => {
-      // Don't cache rejected promises — allow retry on next call.
       setAppPromise(undefined)
       throw err
     })
@@ -109,21 +48,20 @@ export function getTowerApp(): Promise<TowerApp> {
   return promise
 }
 
-export function initTower(config?: TowerBlueprint): Promise<TowerApp> {
+export function initTower(modules: TowerModule[], config?: TowerBlueprint): Promise<TowerApp> {
   const existing = getAppPromise()
   if (existing) return existing
 
-  const promise = getFoundation()
-    .then(async ({ resolveConfig }) => {
-      const cfg = config ? (config as unknown as TowerConfig) : await resolveConfig()
-      return buildApp(cfg as TowerConfig)
-    })
-    .catch((err) => {
-      // Don't cache rejected promises — allow retry on next call.
-      setAppPromise(undefined)
-      throw err
-    })
+  const promise = (async () => {
+    const cfg = config ? (config as unknown as TowerConfig) : await resolveConfig()
+    return buildApp(cfg as TowerConfig, modules)
+  })().catch((err) => {
+    setAppPromise(undefined)
+    throw err
+  })
 
   setAppPromise(promise)
   return promise
 }
+
+export { createLazyModule }

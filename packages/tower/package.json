@@ -1,64 +1,24 @@
 {
   "name": "@towerjs/tower",
-  "version": "0.1.1",
-  "description": "Meta-package that bundles all Tower modules for convenient access",
+  "version": "0.1.0",
+  "description": "Tower application core — Foundation, Blueprint, and runtime primitives",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./blueprint": {
-      "types": "./dist/blueprint.d.ts",
-      "default": "./dist/blueprint.js"
-    },
-    "./foundation": {
-      "types": "./dist/foundation.d.ts",
-      "default": "./dist/foundation.js"
-    },
-    "./gatehouse": {
-      "react-server": {
-        "types": "./dist/gatehouse/react-server.d.ts",
-        "default": "./dist/gatehouse/react-server.js"
-      },
-      "types": "./dist/gatehouse.d.ts",
-      "default": "./dist/gatehouse.js"
-    },
-    "./gatehouse/react-server": {
-      "types": "./dist/gatehouse/react-server.d.ts",
-      "default": "./dist/gatehouse/react-server.js"
-    },
-    "./gatehouse/actions": {
-      "types": "./dist/gatehouse/actions/index.d.ts",
-      "default": "./dist/gatehouse/actions/index.js"
-    },
-    "./gatehouse/actions/registry": {
-      "types": "./dist/gatehouse/actions/registry.d.ts",
-      "default": "./dist/gatehouse/actions/registry.js"
-    },
-    "./gatehouse/next": {
-      "types": "./dist/gatehouse/next.d.ts",
-      "default": "./dist/gatehouse/next.js"
-    },
-    "./gatehouse/client": {
-      "types": "./dist/gatehouse/client.d.ts",
-      "default": "./dist/gatehouse/client.js"
-    },
-    "./vault": {
-      "types": "./dist/vault.d.ts",
-      "default": "./dist/vault.js"
-    },
-    "./next": {
-      "types": "./dist/next.d.ts",
-      "default": "./dist/next.js"
-    },
-    "./courier": {
-      "types": "./dist/courier.d.ts",
-      "default": "./dist/courier.js"
-    },
     "./runtime": {
       "types": "./dist/runtime.d.ts",
       "default": "./dist/runtime.js"
+    },
+    "./blueprint": {
+      "types": "./dist/blueprint/index.d.ts",
+      "default": "./dist/blueprint/index.js"
+    },
+    "./foundation": {
+      "types": "./dist/foundation/index.d.ts",
+      "default": "./dist/foundation/index.js"
     }
   },
   "files": [
@@ -74,14 +34,7 @@
     "@types/node": "^26.2.0",
     "next": "^16.3.0"
   },
-  "dependencies": {
-    "@towerjs/blueprint": "workspace:*",
-    "@towerjs/courier": "workspace:*",
-    "@towerjs/edge": "workspace:*",
-    "@towerjs/foundation": "workspace:*",
-    "@towerjs/gatehouse": "workspace:*",
-    "@towerjs/vault": "workspace:*"
-  },
+  "dependencies": {},
   "license": "MIT",
   "publishConfig": {
     "access": "public",
