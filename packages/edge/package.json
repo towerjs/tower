@@ -1,6 +1,6 @@
 {
   "name": "@towerjs/edge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Edge runtime integration for Tower — resolves tower.config.ts in constrained environments like Vercel Edge Runtime",
   "type": "module",
   "exports": {
