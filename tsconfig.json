@@ -1,11 +1,9 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/blueprint" },
     { "path": "./packages/vault" },
     { "path": "./packages/gatehouse" },
     { "path": "./packages/courier" },
-    { "path": "./packages/foundation" },
     { "path": "./packages/edge" },
     { "path": "./packages/tower" },
     { "path": "./packages/scribe" },

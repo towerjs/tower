@@ -9,12 +9,5 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "exclude": ["**/*.test.ts", "**/*.test-d.ts"],
-  "references": [
-    { "path": "../foundation" },
-    { "path": "../vault" },
-    { "path": "../gatehouse" },
-    { "path": "../courier" },
-    { "path": "../blueprint" }
-  ]
+  "exclude": ["**/*.test.ts", "**/*.test-d.ts"]
 }

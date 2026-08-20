@@ -6,7 +6,7 @@ export interface TowerRuntime {
 }
 
 export interface TowerConfig {
-  modules: Record<string, Record<string, unknown>>
+  modules: TowerModule[] | Record<string, Record<string, unknown>>
 }
 
 export interface TowerContext {

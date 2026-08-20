@@ -1,4 +1,4 @@
-import type { TowerConfig } from '@towerjs/foundation'
+import type { TowerConfig } from '../foundation/types.js'
 
 import {
   getModuleDeclarations,
@@ -27,7 +27,6 @@ export type TowerBlueprint = TowerConfig
  *     courier: { email: { provider: "console" } },
  *   },
  * })
- * ```
  */
 export function defineTower(config: TowerConfig): TowerConfig {
   return config
@@ -35,7 +34,7 @@ export function defineTower(config: TowerConfig): TowerConfig {
 
 export { registerModule, getModuleFactory, getModuleDependencies, getRegisteredModules, getModuleDeclarations }
 
-export { towerContext } from '@towerjs/foundation'
+export { towerContext } from '../foundation/context/index.js'
 export { env } from './env.js'
 
 export type {
@@ -43,8 +42,8 @@ export type {
   TowerModule,
   TowerContext,
   TowerInitContext,
-  TowerContextProvider,
   ServiceRegistry,
   ModuleDeclaration,
-} from '@towerjs/foundation'
-export type { TowerApp } from '@towerjs/foundation'
+} from '../foundation/types.js'
+export type { TowerContextProvider, RequestContext } from '../foundation/context/index.js'
+export type { TowerApp } from '../foundation/app.js'

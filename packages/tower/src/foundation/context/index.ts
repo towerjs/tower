@@ -21,6 +21,8 @@ function detectEdge(): boolean {
   return false
 }
 
+let _towerContext: TowerContextProvider | undefined
+
 async function loadContext(): Promise<TowerContextProvider> {
   if (detectEdge()) return noop()
 
@@ -46,7 +48,26 @@ async function loadContext(): Promise<TowerContextProvider> {
   }
 }
 
-export const towerContext = await loadContext()
+/**
+ * Lazily-initialized tower context provider.
+ * Avoids top-level await for CJS/SSR compatibility.
+ */
+export function getTowerContext(): TowerContextProvider {
+  if (!_towerContext) {
+    // This is called synchronously, so we need to handle the async case
+    // by returning a noop immediately and initializing async
+    loadContext().then((ctx) => { _towerContext = ctx })
+    return noop()
+  }
+  return _towerContext
+}
+
+export const towerContext = new Proxy({} as TowerContextProvider, {
+  get(_, prop) {
+    const ctx = getTowerContext()
+    return (ctx as any)[prop]
+  },
+}) as TowerContextProvider
 
 export interface RequestContext {
   headers: Headers
