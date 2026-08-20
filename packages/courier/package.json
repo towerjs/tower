@@ -1,6 +1,6 @@
 {
   "name": "@towerjs/courier",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Multi-channel communications for Tower — email, SMS, and push notifications",
   "type": "module",
   "exports": {
@@ -18,7 +18,7 @@
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.1106.0",
     "@react-email/render": "^2.1.0",
-    "@towerjs/blueprint": "workspace:*",
+    "@towerjs/tower": "workspace:*",
     "nodemailer": "^9.0.5",
     "react": "^19.2.8",
     "resend": "^6.18.1",

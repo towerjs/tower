@@ -1,5 +1,5 @@
-import type { TowerContext, TowerModule } from '@towerjs/blueprint'
-import { registerModule } from '@towerjs/blueprint'
+import type { TowerContext, TowerModule } from '@towerjs/tower/foundation'
+import { createLazyModule } from '@towerjs/tower/runtime'
 
 import { z } from 'zod'
 
@@ -49,48 +49,34 @@ export type {
 let _courier: CourierModule | undefined
 
 /**
- * Proxy that delegates to the initialized courier module.
- * Throws if accessed before tower is started.
- */
-export const courier: CourierModule = new Proxy({} as CourierModule, {
-  get(_, prop) {
-    if (!_courier) {
-      throw new Error('Courier not initialized. Tower must be started first.')
-    }
-    const value = (_courier as any)[prop]
-    return typeof value === 'function' ? (...args: any[]) => (value as Function)(...args) : value
-  },
-})
-
-/**
- * Creates a tower module that registers the courier notification service.
- *
- * Pass the returned object to `modules` in your tower config.
+ * Creates a Tower module definition for Courier.
  *
  * @example
  * ```ts
- * defineTower({
+ * import { courier } from '@towerjs/courier'
+ * import { defineTower } from '@towerjs/tower'
+ *
+ * export default defineTower({
  *   modules: [
- *     defineCourier({
- *       email: { provider: "resend" },
- *       sms: { provider: "twilio" },
- *       push: { provider: "web-push" },
+ *     courier({
+ *       email: { provider: 'resend' },
+ *       sms: { provider: 'twilio' },
+ *       push: { provider: 'web-push' },
  *     }),
  *   ],
  * })
  * ```
  */
-export function defineCourier(
-  config: CourierConfig
-): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
+function createCourierModuleDefinition(config: CourierConfig): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
   parseCourierConfig(config)
 
   return {
     name: 'courier',
+    dependsOn: [],
 
     async initialize(ctx: TowerContext) {
       _courier = await createCourier(config)
-      ctx.services.register('courier', _courier)
+      ctx.services.register('courier', courierRuntime)
     },
 
     get email() {
@@ -186,8 +172,34 @@ function unconfiguredChannel(name: 'email' | 'sms' | 'push') {
   }
 }
 
-registerModule({
-  name: 'courier',
-  dependsOn: [],
-  factory: (config) => defineCourier(config as CourierConfig),
-})
+const courierRuntime = createLazyModule<CourierModule>('courier')
+
+/**
+ * Courier module - callable for config, property face for runtime API.
+ *
+ * Usage:
+ * ```ts
+ * // In tower.config.ts - config factory
+ * import { courier } from '@towerjs/courier'
+ * export default defineTower({ modules: [courier({ email: { provider: 'resend' } })] })
+ * ```
+ *
+ * ```ts
+ * // In application code - runtime API
+ * import { courier } from '@towerjs/courier'
+ * await courier.email.send({ to: 'user@example.com', subject: 'Hello', text: 'World' })
+ * ```
+ */
+export const courier = new Proxy(createCourierModuleDefinition, {
+  get(_target, prop) {
+    // The call face returns the module definition
+    if (prop === 'apply' || prop === 'name' || prop === 'length') {
+      return (_target as any)[prop]
+    }
+    // Property face delegates to the lazy runtime proxy
+    return (courierRuntime as any)[prop]
+  },
+  apply(_target, _thisArg, args: unknown[]) {
+    return (_target as (...args: unknown[]) => unknown)(...args)
+  },
+}) as ((config: CourierConfig) => TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> }) & CourierModule
