@@ -1,6 +1,6 @@
 {
   "name": "@towerjs/edge",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Edge runtime integration for Tower — resolves tower.config.ts in constrained environments like Vercel Edge Runtime",
   "type": "module",
   "exports": {
@@ -11,6 +11,10 @@
     "./register": {
       "types": "./dist/register.d.ts",
       "default": "./dist/register.js"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "default": "./dist/next.js"
     }
   },
   "files": [
@@ -23,11 +27,9 @@
     "next": "^16"
   },
   "dependencies": {
-    "@towerjs/blueprint": "workspace:*",
-    "@towerjs/foundation": "workspace:*"
+    "@towerjs/tower": "workspace:*"
   },
   "devDependencies": {
-    "@towerjs/blueprint": "workspace:*",
     "@types/node": "^26.2.0",
     "next": "^16.3.0"
   },
