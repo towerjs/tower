@@ -32,9 +32,12 @@ export function createLazyModule<T>(moduleName: string): T {
           resolved = app.container.get(moduleName)
           return resolved
         })
-        .catch(() => {
+        .catch((error) => {
           // In hermetic Vitest there is often no tower.config.ts — don't leak as unhandled rejection
           // The caller (e.g. markDynamicAndInit) already handles this case
+          if (typeof process !== 'undefined' && process.env.CI) {
+            console.error(`[${moduleName}] failed to initialize Tower app:`, error)
+          }
           return undefined
         })
     }

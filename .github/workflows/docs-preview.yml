@@ -48,7 +48,7 @@ jobs:
           DOCS_SOURCE_URL: https://github.com/towerjs/tower/archive/${{ github.event.pull_request.head.sha }}.tar.gz
           DOCS_SOURCE_TOKEN: ${{ secrets.DOCS_SYNC_PAT }}
         run: |
-          cd /home/runner/work/tower-docs/tower-docs
+          cd "$GITHUB_WORKSPACE"
           VERCEL_DEPLOY_OUTPUT=$(npx vercel deploy --preview --yes \
             -e DOCS_SOURCE_URL="${DOCS_SOURCE_URL}" \
             -e DOCS_SOURCE_TOKEN="${DOCS_SOURCE_TOKEN}" \
