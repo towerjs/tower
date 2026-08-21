@@ -47,9 +47,7 @@ describe('Foundation negative / edge cases', () => {
         }
         return undefined as any
       }
-      await expect(createTowerApp({ modules: { gatehouse: {} } }, factory)).rejects.toThrow(
-        'depends on "nonexistent" which is not installed'
-      )
+      await expect(createTowerApp({ modules: { gatehouse: {} } }, factory)).rejects.toThrow('not in the modules array')
     })
 
     it('propagates init errors', async () => {
@@ -105,7 +103,7 @@ describe('Foundation negative / edge cases', () => {
     it('resolveConfig throws with a helpful message when no config found', async () => {
       // Ensure no config providers and no TOWER_CONFIG_PATH
       delete process.env.TOWER_CONFIG_PATH
-      const { resolveConfig } = await import('@towerjs/foundation')
+      const { resolveConfig } = await import('@towerjs/tower/foundation')
       await expect(resolveConfig()).rejects.toThrow('Could not find tower.config.ts')
     })
   })

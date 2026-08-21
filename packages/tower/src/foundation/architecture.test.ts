@@ -189,7 +189,7 @@ describe('missing dependency failures', () => {
 
     await expect(
       createTowerApp({ modules: { 'needs-x': {} } }, (name) => (name === 'needs-x' ? () => missingDep : undefined))
-    ).rejects.toThrow('depends on "nonexistent" which is not installed')
+    ).rejects.toThrow('depends on "nonexistent" which is not in the modules array')
   })
 
   it('fails validation when a declared dependency is not in the module list', () => {

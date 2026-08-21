@@ -68,7 +68,7 @@ let _courier: CourierModule | undefined
  * ```
  */
 function createCourierModuleDefinition(
-  config: CourierConfig
+  config: CourierConfig = {}
 ): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
   parseCourierConfig(config)
 
