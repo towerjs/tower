@@ -27,8 +27,8 @@ describe('Gatehouse live integration (database boundary)', () => {
     })
 
     // Run auth migrations (proves the database setup works)
-    const { gatehouse: gh } = await import('@towerjs/gatehouse')
-    await gh.migrate()
+    const { Gatehouse } = await import('@towerjs/gatehouse')
+    await Gatehouse.migrate()
 
     // Sign up a user via the module-level proxy. Note: per-request instances
     // (gatehouse.from) require full HTTP auth headers (CSRF, session tokens)
