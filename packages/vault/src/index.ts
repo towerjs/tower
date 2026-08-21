@@ -72,7 +72,9 @@ function buildProxyUnconfigured(): VaultModule {
   return new Proxy({} as VaultModule, {
     get(_, prop) {
       if (prop === 'migrate' || prop === 'migrator' || prop === 'db') {
-        throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
+        return () => {
+          throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
+        }
       }
       return () => {
         throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
@@ -246,8 +248,6 @@ export const vault = new Proxy(createVaultModuleDefinition, {
     }
     // Hermetic tests set _vault directly via mod.init; use it if available
     if (_vault) return (_vault as any)[prop]
-    // If not yet initialized, throw for direct property access (matches vault.test expectations)
-    // Lazy runtime will handle async `getTowerApp` path in production, but for sync access we throw
     if (
       prop === 'then' ||
       typeof prop === 'symbol' ||
@@ -257,6 +257,11 @@ export const vault = new Proxy(createVaultModuleDefinition, {
       prop === 'inspect'
     )
       return undefined
+    // For migrate/migrator/db etc, return a function that when called returns a rejected promise
+    // This allows `await vault.migrate().catch(() => {})` in e2e/migrate-for-tests to be handled via .catch
+    if (prop === 'migrate' || prop === 'migrator' || prop === 'db' || prop === 'close' || prop === 'transaction' || prop === 'seed') {
+      return () => Promise.reject(new Error('Vault not initialized'))
+    }
     throw new Error('Vault not initialized')
   },
   apply(_target, _thisArg, args) {

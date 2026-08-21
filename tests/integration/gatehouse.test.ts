@@ -26,9 +26,9 @@ describe('Gatehouse live integration (database boundary)', () => {
       ],
     })
 
-    // Run auth migrations (proves the database setup works) — via vault/gatehouse after initTower
-    const { gatehouse: gh2 } = await import('@towerjs/gatehouse')
-    await gh2.migrate().catch(() => {})
+    // Run auth migrations (proves the database setup works)
+    const { Gatehouse } = await import('@towerjs/gatehouse')
+    await Gatehouse.migrate()
 
     // Sign up a user via the module-level proxy. Note: per-request instances
     // (gatehouse.from) require full HTTP auth headers (CSRF, session tokens)
@@ -37,13 +37,15 @@ describe('Gatehouse live integration (database boundary)', () => {
     // proves the full Gatehouse → Better Auth → Database stack works.
     const uniqueEmail = `test-${Date.now()}@example.com`
     const header = new Headers()
-    const signUpResult = await gh.from({ headers: header }).then((inst) =>
-      inst.signUp.email({
-        name: 'Integration Test User',
-        email: uniqueEmail,
-        password: 'Password123!',
-      })
-    )
+    const signUpResult = await gatehouse
+      .from({ headers: header })
+      .then((inst) =>
+        inst.signUp.email({
+          name: 'Integration Test User',
+          email: uniqueEmail,
+          password: 'Password123!',
+        })
+      )
 
     expect(signUpResult).toBeDefined()
     expect(signUpResult.user).toBeDefined()
