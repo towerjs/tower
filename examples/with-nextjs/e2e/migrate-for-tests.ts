@@ -41,17 +41,15 @@ async function main() {
   await pool.end()
   console.log('[setup] Schema reset complete')
 
-  const { initTower } = await import('@towerjs/tower/runtime')
+  const { createTowerApp } = await import('@towerjs/tower/foundation')
   const { vault } = await import('@towerjs/vault')
   const { gatehouse } = await import('@towerjs/gatehouse')
   const { courier } = await import('@towerjs/courier')
   const gatehouseModule = gatehouse({ provider: 'better-auth' })
-  const app = await initTower([
-    vault({ connectionString: databaseUrl }),
-    gatehouseModule,
-    courier({ email: { provider: 'console' } }),
-  ])
-  await app.container.get<any>('gatehouse').migrate()
+  await createTowerApp({
+    modules: [vault({ connectionString: databaseUrl }), gatehouseModule, courier({ email: { provider: 'console' } })],
+  })
+  await gatehouseModule.migrate()
   console.log('[setup] Migration complete')
 }
 
