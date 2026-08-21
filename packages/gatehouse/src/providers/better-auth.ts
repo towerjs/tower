@@ -1,5 +1,5 @@
 import type { EmailOTPOptions } from 'better-auth/plugins'
-import type { Kysely } from 'kysely'
+import { type Kysely, sql } from 'kysely'
 
 import { buildApi } from '../api-builder.js'
 import { mapSession, mapUser } from '../map-user.js'
@@ -17,6 +17,44 @@ export class BetterAuthAdapter {
   constructor(config: GatehouseConfig, db: Kysely<unknown>) {
     this.db = db
     this.config = config
+    const introspection = (db as any).introspection
+    if (!introspection) {
+      ;(db as any).introspection = {
+        getTables: async () => {
+          const tables = await sql<{ table_schema: string; table_name: string }>`
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+              AND table_type = 'BASE TABLE'
+          `.execute(db)
+          const columns = await sql<{
+            table_schema: string
+            table_name: string
+            column_name: string
+            data_type: string
+            is_nullable: string
+            column_default: string | null
+          }>`
+            SELECT table_schema, table_name, column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+            ORDER BY ordinal_position
+          `.execute(db)
+          return tables.rows.map((table) => ({
+            schema: table.table_schema,
+            name: table.table_name,
+            columns: columns.rows
+              .filter((column) => column.table_schema === table.table_schema && column.table_name === table.table_name)
+              .map((column) => ({
+                name: column.column_name,
+                dataType: column.data_type,
+                isNullable: column.is_nullable === 'YES',
+                hasDefaultValue: column.column_default !== null,
+              })),
+          }))
+        },
+      }
+    }
   }
 
   /**
