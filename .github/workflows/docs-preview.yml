@@ -49,16 +49,19 @@ jobs:
           DOCS_SOURCE_TOKEN: ${{ secrets.DOCS_SYNC_PAT }}
         run: |
           cd "$GITHUB_WORKSPACE"
+          set +e
           VERCEL_DEPLOY_OUTPUT=$(npx vercel deploy --preview --yes \
             -e DOCS_SOURCE_URL="${DOCS_SOURCE_URL}" \
             -e DOCS_SOURCE_TOKEN="${DOCS_SOURCE_TOKEN}" \
             --token="${VERCEL_TOKEN}" \
             --scope="${VERCEL_ORG_ID}" \
             2>&1)
+          VERCEL_EXIT_CODE=$?
           echo "VERCEL_DEPLOY_OUTPUT<<EOF" >> "$GITHUB_OUTPUT"
           echo "$VERCEL_DEPLOY_OUTPUT" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
           echo "$VERCEL_DEPLOY_OUTPUT"
+          exit "$VERCEL_EXIT_CODE"
 
       - name: Extract preview URL
         id: extract-url
