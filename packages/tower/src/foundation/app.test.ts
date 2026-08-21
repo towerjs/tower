@@ -33,6 +33,18 @@ describe('createTowerApp', () => {
     expect(app.config).toEqual(modules({ mock: {} }))
   })
 
+  it('initializes pre-created module definitions when a factory is supplied', async () => {
+    const inline = {
+      name: 'inline',
+      initialize(ctx: any) {
+        ctx.services.register('inline', { value: 7 })
+      },
+    }
+
+    const app = await createTowerApp({ modules: [inline] }, getModuleFactory)
+    expect(app.container.get('inline')).toEqual({ value: 7 })
+  })
+
   it('calls shutdown in reverse order', async () => {
     const order: number[] = []
 
