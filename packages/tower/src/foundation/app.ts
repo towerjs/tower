@@ -148,7 +148,7 @@ export async function createTower(
   // For backwards compatibility, expose modules by name
   const modulesIterable = isModuleArray(config.modules)
     ? config.modules
-    : Object.entries(config.modules).map(([name]) => ({ name } as TowerModule))
+    : Object.entries(config.modules).map(([name]) => ({ name }) as TowerModule)
 
   for (const mod of modulesIterable) {
     if (app.container.has(mod.name)) {

@@ -1,7 +1,7 @@
+import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
 import { defineTower } from '@towerjs/tower'
 import { vault } from '@towerjs/vault'
-import { gatehouse } from '@towerjs/gatehouse'
-import { courier } from '@towerjs/courier'
 
 export default defineTower({
   modules: [

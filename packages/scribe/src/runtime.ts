@@ -1,7 +1,7 @@
+import type { CourierConfig } from '@towerjs/courier'
+import type { GatehouseConfig } from '@towerjs/gatehouse'
 import type { TowerModule } from '@towerjs/tower/foundation'
 import type { VaultConfig } from '@towerjs/vault'
-import type { GatehouseConfig } from '@towerjs/gatehouse'
-import type { CourierConfig } from '@towerjs/courier'
 
 /**
  * Scribe uses the new callable module exports to create module definitions.
@@ -24,12 +24,10 @@ function moduleArrayToObject(modules: TowerModule[]): Record<string, Record<stri
   return obj
 }
 
-export async function createModuleDefinitions(
-  modules: ModuleConfigInput
-): Promise<TowerModule[]> {
+export async function createModuleDefinitions(modules: ModuleConfigInput): Promise<TowerModule[]> {
   // Convert array format to object format for backwards compatibility
   const moduleObj = isModuleArray(modules) ? moduleArrayToObject(modules) : modules
-  
+
   const defs: TowerModule[] = []
 
   for (const [name, options] of Object.entries(moduleObj)) {

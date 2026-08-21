@@ -56,7 +56,9 @@ export function getTowerContext(): TowerContextProvider {
   if (!_towerContext) {
     // This is called synchronously, so we need to handle the async case
     // by returning a noop immediately and initializing async
-    loadContext().then((ctx) => { _towerContext = ctx })
+    loadContext().then((ctx) => {
+      _towerContext = ctx
+    })
     return noop()
   }
   return _towerContext

@@ -1,6 +1,6 @@
 import type { TowerContext, TowerModule } from '@towerjs/tower/foundation'
-import { createLazyModule } from '@towerjs/tower/runtime'
 import { getRequestContextResolver, towerContext } from '@towerjs/tower/foundation'
+import { createLazyModule } from '@towerjs/tower/runtime'
 
 import { ContextRequiredError } from './context.js'
 import type { BetterAuthAdapter } from './providers/better-auth.js'
@@ -387,9 +387,8 @@ let initPromise: Promise<void> | undefined
   } catch (e: any) {
     // Only ignore module resolution errors (non-Next.js environments)
     // Let DynamicServerError and other errors propagate
-    const isModuleNotFound = e.code === 'MODULE_NOT_FOUND' ||
-      e.message.includes('Cannot find module') ||
-      e.message.includes('next/headers')
+    const isModuleNotFound =
+      e.code === 'MODULE_NOT_FOUND' || e.message.includes('Cannot find module') || e.message.includes('next/headers')
     if (!isModuleNotFound) throw e
   }
 })()
@@ -410,7 +409,8 @@ async function markDynamicAndInit(): Promise<any> {
       } catch (e: any) {
         // Only ignore module resolution errors (non-Next.js environments)
         // Let DynamicServerError and other errors propagate
-        const isModuleNotFound = e.code === 'MODULE_NOT_FOUND' ||
+        const isModuleNotFound =
+          e.code === 'MODULE_NOT_FOUND' ||
           e.message.includes('Cannot find module') ||
           e.message.includes('next/headers')
         if (!isModuleNotFound) throw e
@@ -440,9 +440,8 @@ function createDeepCall(path: string[]) {
   )
 }
 
-const gatehouseTarget = (() => {}) as unknown as GatehouseRuntimeAPI & ((
-  config: GatehouseConfig
-) => TowerModule & GatehouseModule)
+const gatehouseTarget = (() => {}) as unknown as GatehouseRuntimeAPI &
+  ((config: GatehouseConfig) => TowerModule & GatehouseModule)
 
 export const gatehouse = new Proxy(gatehouseTarget, {
   get(_target, prop) {

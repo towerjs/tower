@@ -1,15 +1,8 @@
 import { setRequestContextResolver } from '@towerjs/tower/foundation'
-import type { GatehouseInstance, GatehouseModule } from '../index.js'
-import type {
-  ApiKeyInfo,
-  GatehouseSession,
-  GatehouseUser,
-  Organization,
-  OrganizationFull,
-  Session,
-} from '../types.js'
-
 import { createLazyModule } from '@towerjs/tower/runtime'
+
+import type { GatehouseInstance, GatehouseModule } from '../index.js'
+import type { ApiKeyInfo, GatehouseSession, GatehouseUser, Organization, OrganizationFull, Session } from '../types.js'
 
 type GatehouseApiMethods = {
   getSession(): Promise<Session | null>

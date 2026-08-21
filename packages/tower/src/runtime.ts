@@ -1,9 +1,9 @@
 import type { TowerBlueprint } from './blueprint/index.js'
 import type { TowerApp } from './foundation/app.js'
-import type { TowerConfig, TowerModule } from './foundation/types.js'
 import { createTowerApp } from './foundation/app.js'
-import { resolveConfig } from './foundation/resolve-config.js'
 import { registerService } from './foundation/registry.js'
+import { resolveConfig } from './foundation/resolve-config.js'
+import type { TowerConfig, TowerModule } from './foundation/types.js'
 import { createLazyModule } from './lazy-module.js'
 
 const APP_PROMISE_KEY = '___tower_app_promise___'

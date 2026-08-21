@@ -1,5 +1,4 @@
 import type { TowerConfig } from '../foundation/types.js'
-
 import {
   getModuleDeclarations,
   getModuleDependencies,

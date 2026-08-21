@@ -54,7 +54,10 @@ function withGatehouseContext<TResult, TArgs extends unknown[]>(
  * })
  * ```
  */
-export type FormActionFn = (prevState: ActionResult | undefined, formData: FormData) => Promise<ActionResult | undefined>
+export type FormActionFn = (
+  prevState: ActionResult | undefined,
+  formData: FormData
+) => Promise<ActionResult | undefined>
 
 export const action = withGatehouseContext as typeof withGatehouseContext & {
   form: (handler: (data: Record<string, string>) => Promise<void>) => FormActionFn

@@ -67,7 +67,9 @@ let _courier: CourierModule | undefined
  * })
  * ```
  */
-function createCourierModuleDefinition(config: CourierConfig): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
+function createCourierModuleDefinition(
+  config: CourierConfig
+): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
   parseCourierConfig(config)
 
   return {
@@ -202,4 +204,5 @@ export const courier = new Proxy(createCourierModuleDefinition, {
   apply(_target, _thisArg, args: unknown[]) {
     return (_target as (...args: unknown[]) => unknown)(...args)
   },
-}) as ((config: CourierConfig) => TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> }) & CourierModule
+}) as ((config: CourierConfig) => TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> }) &
+  CourierModule

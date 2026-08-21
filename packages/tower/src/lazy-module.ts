@@ -43,8 +43,7 @@ export function createLazyModule<T>(moduleName: string): T {
         return new Proxy(() => {}, {
           get(_, p) {
             if (p === 'then') {
-              return (onFulfilled: ((v: any) => any) | undefined) =>
-                get().then(onFulfilled)
+              return (onFulfilled: ((v: any) => any) | undefined) => get().then(onFulfilled)
             }
             return undefined
           },

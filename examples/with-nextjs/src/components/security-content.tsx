@@ -231,10 +231,10 @@ export function SecurityContent({ user, sessions }: SecurityContentProps) {
             ))}
           </div>
           <div className="mt-4">
-<form
-                  action={(formData) => {
-                    revokeOtherSessions(undefined, formData)
-                  }}
+            <form
+              action={(formData) => {
+                revokeOtherSessions(undefined, formData)
+              }}
             >
               <Button type="submit" variant="secondary" size="sm">
                 Revoke all other sessions
