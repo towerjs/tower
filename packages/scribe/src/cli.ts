@@ -5,7 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { detectRuntime } from '@towerjs/tower/foundation'
-import type { TowerApp, TowerConfig } from '@towerjs/tower/foundation'
+import type { TowerApp, TowerConfig, TowerModule } from '@towerjs/tower/foundation'
 
 import { createJiti } from 'jiti'
 
@@ -228,7 +228,9 @@ export function loadEnvFor(configPath: string): void {
 
 export async function closeModules(app: TowerApp) {
   const modules = app.config.modules as unknown as Array<TowerModule | string> | Record<string, unknown>
-  const names = Array.isArray(modules) ? modules.map((m: any) => (typeof m === 'string' ? m : m.name)) : Object.keys(modules as Record<string, unknown>)
+  const names = Array.isArray(modules)
+    ? modules.map((m: any) => (typeof m === 'string' ? m : m.name))
+    : Object.keys(modules as Record<string, unknown>)
   for (const name of names) {
     const mod = getModule(app, name)
     if (mod?.close) {
