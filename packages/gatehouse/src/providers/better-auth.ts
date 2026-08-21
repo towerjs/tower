@@ -222,9 +222,11 @@ export class BetterAuthAdapter {
       database: {
         ...(options.database as Record<string, unknown>),
         db: new Proxy(this.db as any, {
-          get: (target, property, receiver) => {
+          get: (target, property) => {
             if (property === 'introspection') return this.introspection
-            const value = Reflect.get(target, property, receiver)
+            // Kysely uses private fields in accessors such as `schema`; the
+            // proxy cannot be used as the accessor receiver.
+            const value = Reflect.get(target, property, target)
             return typeof value === 'function' ? value.bind(target) : value
           },
         }),
