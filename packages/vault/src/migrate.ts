@@ -3,13 +3,13 @@ import * as nodePath from 'node:path'
 
 import { FileMigrationProvider, Migrator } from 'kysely/migration'
 
-import type { Vault, VaultMigrationConfig } from './types.js'
+import type { Vault, VaultMigrationConfig, VaultMigrator } from './types.js'
 
 const vaultFs = {
   readdir: (p: string) => nodeFs.promises.readdir(p),
 }
 
-export function createMigrator(db: Vault, config: VaultMigrationConfig): Migrator {
+export function createMigrator(db: Vault, config: VaultMigrationConfig): VaultMigrator {
   const resolvedFolder = nodePath.resolve(config.folder)
   return new Migrator({
     db,

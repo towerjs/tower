@@ -1,9 +1,46 @@
 import type { Kysely } from 'kysely'
 import type { Migrator } from 'kysely/migration'
 
+/**
+ * The Vault database handle.
+ *
+ * Vault is Tower's typed database API. It is powered by Kysely under the hood
+ * and exposes the full Kysely query builder surface (selectFrom, insertInto,
+ * updateTable, deleteFrom, schema, fn, etc.) plus Tower lifecycle helpers.
+ * Application code talks to `Vault`; the provider (Neon HTTP or standard pg)
+ * is a configuration decision, not an API difference.
+ */
 export type Vault<T = unknown> = Kysely<T>
 
-export type VaultProvider = 'neon' | 'pg'
+export type VaultProviderName = 'neon' | 'pg'
+
+/**
+ * Provider abstraction for Vault.
+ *
+ * A provider owns the Kysely dialect construction for a given connection
+ * string. Built-ins are `'neon'` (HTTP via kysely-neon) and `'pg'` (TCP via
+ * pg). The interface is the extension point for curated Postgres hosts —
+ * application code swaps `provider: 'neon'` vs `provider: 'pg'` without
+ * changing queries, migrations, or seeds.
+ *
+ * For most apps, use the string form in `tower.config.ts`:
+ * `{ provider: 'neon', connectionString: env.string('DATABASE_URL') }`.
+ * The object form is for custom dialects.
+ */
+export interface VaultProviderDef {
+  readonly name: VaultProviderName
+  createDialect(options: {
+    connectionString: string
+    poolConfig?: VaultPoolConfig
+    runtime?: { name: string; isServerless: boolean }
+  }): Promise<import('kysely').Dialect> | import('kysely').Dialect
+}
+
+/** Accepted provider value in `VaultConfig` — the curated names. */
+export type VaultProvider = VaultProviderName
+
+/** Tower-owned alias for Kysely's Migrator — avoids leaking `kysely/migration` in public signatures. */
+export type VaultMigrator = Migrator
 
 /** Connection pool tuning for the database adapter. */
 export type VaultPoolConfig = {
@@ -46,5 +83,5 @@ export interface VaultModule<TSchema = unknown> extends Omit<Kysely<TSchema>, 't
   migrate(): Promise<void>
   seed(name?: string): Promise<{ applied: string[] }>
   close(): Promise<void>
-  migrator: Migrator
+  migrator: VaultMigrator
 }
