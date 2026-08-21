@@ -10,6 +10,7 @@ import { AuthenticationError } from '../types.js'
 export class BetterAuthAdapter {
   private auth: any
   private api: any
+  private authOptions: Record<string, unknown> | null = null
   private db: Kysely<unknown>
   private config: GatehouseConfig
 
@@ -129,12 +130,6 @@ export class BetterAuthAdapter {
     const rateLimit = config.rateLimit ? { storage: 'database', ...config.rateLimit } : undefined
 
     const baOptions: Record<string, unknown> = {
-      database: { db, type: 'postgres' },
-      secret:
-        config.passThrough?.secret ||
-        process.env.GATEHOUSE_SECRET ||
-        process.env.BETTER_AUTH_SECRET ||
-        (process.env.NODE_ENV !== 'production' ? 'dev-secret-do-not-use-in-production-at-least-32-chars' : undefined),
       baseURL,
       basePath: config.passThrough?.basePath,
       appName: config.appName,
@@ -157,12 +152,22 @@ export class BetterAuthAdapter {
       rateLimit,
       advanced: config.advanced,
       plugins: allPlugins,
+      secret:
+        config.passThrough?.secret ||
+        process.env.GATEHOUSE_SECRET ||
+        process.env.BETTER_AUTH_SECRET ||
+        (process.env.NODE_ENV !== 'production' ? 'dev-secret-do-not-use-in-production-at-least-32-chars' : undefined),
     }
     if (config.passThrough) {
       for (const [k, v] of Object.entries(config.passThrough)) {
         baOptions[k] = v
       }
     }
+
+    // Keep the database shape required by Better Auth's Kysely adapter. In
+    // particular, migrations use database.db.introspection directly.
+    baOptions.database = { db, type: 'postgres' }
+    this.authOptions = baOptions
 
     this.auth = betterAuth(baOptions as any)
     this.api = this.auth.api
@@ -174,7 +179,11 @@ export class BetterAuthAdapter {
     const mod = (await import('better-auth/db/migration')) as {
       getMigrations: (o: any) => Promise<{ runMigrations: () => Promise<void> }>
     }
-    const { runMigrations } = await mod.getMigrations(this.auth.options)
+    const options = this.authOptions ?? this.auth.options
+    const { runMigrations } = await mod.getMigrations({
+      ...options,
+      database: { ...(options.database as Record<string, unknown>), db: this.db, type: 'postgres' },
+    })
     await runMigrations()
   }
 
