@@ -72,11 +72,16 @@ function envStatus(name: string): string {
 }
 
 function moduleProvider(config: Record<string, unknown>): string {
-  const provider = config.provider
-  if (typeof provider === 'string') return provider
-  const email = config.email
-  if (email && typeof email === 'object' && typeof (email as Record<string, unknown>).provider === 'string') {
-    return String((email as Record<string, unknown>).provider)
+  // Don't trigger TowerModule getters (courier.email etc) which throw when not initialized
+  if (typeof (config as any).name === 'string' && typeof (config as any).initialize === 'function') {
+    return 'configured'
+  }
+  if (Object.prototype.hasOwnProperty.call(config, 'provider') && typeof config.provider === 'string') return String(config.provider)
+  if (Object.prototype.hasOwnProperty.call(config, 'email')) {
+    const email = (config as Record<string, unknown>).email
+    if (email && typeof email === 'object' && typeof (email as Record<string, unknown>).provider === 'string') {
+      return String((email as Record<string, unknown>).provider)
+    }
   }
   return 'configured'
 }
@@ -109,13 +114,21 @@ async function runAbout(configPath?: string): Promise<CliResult> {
   const envKeys = new Set<string>()
   if (modulesObj.vault) envKeys.add('DATABASE_URL')
   if (modulesObj.gatehouse) envKeys.add('GATEHOUSE_SECRET')
-  if (modulesObj.courier) {
-    const email = (modulesObj.courier as Record<string, unknown>).email as Record<string, unknown> | undefined
-    if (email?.provider === 'resend') envKeys.add('RESEND_API_KEY')
-    if (email?.provider === 'smtp') {
-      envKeys.add('SMTP_HOST')
-      envKeys.add('SMTP_USER')
-      envKeys.add('SMTP_PASS')
+  const courierMod = modulesObj.courier as any
+  if (courierMod) {
+    // Don't trigger TowerModule getters (courier.email) which throw when not initialized
+    const isTowerModule = typeof courierMod.name === 'string' && typeof courierMod.initialize === 'function'
+    if (isTowerModule) {
+      // For TowerModule, we don't have the original email provider — just add generic
+      envKeys.add('RESEND_API_KEY')
+    } else if (Object.prototype.hasOwnProperty.call(courierMod, 'email')) {
+      const email = courierMod.email as Record<string, unknown> | undefined
+      if (email?.provider === 'resend') envKeys.add('RESEND_API_KEY')
+      if (email?.provider === 'smtp') {
+        envKeys.add('SMTP_HOST')
+        envKeys.add('SMTP_USER')
+        envKeys.add('SMTP_PASS')
+      }
     }
   }
   for (const key of envKeys) lines.push(`  ${key.padEnd(19)} ${envStatus(key)}`)
