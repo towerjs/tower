@@ -1,9 +1,7 @@
-import '@towerjs/courier'
-import '@towerjs/gatehouse'
-import { getModuleFactory } from '@towerjs/tower/blueprint'
+import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
+import { vault } from '@towerjs/vault'
 import { createTowerApp } from '@towerjs/tower/foundation'
-// Register modules so getModuleFactory resolves them
-import '@towerjs/vault'
 
 import { describe, expect, it } from 'vitest'
 
@@ -11,28 +9,26 @@ describe('Gatehouse live integration (database boundary)', () => {
   it('creates a user through the full stack and verifies persistence', async ({ skip }) => {
     if (!process.env.DATABASE_URL) skip()
 
-    const app = await createTowerApp(
-      {
-        modules: {
-          vault: { connectionString: process.env.DATABASE_URL },
-          gatehouse: {
-            provider: 'better-auth',
-            appName: 'Tower Integration Test',
-            baseURL: 'http://localhost:3000',
-            secret:
-              process.env.GATEHOUSE_SECRET ??
-              process.env.BETTER_AUTH_SECRET ??
-              'dev-secret-do-not-use-in-production-at-least-32-chars',
-            credentials: { enabled: true },
-          },
-        },
-      },
-      getModuleFactory
-    )
+    const app = await createTowerApp({
+      modules: [
+        vault({ connectionString: process.env.DATABASE_URL }),
+        courier({ email: { provider: 'console' } }),
+        gatehouse({
+          provider: 'better-auth',
+          appName: 'Tower Integration Test',
+          baseURL: 'http://localhost:3000',
+          secret:
+            process.env.GATEHOUSE_SECRET ??
+            process.env.BETTER_AUTH_SECRET ??
+            'dev-secret-do-not-use-in-production-at-least-32-chars',
+          credentials: { enabled: true },
+        }),
+      ],
+    })
 
     // Run auth migrations (proves the database setup works)
-    const { gatehouse } = await import('@towerjs/gatehouse')
-    await gatehouse.migrate()
+    const { gatehouse: gh } = await import('@towerjs/gatehouse')
+    await gh.migrate()
 
     // Sign up a user via the module-level proxy. Note: per-request instances
     // (gatehouse.from) require full HTTP auth headers (CSRF, session tokens)
@@ -41,8 +37,8 @@ describe('Gatehouse live integration (database boundary)', () => {
     // proves the full Gatehouse → Better Auth → Database stack works.
     const uniqueEmail = `test-${Date.now()}@example.com`
     const header = new Headers()
-    const signUpResult = await gatehouse.from({ headers: header }).then((gh) =>
-      gh.signUp.email({
+    const signUpResult = await gh.from({ headers: header }).then((inst) =>
+      inst.signUp.email({
         name: 'Integration Test User',
         email: uniqueEmail,
         password: 'Password123!',
@@ -57,8 +53,8 @@ describe('Gatehouse live integration (database boundary)', () => {
 
     // Verify the user persisted to the database (proves vault integration works)
     const vaultProxy = app.container.get<any>('vault')
-    const vault = vaultProxy._kysely
-    const persisted = await vault.selectFrom('user').where('id', '=', userId).selectAll().executeTakeFirst()
+    const vaultDb = vaultProxy._kysely ?? vaultProxy
+    const persisted = await vaultDb.selectFrom('user').where('id', '=', userId).selectAll().executeTakeFirst()
     expect(persisted).toBeDefined()
     expect(persisted.id).toBe(userId)
     expect(persisted.email).toBe(uniqueEmail)
