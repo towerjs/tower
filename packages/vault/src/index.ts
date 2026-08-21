@@ -198,9 +198,10 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
 
     const { Kysely } = await loadKysely()
     const db: Vault = new Kysely({ dialect })
+    // Set _kysely on the Kysely instance itself so it's accessible through the proxy
+    ;(db as any)._kysely = db
 
     _vault = await buildProxyForRuntime(db, effectivePool, isEdge, options)
-    ;(_vault as any)._kysely = db
 
     ctx.services.register('vault', vaultRuntime)
   }
