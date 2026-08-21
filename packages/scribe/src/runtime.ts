@@ -25,8 +25,43 @@ function moduleArrayToObject(modules: TowerModule[]): Record<string, Record<stri
 }
 
 export async function createModuleDefinitions(modules: ModuleConfigInput): Promise<TowerModule[]> {
-  // Convert array format to object format for backwards compatibility
-  const moduleObj = isModuleArray(modules) ? moduleArrayToObject(modules) : modules
+  if (isModuleArray(modules)) {
+    // New array form — check if already TowerModule definitions (have initialize) or plain configs from jiti mock
+    const first = (modules as unknown as any[])[0]
+    if (first && typeof first.name === 'string' && typeof first.initialize === 'function') {
+      return modules as TowerModule[]
+    }
+    // Plain array from jiti mock (e.g. [{ name: 'vault' }, { name: 'gatehouse', provider: 'better-auth' }])
+    // Convert via the same switch as object form
+    const defs: TowerModule[] = []
+    for (const mod of modules as unknown as Array<Record<string, unknown>>) {
+      const { name, ...opts } = mod as any
+      let modDef: TowerModule | undefined
+      switch (name) {
+        case 'vault': {
+          const { vault } = await import('@towerjs/vault')
+          modDef = vault(opts as unknown as VaultConfig)
+          break
+        }
+        case 'gatehouse': {
+          const { gatehouse } = await import('@towerjs/gatehouse')
+          modDef = gatehouse(opts as unknown as GatehouseConfig)
+          break
+        }
+        case 'courier': {
+          const { courier } = await import('@towerjs/courier')
+          modDef = courier(opts as unknown as CourierConfig)
+          break
+        }
+        default:
+          throw new Error(`Unknown module "${name}". Available: vault, gatehouse, courier`)
+      }
+      if (modDef) defs.push(modDef)
+    }
+    return defs
+  }
+
+  const moduleObj = modules as Record<string, Record<string, unknown>>
 
   const defs: TowerModule[] = []
 

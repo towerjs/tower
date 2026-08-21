@@ -85,7 +85,10 @@ async function runAbout(configPath?: string): Promise<CliResult> {
   const resolvedPath = configPath ?? findConfig()
   const config = await loadConfig(resolvedPath)
   const runtime = detectRuntime()
-  const modules = (config.modules ?? {}) as Record<string, unknown>
+  const rawModules = (config as any).modules as unknown
+  const modulesObj: Record<string, unknown> = Array.isArray(rawModules)
+    ? Object.fromEntries((rawModules as any[]).map((m: any) => [m.name ?? m, m]))
+    : ((rawModules as Record<string, unknown>) ?? {})
   const lines = [
     versionText(),
     '',
@@ -97,17 +100,17 @@ async function runAbout(configPath?: string): Promise<CliResult> {
     'Modules',
   ]
 
-  for (const [name, moduleConfig] of Object.entries(modules)) {
+  for (const [name, moduleConfig] of Object.entries(modulesObj)) {
     lines.push(`  ${name.padEnd(11)} ✓ ${moduleProvider(moduleConfig as Record<string, unknown>)}`)
   }
-  if (Object.keys(modules).length === 0) lines.push('  (none)')
+  if (Object.keys(modulesObj).length === 0) lines.push('  (none)')
 
   lines.push('', 'Environment')
   const envKeys = new Set<string>()
-  if (modules.vault) envKeys.add('DATABASE_URL')
-  if (modules.gatehouse) envKeys.add('GATEHOUSE_SECRET')
-  if (modules.courier) {
-    const email = (modules.courier as Record<string, unknown>).email as Record<string, unknown> | undefined
+  if (modulesObj.vault) envKeys.add('DATABASE_URL')
+  if (modulesObj.gatehouse) envKeys.add('GATEHOUSE_SECRET')
+  if (modulesObj.courier) {
+    const email = (modulesObj.courier as Record<string, unknown>).email as Record<string, unknown> | undefined
     if (email?.provider === 'resend') envKeys.add('RESEND_API_KEY')
     if (email?.provider === 'smtp') {
       envKeys.add('SMTP_HOST')
@@ -150,7 +153,6 @@ async function runMigrate(runSeed: boolean, configPath?: string): Promise<CliRes
 async function runSeedCmd(skipMigrate: boolean, configPath?: string): Promise<CliResult> {
   const lines: string[] = []
   const app = await loadApp(configPath)
-
   const vault = getModule(app, 'vault')
   if (!vault?.seed) {
     return fail('Vault not configured or seeds not available.')
@@ -170,10 +172,15 @@ async function runSeedCmd(skipMigrate: boolean, configPath?: string): Promise<Cl
 }
 
 export function getModule(app: TowerApp, name: string): CliModule | undefined {
-  if (app.container.has(name)) return app.container.get<CliModule>(name)
-  const prefixed = `module.${name}`
-  if (app.container.has(prefixed)) return app.container.get<CliModule>(prefixed)
-  return undefined
+  try {
+    const direct = app.container.get<CliModule>(name)
+    if (direct) return direct
+  } catch {}
+  try {
+    return app.container.get<CliModule>(`module.${name}`)
+  } catch {
+    return undefined
+  }
 }
 
 /** Loads the raw tower config without initializing any modules. */
@@ -220,7 +227,9 @@ export function loadEnvFor(configPath: string): void {
 }
 
 export async function closeModules(app: TowerApp) {
-  for (const [name] of Object.entries(app.config.modules)) {
+  const modules = app.config.modules as unknown as Array<TowerModule | string> | Record<string, unknown>
+  const names = Array.isArray(modules) ? modules.map((m: any) => (typeof m === 'string' ? m : m.name)) : Object.keys(modules as Record<string, unknown>)
+  for (const name of names) {
     const mod = getModule(app, name)
     if (mod?.close) {
       await mod.close()

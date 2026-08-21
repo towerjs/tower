@@ -48,7 +48,7 @@ export function getTowerApp(): Promise<TowerApp> {
   return promise
 }
 
-export function initTower(modules: TowerModule[], config?: TowerBlueprint): Promise<TowerApp> {
+export function initTower(modules: TowerModule[] = [], config?: TowerBlueprint): Promise<TowerApp> {
   const existing = getAppPromise()
   if (existing) return existing
 

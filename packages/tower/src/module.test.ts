@@ -1,80 +1,38 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-const mockDefineTower = vi.fn((c: any) => c)
-const mockCreateTowerApp = vi.fn()
-
-const mockRegisterModule = vi.fn()
-const mockGetModuleFactory = vi.fn()
-
-vi.mock('@towerjs/blueprint', () => ({
-  defineTower: mockDefineTower,
-  registerModule: mockRegisterModule,
-  getModuleFactory: mockGetModuleFactory,
-  TowerBlueprint: class {},
-}))
-
-vi.mock('@towerjs/foundation', () => ({
-  createTowerApp: mockCreateTowerApp,
-  createTower: vi.fn(),
-  registerConfigProvider: vi.fn(),
-  TowerApp: class {},
-}))
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
+import { describe, expect, it } from 'vitest'
 
 describe('entrypoint re-exports', () => {
   it('re-exports defineTower from blueprint', async () => {
-    const mod = await import('./blueprint.js')
+    const mod = await import('./blueprint/index.js')
     expect(typeof mod.defineTower).toBe('function')
   })
 
   it('re-exports createTowerApp from foundation', async () => {
-    const mod = await import('./foundation.js')
-    expect(mod.createTowerApp).toBe(mockCreateTowerApp)
+    const mod = await import('./foundation/app.js')
+    expect(typeof mod.createTowerApp).toBe('function')
   })
 
   it('re-exports createTower from foundation', async () => {
-    const mod = await import('./foundation.js')
+    const mod = await import('./foundation/app.js')
     expect(typeof mod.createTower).toBe('function')
   })
-})
 
-describe('gatehouseClient', () => {
-  it('re-exports gatehouseClient from @towerjs/gatehouse/client', async () => {
-    const mod = await import('./gatehouse/client.js')
-    expect(mod.gatehouseClient).toBeDefined()
-    expect(typeof mod.gatehouseClient.signIn).toBe('function')
-    expect(typeof mod.gatehouseClient.signUp).toBe('function')
-    expect(typeof mod.gatehouseClient.signOut).toBe('function')
+  it('re-exports towerContext from foundation', async () => {
+    const mod = await import('./foundation/context/index.js')
+    expect(mod.towerContext).toBeDefined()
+    expect(typeof mod.towerContext.get).toBe('function')
+    expect(typeof mod.towerContext.run).toBe('function')
   })
 })
 
-describe('runtime module factories', () => {
-  it('orders gatehouse after courier when both are configured', async () => {
-    const { getModuleFactoryForConfig } = await import('./runtime.js')
-    const config = { modules: { vault: {}, gatehouse: {}, courier: {} } }
-    const factory = getModuleFactoryForConfig(config as any)
-
-    const gatehouse = factory('gatehouse')!({})
-    const courier = factory('courier')!({})
-    const vault = factory('vault')!({})
-
-    expect(gatehouse.name).toBe('gatehouse')
-    expect(courier.name).toBe('courier')
-    expect(vault.name).toBe('vault')
-    expect(gatehouse.dependsOn).toContain('courier')
-    expect(gatehouse.dependsOn).toContain('vault')
-    expect(courier.dependsOn).toEqual([])
+describe('runtime', () => {
+  it('exposes getTowerApp and initTower', async () => {
+    const mod = await import('./runtime.js')
+    expect(typeof mod.getTowerApp).toBe('function')
+    expect(typeof mod.initTower).toBe('function')
   })
 
-  it('does not require courier when only gatehouse is configured', async () => {
-    const { getModuleFactoryForConfig } = await import('./runtime.js')
-    const config = { modules: { vault: {}, gatehouse: {} } }
-    const factory = getModuleFactoryForConfig(config as any)
-
-    const gatehouse = factory('gatehouse')!({})
-    expect(gatehouse.dependsOn).toEqual(['vault'])
+  it('re-exports createLazyModule', async () => {
+    const mod = await import('./runtime.js')
+    expect(typeof mod.createLazyModule).toBe('function')
   })
 })

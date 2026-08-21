@@ -11,7 +11,8 @@ describe('Gatehouse public API contract', () => {
     it('exports gatehouse proxy singleton', async () => {
       const { gatehouse } = await import('@towerjs/gatehouse')
       expect(gatehouse).toBeDefined()
-      expect(typeof gatehouse).toBe('object')
+      // gatehouse is a callable Proxy over a function (call face vault() + property face vault.selectFrom)
+      expect(['object', 'function'].includes(typeof gatehouse)).toBe(true)
     })
 
     it('exports module-level functions', async () => {

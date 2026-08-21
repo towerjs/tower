@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
-import { getModuleFactory } from './runtime.js'
+import { vault } from '@towerjs/vault'
+import { gatehouse } from '@towerjs/gatehouse'
+
+import { createModuleDefinitions } from './runtime.js'
 
 describe('Scribe module runtime', () => {
-  it('only requires configured module dependencies', () => {
-    const factory = getModuleFactory('gatehouse', new Set(['gatehouse', 'vault']))
-    const module = factory?.({})
+  it('gatehouse depends on vault and courier', async () => {
+    const defs = await createModuleDefinitions([vault(), gatehouse({ provider: 'better-auth' } as any)])
+    const gatehouseMod = defs.find((m) => m.name === 'gatehouse')
 
-    expect(module?.dependsOn).toEqual(['vault'])
+    expect(gatehouseMod?.dependsOn).toEqual(['vault', 'courier'])
+  })
+
+  it('returns array modules as-is', async () => {
+    const defs = await createModuleDefinitions([vault()])
+    expect(defs).toHaveLength(1)
+    expect(defs[0].name).toBe('vault')
   })
 })

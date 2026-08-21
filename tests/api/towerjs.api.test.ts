@@ -1,4 +1,4 @@
-import { registerConfigProvider } from '@towerjs/foundation'
+import { registerConfigProvider } from '@towerjs/tower/foundation'
 
 import { describe, expect, it } from 'vitest'
 

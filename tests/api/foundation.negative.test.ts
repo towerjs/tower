@@ -1,4 +1,4 @@
-import { createTowerApp, resolveDependencyOrder } from '@towerjs/foundation'
+import { createTowerApp, resolveDependencyOrder } from '@towerjs/tower/foundation'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 

@@ -562,6 +562,7 @@ export const gatehouse = new Proxy(gatehouseTarget, {
     const propStr = String(prop)
     // For hermetic tests, signIn etc should throw ContextRequiredError on property access when not in request
     const contextThrowOnAccess = [
+      'getSession',
       'signIn',
       'signUp',
       'sessions',

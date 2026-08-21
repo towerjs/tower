@@ -1,4 +1,4 @@
-import { getRegisteredModules } from '@towerjs/blueprint'
+import { getRegisteredModules } from '@towerjs/tower/blueprint'
 
 import { describe, expect, it } from 'vitest'
 

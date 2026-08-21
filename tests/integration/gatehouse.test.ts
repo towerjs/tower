@@ -1,6 +1,6 @@
-import { getModuleFactory } from '@towerjs/blueprint'
+import { getModuleFactory } from '@towerjs/tower/blueprint'
 import '@towerjs/courier'
-import { createTowerApp } from '@towerjs/foundation'
+import { createTowerApp } from '@towerjs/tower/foundation'
 import '@towerjs/gatehouse'
 // Register modules so getModuleFactory resolves them
 import '@towerjs/vault'
