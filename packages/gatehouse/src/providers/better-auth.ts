@@ -222,8 +222,11 @@ export class BetterAuthAdapter {
       database: {
         ...(options.database as Record<string, unknown>),
         db: new Proxy(this.db as any, {
-          get: (target, property, receiver) =>
-            property === 'introspection' ? this.introspection : Reflect.get(target, property, receiver),
+          get: (target, property, receiver) => {
+            if (property === 'introspection') return this.introspection
+            const value = Reflect.get(target, property, receiver)
+            return typeof value === 'function' ? value.bind(target) : value
+          },
         }),
         type: 'postgres',
       },
