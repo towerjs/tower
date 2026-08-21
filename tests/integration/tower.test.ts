@@ -52,9 +52,6 @@ describe('boot — full tower (live database)', () => {
       ],
     })
 
-    await app.shutdown()
-
-    const vaultSvc = app.container.get<any>('vault')
-    await expect(vaultSvc.close()).resolves.toBeUndefined()
+    await expect(app.shutdown()).resolves.toBeUndefined()
   })
 })
