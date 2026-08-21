@@ -14,16 +14,6 @@ function isModuleArray(modules: ModuleConfigInput): modules is TowerModule[] {
   return Array.isArray(modules)
 }
 
-function moduleArrayToObject(modules: TowerModule[]): Record<string, Record<string, unknown>> {
-  const obj: Record<string, Record<string, unknown>> = {}
-  for (const mod of modules) {
-    // For module definitions created by callable exports, we don't have the original config
-    // So we use an empty object - the module definition already has its config baked in
-    obj[mod.name] = {}
-  }
-  return obj
-}
-
 export async function createModuleDefinitions(modules: ModuleConfigInput): Promise<TowerModule[]> {
   if (isModuleArray(modules)) {
     // New array form — check if already TowerModule definitions (have initialize) or plain configs from jiti mock
