@@ -54,7 +54,9 @@ export function initTower(modules: TowerModule[] = [], config?: TowerBlueprint):
 
   const promise = (async () => {
     const cfg = config ? (config as unknown as TowerConfig) : await resolveConfig()
-    return buildApp(cfg as TowerConfig, modules)
+    // `initTower` receives concrete module definitions; make them the
+    // composition root even when a discovered config also exists.
+    return buildApp({ ...(cfg as TowerConfig), ...(modules.length > 0 ? { modules } : {}) }, modules)
   })().catch((err) => {
     setAppPromise(undefined)
     throw err
