@@ -50,7 +50,10 @@ export function getTowerApp(): Promise<TowerApp> {
 
 export function initTower(modules: TowerModule[] = [], config?: TowerBlueprint): Promise<TowerApp> {
   const existing = getAppPromise()
-  if (existing) return existing
+  // An explicit module list must win over an app implicitly started by a
+  // framework adapter during module import (for example Gatehouse's Next.js
+  // dynamic-rendering hook).
+  if (existing && modules.length === 0) return existing
 
   const promise = (async () => {
     const cfg = config ? (config as unknown as TowerConfig) : await resolveConfig()
