@@ -7,7 +7,7 @@ description: 'The design principles behind Tower.'
 
 Modules define stable APIs over their capabilities, and providers implement them. Gatehouse talks to Better Auth, Vault to Kysely, Courier to email/SMS providers — but application code talks to the module, not the provider. Provider choice is a configuration decision, made in `tower.config.ts`, and the module API stays the same.
 
-This is not a universal abstraction that hides every provider behind identical surfaces — different providers have different capabilities. Instead, Tower exposes a stable module API and lets you reach the underlying engine directly when you need provider-specific power.
+This is not a universal abstraction that hides every provider behind identical surfaces — different providers have different capabilities. Instead, Tower exposes a stable module API and lets you reach the underlying engine directly when you need provider-specific power. See [Infrastructure](/docs/infrastructure) for how Postgres, Kysely, and scoped portability fit together.
 
 ## Framework-First
 
@@ -42,7 +42,7 @@ Each module can be used independently. Modules communicate through well-defined 
 
 ## Underlying Engines Stay Exposed
 
-Tower doesn't wrap you in a leaky abstraction. It exposes the real tools — Kysely for SQL, Better Auth for authentication — so you keep their power and can drop down to raw queries, custom options, or provider-specific features when a module API isn't enough.
+Tower doesn't wrap you in a leaky abstraction. It exposes the real tools — Kysely for SQL, Better Auth for authentication — so you keep their power and can drop down to raw queries, custom options, or provider-specific features when a module API isn't enough. See [Infrastructure](/docs/infrastructure) for the preserved Kysely escape hatch and Vault's provider boundary.
 
 ## Start Monolithic, Split Later
 

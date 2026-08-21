@@ -1,0 +1,108 @@
+---
+title: 'Infrastructure'
+description: 'How Tower curates infrastructure: Postgres as the foundation, Kysely as the query engine, and intentionally scoped portability.'
+---
+
+Tower is opinionated about which infrastructure it curates and where it stops. The goal is not to abstract every database or queue — it is to give you one coherent application model with a stable API, while keeping the escape hatches open to the real engines underneath.
+
+## PostgreSQL as the foundation
+
+Vault is built on PostgreSQL. Every Tower application that uses a database uses Postgres — locally via `pg`, on the edge via Neon HTTP, or on any Postgres-compatible host (Supabase, Railway, RDS, etc.).
+
+Postgres is the default because:
+
+- It covers the relational model most applications need (tables, transactions, constraints, indexes).
+- Its ecosystem (extensions, pooling, serverless drivers) is mature across runtimes.
+- It lets Vault be portable without pretending every database is the same.
+
+Tower does not hide Postgres behind a generic "database" abstraction that pretends to support MySQL, SQLite, and DynamoDB with the same semantics. Provider portability is scoped to Postgres.
+
+## Kysely as the query engine
+
+Vault's query API is Kysely. `vault.selectFrom()`, `vault.insertInto()`, `vault.updateTable()`, `vault.deleteFrom()`, transactions, and `db.schema` are all Kysely — typed, composable, and close to SQL.
+
+```ts
+import { vault } from '@towerjs/tower/vault'
+
+const users = await vault.selectFrom('users').selectAll().where('email', '=', 'alice@example.com').execute()
+
+await vault.transaction(async (trx) => {
+  const user = await trx
+    .insertInto('users')
+    .values({ name: 'Alice', email: 'alice@example.com' })
+    .returningAll()
+    .executeTakeFirstOrThrow()
+
+  await trx.insertInto('profiles').values({ userId: user.id }).execute()
+})
+```
+
+Kysely was chosen because it is type-safe without an ORM's statefulness, it works on both Node and Edge (via `kysely-neon`), and it composes — future Tower primitives (models, policies) can build on it rather than replace it.
+
+## The escape hatch stays open
+
+Tower does not wrap you in a leaky abstraction. The underlying engine is always reachable:
+
+- **Raw SQL** — Kysely's `sql` tag is available alongside Vault. Use it when the query builder is not enough.
+
+  ```ts
+  import { sql } from 'kysely'
+
+  // in a migration
+  export async function up(db: Vault) {
+    await db.schema
+      .createTable('users')
+      .addColumn('id', 'uuid', (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .execute()
+  }
+
+  // in application code
+  const result = await vault
+    .selectFrom('users')
+    .select(sql<string>`lower(email)`.as('email'))
+    .execute()
+  ```
+
+- **Kysely directly** — `vault` _is_ a Kysely instance (typed as `Vault`). Methods like `vault.fn`, `vault.schema`, `vault.raw`, and `vault.dynamic` are forwarded, so you keep Kysely's full surface without `vault.db`.
+
+- **Dialect escape** — provider-specific needs (Neon WebSockets, `pg` pool tuning) pass through `VaultConfig.pool` and the provider boundary, not a Tower wrapper.
+
+## Provider portability is intentionally scoped
+
+Vault's provider boundary is intentionally narrow: Neon HTTP (`kysely-neon`) for serverless/edge and standard `pg` for everything else. Swapping providers is a configuration change — no query, migration, or seed changes:
+
+```ts
+// tower.config.ts — same application code, different provider
+export default defineTower({
+  modules: [
+    vault({
+      provider: 'neon',
+      connectionString: env.string('DATABASE_URL'),
+    }),
+  ],
+})
+```
+
+```ts
+// swap to pg — no application changes
+vault({
+  provider: 'pg',
+  connectionString: env.string('DATABASE_URL'),
+  pool: { max: 10 },
+})
+```
+
+Provider auto-detection keeps the common case simple: connection strings containing `.neon.tech` resolve to `neon`, everything else to `pg`. Set `provider` explicitly to override.
+
+The exported types `VaultProvider`, `VaultProviderName`, `VaultPoolConfig`, and `VaultMigrator` are Tower-owned. The provider implements the Kysely dialect; the application talks to `Vault`. You can name the provider types, swap providers without touching queries, and still reach Kysely, `pg`, or Neon directly when needed.
+
+This is the same philosophy across Tower: Gatehouse wraps Better Auth but exposes it via an escape hatch (`gatehouse.provider`), Courier wraps Resend/SES/SMTP/Twilio/Web Push behind a stable `courier.email.send()` API. Each module curates a provider set, keeps the stable surface typed, and leaves the engine reachable.
+
+## What this means for your app
+
+- Write queries against `vault` — they are Kysely queries, type-safe and provider-agnostic.
+- Use `provider: 'neon'` on Edge/serverless or `provider: 'pg'` elsewhere; auto-detection handles most cases.
+- Reach for `sql` or Kysely APIs directly when you need provider-specific SQL.
+- Future Tower primitives (models, factories, policies) will build on this foundation — they will not replace Kysely or remove the escape hatch.
+
+See [Vault](/docs/vault) for setup, migrations, seeds, and runtime behavior, and [Philosophy](/docs/philosophy) for the broader design principles.

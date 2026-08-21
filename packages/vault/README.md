@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@towerjs/vault?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/vault)
 
-Database layer for Tower. Vault's current public query API is built on [Kysely](https://kysely.dev), with PostgreSQL providers for Neon (HTTP) and standard `pg` connections. It provides migrations, seeds, and connection management. A future application-oriented model API may sit above this query API; it will not replace Kysely or remove the low-level escape hatch.
+Database layer for Tower. Vault's current public query API is built on [Kysely](https://kysely.dev), with PostgreSQL providers for Neon (HTTP) and standard `pg` connections. It provides migrations, seeds, and connection management. A future application-oriented model API may sit above this query API; it will not replace Kysely or remove the low-level escape hatch. See the [Infrastructure docs](../../docs/01-introduction/05-infrastructure.mdx) for the curated provider philosophy.
 
 ## Installation
 

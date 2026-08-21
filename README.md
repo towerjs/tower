@@ -117,7 +117,7 @@ Tower is built for TypeScript, with typed configuration and APIs throughout the 
 
 ### Opinionated by design
 
-Tower is not an attempt to abstract every possible technology. It provides a curated set of integrations and conventions that work well together, while leaving the underlying infrastructure choices open where they matter.
+Tower is not an attempt to abstract every possible technology. It provides a curated set of integrations and conventions that work well together, while leaving the underlying infrastructure choices open where they matter. See [Infrastructure](docs/01-introduction/05-infrastructure.mdx) for how PostgreSQL, Kysely, and scoped provider portability fit together.
 
 ## Modules
 
