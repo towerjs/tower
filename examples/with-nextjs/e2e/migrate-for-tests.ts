@@ -45,13 +45,13 @@ async function main() {
   const { vault } = await import('@towerjs/vault')
   const { gatehouse } = await import('@towerjs/gatehouse')
   const { courier } = await import('@towerjs/courier')
+  const gatehouseModule = gatehouse({ provider: 'better-auth' })
   await initTower([
     vault({ connectionString: databaseUrl }),
-    gatehouse({ provider: 'better-auth' }),
+    gatehouseModule,
     courier({ email: { provider: 'console' } }),
   ])
-  const { Gatehouse } = await import('@towerjs/gatehouse')
-  await Gatehouse.migrate()
+  await gatehouseModule.migrate()
   console.log('[setup] Migration complete')
 }
 
