@@ -1,7 +1,7 @@
-import { getModuleFactory } from '@towerjs/tower/blueprint'
 import '@towerjs/courier'
-import { createTowerApp } from '@towerjs/tower/foundation'
 import '@towerjs/gatehouse'
+import { getModuleFactory } from '@towerjs/tower/blueprint'
+import { createTowerApp } from '@towerjs/tower/foundation'
 import '@towerjs/vault'
 
 import { describe, expect, it } from 'vitest'

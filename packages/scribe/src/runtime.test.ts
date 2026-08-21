@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
-
-import { vault } from '@towerjs/vault'
 import { gatehouse } from '@towerjs/gatehouse'
+import { vault } from '@towerjs/vault'
+
+import { describe, expect, it } from 'vitest'
 
 import { createModuleDefinitions } from './runtime.js'
 

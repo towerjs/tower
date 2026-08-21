@@ -62,7 +62,9 @@ vi.mock('@towerjs/tower/foundation', () => ({
 
 vi.mock('jiti', () => ({
   createJiti: vi.fn(() => ({
-    import: vi.fn(() => Promise.resolve({ modules: [{ name: 'vault' }, { name: 'gatehouse', provider: 'better-auth' }] } as any)),
+    import: vi.fn(() =>
+      Promise.resolve({ modules: [{ name: 'vault' }, { name: 'gatehouse', provider: 'better-auth' }] } as any)
+    ),
   })),
 }))
 
