@@ -84,4 +84,6 @@ export interface VaultModule<TSchema = unknown> extends Omit<Kysely<TSchema>, 't
   seed(name?: string): Promise<{ applied: string[] }>
   close(): Promise<void>
   migrator: VaultMigrator
+  /** Escape hatch — raw Kysely instance (vault itself). Preserved for advanced queries. */
+  db: Vault<TSchema>
 }

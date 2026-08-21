@@ -71,7 +71,7 @@ const vaultRuntime = createLazyModule<VaultModule>('vault')
 function buildProxyUnconfigured(): VaultModule {
   return new Proxy({} as VaultModule, {
     get(_, prop) {
-      if (prop === 'migrate' || prop === 'migrator') {
+      if (prop === 'migrate' || prop === 'migrator' || prop === 'db') {
         throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
       }
       return () => {
@@ -84,6 +84,7 @@ function buildProxyUnconfigured(): VaultModule {
 function buildProxyDb(db: Vault, pool: { end(): Promise<void> }): VaultModule {
   return new Proxy(db as unknown as VaultModule, {
     get(target, prop) {
+      if (prop === 'db') return db
       if (prop === 'close') return () => pool.end()
       if (prop === 'transaction') {
         return <T>(fn: (trx: Vault) => Promise<T>) => db.transaction().execute(fn)
@@ -109,6 +110,7 @@ function buildProxyConfigured(
 ): VaultModule {
   return new Proxy(db as unknown as VaultModule, {
     get(target, prop) {
+      if (prop === 'db') return db
       if (prop === 'migrator') return _migrator
       if (prop === 'migrate') {
         return () => migrateToLatest(db, { folder: migrationFolder })
