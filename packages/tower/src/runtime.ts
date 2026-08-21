@@ -17,10 +17,13 @@ function getAppPromise(): Promise<TowerApp> | undefined {
 }
 
 async function buildApp(config: TowerConfig, modules: TowerModule[]): Promise<TowerApp> {
-  const app = await createTowerApp(config, (name: string) => {
-    const mod = modules.find((m) => m.name === name)
-    return mod ? (_options: Record<string, unknown>) => mod : undefined
-  })
+  const factory = Array.isArray(config.modules)
+    ? undefined
+    : (name: string) => {
+        const mod = modules.find((m) => m.name === name)
+        return mod ? (_options: Record<string, unknown>) => mod : undefined
+      }
+  const app = await createTowerApp(config, factory)
   await registerModuleServices(app, modules)
   return app
 }
