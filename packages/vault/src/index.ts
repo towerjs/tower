@@ -203,7 +203,7 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
 
     _vault = await buildProxyForRuntime(db, effectivePool, isEdge, options)
 
-    ctx.services.register('vault', vaultRuntime)
+    ctx.services.register('vault', _vault)
   }
 
   return {
