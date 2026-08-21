@@ -114,9 +114,10 @@ Tower is not an attempt to abstract every possible technology. It provides a cur
 
 ## Modules
 
+Tower is the application core — **Foundation** and **Blueprint** are internal layers in `packages/tower`, not separate packages. Foundation handles lifecycle, dependency injection, config discovery, and runtime detection; Blueprint handles application definition and module registration.
+
 | Module                                                                     | Description                                                                          | Integrations                        |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------- |
-| [Tower](https://github.com/towerjs/tower/tree/main/packages/tower)         | Application core — Foundation + Blueprint as internal layers, runtime primitives     | —                                   |
 | [Vault](https://github.com/towerjs/tower/tree/main/packages/vault)         | Database API, queries, migrations, transactions, models                              | PostgreSQL, Neon, Kysely            |
 | [Gatehouse](https://github.com/towerjs/tower/tree/main/packages/gatehouse) | Authentication and authorization                                                     | Better Auth                         |
 | [Courier](https://github.com/towerjs/tower/tree/main/packages/courier)     | Communication layer for email, SMS, push notifications, and other messaging services | Resend, SES, SMTP, Twilio, Web Push |
