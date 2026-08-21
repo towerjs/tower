@@ -11,6 +11,7 @@ export class BetterAuthAdapter {
   private auth: any
   private api: any
   private authOptions: Record<string, unknown> | null = null
+  private introspection: { getTables: () => Promise<unknown[]> }
   private db: Kysely<unknown>
   private config: GatehouseConfig
 
@@ -18,42 +19,40 @@ export class BetterAuthAdapter {
     this.db = db
     this.config = config
     const introspection = (db as any).introspection
-    if (!introspection) {
-      ;(db as any).introspection = {
-        getTables: async () => {
-          const tables = await sql<{ table_schema: string; table_name: string }>`
+    this.introspection = introspection ?? {
+      getTables: async () => {
+        const tables = await sql<{ table_schema: string; table_name: string }>`
             SELECT table_schema, table_name
             FROM information_schema.tables
             WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
               AND table_type = 'BASE TABLE'
           `.execute(db)
-          const columns = await sql<{
-            table_schema: string
-            table_name: string
-            column_name: string
-            data_type: string
-            is_nullable: string
-            column_default: string | null
-          }>`
+        const columns = await sql<{
+          table_schema: string
+          table_name: string
+          column_name: string
+          data_type: string
+          is_nullable: string
+          column_default: string | null
+        }>`
             SELECT table_schema, table_name, column_name, data_type, is_nullable, column_default
             FROM information_schema.columns
             WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
             ORDER BY ordinal_position
           `.execute(db)
-          return tables.rows.map((table) => ({
-            schema: table.table_schema,
-            name: table.table_name,
-            columns: columns.rows
-              .filter((column) => column.table_schema === table.table_schema && column.table_name === table.table_name)
-              .map((column) => ({
-                name: column.column_name,
-                dataType: column.data_type,
-                isNullable: column.is_nullable === 'YES',
-                hasDefaultValue: column.column_default !== null,
-              })),
-          }))
-        },
-      }
+        return tables.rows.map((table) => ({
+          schema: table.table_schema,
+          name: table.table_name,
+          columns: columns.rows
+            .filter((column) => column.table_schema === table.table_schema && column.table_name === table.table_name)
+            .map((column) => ({
+              name: column.column_name,
+              dataType: column.data_type,
+              isNullable: column.is_nullable === 'YES',
+              hasDefaultValue: column.column_default !== null,
+            })),
+        }))
+      },
     }
   }
 
@@ -220,7 +219,14 @@ export class BetterAuthAdapter {
     const options = this.authOptions ?? this.auth.options
     const { runMigrations } = await mod.getMigrations({
       ...options,
-      database: { ...(options.database as Record<string, unknown>), db: this.db, type: 'postgres' },
+      database: {
+        ...(options.database as Record<string, unknown>),
+        db: new Proxy(this.db as any, {
+          get: (target, property, receiver) =>
+            property === 'introspection' ? this.introspection : Reflect.get(target, property, receiver),
+        }),
+        type: 'postgres',
+      },
     })
     await runMigrations()
   }
