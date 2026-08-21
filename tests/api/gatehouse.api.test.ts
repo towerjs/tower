@@ -97,9 +97,9 @@ describe('Gatehouse public API contract', () => {
       expect(typeof result.handler).toBe('function')
     })
 
-    it('gatehouse.getSession throws ContextRequiredError outside request context', async () => {
-      const { gatehouse, ContextRequiredError } = await import('@towerjs/gatehouse')
-      expect(() => gatehouse.getSession()).toThrow(ContextRequiredError)
+    it('gatehouse.getSession returns null outside request context', async () => {
+      const { gatehouse } = await import('@towerjs/gatehouse')
+      await expect(gatehouse.getSession()).resolves.toBeNull()
     })
   })
 
