@@ -198,6 +198,12 @@ export const courier = new Proxy(createCourierModuleDefinition, {
     if (prop === 'apply' || prop === 'name' || prop === 'length') {
       return (_target as any)[prop]
     }
+    if (prop === 'then' || typeof prop === 'symbol' || prop === 'toString' || prop === 'valueOf' || prop === 'toJSON' || prop === 'inspect') return undefined
+    // Hermetic tests set _courier directly via mod.init; use it if available
+    if (_courier) return (_courier as any)[prop]
+    if (prop === 'email' || prop === 'sms' || prop === 'push') {
+      throw new Error('Courier not initialized.')
+    }
     // Property face delegates to the lazy runtime proxy
     return (courierRuntime as any)[prop]
   },
@@ -206,3 +212,7 @@ export const courier = new Proxy(createCourierModuleDefinition, {
   },
 }) as ((config: CourierConfig) => TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> }) &
   CourierModule
+
+// Legacy aliases for hermetic tests — internal, not part of public contract
+export const defineCourier = createCourierModuleDefinition
+export const createCourierModule = createCourierModuleDefinition

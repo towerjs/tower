@@ -1,6 +1,6 @@
 'use server'
 
-import { gatehouse } from '@towerjs/gatehouse'
+import { gatehouse } from '../../index.js'
 
 import { FormActionFn, action } from '../next.js'
 import { authActions } from './registry.js'
