@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+
 export interface TowerContextProvider {
   run<T>(data: Record<string, unknown>, handler: () => Promise<T>): Promise<T>
   get<T = unknown>(key: string): T | undefined
@@ -21,55 +23,39 @@ function detectEdge(): boolean {
   return false
 }
 
-let _towerContext: TowerContextProvider | undefined
+const GLOBAL_KEY = '___tower_context_provider___'
 
-async function loadContext(): Promise<TowerContextProvider> {
-  if (detectEdge()) return noop()
+let _towerContext: TowerContextProvider | undefined = (globalThis as any)[GLOBAL_KEY] as
+  TowerContextProvider | undefined
 
-  const GLOBAL_KEY = '___tower_context_provider___'
-  const existing = (globalThis as any)[GLOBAL_KEY]
-  if (existing) return existing
-
-  try {
-    const { AsyncLocalStorage } = await import('node:async_hooks')
-    const storage = new AsyncLocalStorage<Record<string, unknown>>()
-    const provider = {
-      run<T>(data: Record<string, unknown>, handler: () => Promise<T>) {
-        return storage.run(data, handler)
-      },
-      get<T = unknown>(key: string): T | undefined {
-        return storage.getStore()?.[key] as T | undefined
-      },
+if (!_towerContext) {
+  if (detectEdge()) {
+    _towerContext = noop()
+  } else {
+    try {
+      const require = createRequire(import.meta.url)
+      const { AsyncLocalStorage } = require('node:async_hooks') as typeof import('node:async_hooks')
+      const storage = new AsyncLocalStorage<Record<string, unknown>>()
+      _towerContext = {
+        run<T>(data: Record<string, unknown>, handler: () => Promise<T>) {
+          return storage.run(data, handler)
+        },
+        get<T = unknown>(key: string): T | undefined {
+          return storage.getStore()?.[key] as T | undefined
+        },
+      }
+    } catch {
+      _towerContext = noop()
     }
-    ;(globalThis as any)[GLOBAL_KEY] = provider
-    return provider
-  } catch {
-    return noop()
   }
+  ;(globalThis as any)[GLOBAL_KEY] = _towerContext
 }
 
-/**
- * Lazily-initialized tower context provider.
- * Avoids top-level await for CJS/SSR compatibility.
- */
 export function getTowerContext(): TowerContextProvider {
-  if (!_towerContext) {
-    // This is called synchronously, so we need to handle the async case
-    // by returning a noop immediately and initializing async
-    loadContext().then((ctx) => {
-      _towerContext = ctx
-    })
-    return noop()
-  }
-  return _towerContext
+  return _towerContext!
 }
 
-export const towerContext = new Proxy({} as TowerContextProvider, {
-  get(_, prop) {
-    const ctx = getTowerContext()
-    return (ctx as any)[prop]
-  },
-}) as TowerContextProvider
+export const towerContext = _towerContext!
 
 export interface RequestContext {
   headers: Headers
