@@ -23,7 +23,7 @@ export default defineConfig({
     port: 3000,
     reuseExistingServer: !process.env.CI,
     env: {
-      TOWER_CONFIG_PATH: `${process.cwd()}/tower.config.ts`,
+      TOWER_CONFIG_PATH: `file://${process.cwd()}/tower.config.ts`,
     },
     stdout: 'pipe',
     stderr: 'pipe',

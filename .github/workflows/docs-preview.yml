@@ -54,6 +54,7 @@ jobs:
             -e DOCS_SOURCE_URL="${DOCS_SOURCE_URL}" \
             -e DOCS_SOURCE_TOKEN="${DOCS_SOURCE_TOKEN}" \
             --token="${VERCEL_TOKEN}" \
+            --project="${VERCEL_PROJECT_ID}" \
             --scope="${VERCEL_ORG_ID}" \
             2>&1)
           VERCEL_EXIT_CODE=$?
