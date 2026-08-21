@@ -372,21 +372,87 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
  * await gatehouse.signIn.email({ email, password })
  * ```
  */
-export const gatehouse = new Proxy(createGatehouseModuleDefinition, {
-  get(_target, prop) {
-    // The call face returns the module definition
-    if (prop === 'apply' || prop === 'name' || prop === 'length') {
-      return (_target as any)[prop]
+
+// Immediately invoke async function to trigger dynamic rendering in Next.js
+// During static prerendering, awaiting `headers()` throws a
+// DynamicServerError which makes Next.js treat the route as dynamic.
+let initPromise: Promise<void> | undefined
+;(async () => {
+  try {
+    const { headers } = await import('next/headers.js')
+    await headers()
+    // Initialize the app so services are registered
+    const { getTowerApp } = await import('@towerjs/tower/runtime')
+    await getTowerApp()
+  } catch (e: any) {
+    // Only ignore module resolution errors (non-Next.js environments)
+    // Let DynamicServerError and other errors propagate
+    const isModuleNotFound = e.code === 'MODULE_NOT_FOUND' ||
+      e.message.includes('Cannot find module') ||
+      e.message.includes('next/headers')
+    if (!isModuleNotFound) throw e
+  }
+})()
+
+// Marks the route as dynamic before initializing the app.
+// During static prerendering, awaiting `headers()` throws a
+// DynamicServerError which makes Next.js treat the route as dynamic,
+// so the tower app (and its DB connection) is never initialized at build time.
+async function markDynamicAndInit(): Promise<any> {
+  if (!initPromise) {
+    initPromise = (async () => {
+      try {
+        const { headers } = await import('next/headers.js')
+        await headers()
+        // Initialize the app so services are registered
+        const { getTowerApp } = await import('@towerjs/tower/runtime')
+        await getTowerApp()
+      } catch (e: any) {
+        // Only ignore module resolution errors (non-Next.js environments)
+        // Let DynamicServerError and other errors propagate
+        const isModuleNotFound = e.code === 'MODULE_NOT_FOUND' ||
+          e.message.includes('Cannot find module') ||
+          e.message.includes('next/headers')
+        if (!isModuleNotFound) throw e
+      }
+    })()
+  }
+  await initPromise
+  // The lazy module will trigger initialization via getTowerApp()
+  return gatehouseRuntime
+}
+
+function createDeepCall(path: string[]) {
+  return new Proxy(
+    (...args: any[]) =>
+      markDynamicAndInit().then((r) => {
+        let v = r
+        for (const p of path) v = v[p]
+        if (typeof v === 'function') return v(...args)
+        return v
+      }),
+    {
+      get(_, subProp) {
+        if (typeof subProp === 'symbol' || subProp === 'then') return undefined
+        return createDeepCall([...path, String(subProp)])
+      },
     }
-    // Property face delegates to the lazy runtime proxy
-    return (gatehouseRuntime as any)[prop]
+  )
+}
+
+const gatehouseTarget = (() => {}) as unknown as GatehouseRuntimeAPI & ((
+  config: GatehouseConfig
+) => TowerModule & GatehouseModule)
+
+export const gatehouse = new Proxy(gatehouseTarget, {
+  get(_target, prop) {
+    if (typeof prop === 'symbol' || prop === 'then') return undefined
+    return createDeepCall([String(prop)])
   },
   apply(_target, _thisArg, args: unknown[]) {
-    return (_target as (...args: unknown[]) => unknown)(...args)
+    return createGatehouseModuleDefinition(...(args as [GatehouseConfig]))
   },
-}) as ((
-  config: GatehouseConfig
-) => TowerModule & GatehouseModule) & GatehouseRuntimeAPI
+})
 
 function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
   if (!courier) return config

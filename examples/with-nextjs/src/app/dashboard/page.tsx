@@ -3,8 +3,6 @@ import { Card } from '@/components/ui/card'
 
 import { gatehouse } from '@towerjs/gatehouse'
 
-export const dynamic = 'force-dynamic'
-
 import Link from 'next/link'
 
 export default async function DashboardPage() {
