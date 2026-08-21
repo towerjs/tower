@@ -72,13 +72,9 @@ function buildProxyUnconfigured(): VaultModule {
   return new Proxy({} as VaultModule, {
     get(_, prop) {
       if (prop === 'migrate' || prop === 'migrator' || prop === 'db') {
-        return () => {
-          throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
-        }
-      }
-      return () => {
         throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
       }
+      throw new Error('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
     },
   })
 }
@@ -257,11 +253,6 @@ export const vault = new Proxy(createVaultModuleDefinition, {
       prop === 'inspect'
     )
       return undefined
-    // For migrate/migrator/db etc, return a function that when called returns a rejected promise
-    // This allows `await vault.migrate().catch(() => {})` in e2e/migrate-for-tests to be handled via .catch
-    if (prop === 'migrate' || prop === 'migrator' || prop === 'db' || prop === 'close' || prop === 'transaction' || prop === 'seed') {
-      return () => Promise.reject(new Error('Vault not initialized'))
-    }
     throw new Error('Vault not initialized')
   },
   apply(_target, _thisArg, args) {
