@@ -1,4 +1,9 @@
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { defineConfig, devices } from '@playwright/test'
+
+const configPath = resolve(dirname(fileURLToPath(import.meta.url)), 'tower.config.ts')
 
 export default defineConfig({
   testDir: './e2e',
@@ -23,7 +28,7 @@ export default defineConfig({
     port: 3000,
     reuseExistingServer: !process.env.CI,
     env: {
-      TOWER_CONFIG_PATH: `file://${process.cwd()}/tower.config.ts`,
+      TOWER_CONFIG_PATH: `file://${configPath}`,
     },
     stdout: 'pipe',
     stderr: 'pipe',
