@@ -1,8 +1,7 @@
-import { getModuleFactory, registerModule } from '../blueprint/index.js'
-import { resetModuleFactories } from '../blueprint/internal.js'
-
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { getModuleFactory, registerModule } from '../blueprint/index.js'
+import { resetModuleFactories } from '../blueprint/internal.js'
 import { createTower, createTowerApp } from './app.js'
 import { ServiceContainer } from './container.js'
 

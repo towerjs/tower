@@ -59,7 +59,13 @@ Add Tower to an existing Next.js project:
 
 `@towerjs/scribe` provides the `tower` CLI (`tower migrate`, `tower seed`) — install it as a dev dependency.
 
-`@towerjs/tower` bundles every module, so subpaths like `@towerjs/tower/vault`, `@towerjs/tower/courier`, and `@towerjs/tower/gatehouse` all work from a single install. Install an individual `@towerjs/*` package only when you import from it directly — for example, the auth proxy imports `gatehouse` from `@towerjs/gatehouse`, so add that package when you set up authentication ([Gatehouse setup](/docs/gatehouse/setup)).
+`@towerjs/tower` is the core. Add the modules you need as separate packages — for example, with Vault and Gatehouse:
+
+```bash
+pnpm add @towerjs/tower @towerjs/vault @towerjs/gatehouse
+```
+
+Application code imports the core and the modules directly: `import { defineTower } from '@towerjs/tower/blueprint'` and `import { vault } from '@towerjs/vault'` (see [Vault](/docs/vault), [Gatehouse setup](/docs/gatehouse/setup)).
 
 > **Edge runtime only** — `@towerjs/edge` is only needed if you deploy to an edge runtime (Vercel Edge, Cloudflare Workers). Most apps run on the Node.js runtime and can skip it. If you do use an edge runtime, install it and wrap `next.config.ts`:
 >
@@ -78,15 +84,18 @@ Add Tower to an existing Next.js project:
 Start with a minimal config and add the modules you need — each module page has the full configuration and copy-paste examples:
 
 ```ts filename="tower.config.ts"
+import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
 import { defineTower } from '@towerjs/tower/blueprint'
+import { vault } from '@towerjs/vault'
 
 export default defineTower({
-  modules: {
-    // Add modules as you need them.
-    // vault: {},             // database — /docs/vault
-    // gatehouse: {...},      // authentication — /docs/gatehouse/setup
-    // courier: {...},        // email, SMS, push — /docs/courier
-  },
+  modules: [
+    // Add modules as you need them
+    // vault(),                         // database — /docs/vault
+    // gatehouse({ provider: 'better-auth', credentials: true }),
+    // courier({ email: { provider: 'console' } }),
+  ],
 })
 ```
 

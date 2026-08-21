@@ -46,32 +46,25 @@ Define the application once:
 
 ```ts
 // tower.config.ts
+import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
 import { defineTower, env } from '@towerjs/tower/blueprint'
+import { vault } from '@towerjs/vault'
 
 export default defineTower({
-  modules: {
-    vault: {
-      provider: 'neon',
-      connectionString: env.string('DATABASE_URL'),
-    },
-    gatehouse: {
-      provider: 'better-auth',
-    },
-    courier: {
-      email: {
-        provider: 'resend',
-        apiKey: env.string('RESEND_API_KEY'),
-      },
-    },
-  },
+  modules: [
+    vault({ provider: 'neon', connectionString: env.string('DATABASE_URL') }),
+    gatehouse({ provider: 'better-auth' }),
+    courier({ email: { provider: 'resend', apiKey: env.string('RESEND_API_KEY') } }),
+  ],
 })
 ```
 
 Use Tower's application APIs directly:
 
 ```ts
-import { gatehouse } from '@towerjs/tower/gatehouse'
-import { vault } from '@towerjs/tower/vault'
+import { gatehouse } from '@towerjs/gatehouse'
+import { vault } from '@towerjs/vault'
 
 const session = await gatehouse.getSession()
 
@@ -121,14 +114,14 @@ Tower is not an attempt to abstract every possible technology. It provides a cur
 
 ## Modules
 
-| Module                                                                       | Description                                                                          | Integrations                        |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------- |
-| [Foundation](https://github.com/towerjs/tower/tree/main/packages/foundation) | Application composition, lifecycle, configuration, and shared primitives             | —                                   |
-| [Blueprint](https://github.com/towerjs/tower/tree/main/packages/blueprint)   | Application definition, module registration, and provider configuration              | —                                   |
-| [Vault](https://github.com/towerjs/tower/tree/main/packages/vault)           | Database API, queries, migrations, and transactions                                  | PostgreSQL, Neon, Kysely            |
-| [Gatehouse](https://github.com/towerjs/tower/tree/main/packages/gatehouse)   | Authentication and authorization                                                     | Better Auth                         |
-| [Courier](https://github.com/towerjs/tower/tree/main/packages/courier)       | Communication layer for email, SMS, push notifications, and other messaging services | Resend, SES, SMTP, Twilio, Web Push |
-| [Scribe](https://github.com/towerjs/tower/tree/main/packages/scribe)         | CLI for creating and managing Tower applications                                     | —                                   |
+| Module                                                                     | Description                                                                          | Integrations                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------- |
+| [Tower](https://github.com/towerjs/tower/tree/main/packages/tower)         | Application core — Foundation + Blueprint as internal layers, runtime primitives     | —                                   |
+| [Vault](https://github.com/towerjs/tower/tree/main/packages/vault)         | Database API, queries, migrations, transactions, models                              | PostgreSQL, Neon, Kysely            |
+| [Gatehouse](https://github.com/towerjs/tower/tree/main/packages/gatehouse) | Authentication and authorization                                                     | Better Auth                         |
+| [Courier](https://github.com/towerjs/tower/tree/main/packages/courier)     | Communication layer for email, SMS, push notifications, and other messaging services | Resend, SES, SMTP, Twilio, Web Push |
+| [Edge](https://github.com/towerjs/tower/tree/main/packages/edge)           | Edge runtime integration — `withTowerEdge` for Next.js                               | Vercel Edge                         |
+| [Scribe](https://github.com/towerjs/tower/tree/main/packages/scribe)       | CLI for creating and managing Tower applications                                     | —                                   |
 
 More application modules for storage, realtime, jobs, billing, search, and observability are planned.
 

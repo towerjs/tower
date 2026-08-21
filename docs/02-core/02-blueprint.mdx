@@ -1,93 +1,81 @@
 ---
 title: 'Blueprint'
-description: 'Module registration system, app definition, and dependency validation.'
+description: 'App definition inside @towerjs/tower — defineTower and explicit module registration.'
 ---
 
-Blueprint provides the module system that ties all Tower packages together.
+Blueprint is the app-definition layer inside `@towerjs/tower` (`packages/tower/src/blueprint/`). It is not a publishable package.
 
 ## defineTower
 
-Type-safe config helper. A runtime no-op — it provides TypeScript types. Module configs are `Record<string, unknown>`-shaped (per-module autocomplete lives in each module's own config helper):
+Type-safe config helper. A runtime no-op that provides types. Pass an explicit `modules` array of callable module definitions:
 
 ```ts
+import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
 import { defineTower } from '@towerjs/tower/blueprint'
+import { vault } from '@towerjs/vault'
 
 export default defineTower({
-  modules: {
-    vault: {},
-    gatehouse: {
-      provider: 'better-auth',
-      credentials: { enabled: true },
-    },
-  },
+  modules: [
+    vault({ connectionString: process.env.DATABASE_URL }),
+    gatehouse({ provider: 'better-auth', credentials: { enabled: true } }),
+    courier({ email: { provider: 'console' } }),
+  ],
 })
 ```
 
-## Module Registration
+Each `vault()` / `gatehouse()` call is both the config factory and the runtime handle (`vault.selectFrom`, `gatehouse.getSession`). See [Vault](/docs/vault) and [Gatehouse](/docs/gatehouse).
 
-Modules self-register at import time:
+## Module Definitions
 
-```ts
-// registers 'courier' module
-import '@towerjs/courier'
-// registers 'gatehouse' module
-import '@towerjs/gatehouse'
-// registers 'vault' module
-import '@towerjs/vault'
-```
-
-Each registration includes a name, dependency list, and factory function:
+`defineTower` takes `TowerConfig { modules: TowerModule[] }` where each `TowerModule` carries its own identity and lifecycle:
 
 ```ts
-registerModule({
-  name: 'gatehouse',
-  dependsOn: ['vault'],
-  factory: (config) => defineGatehouse(config as GatehouseConfig),
-})
-```
-
-The `@towerjs/tower` meta-package handles all imports automatically.
-
-## Module Declaration
-
-```ts
-interface ModuleDeclaration {
+interface TowerModule {
   name: string
-  dependsOn: string[]
-  factory: (config: unknown) => TowerModule
+  dependsOn?: string[]
+  register?(ctx: TowerContext): void | Promise<void>
+  initialize?(ctx: TowerContext): Promise<void>
+  shutdown?(ctx: TowerContext): Promise<void>
 }
 ```
 
-## Module Factory
+Example (from `@towerjs/vault`):
 
 ```ts
-import { getModuleFactory } from '@towerjs/blueprint'
-
-const factory = getModuleFactory('vault')
-// → ModuleFactory | undefined
+export const vault = new Proxy(createVaultModuleDefinition, {
+  get(_target, prop) {
+    /* lazy runtime */
+  },
+  apply(_target, _thisArg, args) {
+    return createVaultModuleDefinition(...args)
+  },
+}) as ((config?: VaultConfig) => TowerModule) & VaultModule
 ```
+
+`createTowerApp` validates `dependsOn`, topologically sorts, then calls `register` (sync) and `initialize` (async) in order. Missing dependency → actionable error (`Gatehouse requires the Vault module. Add vault()`).
 
 ## Dependency Validation
 
 Before initialization, Blueprint validates the module graph:
 
-- All dependencies are registered
+- All `dependsOn` entries are present in `modules`
 - No circular dependencies exist
-- Dependency order is resolved (topological sort)
+- Order is resolved via `resolveDependencyOrder` (topological sort)
 
 If validation fails, an error is thrown with details about the conflict.
 
-## Programmatic Access
+## Config Helpers
 
 ```ts
-import {
-  getModuleDeclarations,
-  getModuleDependencies,
-  getModuleFactory,
-  getRegisteredModules,
-  registerModule,
-} from '@towerjs/blueprint'
+import { defineTower, env } from '@towerjs/tower/blueprint'
+
+export default defineTower({
+  modules: [vault({ connectionString: env.string('DATABASE_URL') })],
+})
 ```
+
+`env.string`, `env.optional`, `env.url`, `env.boolean`, `env.number` read lazily for Edge/SSR safety.
 
 ## Module Lifecycle
 

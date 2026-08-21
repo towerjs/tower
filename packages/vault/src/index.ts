@@ -248,7 +248,15 @@ export const vault = new Proxy(createVaultModuleDefinition, {
     if (_vault) return (_vault as any)[prop]
     // If not yet initialized, throw for direct property access (matches vault.test expectations)
     // Lazy runtime will handle async `getTowerApp` path in production, but for sync access we throw
-    if (prop === 'then' || typeof prop === 'symbol' || prop === 'toString' || prop === 'valueOf' || prop === 'toJSON' || prop === 'inspect') return undefined
+    if (
+      prop === 'then' ||
+      typeof prop === 'symbol' ||
+      prop === 'toString' ||
+      prop === 'valueOf' ||
+      prop === 'toJSON' ||
+      prop === 'inspect'
+    )
+      return undefined
     throw new Error('Vault not initialized')
   },
   apply(_target, _thisArg, args) {
