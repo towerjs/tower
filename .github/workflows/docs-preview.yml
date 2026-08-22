@@ -66,8 +66,9 @@ jobs:
 
       - name: Extract preview URL
         id: extract-url
+        env:
+          DEPLOY_OUTPUT: ${{ steps.vercel.outputs.VERCEL_DEPLOY_OUTPUT }}
         run: |
-          DEPLOY_OUTPUT="${{ steps.vercel.outputs.VERCEL_DEPLOY_OUTPUT }}"
           # Vercel CLI outputs the preview URL as the last line containing "https://" and the project domain
           PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | grep -E '^https://[^ ]+\.vercel\.app' | tail -1)
           if [ -z "$PREVIEW_URL" ]; then
