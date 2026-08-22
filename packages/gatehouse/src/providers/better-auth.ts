@@ -1,5 +1,5 @@
 import type { EmailOTPOptions } from 'better-auth/plugins'
-import type { Kysely } from 'kysely'
+import { type Kysely, sql } from 'kysely'
 
 import { buildApi } from '../api-builder.js'
 import { mapSession, mapUser } from '../map-user.js'
@@ -10,12 +10,50 @@ import { AuthenticationError } from '../types.js'
 export class BetterAuthAdapter {
   private auth: any
   private api: any
+  private authOptions: Record<string, unknown> | null = null
+  private introspection: { getTables: () => Promise<unknown[]> }
   private db: Kysely<unknown>
   private config: GatehouseConfig
 
   constructor(config: GatehouseConfig, db: Kysely<unknown>) {
     this.db = db
     this.config = config
+    const introspection = (db as any).introspection
+    this.introspection = introspection ?? {
+      getTables: async () => {
+        const tables = await sql<{ table_schema: string; table_name: string }>`
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+              AND table_type = 'BASE TABLE'
+          `.execute(db)
+        const columns = await sql<{
+          table_schema: string
+          table_name: string
+          column_name: string
+          data_type: string
+          is_nullable: string
+          column_default: string | null
+        }>`
+            SELECT table_schema, table_name, column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+            ORDER BY ordinal_position
+          `.execute(db)
+        return tables.rows.map((table) => ({
+          schema: table.table_schema,
+          name: table.table_name,
+          columns: columns.rows
+            .filter((column) => column.table_schema === table.table_schema && column.table_name === table.table_name)
+            .map((column) => ({
+              name: column.column_name,
+              dataType: column.data_type,
+              isNullable: column.is_nullable === 'YES',
+              hasDefaultValue: column.column_default !== null,
+            })),
+        }))
+      },
+    }
   }
 
   /**
@@ -129,12 +167,6 @@ export class BetterAuthAdapter {
     const rateLimit = config.rateLimit ? { storage: 'database', ...config.rateLimit } : undefined
 
     const baOptions: Record<string, unknown> = {
-      database: { db, type: 'postgres' },
-      secret:
-        config.passThrough?.secret ||
-        process.env.GATEHOUSE_SECRET ||
-        process.env.BETTER_AUTH_SECRET ||
-        (process.env.NODE_ENV !== 'production' ? 'dev-secret-do-not-use-in-production-at-least-32-chars' : undefined),
       baseURL,
       basePath: config.passThrough?.basePath,
       appName: config.appName,
@@ -157,12 +189,22 @@ export class BetterAuthAdapter {
       rateLimit,
       advanced: config.advanced,
       plugins: allPlugins,
+      secret:
+        config.passThrough?.secret ||
+        process.env.GATEHOUSE_SECRET ||
+        process.env.BETTER_AUTH_SECRET ||
+        (process.env.NODE_ENV !== 'production' ? 'dev-secret-do-not-use-in-production-at-least-32-chars' : undefined),
     }
     if (config.passThrough) {
       for (const [k, v] of Object.entries(config.passThrough)) {
         baOptions[k] = v
       }
     }
+
+    // Keep the database shape required by Better Auth's Kysely adapter. In
+    // particular, migrations use database.db.introspection directly.
+    baOptions.database = { db, type: 'postgres' }
+    this.authOptions = baOptions
 
     this.auth = betterAuth(baOptions as any)
     this.api = this.auth.api
@@ -174,7 +216,23 @@ export class BetterAuthAdapter {
     const mod = (await import('better-auth/db/migration')) as {
       getMigrations: (o: any) => Promise<{ runMigrations: () => Promise<void> }>
     }
-    const { runMigrations } = await mod.getMigrations(this.auth.options)
+    const options = this.authOptions ?? this.auth.options
+    const { runMigrations } = await mod.getMigrations({
+      ...options,
+      database: {
+        ...(options.database as Record<string, unknown>),
+        db: new Proxy(this.db as any, {
+          get: (target, property) => {
+            if (property === 'introspection') return this.introspection
+            // Kysely uses private fields in accessors such as `schema`; the
+            // proxy cannot be used as the accessor receiver.
+            const value = Reflect.get(target, property, target)
+            return typeof value === 'function' ? value.bind(target) : value
+          },
+        }),
+        type: 'postgres',
+      },
+    })
     await runMigrations()
   }
 

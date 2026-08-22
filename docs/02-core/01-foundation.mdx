@@ -1,39 +1,36 @@
 ---
 title: 'Foundation'
-description: 'Core runtime: app creation, dependency injection, runtime detection, config discovery.'
+description: 'Core runtime inside @towerjs/tower: app creation, DI, runtime detection, config discovery.'
 ---
 
-Foundation is the lowest-level package. It provides the runtime infrastructure that all other modules depend on.
+Foundation is the lowest-level layer inside `@towerjs/tower` (`packages/tower/src/foundation/`). It is not a publishable package — it provides the runtime infrastructure that all `@towerjs/*` modules depend on.
 
 ## createTowerApp
 
-The primary way to create a Tower application. To use modules, pass `getModuleFactory` (from `@towerjs/blueprint`) as the second argument — without it, module configs are not registered or initialized:
+The primary way to create a Tower application. Pass an explicit `modules` array of callable module definitions:
 
 ```ts
-import { getModuleFactory } from '@towerjs/blueprint'
-import { createTowerApp } from '@towerjs/foundation'
+import { gatehouse } from '@towerjs/gatehouse'
+import { createTowerApp } from '@towerjs/tower/foundation'
+import { vault } from '@towerjs/vault'
 
-const app = await createTowerApp(
-  {
-    modules: {
-      vault: { connectionString: process.env.DATABASE_URL },
-      gatehouse: { provider: 'better-auth', credentials: { enabled: true } },
-    },
-  },
-  getModuleFactory
-)
+const app = await createTowerApp({
+  modules: [
+    vault({ connectionString: process.env.DATABASE_URL }),
+    gatehouse({ provider: 'better-auth', credentials: { enabled: true } }),
+  ],
+})
 ```
 
-Calling `createTower()` (no "App") adds config file resolution, but you still pass the module factory:
+Calling `createTower()` (no "App") adds config file resolution:
 
 ```ts
-import { getModuleFactory } from '@towerjs/blueprint'
-import { createTower } from '@towerjs/foundation'
+import { createTower } from '@towerjs/tower/foundation'
 
-const app = await createTower(undefined, getModuleFactory) // resolves tower.config.ts automatically
+const app = await createTower() // resolves tower.config.ts automatically
 ```
 
-The `@towerjs/tower` meta-package wires `getModuleFactory` automatically through `getTowerApp()` / `initTower()`, so application code imports modules directly from `@towerjs/tower/*` subpaths.
+In application code you never call `createTowerApp` directly — `tower.config.ts` with `defineTower({ modules: [vault(), gatehouse(...)] })` plus `getTowerApp()` / `initTower()` from `@towerjs/tower` wires everything. See `tower.config.ts` and `@towerjs/tower` core.
 
 ### TowerApp interface
 
@@ -59,7 +56,7 @@ interface TowerApp {
 ## Runtime Detection
 
 ```ts
-import { detectRuntime } from '@towerjs/foundation'
+import { detectRuntime } from '@towerjs/tower/foundation'
 
 const runtime = detectRuntime()
 // → { name: 'node-server', isServerless: false }
@@ -87,7 +84,7 @@ Each module registers its service under its bare name (e.g. `vault`, `gatehouse`
 For cross-module access after initialization:
 
 ```ts
-import { getService, registerService } from '@towerjs/foundation'
+import { getService, registerService } from '@towerjs/tower/foundation'
 
 registerService('database', pool)
 const pool = getService<Pool>('database')
@@ -98,7 +95,7 @@ const pool = getService<Pool>('database')
 Tower uses AsyncLocalStorage to provide request-scoped context:
 
 ```ts
-import { towerContext } from '@towerjs/foundation'
+import { towerContext } from '@towerjs/tower/foundation'
 
 towerContext.run({ request, headers }, () => {
   // Gatehouse reads headers from context
@@ -110,7 +107,7 @@ In Edge environments, AsyncLocalStorage is replaced with a no-op provider.
 ## Config Resolution
 
 ```ts
-import { resolveConfig } from '@towerjs/foundation'
+import { resolveConfig } from '@towerjs/tower/foundation'
 
 const config = await resolveConfig()
 // Searches: providers → TOWER_CONFIG_PATH → filesystem walk

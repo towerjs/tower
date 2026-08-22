@@ -1,39 +1,39 @@
-import { getRegisteredModules } from '@towerjs/blueprint'
-
 import { describe, expect, it } from 'vitest'
 
 describe('Tower boot', () => {
-  it('all module registrations are importable', async () => {
-    await expect(import('@towerjs/foundation')).resolves.toBeDefined()
-    await expect(import('@towerjs/blueprint')).resolves.toBeDefined()
+  it('all module packages are importable', async () => {
+    await expect(import('@towerjs/tower')).resolves.toBeDefined()
+    await expect(import('@towerjs/tower/blueprint')).resolves.toBeDefined()
+    await expect(import('@towerjs/tower/foundation')).resolves.toBeDefined()
     await expect(import('@towerjs/vault')).resolves.toBeDefined()
     await expect(import('@towerjs/gatehouse')).resolves.toBeDefined()
     await expect(import('@towerjs/courier')).resolves.toBeDefined()
   })
 
-  it('all core modules register factories on import', async () => {
-    await import('@towerjs/vault')
-    await import('@towerjs/gatehouse')
-    await import('@towerjs/courier')
-    const registered = getRegisteredModules()
-    expect(registered).toContain('vault')
-    expect(registered).toContain('gatehouse')
-    expect(registered).toContain('courier')
+  it('vault, gatehouse, courier are callable module definitions', async () => {
+    const { vault } = await import('@towerjs/vault')
+    const { gatehouse } = await import('@towerjs/gatehouse')
+    const { courier } = await import('@towerjs/courier')
+    expect(typeof vault).toBe('function')
+    expect(vault().name).toBe('vault')
+    expect(typeof gatehouse).toBe('function')
+    expect(gatehouse({ provider: 'better-auth' } as any).name).toBe('gatehouse')
+    expect(typeof courier).toBe('function')
+    expect(courier().name).toBe('courier')
   })
 
   it('module dependency graph is correct', async () => {
-    const { getModuleDependencies } = await import('@towerjs/blueprint')
-    const vaultDeps = getModuleDependencies('vault')
-    const gatehouseDeps = getModuleDependencies('gatehouse')
-    const courierDeps = getModuleDependencies('courier')
+    const { vault } = await import('@towerjs/vault')
+    const { gatehouse } = await import('@towerjs/gatehouse')
+    const { courier } = await import('@towerjs/courier')
 
-    expect(vaultDeps).toEqual([])
-    expect(gatehouseDeps).toEqual(['vault'])
-    expect(courierDeps).toEqual([])
+    expect(vault().dependsOn).toEqual([])
+    expect(gatehouse({ provider: 'better-auth' } as any).dependsOn).toEqual(['vault', 'courier'])
+    expect(courier().dependsOn).toEqual([])
   })
 
   it('runtimes are detectable', async () => {
-    const { detectRuntime } = await import('@towerjs/foundation')
+    const { detectRuntime } = await import('@towerjs/tower/foundation')
     const runtime = detectRuntime()
     expect(['node', 'node-server', 'browser', 'edge', 'workerd']).toContain(runtime.name)
   })

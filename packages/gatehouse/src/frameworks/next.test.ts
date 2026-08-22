@@ -35,6 +35,18 @@ vi.mock('@towerjs/foundation', () => ({
   setRequestContextResolver: vi.fn(),
 }))
 
+vi.mock('@towerjs/tower/foundation', () => ({
+  towerContext: {
+    get: vi.fn((key: string) => mocks.alsStore[key]),
+    run: mocks.mockTowerContextRun,
+  },
+  setRequestContextResolver: vi.fn(),
+}))
+
+vi.mock('next/headers.js', () => ({
+  headers: vi.fn(() => new Headers()),
+}))
+
 vi.mock('../index.js', () => ({
   getRoutes: mocks.mockGetRoutes,
   Gatehouse: { from: mocks.mockGatehouseFrom },

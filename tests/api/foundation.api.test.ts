@@ -1,4 +1,4 @@
-import { ServiceContainer, createTower, createTowerApp, detectRuntime } from '@towerjs/foundation'
+import { ServiceContainer, createTower, createTowerApp, detectRuntime } from '@towerjs/tower/foundation'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 

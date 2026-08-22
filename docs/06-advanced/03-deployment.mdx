@@ -93,3 +93,12 @@ npx tower migrate
 pnpm build
 # Deploy...
 ```
+
+## Docs Previews
+
+Documentation previews deploy automatically on pull requests that touch
+`docs/**`. The preview workflow uses `vercel deploy --yes`, which creates a
+preview deployment by default in Vercel CLI 59+ (production deploys require
+an explicit `--prod` flag). The preview URL is posted as a comment on the
+pull request and refreshed on every push that changes docs.
+

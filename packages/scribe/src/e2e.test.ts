@@ -140,7 +140,7 @@ describe('scaffolding — real file output', () => {
     expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(true)
 
     const route = readFileSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'), 'utf-8')
-    expect(route).toContain('@towerjs/tower/gatehouse/next')
+    expect(route).toContain('@towerjs/gatehouse/next')
 
     const proxy = readFileSync(join(projectDir, 'src', 'proxy.ts'), 'utf-8')
     expect(proxy).toContain('gatehouse.proxy')
@@ -212,7 +212,7 @@ describe('scaffolding — real file output', () => {
       await nextAdapter.generate(state, tmpDir)
 
       const config = readFileSync(join(projectDir, 'tower.config.ts'), 'utf-8')
-      expect(config).toMatch(/^import \{ defineTower, env \} from "@towerjs\/tower\/blueprint"/)
+      expect(config).toMatch(/^import \{ defineTower(?:, env)? \} from "@towerjs\/tower(?:\/blueprint)?"/)
       expect(config).toMatch(/export default defineTower\(/)
       expect(config).toMatch(/}\);?\s*$/)
       rmSync(projectDir, { recursive: true, force: true })

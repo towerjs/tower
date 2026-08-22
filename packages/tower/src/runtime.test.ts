@@ -8,7 +8,30 @@ const mocks = vi.hoisted(() => ({
   mockCreateTowerApp: vi.fn(),
 }))
 
+vi.mock('./foundation/app.js', async (importOriginal) => {
+  const actual = (await importOriginal()) as any
+  return {
+    ...actual,
+    createTowerApp: mocks.mockCreateTowerApp,
+  }
+})
+
+vi.mock('./foundation/resolve-config.js', async (importOriginal) => {
+  const actual = (await importOriginal()) as any
+  return {
+    ...actual,
+    resolveConfig: mocks.mockResolveConfig,
+  }
+})
+
 vi.mock('@towerjs/foundation', () => ({
+  resolveConfig: mocks.mockResolveConfig,
+  createTowerApp: mocks.mockCreateTowerApp,
+  registerService: mocks.mockRegisterService,
+  registerConfigProvider: vi.fn(),
+}))
+
+vi.mock('@towerjs/tower/foundation', () => ({
   resolveConfig: mocks.mockResolveConfig,
   createTowerApp: mocks.mockCreateTowerApp,
   registerService: mocks.mockRegisterService,
@@ -28,8 +51,8 @@ describe('getTowerApp / initTower caching', () => {
     delete (globalThis as any)[APP_PROMISE_KEY]
   })
 
-  function makeApp(modules: Record<string, unknown> = {}) {
-    const config = { modules }
+  function makeApp(modules: unknown[] = []) {
+    const config = { modules } as any
     const container = {
       has: vi.fn(() => false),
       get: vi.fn((key: string) => (key === 'tower.config' ? config : undefined)),
@@ -38,7 +61,7 @@ describe('getTowerApp / initTower caching', () => {
   }
 
   it('caches the resolved app promise', async () => {
-    mocks.mockResolveConfig.mockResolvedValue({ modules: {} })
+    mocks.mockResolveConfig.mockResolvedValue({ modules: [] })
     mocks.mockCreateTowerApp.mockResolvedValue(makeApp())
 
     const app1 = await getTowerApp()
@@ -50,7 +73,7 @@ describe('getTowerApp / initTower caching', () => {
 
   it('does not cache a rejected promise — allows retry (Fixes #17)', async () => {
     mocks.mockResolveConfig.mockRejectedValueOnce(new Error('config discovery failed'))
-    mocks.mockResolveConfig.mockResolvedValueOnce({ modules: {} })
+    mocks.mockResolveConfig.mockResolvedValueOnce({ modules: [] })
     mocks.mockCreateTowerApp.mockResolvedValue(makeApp())
 
     await expect(getTowerApp()).rejects.toThrow('config discovery failed')
@@ -61,7 +84,7 @@ describe('getTowerApp / initTower caching', () => {
   })
 
   it('initTower caches its promise', async () => {
-    mocks.mockResolveConfig.mockResolvedValue({ modules: {} })
+    mocks.mockResolveConfig.mockResolvedValue({ modules: [] })
     mocks.mockCreateTowerApp.mockResolvedValue(makeApp())
 
     const app1 = await initTower()

@@ -26,32 +26,29 @@ export async function createTowerApp(
 
   const moduleList: TowerModule[] = []
 
-  if (getModuleFactory) {
-    // Old format: modules is an object with module names as keys
-    if (!isModuleArray(config.modules)) {
-      for (const [name, options] of Object.entries(config.modules)) {
-        const factory = getModuleFactory(name)
-        if (!factory) {
-          throw new Error(`Unknown module "${name}". Is the corresponding @towerjs/${name} package installed?`)
-        }
-        const mod = factory(options ?? {})
-        if (!mod.name) {
-          throw new Error(`Module factory for "${name}" returned a module without a name.`)
-        }
-        moduleList.push(mod)
-        container.register(`module.${mod.name}`, mod)
+  if (isModuleArray(config.modules)) {
+    // New format: modules is an array of pre-created module definitions.
+    // This remains valid when a factory is also supplied for legacy configs.
+    for (const mod of config.modules) {
+      if (!mod.name) {
+        throw new Error(`Module definition missing name`)
       }
+      moduleList.push(mod)
+      container.register(`module.${mod.name}`, mod)
     }
-  } else {
-    // New format: modules is an array of pre-created module definitions
-    if (isModuleArray(config.modules)) {
-      for (const mod of config.modules) {
-        if (!mod.name) {
-          throw new Error(`Module definition missing name`)
-        }
-        moduleList.push(mod)
-        container.register(`module.${mod.name}`, mod)
+  } else if (getModuleFactory) {
+    // Old format: modules is an object with module names as keys.
+    for (const [name, options] of Object.entries(config.modules)) {
+      const factory = getModuleFactory(name)
+      if (!factory) {
+        throw new Error(`Unknown module "${name}". Is the corresponding @towerjs/${name} package installed?`)
       }
+      const mod = factory(options ?? {})
+      if (!mod.name) {
+        throw new Error(`Module factory for "${name}" returned a module without a name.`)
+      }
+      moduleList.push(mod)
+      container.register(`module.${mod.name}`, mod)
     }
   }
 

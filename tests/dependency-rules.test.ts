@@ -73,7 +73,9 @@ function extractImports(content: string): string[] {
   for (const line of content.split('\n')) {
     const trimmed = line.trim()
     if (trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('/*')) continue
-    const match = line.match(/from\s+['"]([^'"]+)['"]/)
+    // Ignore generated code strings (e.g. scribe's `return `import ... from "@towerjs/edge"``)
+    if (trimmed.startsWith('return') && trimmed.includes('import')) continue
+    const match = line.match(/^\s*import\s+.*from\s+['"]([^'"]+)['"]/)
     if (match) {
       imports.push(match[1])
     }

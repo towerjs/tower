@@ -75,10 +75,12 @@ const mockTowerContext = {
   get: vi.fn((key: string) => mocks.alsStore[key]),
   run: vi.fn(async (ctx: any, handler: () => any) => {
     const prev = { ...mocks.alsStore }
+    for (const k of Object.keys(mocks.alsStore)) delete (mocks.alsStore as any)[k]
     Object.assign(mocks.alsStore, ctx)
     try {
       return await handler()
     } finally {
+      for (const k of Object.keys(mocks.alsStore)) delete (mocks.alsStore as any)[k]
       Object.assign(mocks.alsStore, prev)
     }
   }),
@@ -89,9 +91,48 @@ vi.mock('@towerjs/foundation', () => ({
   getRequestContextResolver: vi.fn().mockReturnValue(undefined),
 }))
 
+vi.mock('@towerjs/tower/foundation', () => ({
+  towerContext: mockTowerContext,
+  getRequestContextResolver: vi.fn().mockReturnValue(undefined),
+}))
+
 vi.mock('@towerjs/blueprint', () => ({
   towerContext: mockTowerContext,
   registerModule: mocks.mockRegisterModule,
+}))
+
+vi.mock('@towerjs/tower/blueprint', () => ({
+  towerContext: mockTowerContext,
+  registerModule: mocks.mockRegisterModule,
+}))
+
+vi.mock('@towerjs/tower/runtime', async (importOriginal) => {
+  const actual = (await importOriginal()) as any
+  return {
+    ...actual,
+    getTowerApp: vi.fn().mockResolvedValue({
+      container: {
+        get: vi.fn((name: string) => {
+          if (name === 'vault') return { _kysely: {} }
+          if (name === 'courier') return undefined
+          return undefined
+        }),
+        has: vi.fn(() => false),
+        register: vi.fn(),
+      },
+      config: { modules: [] },
+      runtime: { name: 'node-server', isServerless: false },
+    }),
+    initTower: vi.fn(),
+  }
+})
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
+}))
+
+vi.mock('next/headers.js', () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
 }))
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -176,7 +217,7 @@ describe('getCurrentGatehouse', () => {
   })
 
   it('returns instance when context is set', async () => {
-    const { towerContext } = await import('@towerjs/blueprint')
+    const { towerContext } = await import('@towerjs/tower/blueprint')
     const { getCurrentGatehouse } = await import('./context.js')
 
     const fake = { provider: {} }
@@ -480,6 +521,8 @@ describe('gatehouse combined proxy', () => {
   beforeEach(() => {
     vi.resetModules()
     setupBetterAuthApi()
+    // Clear global adapter between tests — `throws when uninitialized` expects no adapter
+    ;(globalThis as any)['___tower_gatehouse_adapter___'] = undefined
   })
 
   async function initModule() {

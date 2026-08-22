@@ -11,6 +11,13 @@ async function globalSetup() {
     stdio: 'inherit',
     env: { ...process.env },
   })
+
+  const response = await fetch('http://localhost:3000/dashboard', { redirect: 'manual' })
+  if (response.status < 300 || response.status >= 400 || !response.headers.get('location')?.endsWith('/sign-in')) {
+    throw new Error(
+      `E2E preflight expected /dashboard to redirect to /sign-in, received ${response.status} ${response.headers.get('location') ?? ''}`
+    )
+  }
 }
 
 export default globalSetup
