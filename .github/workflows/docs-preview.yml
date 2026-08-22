@@ -39,11 +39,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Debug secret shape
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: echo "token len=${#VERCEL_TOKEN} sha=$(printf %s "$VERCEL_TOKEN" | shasum -a 256 | cut -c1-8)"
-
       - name: Deploy preview to Vercel
         id: vercel
         env:
