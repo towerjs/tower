@@ -47,6 +47,8 @@ jobs:
         run: |
           echo "token len=${#VERCEL_TOKEN} org len=${#VERCEL_ORG_ID} project len=${#VERCEL_PROJECT_ID}"
           echo "org=${VERCEL_ORG_ID:0:7}... project=${VERCEL_PROJECT_ID:0:6}..."
+          echo "token sha=$(printf %s "$VERCEL_TOKEN" | shasum -a 256 | cut -c1-8)"
+          echo "org sha=$(printf %s "$VERCEL_ORG_ID" | shasum -a 256 | cut -c1-8)"
 
       - name: Deploy preview to Vercel
         id: vercel
