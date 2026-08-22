@@ -1,7 +1,7 @@
 import { courier } from '@towerjs/courier'
 import { gatehouse } from '@towerjs/gatehouse'
-import { vault } from '@towerjs/vault'
 import { createTowerApp } from '@towerjs/tower/foundation'
+import { vault } from '@towerjs/vault'
 
 import { describe, expect, it } from 'vitest'
 

@@ -19,7 +19,7 @@ const mockExistsSync = hoisted.mockExistsSync
 const mockCreateCommand = hoisted.mockCreateCommand
 
 const mockApp: any = {
-  config: { modules: [{ name: 'vault' }, { name: 'gatehouse', provider: 'better-auth' }] } as any,
+  config: { modules: [{ name: 'vault' }, { name: 'courier' }, { name: 'gatehouse', provider: 'better-auth' }] } as any,
   container: {
     has: vi.fn(() => true),
     get: vi.fn((name: string) => {
@@ -35,7 +35,9 @@ const mockApp: any = {
 }
 
 function resetMockApp() {
-  mockApp.config = { modules: [{ name: 'vault' }, { name: 'gatehouse', provider: 'better-auth' }] } as any
+  mockApp.config = {
+    modules: [{ name: 'vault' }, { name: 'courier' }, { name: 'gatehouse', provider: 'better-auth' }],
+  } as any
   mockApp.container = {
     has: vi.fn(() => true),
     get: vi.fn((name: string) => {
@@ -60,10 +62,20 @@ vi.mock('@towerjs/tower/foundation', () => ({
   detectRuntime: vi.fn(() => ({ name: 'node', isServerless: false })),
 }))
 
+vi.mock('@towerjs/tower/runtime', () => ({
+  initTower: vi.fn(() => Promise.resolve(mockApp)),
+}))
+
 vi.mock('jiti', () => ({
   createJiti: vi.fn(() => ({
     import: vi.fn(() =>
-      Promise.resolve({ modules: [{ name: 'vault' }, { name: 'gatehouse', provider: 'better-auth' }] } as any)
+      Promise.resolve({
+        modules: [
+          { name: 'vault', initialize: async () => {} },
+          { name: 'courier', initialize: async () => {} },
+          { name: 'gatehouse', provider: 'better-auth', initialize: async () => {} },
+        ],
+      } as any)
     ),
   })),
 }))
@@ -226,14 +238,15 @@ describe('migrate', () => {
   it('propagates migrate error', async () => {
     mockMigrate.mockRejectedValueOnce(new Error('migration failed'))
     const result = await run('migrate', [], '/fake/tower.config.ts')
-    // TODO: migrate error should propagate as exitCode 1, but current mock does not trigger rejection in runMigrate's vault.migrate
-    expect(result.exitCode).toBe(0)
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr[0]).toContain('migration failed')
   })
 
   it('propagates seed error during migrate --seed', async () => {
     mockSeed.mockRejectedValueOnce(new Error('seed failed'))
     const result = await run('migrate', ['--seed'], '/fake/tower.config.ts')
-    expect(result.exitCode).toBe(0)
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr[0]).toContain('seed failed')
   })
 
   it('skips vault migrate when vault has no migrate method', async () => {
@@ -259,13 +272,12 @@ describe('seed', () => {
 
   it('runs seeds with migrations', async () => {
     const result = await run('seed', [], '/fake/tower.config.ts')
-    // TODO: seed with migrations currently fails with Vault not configured in this mock setup — accept either 0 or 1 for now
-    expect([0, 1].includes(result.exitCode)).toBe(true)
+    expect(result.exitCode).toBe(0)
   })
 
   it('skips migrations with --skip-migrate', async () => {
     const result = await run('seed', ['--skip-migrate'], '/fake/tower.config.ts')
-    expect([0, 1].includes(result.exitCode)).toBe(true)
+    expect(result.exitCode).toBe(0)
   })
 
   it('fails when vault has no seed', async () => {

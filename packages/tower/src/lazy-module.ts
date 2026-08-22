@@ -29,7 +29,11 @@ export function createLazyModule<T>(moduleName: string): T {
     if (!promise) {
       promise = getTowerApp()
         .then((app) => {
-          resolved = app.container.get(moduleName)
+          const service = app.container.get(moduleName)
+          // A module that registers its own lazy proxy under its bare name
+          // would make this promise resolve with the proxy itself — a thenable
+          // resolving to itself loops forever in the promise machinery.
+          resolved = service === proxy ? app.container.get(`module.${moduleName}`) : service
           return resolved
         })
         .catch((error) => {
@@ -44,7 +48,7 @@ export function createLazyModule<T>(moduleName: string): T {
     return promise
   }
 
-  return new Proxy(function () {} as any, {
+  const proxy = new Proxy(function () {} as any, {
     get(_, prop) {
       if (prop === 'then') {
         return (onFulfilled: ((v: any) => any) | undefined, onRejected: ((e: any) => any) | undefined) =>
@@ -83,5 +87,6 @@ export function createLazyModule<T>(moduleName: string): T {
         return service(...args)
       })
     },
-  }) as T
+  })
+  return proxy as T
 }

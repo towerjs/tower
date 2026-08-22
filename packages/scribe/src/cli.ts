@@ -46,24 +46,30 @@ export async function run(command: string | undefined, flags: string[], configPa
   const runSeed = flags.includes('--seed') || flags.includes('-s')
   const skipMigrate = flags.includes('--skip-migrate')
 
-  switch (command) {
-    case 'create':
-      if (flags.includes('--help') || flags.includes('-h')) return ok(helpText())
-      await createCommand(flags)
-      return ok([])
-    case 'about':
-      return runAbout(configPath)
-    case 'migrate':
-      return runMigrate(runSeed, configPath)
-    case 'seed':
-      return runSeedCmd(skipMigrate, configPath)
-    case undefined:
-    case 'help':
-    case '--help':
-    case '-h':
-      return ok(helpText())
-    default:
-      return fail(`Unknown command: ${command}`)
+  try {
+    switch (command) {
+      case 'create':
+        if (flags.includes('--help') || flags.includes('-h')) return ok(helpText())
+        await createCommand(flags)
+        return ok([])
+      case 'about':
+        return runAbout(configPath)
+      case 'migrate':
+        return await runMigrate(runSeed, configPath)
+      case 'seed':
+        return await runSeedCmd(skipMigrate, configPath)
+      case undefined:
+      case 'help':
+      case '--help':
+      case '-h':
+        return ok(helpText())
+      default:
+        return fail(`Unknown command: ${command}`)
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    process.stderr.write(`${message}\n`)
+    return fail(message)
   }
 }
 
@@ -76,7 +82,8 @@ function moduleProvider(config: Record<string, unknown>): string {
   if (typeof (config as any).name === 'string' && typeof (config as any).initialize === 'function') {
     return 'configured'
   }
-  if (Object.prototype.hasOwnProperty.call(config, 'provider') && typeof config.provider === 'string') return String(config.provider)
+  if (Object.prototype.hasOwnProperty.call(config, 'provider') && typeof config.provider === 'string')
+    return String(config.provider)
   if (Object.prototype.hasOwnProperty.call(config, 'email')) {
     const email = (config as Record<string, unknown>).email
     if (email && typeof email === 'object' && typeof (email as Record<string, unknown>).provider === 'string') {

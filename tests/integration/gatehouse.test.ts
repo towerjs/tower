@@ -1,7 +1,7 @@
 import { courier } from '@towerjs/courier'
 import { gatehouse } from '@towerjs/gatehouse'
-import { vault } from '@towerjs/vault'
 import { createTowerApp } from '@towerjs/tower/foundation'
+import { vault } from '@towerjs/vault'
 
 import { describe, expect, it } from 'vitest'
 
@@ -37,15 +37,13 @@ describe('Gatehouse live integration (database boundary)', () => {
     // proves the full Gatehouse → Better Auth → Database stack works.
     const uniqueEmail = `test-${Date.now()}@example.com`
     const header = new Headers()
-    const signUpResult = await gatehouse
-      .from({ headers: header })
-      .then((inst) =>
-        inst.signUp.email({
-          name: 'Integration Test User',
-          email: uniqueEmail,
-          password: 'Password123!',
-        })
-      )
+    const signUpResult = await gatehouse.from({ headers: header }).then((inst) =>
+      inst.signUp.email({
+        name: 'Integration Test User',
+        email: uniqueEmail,
+        password: 'Password123!',
+      })
+    )
 
     expect(signUpResult).toBeDefined()
     expect(signUpResult.user).toBeDefined()

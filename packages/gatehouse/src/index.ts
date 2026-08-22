@@ -309,6 +309,63 @@ const gatehouseRuntime = createLazyModule<GatehouseRuntimeAPI>('gatehouse')
  * })
  * ```
  */
+/**
+ * Builds the request-context-aware runtime service registered under
+ * `'gatehouse'` once the adapter is initialized.
+ *
+ * Namespaced API paths (signIn.email, organizations.invitations.create, …)
+ * resolve the request-scoped GatehouseInstance at call time, so server
+ * actions and route handlers always see the caller's headers/cookies.
+ */
+function createRuntimeService(): GatehouseRuntimeAPI {
+  async function resolveInstance(): Promise<GatehouseInstance> {
+    const ctxVal = towerContext.get('gatehouse') as GatehouseInstance | undefined
+    if (ctxVal) return ctxVal
+    const resolver = getRequestContextResolver()
+    const rc = resolver ? await resolver() : { headers: new Headers() }
+    return getAdapter()!.from(rc as { headers: Headers })
+  }
+
+  function pathProxy(path: string[]): any {
+    const fn: any = (...args: any[]) =>
+      resolveInstance().then((inst: any) => {
+        let v = inst
+        for (const p of path) v = v?.[p]
+        if (typeof v === 'function') return v(...args)
+        return v
+      })
+    return new Proxy(fn, {
+      get(_, sub) {
+        if (typeof sub === 'symbol' || sub === 'then') return undefined
+        return pathProxy([...path, String(sub)])
+      },
+    })
+  }
+
+  const base: GatehouseRuntimeAPI = {
+    getSession: () => requestGetSession(),
+    session: () => requestGetSession(),
+    user: () => withRequestContext((instance) => instance.user()),
+    requireUser: () => requestRequireUser(),
+    getUserSessions: () => withRequestContext((instance) => instance.sessions.list()),
+    getApiKeys: (userId: string, options?: ApiKeyListOptions) =>
+      withRequestContext(async (instance) => {
+        const { keys } = await instance.apiKeys.list(userId, options)
+        return keys
+      }),
+    getOrganizations: () => withRequestContext((instance) => instance.organizations.list()),
+    getOrganization: (id: string) => withRequestContext((instance) => instance.organizations.getFull(id)),
+  } as unknown as GatehouseRuntimeAPI
+
+  return new Proxy(base, {
+    get(target, prop) {
+      if (typeof prop === 'symbol' || prop === 'then') return undefined
+      if (prop in target) return (target as any)[prop]
+      return pathProxy([String(prop)])
+    },
+  }) as GatehouseRuntimeAPI
+}
+
 function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule & GatehouseModule {
   parseGatehouseConfig(config as unknown as Record<string, unknown>)
 
@@ -319,6 +376,9 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
     const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
     setAdapter(new (BaAdapter as any)(withCourierTransport(config, courier), vault) as BetterAuthAdapter)
     await (getAdapter() as any).init()
+    // Replace the lazy placeholder with the real runtime API so container
+    // lookups resolve to a usable service (mirrors vault's initialize).
+    ctx.services.register('gatehouse', createRuntimeService())
   }
 
   return {

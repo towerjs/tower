@@ -41,14 +41,15 @@ async function main() {
   await pool.end()
   console.log('[setup] Schema reset complete')
 
+  // Use the application's own Tower config so migrations match the exact
+  // module set (and every provider plugin) the dev server runs with.
   const { createTowerApp } = await import('@towerjs/tower/foundation')
-  const { vault } = await import('@towerjs/vault')
-  const { gatehouse } = await import('@towerjs/gatehouse')
-  const { courier } = await import('@towerjs/courier')
-  const gatehouseModule = gatehouse({ provider: 'better-auth' })
-  await createTowerApp({
-    modules: [vault({ connectionString: databaseUrl }), gatehouseModule, courier({ email: { provider: 'console' } })],
-  })
+  const config = (await import('../tower.config')).default
+  await createTowerApp(config)
+  const gatehouseModule = (config.modules as Array<{ name: string; migrate?: () => Promise<void> }>).find(
+    (m) => m.name === 'gatehouse'
+  )
+  if (!gatehouseModule?.migrate) throw new Error('Gatehouse module not found in tower.config.ts')
   await gatehouseModule.migrate()
   console.log('[setup] Migration complete')
 }
