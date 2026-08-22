@@ -40,9 +40,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Debug secret shapes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "token len=${#VERCEL_TOKEN} org len=${#VERCEL_ORG_ID} project len=${#VERCEL_PROJECT_ID}"
-          echo "org prefix=${VERCEL_ORG_ID:0:5} project prefix=${VERCEL_PROJECT_ID:0:4}"
+          echo "org=${VERCEL_ORG_ID:0:7}... project=${VERCEL_PROJECT_ID:0:6}..."
 
       - name: Deploy preview to Vercel
         id: vercel
