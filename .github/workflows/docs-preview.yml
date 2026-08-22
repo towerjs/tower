@@ -50,7 +50,7 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE"
           set +e
-          VERCEL_DEPLOY_OUTPUT=$(npx vercel deploy --preview --yes \
+          VERCEL_DEPLOY_OUTPUT=$(npx vercel deploy --yes \
             -e DOCS_SOURCE_URL="${DOCS_SOURCE_URL}" \
             -e DOCS_SOURCE_TOKEN="${DOCS_SOURCE_TOKEN}" \
             --token="${VERCEL_TOKEN}" \
