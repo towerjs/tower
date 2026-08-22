@@ -25,6 +25,11 @@ jobs:
           token: ${{ secrets.DOCS_SYNC_PAT }}
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.17.0
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
@@ -43,27 +48,32 @@ jobs:
           DOCS_SOURCE_URL: https://github.com/towerjs/tower/archive/${{ github.event.pull_request.head.sha }}.tar.gz
           DOCS_SOURCE_TOKEN: ${{ secrets.DOCS_SYNC_PAT }}
         run: |
-          cd /home/runner/work/tower-docs/tower-docs
-          VERCEL_DEPLOY_OUTPUT=$(npx vercel deploy --preview --yes \
+          cd "$GITHUB_WORKSPACE"
+          set +e
+          VERCEL_DEPLOY_OUTPUT=$(npx vercel deploy --yes \
             -e DOCS_SOURCE_URL="${DOCS_SOURCE_URL}" \
             -e DOCS_SOURCE_TOKEN="${DOCS_SOURCE_TOKEN}" \
             --token="${VERCEL_TOKEN}" \
+            --project="${VERCEL_PROJECT_ID}" \
             --scope="${VERCEL_ORG_ID}" \
             2>&1)
+          VERCEL_EXIT_CODE=$?
           echo "VERCEL_DEPLOY_OUTPUT<<EOF" >> "$GITHUB_OUTPUT"
           echo "$VERCEL_DEPLOY_OUTPUT" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
           echo "$VERCEL_DEPLOY_OUTPUT"
+          exit "$VERCEL_EXIT_CODE"
 
       - name: Extract preview URL
         id: extract-url
+        env:
+          DEPLOY_OUTPUT: ${{ steps.vercel.outputs.VERCEL_DEPLOY_OUTPUT }}
         run: |
-          DEPLOY_OUTPUT="${{ steps.vercel.outputs.VERCEL_DEPLOY_OUTPUT }}"
-          # Vercel CLI outputs the preview URL as the last line containing "https://" and the project domain
-          PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | grep -E '^https://[^ ]+\.vercel\.app' | tail -1)
+          # Vercel CLI streams build progress after the URL, so extract only the
+          # URL itself (lines can be "https://...vercel.appBuilding…")
+          PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[^ ]+\.vercel\.app' | tail -1)
           if [ -z "$PREVIEW_URL" ]; then
-            # Fallback: try to extract from the output
-            PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[^ ]+\.vercel\.app' | tail -1)
+            PREVIEW_URL=""
           fi
           echo "PREVIEW_URL=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
           echo "Preview URL: $PREVIEW_URL"

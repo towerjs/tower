@@ -8,19 +8,23 @@ Vault wraps [Kysely](https://kysely.dev) with connection pooling, migrations, se
 ## Setup
 
 ```ts filename="tower.config.ts"
-vault: {
-  connectionString: process.env.DATABASE_URL,   // defaults to DATABASE_URL
-  pool: {
-    max: 20,
-    idleTimeoutMillis: 30000,
-  },
-}
+import { defineTower } from '@towerjs/tower/blueprint'
+import { vault } from '@towerjs/vault'
+
+export default defineTower({
+  modules: [
+    vault({
+      connectionString: process.env.DATABASE_URL, // defaults to DATABASE_URL
+      pool: { max: 20, idleTimeoutMillis: 30000 },
+    }),
+  ],
+})
 ```
 
 ## Querying
 
 ```ts
-import { vault } from '@towerjs/tower/vault'
+import { vault } from '@towerjs/vault'
 
 // Select
 const users = await vault.selectFrom('users').selectAll().where('email', '=', 'user@example.com').execute()
@@ -95,7 +99,7 @@ By default, migrations run before seeds. Skip migrations with `npx tower seed --
 ## Advanced: Using Kysely Functions
 
 ```ts
-import { vault } from '@towerjs/tower/vault'
+import { vault } from '@towerjs/vault'
 
 const result = await vault.selectFrom('users').select(vault.fn.countAll().as('count')).executeTakeFirst()
 ```

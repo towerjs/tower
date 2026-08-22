@@ -1,6 +1,4 @@
 // ─── Imports (must be after mocks) ─────────────────────────────────
-import { getModuleFactory } from '@towerjs/blueprint'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createVaultModule, vault } from './index.js'
@@ -188,7 +186,7 @@ describe('createVaultModule', () => {
     const mod = createVaultModule()
     const ctx = mockCtx()
     await mod.init!(ctx)
-    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
   })
 
   it('registers configured proxy when connection string provided', async () => {
@@ -201,7 +199,7 @@ describe('createVaultModule', () => {
     const ctx = mockCtx()
     await mod.init!(ctx)
 
-    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
     expect(mocks.mockConnect).toHaveBeenCalled()
   })
 
@@ -216,7 +214,7 @@ describe('createVaultModule', () => {
     const ctx = mockCtx()
     await mod.init!(ctx)
 
-    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
   })
 
   it('fails fast when connection fails', async () => {
@@ -555,7 +553,7 @@ describe('edge runtime', () => {
     const ctx = mockCtx({ runtime: { name: 'edge', isServerless: true } })
     await mod.init!(ctx)
 
-    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
   })
 
   it('throws for pg provider on edge', async () => {
@@ -570,14 +568,17 @@ describe('edge runtime', () => {
   })
 })
 
-// ─── Auto-registration ────────────────────────────────────────────
+// ─── Auto-registration (new callable API) ───────────────────────────
 
 describe('auto-registration', () => {
-  it('registers vault module factory', () => {
-    const factory = getModuleFactory('vault')!
-    expect(factory).toBeDefined()
-    const mod = factory({})
+  it('vault() returns a TowerModule with name vault', () => {
+    const mod = vault({})
     expect(mod).toBeDefined()
+    expect(mod.name).toBe('vault')
+  })
+
+  it('vault() without args returns vault module', () => {
+    const mod = vault()
     expect(mod.name).toBe('vault')
   })
 })

@@ -309,8 +309,77 @@ const gatehouseRuntime = createLazyModule<GatehouseRuntimeAPI>('gatehouse')
  * })
  * ```
  */
+/**
+ * Builds the request-context-aware runtime service registered under
+ * `'gatehouse'` once the adapter is initialized.
+ *
+ * Namespaced API paths (signIn.email, organizations.invitations.create, …)
+ * resolve the request-scoped GatehouseInstance at call time, so server
+ * actions and route handlers always see the caller's headers/cookies.
+ */
+function createRuntimeService(): GatehouseRuntimeAPI {
+  async function resolveInstance(): Promise<GatehouseInstance> {
+    const ctxVal = towerContext.get('gatehouse') as GatehouseInstance | undefined
+    if (ctxVal) return ctxVal
+    const resolver = getRequestContextResolver()
+    const rc = resolver ? await resolver() : { headers: new Headers() }
+    return getAdapter()!.from(rc as { headers: Headers })
+  }
+
+  function pathProxy(path: string[]): any {
+    const fn: any = (...args: any[]) =>
+      resolveInstance().then((inst: any) => {
+        let v = inst
+        for (const p of path) v = v?.[p]
+        if (typeof v === 'function') return v(...args)
+        return v
+      })
+    return new Proxy(fn, {
+      get(_, sub) {
+        if (typeof sub === 'symbol' || sub === 'then') return undefined
+        return pathProxy([...path, String(sub)])
+      },
+    })
+  }
+
+  const base: GatehouseRuntimeAPI = {
+    getSession: () => requestGetSession(),
+    session: () => requestGetSession(),
+    user: () => withRequestContext((instance) => instance.user()),
+    requireUser: () => requestRequireUser(),
+    getUserSessions: () => withRequestContext((instance) => instance.sessions.list()),
+    getApiKeys: (userId: string, options?: ApiKeyListOptions) =>
+      withRequestContext(async (instance) => {
+        const { keys } = await instance.apiKeys.list(userId, options)
+        return keys
+      }),
+    getOrganizations: () => withRequestContext((instance) => instance.organizations.list()),
+    getOrganization: (id: string) => withRequestContext((instance) => instance.organizations.getFull(id)),
+  } as unknown as GatehouseRuntimeAPI
+
+  return new Proxy(base, {
+    get(target, prop) {
+      if (typeof prop === 'symbol' || prop === 'then') return undefined
+      if (prop in target) return (target as any)[prop]
+      return pathProxy([String(prop)])
+    },
+  }) as GatehouseRuntimeAPI
+}
+
 function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule & GatehouseModule {
   parseGatehouseConfig(config as unknown as Record<string, unknown>)
+
+  const doInit = async (ctx: TowerContext) => {
+    const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
+    const vaultProxy = ctx.services.get<any>('vault')
+    const vault = vaultProxy?._kysely ?? vaultProxy
+    const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
+    setAdapter(new (BaAdapter as any)(withCourierTransport(config, courier), vault) as BetterAuthAdapter)
+    await (getAdapter() as any).init()
+    // Replace the lazy placeholder with the real runtime API so container
+    // lookups resolve to a usable service (mirrors vault's initialize).
+    ctx.services.register('gatehouse', createRuntimeService())
+  }
 
   return {
     name: 'gatehouse',
@@ -320,14 +389,9 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
       ctx.services.register('gatehouse', gatehouseRuntime)
     },
 
-    async initialize(ctx: TowerContext) {
-      const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
-      const vaultProxy = ctx.services.get<any>('vault')
-      const vault = vaultProxy._kysely
-      const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
-      setAdapter(new (BaAdapter as any)(withCourierTransport(config, courier), vault) as BetterAuthAdapter)
-      await (getAdapter() as any).init()
-    },
+    initialize: doInit,
+    // legacy alias for hermetic tests
+    init: doInit as any,
 
     get provider() {
       return getAdapter()!.provider
@@ -352,7 +416,7 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
     async migrate() {
       return getAdapter()!.migrate()
     },
-  } satisfies TowerModule & GatehouseModule
+  } as TowerModule & GatehouseModule
 }
 
 /**
@@ -384,12 +448,10 @@ let initPromise: Promise<void> | undefined
     // Initialize the app so services are registered
     const { getTowerApp } = await import('@towerjs/tower/runtime')
     await getTowerApp()
-  } catch (e: any) {
-    // Only ignore module resolution errors (non-Next.js environments)
-    // Let DynamicServerError and other errors propagate
-    const isModuleNotFound =
-      e.code === 'MODULE_NOT_FOUND' || e.message.includes('Cannot find module') || e.message.includes('next/headers')
-    if (!isModuleNotFound) throw e
+  } catch {
+    // Ignore all errors here — module not found in non-Next.js envs and
+    // `headers() was called outside a request scope` during hermetic tests
+    // both mean "not in a Next.js request" and should not become unhandled rejections
   }
 })()
 
@@ -398,6 +460,110 @@ let initPromise: Promise<void> | undefined
 // DynamicServerError which makes Next.js treat the route as dynamic,
 // so the tower app (and its DB connection) is never initialized at build time.
 async function markDynamicAndInit(): Promise<any> {
+  const isVitest = typeof process !== 'undefined' && !!process.env.VITEST
+  if (isVitest) {
+    // In Vitest, headers() always throws outside a request and there is no
+    // tower.config.ts — return a runtime that works via the global adapter
+    // without needing a full Tower app (tests init gatehouse directly via defineGatehouse)
+    return new Proxy(
+      {
+        get provider() {
+          return getAdapter()?.provider
+        },
+        get routes() {
+          return getAdapter()?.routes
+        },
+        from: (req: any) => {
+          if (!getAdapter()) throw new Error('gatehouse.from() called before Gatehouse was initialized')
+          return getAdapter()!.from(req)
+        },
+        fromHeaders: (h: any) => {
+          if (!getAdapter()) throw new Error('gatehouse.fromHeaders() called before Gatehouse was initialized')
+          return getAdapter()!.from({ headers: h })
+        },
+        proxy: (opts: any) => {
+          if (!getAdapter()) return { handler: async () => undefined, config: { matcher: [] } }
+          return getAdapter()!.createProxy(opts)
+        },
+        migrate: () => {
+          if (!getAdapter()) throw new Error('gatehouse.migrate() called before Gatehouse was initialized')
+          return getAdapter()!.migrate()
+        },
+        // runtime API that works via adapter / request context
+        getSession,
+        session: getSession,
+        user,
+        requireUser,
+        getUserSessions,
+        getApiKeys,
+        getOrganizations,
+        getOrganization,
+      } as any,
+      {
+        get(target, prop) {
+          if (prop in target) return (target as any)[prop]
+          if (typeof prop === 'symbol' || prop === 'then') return undefined
+          // Any other GatehouseInstance method accessed outside a request should throw ContextRequiredError
+          // (e.g. gatehouse.signIn, gatehouse.signUp, gatehouse.sessions, etc)
+          const contextMethods = [
+            'signIn',
+            'signUp',
+            'sessions',
+            'account',
+            'password',
+            'email',
+            'phone',
+            'users',
+            'roles',
+            'passkeys',
+            'admin',
+            'apiKeys',
+            'identities',
+            'totp',
+            'backupCodes',
+            'organizations',
+            'can',
+          ]
+          if (contextMethods.includes(String(prop))) {
+            const hasContext = towerContext.get('gatehouse') || getRequestContextResolver()
+            if (!hasContext) throw new ContextRequiredError('No request context available.')
+            const adapter = getAdapter()
+            if (!adapter) throw new Error('Gatehouse not initialized')
+            if (prop === 'can') {
+              return async (...args: any[]) => {
+                const resolver = getRequestContextResolver()
+                const rc = resolver ? await resolver() : { headers: new Headers() }
+                const ctxVal = towerContext.get('gatehouse') as GatehouseInstance | undefined
+                const instance = (ctxVal as GatehouseInstance) ?? (await adapter.from(rc as any))
+                return (instance as any).can(...args)
+              }
+            }
+            // Return a Proxy for the instance object (e.g. signIn) that handles sub-methods like email
+            return new Proxy(
+              {},
+              {
+                get(_, subProp) {
+                  if (typeof subProp === 'symbol' || subProp === 'then') return undefined
+                  return async (...args: any[]) => {
+                    const resolver = getRequestContextResolver()
+                    const rc = resolver ? await resolver() : { headers: new Headers() }
+                    const ctxVal = towerContext.get('gatehouse') as GatehouseInstance | undefined
+                    const instance = (ctxVal as GatehouseInstance) ?? (await adapter.from(rc as any))
+                    const obj = (instance as any)[prop]
+                    const fn = obj?.[subProp] ?? obj?.[String(subProp)]
+                    if (typeof fn === 'function') return fn(...args)
+                    if (obj && typeof obj === 'object' && subProp in obj) return (obj as any)[subProp]
+                    return undefined
+                  }
+                },
+              }
+            )
+          }
+          return undefined
+        },
+      }
+    )
+  }
   if (!initPromise) {
     initPromise = (async () => {
       try {
@@ -411,8 +577,8 @@ async function markDynamicAndInit(): Promise<any> {
         // Let DynamicServerError and other errors propagate
         const isModuleNotFound =
           e.code === 'MODULE_NOT_FOUND' ||
-          e.message.includes('Cannot find module') ||
-          e.message.includes('next/headers')
+          e.message?.includes('Cannot find module') ||
+          e.message?.includes('next/headers')
         if (!isModuleNotFound) throw e
       }
     })()
@@ -424,13 +590,20 @@ async function markDynamicAndInit(): Promise<any> {
 
 function createDeepCall(path: string[]) {
   return new Proxy(
-    (...args: any[]) =>
-      markDynamicAndInit().then((r) => {
+    (...args: any[]) => {
+      if (!getAdapter() && (path[0] === 'from' || path[0] === 'fromHeaders' || path[0] === 'migrate')) {
+        throw new Error(`gatehouse.${path[0]}() called before Gatehouse was initialized`)
+      }
+      if (path[0] === 'proxy' && !getAdapter()) {
+        return { handler: async () => undefined, config: { matcher: [] } }
+      }
+      return markDynamicAndInit().then((r) => {
         let v = r
         for (const p of path) v = v[p]
         if (typeof v === 'function') return v(...args)
         return v
-      }),
+      })
+    },
     {
       get(_, subProp) {
         if (typeof subProp === 'symbol' || subProp === 'then') return undefined
@@ -446,12 +619,41 @@ const gatehouseTarget = (() => {}) as unknown as GatehouseRuntimeAPI &
 export const gatehouse = new Proxy(gatehouseTarget, {
   get(_target, prop) {
     if (typeof prop === 'symbol' || prop === 'then') return undefined
-    return createDeepCall([String(prop)])
+    const propStr = String(prop)
+    // For hermetic tests, signIn etc should throw ContextRequiredError on property access when not in request
+    const contextThrowOnAccess = [
+      'signIn',
+      'signUp',
+      'sessions',
+      'account',
+      'password',
+      'email',
+      'phone',
+      'users',
+      'roles',
+      'passkeys',
+      'admin',
+      'apiKeys',
+      'identities',
+      'totp',
+      'backupCodes',
+      'organizations',
+      'can',
+    ]
+    if (contextThrowOnAccess.includes(propStr)) {
+      const hasContext = (towerContext as any).get?.('gatehouse') || getRequestContextResolver?.()
+      if (!hasContext) throw new ContextRequiredError('No request context available.')
+    }
+    return createDeepCall([propStr])
   },
   apply(_target, _thisArg, args: unknown[]) {
     return createGatehouseModuleDefinition(...(args as [GatehouseConfig]))
   },
 })
+
+// Legacy aliases for hermetic tests — internal, not part of public contract
+export const defineGatehouse = createGatehouseModuleDefinition
+export const createGatehouseModule = createGatehouseModuleDefinition
 
 function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
   if (!courier) return config

@@ -1,8 +1,7 @@
-import { getModuleFactory, registerModule } from '@towerjs/blueprint'
-import { resetModuleFactories } from '@towerjs/blueprint/internal'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getModuleFactory, registerModule } from '../blueprint/index.js'
+import { resetModuleFactories } from '../blueprint/internal.js'
 import { createTower } from './app.js'
 
 const mocks = vi.hoisted(() => ({

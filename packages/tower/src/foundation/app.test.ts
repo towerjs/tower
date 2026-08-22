@@ -1,8 +1,7 @@
-import { getModuleFactory, registerModule } from '@towerjs/blueprint'
-import { resetModuleFactories } from '@towerjs/blueprint/internal'
-
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { getModuleFactory, registerModule } from '../blueprint/index.js'
+import { resetModuleFactories } from '../blueprint/internal.js'
 import { createTower, createTowerApp } from './app.js'
 import { ServiceContainer } from './container.js'
 
@@ -32,6 +31,18 @@ describe('createTowerApp', () => {
   it('exposes the config on the app', async () => {
     const app = await createTowerApp(modules({ mock: {} }), getModuleFactory)
     expect(app.config).toEqual(modules({ mock: {} }))
+  })
+
+  it('initializes pre-created module definitions when a factory is supplied', async () => {
+    const inline = {
+      name: 'inline',
+      initialize(ctx: any) {
+        ctx.services.register('inline', { value: 7 })
+      },
+    }
+
+    const app = await createTowerApp({ modules: [inline] }, getModuleFactory)
+    expect(app.container.get('inline')).toEqual({ value: 7 })
   })
 
   it('calls shutdown in reverse order', async () => {

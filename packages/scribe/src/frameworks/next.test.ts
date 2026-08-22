@@ -28,8 +28,9 @@ describe('towerConfig', () => {
   it('generates config with no modules', () => {
     const result = towerConfig(baseState)
 
-    expect(result).toContain('import { defineTower, env } from "@towerjs/tower/blueprint"')
-    expect(result).toContain('modules:')
+    expect(result).toContain('import { defineTower')
+    expect(result).toContain('from "@towerjs/tower"')
+    expect(result).toContain('modules: [')
   })
 
   it('keeps architecture in tower.config.ts and credentials in the environment contract', () => {
@@ -53,7 +54,7 @@ describe('towerConfig', () => {
     }
     const result = towerConfig(state)
 
-    expect(result).toContain('vault: {')
+    expect(result).toContain('vault({')
     expect(result).toContain('provider: "neon"')
     expect(result).not.toContain('brand')
   })
@@ -65,7 +66,7 @@ describe('towerConfig', () => {
     }
     const result = towerConfig(state)
 
-    expect(result).toContain('gatehouse:')
+    expect(result).toContain('gatehouse({')
     expect(result).toContain('appName: "My App"')
   })
 
@@ -79,8 +80,8 @@ describe('towerConfig', () => {
     }
     const result = towerConfig(state)
 
-    expect(result).toContain('vault:')
-    expect(result).toContain('gatehouse:')
+    expect(result).toContain('vault({')
+    expect(result).toContain('gatehouse({')
     expect(result).toContain('provider: "neon"')
     expect(result).toContain('credentials: true')
     expect(result).not.toContain('brand')

@@ -31,23 +31,24 @@ Tower trades the freedom to assemble for the speed and consistency of a well-fac
 
 ## Modules
 
-| Module         | Package               | Purpose                                               |
-| -------------- | --------------------- | ----------------------------------------------------- |
-| **Foundation** | `@towerjs/foundation` | Core runtime, DI, config discovery, runtime detection |
-| **Blueprint**  | `@towerjs/blueprint`  | Module registration, app definition                   |
-| **Vault**      | `@towerjs/vault`      | Database ORM (Kysely), migrations, seeds              |
-| **Gatehouse**  | `@towerjs/gatehouse`  | Authentication, sessions, organizations, API keys     |
-| **Courier**    | `@towerjs/courier`    | Email, SMS, push notifications                        |
+| Module        | Package              | Purpose                                                                          |
+| ------------- | -------------------- | -------------------------------------------------------------------------------- |
+| **Tower**     | `@towerjs/tower`     | Application core — Foundation + Blueprint as internal layers, runtime primitives |
+| **Vault**     | `@towerjs/vault`     | Database ORM (Kysely), migrations, seeds, models                                 |
+| **Gatehouse** | `@towerjs/gatehouse` | Authentication, sessions, organizations, API keys                                |
+| **Courier**   | `@towerjs/courier`   | Email, SMS, push notifications                                                   |
+
+Foundation and Blueprint are not publishable packages — they are internal layers of `@towerjs/tower` that provide its runtime infrastructure. See [Infrastructure](/docs/infrastructure).
 
 ## Tower today vs. Tower's direction
 
-**Tower today (v0.1.0).** Next.js with the App Router is the supported web framework. Foundation and Blueprint form the core runtime; Vault, Gatehouse, and Courier ship as production modules; Scribe provides the `tower` CLI (`tower create`, `tower migrate`, `tower seed`). Gatehouse works on the Node.js and serverless runtimes, with Edge support planned.
+**Tower today (v0.2.0 core).** `@towerjs/tower` is the core (Foundation + Blueprint internal). Vault, Gatehouse, and Courier are optional `@towerjs/<module>` packages that depend on the core; the core never depends on modules. Next.js App Router is the supported framework. Scribe provides the `tower` CLI (`tower create`, `tower migrate`, `tower seed`). Vault uses the Neon HTTP dialect on Edge; Gatehouse Edge support is in progress.
 
-**Tower's direction.** Future modules (job queues, storage, billing, search, observability) and additional framework integrations will follow the same contract: register at import, initialize lazily, expose a consistent API. The roadmap does not dictate today's decisions — the modules that exist now are the stable foundation.
+**Tower's direction.** Future modules (job queues, storage, billing, search, observability) and additional framework integrations will follow the same contract: explicit `modules: [vault(), gatehouse(...)]` array, initialize lazily, expose a consistent API. The roadmap does not dictate today's decisions — the modules that exist now are the stable foundation.
 
 ## Framework Integration
 
-Foundation and Blueprint have no framework dependencies. The core runtime adapts to any JavaScript environment — Node.js, serverless, or Edge — through automatic runtime detection.
+`@towerjs/tower` has no framework dependencies. The core runtime adapts to any JavaScript environment — Node.js, serverless, or Edge — through automatic runtime detection.
 
 Framework adapters live in each module's `frameworks/` directory. Currently only Next.js is supported:
 
@@ -56,19 +57,13 @@ Framework adapters live in each module's `frameworks/` directory. Currently only
 
 ## Installation
 
-The `@towerjs/tower` meta-package bundles every module, so a single install gives you the whole stack:
+`@towerjs/tower` is the core, not a meta-package. Install the core plus the modules you need:
 
 ```bash
-pnpm add @towerjs/tower
+pnpm add @towerjs/tower @towerjs/vault @towerjs/gatehouse @towerjs/courier
 ```
 
-Or install individual modules:
-
-```bash
-pnpm add @towerjs/foundation @towerjs/blueprint @towerjs/vault @towerjs/gatehouse @towerjs/courier
-```
-
-The `tower` CLI ships as a separate dev dependency, `@towerjs/scribe`.
+The `tower` CLI ships via `@towerjs/scribe` (installed with `towerjs` in generated apps as `tower dev`). For scaffolding, use `pnpm create tower`.
 
 ## When to Use Tower
 

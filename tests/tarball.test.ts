@@ -10,19 +10,8 @@ const ROOT_DIR = resolve(import.meta.dirname, '..')
 const TOWER_DIR = resolve(ROOT_DIR, 'packages', 'tower')
 
 // Must match packages/tower/package.json exports (public subpaths)
-const SUBPATHS = [
-  '.',
-  './blueprint',
-  './foundation',
-  './gatehouse',
-  './gatehouse/react-server',
-  './gatehouse/next',
-  './gatehouse/client',
-  './vault',
-  './next',
-  './courier',
-  './runtime',
-]
+// Since S1, @towerjs/tower is the core (Foundation + Blueprint internal); modules are separate @towerjs/* packages
+const SUBPATHS = ['.', './blueprint', './foundation', './runtime']
 
 describe('@towerjs/tower tarball structure', () => {
   let extractDir: string

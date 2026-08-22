@@ -72,7 +72,7 @@ describe('defineCourier', () => {
   it('registers courier in the container on init', async () => {
     const { mod, ctx } = initAndGetModule({})
     await mod.init?.(ctx as any)
-    expect(ctx.services.register).toHaveBeenCalledWith('courier', expect.any(Object))
+    expect(ctx.services.register).toHaveBeenCalledWith('courier', expect.anything())
   })
 
   it('throws unconfigured errors for email when not configured', async () => {

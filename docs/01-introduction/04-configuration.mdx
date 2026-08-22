@@ -12,31 +12,32 @@ Keep architecture in the config file and environment-specific values in `.env` f
 
 ## The Config File
 
-Tower reads configuration from `tower.config.ts` at your project root. Use `defineTower` from `@towerjs/tower/blueprint` for type-safe config:
+Tower reads configuration from `tower.config.ts` at your project root. Use `defineTower` from `@towerjs/tower/blueprint` for type-safe config. Pass an explicit `modules` array of callable module definitions:
 
 ```ts filename="tower.config.ts"
+import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
 import { defineTower, env } from '@towerjs/tower/blueprint'
+import { vault } from '@towerjs/vault'
 
 export default defineTower({
-  modules: {
-    vault: {
-      connectionString: env('DATABASE_URL'),
-    },
-    courier: {
-      email: { provider: 'console', from: 'noreply@example.com' },
-    },
-    gatehouse: {
+  modules: [
+    vault({ connectionString: env.string('DATABASE_URL') }),
+    courier({ email: { provider: 'console', from: 'noreply@example.com' } }),
+    gatehouse({
       provider: 'better-auth',
       appName: 'My App',
       baseURL: env.url('APP_URL', 'http://localhost:3000'),
       credentials: { enabled: true },
       emailVerification: { sendOnSignUp: true },
-    },
-  },
+    }),
+  ],
 })
 ```
 
 `env` reads lazily (so importing the config stays safe in SSR and edge runtimes) and provides typed helpers: `env.string()`, `env.optional()`, `env.url()`, `env.boolean()`, `env.number()`. Without a fallback, a missing variable throws a clear error.
+
+Each `vault()`, `gatehouse()`, `courier()` call returns a `TowerModule` definition with `name`, `dependsOn`, `register`, `initialize` — `defineTower` validates `dependsOn` and topologically sorts the array. Missing dependency → actionable error (`Gatehouse requires the Vault module. Add vault()`).
 
 ## Config Resolution Order
 
@@ -53,50 +54,50 @@ Each module validates its config when it initializes, so a malformed config fail
 ### Vault
 
 ```ts
-vault: {
-  provider?: 'neon' | 'pg'      // auto-detected from connectionString
-  connectionString?: string     // defaults to DATABASE_URL
-  pool?: {
-    max?: number                // pg default: 10
-    idleTimeoutMillis?: number  // pg default: 10000
-    connectionTimeoutMillis?: number
-    ssl?: boolean | { rejectUnauthorized?: boolean }
+vault({
+  provider: 'neon' | 'pg'      // auto-detected from connectionString
+  connectionString: env.string('DATABASE_URL') // defaults to DATABASE_URL
+  pool: {
+    max: 10                // pg default: 10
+    idleTimeoutMillis: 10000  // pg default: 10000
+    connectionTimeoutMillis: number
+    ssl: boolean | { rejectUnauthorized?: boolean }
   }
-  migrations?: { folder: string } // default: './src/vault/migrations'
-  seeds?: { folder: string }      // default: './src/vault/seeds'
-}
+  migrations: { folder: './src/vault/migrations' }
+  seeds: { folder: './src/vault/seeds' }
+})
 ```
 
-Provider auto-detection: connection strings containing `.neon.tech` resolve to `neon` (serverless), everything else to `pg` (standard PostgreSQL). Set `provider` explicitly to override.
+Provider auto-detection: connection strings containing `.neon.tech` resolve to `neon` (serverless), everything else to `pg` (standard PostgreSQL). Set `provider` explicitly to override. See [Vault](/docs/vault) and [Infrastructure](/docs/infrastructure).
 
 ### Gatehouse
 
 ```ts
-gatehouse: {
+gatehouse({
   provider: 'better-auth'
 
   // Auth methods
-  credentials?: boolean | { enabled, disableSignUp, minPasswordLength,
+  credentials: boolean | { enabled, disableSignUp, minPasswordLength,
     maxPasswordLength, autoSignIn }
-  emailVerification?: boolean | { enabled, method: 'link' | 'otp', required,
+  emailVerification: boolean | { enabled, method: 'link' | 'otp', required,
     sendOnSignUp, autoSignInAfterVerification, expiresIn, sendVerificationEmail, sendVerificationOTP }
-  social?: string[] | Record<string, SocialProviderEntry | true>
-  passkeys?: boolean | { rpName?, rpID? }
-  magicLinks?: boolean | { sendMagicLink? }
-  phoneNumber?: boolean | { sendOTP? }
-  twoFactor?: boolean
-  organization?: boolean
-  admin?: boolean
-  apiKey?: boolean
+  social: string[] | Record<string, SocialProviderEntry | true>
+  passkeys: boolean | { rpName?, rpID? }
+  magicLinks: boolean | { sendMagicLink? }
+  phoneNumber: boolean | { sendOTP? }
+  twoFactor: boolean
+  organization: boolean
+  admin: boolean
+  apiKey: boolean
 
-  baseURL?: string | { allowedHosts, protocol: 'http' | 'https' | 'auto', fallback }
-  appName?: string
-  trustedOrigins?: string[]
-  plugins?: BetterAuthPlugin[]
-  rateLimit?: { enabled, window, max, storage: 'memory' | 'database' | 'secondary-storage', customRules }
-  advanced?: Record<string, unknown>
-  passThrough?: Record<string, unknown>
-}
+  baseURL: string | { allowedHosts, protocol: 'http' | 'https' | 'auto', fallback }
+  appName: string
+  trustedOrigins: string[]
+  plugins: BetterAuthPlugin[]
+  rateLimit: { enabled, window, max, storage: 'memory' | 'database' | 'secondary-storage', customRules }
+  advanced: Record<string, unknown>
+  passThrough: Record<string, unknown>
+})
 ```
 
 Feature options are Tower-owned and typed — they describe what authentication means to the application, not how a provider implements it. Provider-specific settings (custom plugins, model names, session/account details, secrets) pass through via `plugins`, `advanced`, and `passThrough` untouched.
@@ -111,21 +112,21 @@ Social provider credentials resolve automatically from environment variables: fo
 ### Courier
 
 ```ts
-courier: {
-  email?: {
+courier({
+  email: {
     provider: 'console' | 'resend' | 'smtp' | 'ses'
     // provider-specific options...
-    from?: string
+    from: 'noreply@example.com'
   }
-  sms?: {
+  sms: {
     provider: 'twilio'
     // twilio-specific options...
   }
-  push?: {
+  push: {
     provider: 'web-push'
-    vapid?: { subject, publicKey, privateKey }
+    vapid: { subject, publicKey, privateKey }
   }
-}
+})
 ```
 
 Each provider reads its credentials from the environment when not set in config (see below).

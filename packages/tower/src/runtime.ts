@@ -17,10 +17,13 @@ function getAppPromise(): Promise<TowerApp> | undefined {
 }
 
 async function buildApp(config: TowerConfig, modules: TowerModule[]): Promise<TowerApp> {
-  const app = await createTowerApp(config, (name: string) => {
-    const mod = modules.find((m) => m.name === name)
-    return mod ? (_options: Record<string, unknown>) => mod : undefined
-  })
+  const factory = Array.isArray(config.modules)
+    ? undefined
+    : (name: string) => {
+        const mod = modules.find((m) => m.name === name)
+        return mod ? (_options: Record<string, unknown>) => mod : undefined
+      }
+  const app = await createTowerApp(config, factory)
   await registerModuleServices(app, modules)
   return app
 }
@@ -48,13 +51,18 @@ export function getTowerApp(): Promise<TowerApp> {
   return promise
 }
 
-export function initTower(modules: TowerModule[], config?: TowerBlueprint): Promise<TowerApp> {
+export function initTower(modules: TowerModule[] = [], config?: TowerBlueprint): Promise<TowerApp> {
   const existing = getAppPromise()
-  if (existing) return existing
+  // An explicit module list must win over an app implicitly started by a
+  // framework adapter during module import (for example Gatehouse's Next.js
+  // dynamic-rendering hook).
+  if (existing && modules.length === 0) return existing
 
   const promise = (async () => {
     const cfg = config ? (config as unknown as TowerConfig) : await resolveConfig()
-    return buildApp(cfg as TowerConfig, modules)
+    // `initTower` receives concrete module definitions; make them the
+    // composition root even when a discovered config also exists.
+    return buildApp({ ...(cfg as TowerConfig), ...(modules.length > 0 ? { modules } : {}) }, modules)
   })().catch((err) => {
     setAppPromise(undefined)
     throw err

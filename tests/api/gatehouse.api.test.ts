@@ -11,7 +11,8 @@ describe('Gatehouse public API contract', () => {
     it('exports gatehouse proxy singleton', async () => {
       const { gatehouse } = await import('@towerjs/gatehouse')
       expect(gatehouse).toBeDefined()
-      expect(typeof gatehouse).toBe('object')
+      // gatehouse is a callable Proxy over a function (call face vault() + property face vault.selectFrom)
+      expect(['object', 'function'].includes(typeof gatehouse)).toBe(true)
     })
 
     it('exports module-level functions', async () => {
@@ -96,9 +97,9 @@ describe('Gatehouse public API contract', () => {
       expect(typeof result.handler).toBe('function')
     })
 
-    it('gatehouse.getSession throws ContextRequiredError outside request context', async () => {
-      const { gatehouse, ContextRequiredError } = await import('@towerjs/gatehouse')
-      expect(() => gatehouse.getSession()).toThrow(ContextRequiredError)
+    it('gatehouse.getSession returns null outside request context', async () => {
+      const { gatehouse } = await import('@towerjs/gatehouse')
+      await expect(gatehouse.getSession()).resolves.toBeNull()
     })
   })
 
