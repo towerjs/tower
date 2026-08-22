@@ -38,11 +38,11 @@ Tower trades the freedom to assemble for the speed and consistency of a well-fac
 | **Gatehouse** | `@towerjs/gatehouse` | Authentication, sessions, organizations, API keys                                |
 | **Courier**   | `@towerjs/courier`   | Email, SMS, push notifications                                                   |
 
-Foundation and Blueprint are not publishable packages — they live as internal layers in `packages/tower/src/foundation/` and `packages/tower/src/blueprint/`. See [Infrastructure](/docs/infrastructure) and the `v0.2` package contract in `AGENTS.md`.
+Foundation and Blueprint are not publishable packages — they are internal layers of `@towerjs/tower` that provide its runtime infrastructure. See [Infrastructure](/docs/infrastructure).
 
 ## Tower today vs. Tower's direction
 
-**Tower today (v0.2.0 core).** `@towerjs/tower` is the core (Foundation + Blueprint internal). Vault, Gatehouse, and Courier are optional `@towerjs/<module>` packages that depend on the core; the core never depends on modules. Next.js App Router is the supported framework. Scribe provides the `tower` CLI (`tower create`, `tower migrate`, `tower seed`). Vault uses the Neon HTTP dialect on Edge; Gatehouse Edge support is in progress (#92).
+**Tower today (v0.2.0 core).** `@towerjs/tower` is the core (Foundation + Blueprint internal). Vault, Gatehouse, and Courier are optional `@towerjs/<module>` packages that depend on the core; the core never depends on modules. Next.js App Router is the supported framework. Scribe provides the `tower` CLI (`tower create`, `tower migrate`, `tower seed`). Vault uses the Neon HTTP dialect on Edge; Gatehouse Edge support is in progress.
 
 **Tower's direction.** Future modules (job queues, storage, billing, search, observability) and additional framework integrations will follow the same contract: explicit `modules: [vault(), gatehouse(...)]` array, initialize lazily, expose a consistent API. The roadmap does not dictate today's decisions — the modules that exist now are the stable foundation.
 
