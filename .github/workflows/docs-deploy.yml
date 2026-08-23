@@ -2,13 +2,87 @@ name: Docs Deploy
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths:
+      - 'docs/**'
+  release:
+    types: [released]
+
+permissions:
+  contents: write
 
 jobs:
-  trigger:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel Deploy Hook
+      - name: Checkout tower-docs
+        uses: actions/checkout@v7
+        with:
+          repository: hyphenzero/tower-docs
+          token: ${{ secrets.DOCS_SYNC_PAT }}
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.17.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Preview deploys for docs changes merged to main; production deploys
+      # when a release ships, so published docs match the released version.
+      - name: Deploy to Vercel
+        id: vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          DOCS_SOURCE_URL: https://github.com/towerjs/tower/archive/${{ github.sha }}.tar.gz
+          DOCS_SOURCE_TOKEN: ${{ secrets.DOCS_SYNC_PAT }}
+          PROD_FLAG: ${{ github.event_name == 'release' && '--prod' || '' }}
         run: |
-          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+          set -o pipefail
+          npx vercel deploy --yes $PROD_FLAG \
+            -e DOCS_SOURCE_URL="${DOCS_SOURCE_URL}" \
+            -e DOCS_SOURCE_TOKEN="${DOCS_SOURCE_TOKEN}" \
+            --token="${VERCEL_TOKEN}" \
+            --project="${VERCEL_PROJECT_ID}" \
+            --scope="${VERCEL_ORG_ID}" \
+            2>&1 | tee vercel-output.log
+
+      - name: Extract deploy URL
+        id: extract-url
+        run: |
+          PREVIEW_URL=$(grep -oE 'https://[^ ]+\.vercel\.app' vercel-output.log | tail -1)
+          echo "url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment on release
+        if: github.event_name == 'release' && steps.extract-url.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.extract-url.outputs.url }}
+        run: gh release comment "${{ github.event.release.tag_name }}" -R towerjs/tower --body "Documentation deployed: $URL"
+
+      - name: Comment on commit
+        if: github.event_name == 'push' && steps.extract-url.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.extract-url.outputs.url }}
+          SHA: ${{ github.sha }}
+        run: |
+          # Replace any previous bot comment on this commit so one push maps
+          # to exactly one comment even after retries
+          COMMENT_ID=$(gh api "repos/towerjs/tower/commits/$SHA/comments" \
+            --jq '.[] | select(.user.type == "Bot") | select(.body | startswith("Docs preview:")) | .id' | tail -1)
+          if [ -n "$COMMENT_ID" ]; then
+            gh api -X PATCH "repos/towerjs/tower/comments/$COMMENT_ID" -f body="Docs preview: $URL"
+          else
+            gh api -X POST "repos/towerjs/tower/commits/$SHA/comments" -f body="Docs preview: $URL"
+          fi
