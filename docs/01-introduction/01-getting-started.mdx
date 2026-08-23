@@ -81,9 +81,28 @@ Add Tower to an existing Next.js project:
 
 `@towerjs/tower` is the core. Add the modules you need as separate packages — for example, with Vault and Gatehouse:
 
-```bash
-pnpm add @towerjs/tower @towerjs/vault @towerjs/gatehouse
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm add @towerjs/tower @towerjs/vault @towerjs/gatehouse
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npm install @towerjs/tower @towerjs/vault @towerjs/gatehouse
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn add @towerjs/tower @towerjs/vault @towerjs/gatehouse
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bun add @towerjs/tower @towerjs/vault @towerjs/gatehouse
+    ```
+  </CodeTab>
+</CodeTabs>
 
 Application code imports the core and the modules directly: `import { defineTower } from '@towerjs/tower/blueprint'` and `import { vault } from '@towerjs/vault'` (see [Vault](/docs/vault), [Gatehouse setup](/docs/gatehouse/setup)).
 
@@ -123,9 +142,28 @@ export default defineTower({
 
 If your app uses Vault — including Gatehouse's auth tables — set `DATABASE_URL` (or pass `connectionString` to `vault`), then:
 
-```bash
-npx tower migrate
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm exec tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npx tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bunx tower migrate
+    ```
+  </CodeTab>
+</CodeTabs>
 
 ## Next Steps
 

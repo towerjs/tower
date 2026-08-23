@@ -3,6 +3,8 @@ title: 'What is Tower?'
 description: 'Tower is a composable monolithic stack for JavaScript and TypeScript applications — application-level infrastructure (database, auth, email) as composable modules that live alongside your web framework.'
 ---
 
+import { CodeTab, CodeTabs } from '@/components/code'
+
 Tower is a **composable monolithic stack** for JavaScript and TypeScript applications. It provides the application-level infrastructure most products need — database access, authentication, and communication — as composable modules that sit alongside your web framework instead of replacing it.
 
 Tower is not a web framework. It does not replace Next.js (or any other framework). Your framework remains the web layer; Tower supplies the application architecture underneath it — the modules, providers, and conventions that give you a consistent backend without assembling an ORM, an auth library, and an email provider by hand.
@@ -59,9 +61,28 @@ Framework adapters live in each module's `frameworks/` directory. Currently only
 
 `@towerjs/tower` is the core, not a meta-package. Install the core plus the modules you need:
 
-```bash
-pnpm add @towerjs/tower @towerjs/vault @towerjs/gatehouse @towerjs/courier
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm add @towerjs/tower @towerjs/vault @towerjs/gatehouse @towerjs/courier
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npm install @towerjs/tower @towerjs/vault @towerjs/gatehouse @towerjs/courier
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn add @towerjs/tower @towerjs/vault @towerjs/gatehouse @towerjs/courier
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bun add @towerjs/tower @towerjs/vault @towerjs/gatehouse @towerjs/courier
+    ```
+  </CodeTab>
+</CodeTabs>
 
 The `tower` CLI ships via `@towerjs/scribe` (installed with `towerjs` in generated apps as `tower dev`). For scaffolding, use `pnpm create tower`.
 

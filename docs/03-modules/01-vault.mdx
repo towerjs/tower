@@ -3,6 +3,8 @@ title: 'Vault'
 description: 'Database ORM powered by Kysely. Supports PostgreSQL and Neon with migrations and seeds.'
 ---
 
+import { CodeTab, CodeTabs } from '@/components/code'
+
 Vault wraps [Kysely](https://kysely.dev) with connection pooling, migrations, seeds, and both Node and Edge runtime support. It is built on PostgreSQL with a scoped provider boundary (Neon HTTP and standard `pg`) — see [Infrastructure](/docs/infrastructure) for the curated philosophy and escape hatch.
 
 ## Setup
@@ -72,9 +74,28 @@ export async function down(db: Vault) {
 
 Run migrations:
 
-```bash
-npx tower migrate
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm exec tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npx tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bunx tower migrate
+    ```
+  </CodeTab>
+</CodeTabs>
 
 ## Seeds
 

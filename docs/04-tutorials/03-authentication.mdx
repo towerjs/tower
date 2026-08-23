@@ -3,6 +3,8 @@ title: 'Authentication with Gatehouse'
 description: 'Set up full-featured authentication with email/password, social login, and more.'
 ---
 
+import { CodeTab, CodeTabs } from '@/components/code'
+
 This tutorial walks through setting up authentication in a Tower + Next.js application.
 
 ## 1. Configure Gatehouse
@@ -80,9 +82,28 @@ export function SignInForm() {
 
 ## 3. Run Migrations
 
-```bash
-npx tower migrate
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm exec tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npx tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bunx tower migrate
+    ```
+  </CodeTab>
+</CodeTabs>
 
 ## 4. Sign-In Page
 

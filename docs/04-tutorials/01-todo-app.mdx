@@ -3,6 +3,8 @@ title: 'Building a Todo App'
 description: 'Build a todo application with Vault for database access, Courier for email notifications.'
 ---
 
+import { CodeTab, CodeTabs } from '@/components/code'
+
 This tutorial walks through building a todo application with Tower.
 
 ## 1. Create a Migration
@@ -29,9 +31,28 @@ export async function down(db: Vault) {
 
 ## 2. Run Migrations
 
-```bash
-npx tower migrate
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm exec tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npx tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bunx tower migrate
+    ```
+  </CodeTab>
+</CodeTabs>
 
 ## 3. Server Actions
 

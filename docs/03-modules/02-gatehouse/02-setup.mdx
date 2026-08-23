@@ -3,15 +3,36 @@ title: 'Setup'
 description: 'Install Gatehouse, mount the auth API, run migrations, and sign in your first user.'
 ---
 
+import { CodeTab, CodeTabs } from '@/components/code'
+
 Get authentication running end to end: install the module, enable it, mount the API, migrate, and sign in your first user.
 
 ## 1. Install
 
 `@towerjs/tower` bundles every module. Install the individual `@towerjs/gatehouse` package too, because the proxy imports `gatehouse` from it directly:
 
-```bash
-pnpm add @towerjs/tower @towerjs/gatehouse
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm add @towerjs/tower @towerjs/gatehouse
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npm install @towerjs/tower @towerjs/gatehouse
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn add @towerjs/tower @towerjs/gatehouse
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bun add @towerjs/tower @towerjs/gatehouse
+    ```
+  </CodeTab>
+</CodeTabs>
 
 ## 2. Enable the module
 
@@ -56,11 +77,30 @@ This mounts the full Better Auth API under `/api/auth` — the `gatehouseClient`
 
 The auth tables (users, sessions, accounts, organizations, ...) live in the Vault database. The `tower` CLI runs both the Vault and Gatehouse migrations for you:
 
-```bash
-npx tower migrate
-```
+<CodeTabs>
+  <CodeTab title="pnpm">
+    ```bash
+    pnpm exec tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="npm">
+    ```bash
+    npx tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="yarn">
+    ```bash
+    yarn tower migrate
+    ```
+  </CodeTab>
+  <CodeTab title="bun">
+    ```bash
+    bunx tower migrate
+    ```
+  </CodeTab>
+</CodeTabs>
 
-If you're using a package manager other than npm, use `pnpm exec tower migrate`, `yarn exec tower migrate`, or `bunx tower migrate`. Set `DATABASE_URL` (or pass `connectionString` to `vault`) first.
+Set `DATABASE_URL` (or pass `connectionString` to `vault`) first.
 
 ## 6. Create your first user
 
