@@ -68,7 +68,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           URL: ${{ steps.extract-url.outputs.url }}
-        run: gh release comment "${{ github.event.release.tag_name }}" -R towerjs/tower --body "Documentation deployed: $URL"
+        run: |
+          gh release comment "${{ github.event.release.tag_name }}" -R towerjs/tower --body "Documentation deployed: $URL"
 
       - name: Comment on commit
         if: github.event_name == 'push' && steps.extract-url.outputs.url != ''
