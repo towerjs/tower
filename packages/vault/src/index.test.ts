@@ -151,7 +151,7 @@ describe('buildProxyUnconfigured', () => {
     vi.clearAllMocks()
     // re-init without connection string to get the unconfigured proxy
     const mod = createVaultModule()
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
   })
 
   it('throws configured error on migrate', () => {
@@ -179,13 +179,13 @@ describe('createVaultModule', () => {
   it('returns a TowerModule with name vault', () => {
     const mod = createVaultModule()
     expect(mod.name).toBe('vault')
-    expect(typeof mod.init).toBe('function')
+    expect(typeof mod.initialize).toBe('function')
   })
 
   it('registers unconfigured proxy when no connection string', async () => {
     const mod = createVaultModule()
     const ctx = mockCtx()
-    await mod.init!(ctx)
+    await mod.initialize!(ctx)
     expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
   })
 
@@ -197,7 +197,7 @@ describe('createVaultModule', () => {
 
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     const ctx = mockCtx()
-    await mod.init!(ctx)
+    await mod.initialize!(ctx)
 
     expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
     expect(mocks.mockConnect).toHaveBeenCalled()
@@ -212,7 +212,7 @@ describe('createVaultModule', () => {
 
     const mod = createVaultModule()
     const ctx = mockCtx()
-    await mod.init!(ctx)
+    await mod.initialize!(ctx)
 
     expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
   })
@@ -223,7 +223,7 @@ describe('createVaultModule', () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     const ctx = mockCtx()
 
-    await expect(mod.init!(ctx)).rejects.toThrow('Could not connect to database')
+    await expect(mod.initialize!(ctx)).rejects.toThrow('Could not connect to database')
   })
 
   it('drains pool on connection failure then throws', async () => {
@@ -232,7 +232,7 @@ describe('createVaultModule', () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     const ctx = mockCtx()
 
-    await expect(mod.init!(ctx)).rejects.toThrow('Could not connect to database')
+    await expect(mod.initialize!(ctx)).rejects.toThrow('Could not connect to database')
     expect(mocks.mockEnd).toHaveBeenCalled()
   })
 
@@ -242,7 +242,7 @@ describe('createVaultModule', () => {
     const mod = createVaultModule({ connectionString: 'postgres://admin:s3cret@localhost:5432/db' })
     let err: any
     try {
-      await mod.init!(mockCtx())
+      await mod.initialize!(mockCtx())
     } catch (e) {
       err = e
     }
@@ -259,7 +259,7 @@ describe('createVaultModule', () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
     let err: any
     try {
-      await mod.init!(mockCtx())
+      await mod.initialize!(mockCtx())
     } catch (e) {
       err = e
     }
@@ -277,7 +277,7 @@ describe('vault singleton proxy', () => {
       release: vi.fn(),
     })
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
   })
 
   it('forwards Kysely methods', () => {
@@ -294,7 +294,7 @@ describe('vault proxy methods', () => {
       release: vi.fn(),
     })
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
   })
 
   it('migrate calls migrateToLatest', async () => {
@@ -359,7 +359,7 @@ describe('provider detection', () => {
     const mod = createVaultModule(
       provider ? { connectionString: url, provider: provider as any } : { connectionString: url }
     )
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
   }
 
   it('defaults to pg for standard URLs', async () => {
@@ -395,7 +395,7 @@ describe('SSL resolution', () => {
     })
     mocks.clearPoolArgs()
     const mod = createVaultModule({ connectionString: url, pool } as any)
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
     return mocks.pgPoolArgs[0]
   }
 
@@ -443,7 +443,7 @@ describe('pool error handler', () => {
     })
 
     const mod = createVaultModule({ connectionString: 'postgres://localhost/db' })
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
 
     expect(mocks.mockOn).toHaveBeenCalledWith('error', expect.any(Function))
   })
@@ -455,7 +455,7 @@ describe('pool error handler', () => {
     })
 
     const mod = createVaultModule({ connectionString: 'postgres://localhost/db' })
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
 
     const handler = mocks.mockOn.mock.calls.find((c: any[]) => c[0] === 'error')?.[1]
     expect(handler).toBeDefined()
@@ -476,7 +476,7 @@ describe('pool config passthrough', () => {
     await createVaultModule({
       connectionString: 'postgres://localhost/db',
       pool: { max: 10, idleTimeoutMillis: 5000, connectionTimeoutMillis: 3000 },
-    }).init!(mockCtx())
+    }).initialize!(mockCtx())
 
     const args = mocks.pgPoolArgs[0]
     expect(args.max).toBe(10)
@@ -495,11 +495,11 @@ describe('multiple init calls', () => {
     })
 
     const mod = createVaultModule({ connectionString: 'postgres://localhost/db' })
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
 
     // second init should close the first pool
     const callsBefore = mocks.mockEnd.mock.calls.length
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
     expect(mocks.mockEnd.mock.calls.length).toBeGreaterThan(callsBefore)
   })
 })
@@ -514,7 +514,7 @@ describe('neon', () => {
     })
 
     const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
-    await mod.init!(mockCtx())
+    await mod.initialize!(mockCtx())
 
     expect(mocks.neonDialectArgs).toHaveLength(1)
     expect(mocks.neonPoolArgs).toHaveLength(0)
@@ -534,7 +534,7 @@ describe('edge runtime', () => {
 
   it('uses the Neon HTTP dialect for neon on edge', async () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
-    await mod.init!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))
+    await mod.initialize!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))
 
     expect(mocks.neonDialectArgs).toHaveLength(1)
     expect(mocks.neonPoolArgs).toHaveLength(0)
@@ -543,7 +543,7 @@ describe('edge runtime', () => {
 
   it('skips connection validation on edge', async () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
-    await mod.init!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))
+    await mod.initialize!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))
 
     expect(mocks.mockConnect).not.toHaveBeenCalled()
   })
@@ -551,7 +551,7 @@ describe('edge runtime', () => {
   it('registers configured proxy on edge', async () => {
     const mod = createVaultModule({ connectionString: 'postgres://u:p@db.neon.tech/db' })
     const ctx = mockCtx({ runtime: { name: 'edge', isServerless: true } })
-    await mod.init!(ctx)
+    await mod.initialize!(ctx)
 
     expect(ctx.services.register).toHaveBeenCalledWith('vault', expect.anything())
   })
@@ -562,7 +562,7 @@ describe('edge runtime', () => {
       provider: 'pg',
     })
 
-    await expect(mod.init!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))).rejects.toThrow(
+    await expect(mod.initialize!(mockCtx({ runtime: { name: 'edge', isServerless: true } }))).rejects.toThrow(
       'pg provider requires a TCP connection'
     )
   })

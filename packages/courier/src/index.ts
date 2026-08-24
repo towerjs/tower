@@ -67,9 +67,7 @@ let _courier: CourierModule | undefined
  * })
  * ```
  */
-function createCourierModuleDefinition(
-  config: CourierConfig = {}
-): TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> } {
+function createCourierModuleDefinition(config: CourierConfig = {}): TowerModule & CourierModule {
   parseCourierConfig(config)
 
   return {
@@ -92,11 +90,7 @@ function createCourierModuleDefinition(
     get push() {
       return requireCourier().push
     },
-
-    init(ctx: TowerContext) {
-      return this.initialize!(ctx)
-    },
-  } satisfies TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> }
+  } satisfies TowerModule & CourierModule
 }
 
 async function createCourier(config: CourierConfig): Promise<CourierModule> {
@@ -207,7 +201,7 @@ export const courier = new Proxy(createCourierModuleDefinition, {
       prop === 'inspect'
     )
       return undefined
-    // Hermetic tests set _courier directly via mod.init; use it if available
+    // Hermetic tests set _courier directly via the module's initialize hook
     if (_courier) return (_courier as any)[prop]
     if (prop === 'email' || prop === 'sms' || prop === 'push') {
       throw new Error('Courier not initialized.')
@@ -218,8 +212,7 @@ export const courier = new Proxy(createCourierModuleDefinition, {
   apply(_target, _thisArg, args: unknown[]) {
     return (_target as (...args: unknown[]) => unknown)(...args)
   },
-}) as ((config: CourierConfig) => TowerModule & CourierModule & { init: (ctx: TowerContext) => Promise<void> }) &
-  CourierModule
+}) as ((config: CourierConfig) => TowerModule & CourierModule) & CourierModule
 
 // Legacy aliases for hermetic tests — internal, not part of public contract
 export const defineCourier = createCourierModuleDefinition

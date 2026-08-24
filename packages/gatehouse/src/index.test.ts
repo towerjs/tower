@@ -519,7 +519,7 @@ describe('gatehouse combined proxy', () => {
 
   async function initModule() {
     const { defineGatehouse } = await import('./index.js')
-    await defineGatehouse({ provider: 'better-auth' } as any).init!(mockCtx())
+    await defineGatehouse({ provider: 'better-auth' } as any).initialize!(mockCtx())
   }
 
   it('throws ContextRequiredError for context methods when not in request', async () => {
@@ -618,13 +618,13 @@ describe('defineGatehouse', () => {
     const { defineGatehouse } = await import('./index.js')
     const mod = defineGatehouse({ provider: 'better-auth' } as any)
     expect(mod.name).toBe('gatehouse')
-    expect(typeof mod.init).toBe('function')
+    expect(typeof mod.initialize).toBe('function')
   })
 
   it('init creates adapter and registers module', async () => {
     const { defineGatehouse } = await import('./index.js')
     const ctx = mockCtx()
-    await defineGatehouse({ provider: 'better-auth' } as any).init!(ctx)
+    await defineGatehouse({ provider: 'better-auth' } as any).initialize!(ctx)
     expect(ctx.services.get).toHaveBeenCalledWith('vault')
     expect(mocks.mockBetterAuth).toHaveBeenCalled()
   })
@@ -653,13 +653,13 @@ describe('defineGatehouse', () => {
       magicLinks: true,
       emailVerification: { sendOnSignUp: true },
       phoneNumber: true,
-    } as any).init!(ctx)
+    } as any).initialize!(ctx)
 
     await defineGatehouse({
       provider: 'better-auth',
       appName: 'Tower App',
       emailVerification: { method: 'otp', required: true },
-    } as any).init!(ctx)
+    } as any).initialize!(ctx)
 
     const linkOpts = mocks.mockBetterAuth.mock.calls[0][0]
     await linkOpts.emailAndPassword.sendResetPassword({
@@ -713,7 +713,7 @@ describe('defineGatehouse', () => {
       magicLinks: { sendMagicLink: magic },
       phoneNumber: { sendOTP: phoneOtp },
       emailVerification: { method: 'otp', sendVerificationOTP: emailOtp, sendOnSignUp: true },
-    } as any).init!(ctx)
+    } as any).initialize!(ctx)
 
     const opts = mocks.mockBetterAuth.mock.calls[0][0]
     expect(opts.emailAndPassword.sendResetPassword).toBe(reset)
@@ -742,7 +742,7 @@ describe('defineGatehouse', () => {
     await defineGatehouse({
       provider: 'better-auth',
       emailVerification: { method: 'otp', sendVerificationOTP: emailOtp },
-    } as any).init!(ctx)
+    } as any).initialize!(ctx)
 
     const opts = mocks.mockBetterAuth.mock.calls[0][0]
     expect(opts.plugins.find((p: any) => p.id === 'email-otp').sendVerificationOTP).toBe(emailOtp)
@@ -764,7 +764,7 @@ describe('getAuth / getRoutes', () => {
 
   it('getAuth returns adapter when initialized', async () => {
     const { defineGatehouse, getAuth } = await import('./index.js')
-    await defineGatehouse({ provider: 'better-auth' } as any).init!(mockCtx())
+    await defineGatehouse({ provider: 'better-auth' } as any).initialize!(mockCtx())
     const auth = getAuth()
     expect(typeof auth.getSession).toBe('function')
   })
@@ -776,7 +776,7 @@ describe('getAuth / getRoutes', () => {
 
   it('getRoutes returns adapter routes when initialized', async () => {
     const { defineGatehouse, getRoutes } = await import('./index.js')
-    await defineGatehouse({ provider: 'better-auth' } as any).init!(mockCtx())
+    await defineGatehouse({ provider: 'better-auth' } as any).initialize!(mockCtx())
     const routes = getRoutes()
     expect(typeof routes.GET).toBe('function')
     expect(typeof routes.POST).toBe('function')
@@ -798,7 +798,7 @@ describe('runWithRequest', () => {
 
   it('runs handler with ALS context', async () => {
     const { defineGatehouse, runWithRequest } = await import('./index.js')
-    await defineGatehouse({ provider: 'better-auth' } as any).init!(mockCtx())
+    await defineGatehouse({ provider: 'better-auth' } as any).initialize!(mockCtx())
 
     mocks.mockGetSession.mockResolvedValue({
       user: {
@@ -844,7 +844,7 @@ describe('Gatehouse module-level exports', () => {
 
   it('Gatehouse.from delegates to adapter when initialized', async () => {
     const { defineGatehouse, Gatehouse } = await import('./index.js')
-    await defineGatehouse({ provider: 'better-auth' } as any).init!(mockCtx())
+    await defineGatehouse({ provider: 'better-auth' } as any).initialize!(mockCtx())
     const instance = await Gatehouse.from({ headers: new Headers() })
     expect(typeof instance.session).toBe('function')
   })

@@ -390,8 +390,6 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
     },
 
     initialize: doInit,
-    // legacy alias for hermetic tests
-    init: doInit as any,
 
     get provider() {
       return getAdapter()!.provider

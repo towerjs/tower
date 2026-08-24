@@ -51,7 +51,7 @@ describe('courier singleton proxy', () => {
     const { mod, ctx } = initAndGetModule({
       email: { provider: 'resend', apiKey: 're_test', from: 'noreply@example.com' },
     })
-    await mod.init?.(ctx as any)
+    await mod.initialize?.(ctx as any)
 
     expect(typeof courier.email.send).toBe('function')
     expect(typeof courier.sms.send).toBe('function')
@@ -63,7 +63,7 @@ describe('defineCourier', () => {
   it('returns a module with name and init', () => {
     const mod = defineCourier({})
     expect(mod.name).toBe('courier')
-    expect(typeof mod.init).toBe('function')
+    expect(typeof mod.initialize).toBe('function')
     expect(typeof mod.email).toBe('object')
     expect(typeof mod.sms).toBe('object')
     expect(typeof mod.push).toBe('object')
@@ -71,13 +71,13 @@ describe('defineCourier', () => {
 
   it('registers courier in the container on init', async () => {
     const { mod, ctx } = initAndGetModule({})
-    await mod.init?.(ctx as any)
+    await mod.initialize?.(ctx as any)
     expect(ctx.services.register).toHaveBeenCalledWith('courier', expect.anything())
   })
 
   it('throws unconfigured errors for email when not configured', async () => {
     const { mod, ctx } = initAndGetModule({})
-    await mod.init?.(ctx as any)
+    await mod.initialize?.(ctx as any)
     await expect(courier.email.send({ to: 'a@b.com', subject: 'x', text: 'y' })).rejects.toThrow(
       '[courier.email] Not configured'
     )
@@ -85,13 +85,13 @@ describe('defineCourier', () => {
 
   it('throws unconfigured errors for sms when not configured', async () => {
     const { mod, ctx } = initAndGetModule({})
-    await mod.init?.(ctx as any)
+    await mod.initialize?.(ctx as any)
     await expect(courier.sms.send({ to: '+1234', body: 'hello' })).rejects.toThrow('[courier.sms] Not configured')
   })
 
   it('throws unconfigured errors for push when not configured', async () => {
     const { mod, ctx } = initAndGetModule({})
-    await mod.init?.(ctx as any)
+    await mod.initialize?.(ctx as any)
     await expect(courier.push.send({ subscription: {} as any, payload: 'hi' })).rejects.toThrow(
       '[courier.push] Not configured'
     )
@@ -165,7 +165,7 @@ describe('multiple channels', () => {
       sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', messagingServiceSid: 'MGx' },
       push: { provider: 'web-push', vapid: { subject: 'mailto:x@y.com', publicKey: 'pub', privateKey: 'priv' } },
     })
-    await mod.init?.(ctx as any)
+    await mod.initialize?.(ctx as any)
 
     expect(typeof courier.email.send).toBe('function')
     expect(typeof courier.sms.send).toBe('function')

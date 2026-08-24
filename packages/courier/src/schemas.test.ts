@@ -29,7 +29,7 @@ function mockCtx() {
 
 async function initConsoleCourier() {
   const mod = defineCourier({ email: { provider: 'console' } })
-  await mod.init!(mockCtx() as any)
+  await mod.initialize!(mockCtx() as any)
 }
 
 beforeEach(() => {
@@ -118,7 +118,7 @@ describe('sms send param validation', () => {
     const mod = defineCourier({
       sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' },
     })
-    await mod.init!(mockCtx() as any)
+    await mod.initialize!(mockCtx() as any)
     await expect(courier.sms.send({ to: '+1234567890', body: 'hello' })).resolves.toBeDefined()
   })
 
@@ -126,7 +126,7 @@ describe('sms send param validation', () => {
     const mod = defineCourier({
       sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' },
     })
-    await mod.init!(mockCtx() as any)
+    await mod.initialize!(mockCtx() as any)
     await expect(courier.sms.send({ to: '+1234567890' } as any)).rejects.toThrow(
       /\[courier\.sms\] Invalid send params — body:/
     )
@@ -138,7 +138,7 @@ describe('push send param validation', () => {
     const mod = defineCourier({
       push: { provider: 'web-push', vapid: { subject: 'mailto:x@y.com', publicKey: 'p', privateKey: 'k' } },
     })
-    await mod.init!(mockCtx() as any)
+    await mod.initialize!(mockCtx() as any)
     await expect(
       courier.push.send({
         subscription: { endpoint: 'https://push.example.com', keys: { p256dh: 'a', auth: 'b' } },
@@ -152,7 +152,7 @@ describe('push send param validation', () => {
     const mod = defineCourier({
       push: { provider: 'web-push', vapid: { subject: 'mailto:x@y.com', publicKey: 'p', privateKey: 'k' } },
     })
-    await mod.init!(mockCtx() as any)
+    await mod.initialize!(mockCtx() as any)
     await expect(
       courier.push.send({
         subscription: { endpoint: 'https://push.example.com', keys: { p256dh: 'a', auth: 'b' } },
@@ -166,7 +166,7 @@ describe('push send param validation', () => {
     const mod = defineCourier({
       push: { provider: 'web-push', vapid: { subject: 'mailto:x@y.com', publicKey: 'p', privateKey: 'k' } },
     })
-    await mod.init!(mockCtx() as any)
+    await mod.initialize!(mockCtx() as any)
     await expect(
       courier.push.send({ subscription: { endpoint: 'https://push.example.com' } as any, payload: 'hi' })
     ).rejects.toThrow(/\[courier\.push\] Invalid send params — subscription\.keys:/)

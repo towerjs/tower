@@ -216,8 +216,6 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
     },
 
     initialize,
-    // legacy alias for hermetic tests using old `init` name
-    init: initialize as any,
   } as TowerModule
 }
 
@@ -243,7 +241,7 @@ export const vault = new Proxy(createVaultModuleDefinition, {
     if (prop === 'apply' || prop === 'name' || prop === 'length') {
       return (_target as any)[prop]
     }
-    // Hermetic tests set _vault directly via mod.init; use it if available
+    // Hermetic tests set _vault directly via the module's initialize hook
     if (_vault) return (_vault as any)[prop]
     if (
       prop === 'then' ||

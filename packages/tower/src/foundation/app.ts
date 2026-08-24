@@ -77,9 +77,6 @@ export async function createTowerApp(config: TowerConfig): Promise<TowerApp> {
     const ctx: TowerContext = { services: container, config: {}, appConfig: config, runtime }
     if (mod.initialize) {
       await mod.initialize(ctx)
-    } else if ('init' in mod && typeof (mod as any).init === 'function') {
-      const oldCtx = { container, config, runtime }
-      await (mod as any).init(oldCtx)
     }
   }
 
