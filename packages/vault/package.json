@@ -11,6 +11,10 @@
     "./model": {
       "types": "./dist/model.d.ts",
       "default": "./dist/model.js"
+    },
+    "./factory": {
+      "types": "./dist/factory.d.ts",
+      "default": "./dist/factory.js"
     }
   },
   "files": [
