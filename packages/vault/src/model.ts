@@ -2,7 +2,13 @@ import { vault } from './index.js'
 import type { Vault } from './types.js'
 
 type CastType = 'string' | 'number' | 'boolean' | 'datetime' | 'json'
-type Casts = Record<string, CastType>
+/**
+ * A cast is either a named primitive transform or a custom function applied
+ * bidirectionally: `('get')` converts DB representation → application
+ * representation, `('set')` converts back for writes.
+ */
+type Cast = CastType | ((value: any, direction: 'get' | 'set') => any)
+type Casts = Record<string, Cast>
 type Hidden = string[]
 
 interface ModelOptions {
@@ -11,6 +17,16 @@ interface ModelOptions {
 }
 
 // --- helpers for casts ---
+
+function applyNamedCast(value: any, type: CastType, direction: 'get' | 'set'): any {
+  if (direction === 'get') return castFromDb(value, type)
+  return castToDb(value, type)
+}
+
+function runCast(cast: Cast, value: any, direction: 'get' | 'set'): any {
+  if (typeof cast === 'function') return cast(value, direction)
+  return applyNamedCast(value, cast, direction)
+}
 
 function castFromDb(value: any, type: CastType): any {
   if (value == null) return value
@@ -49,16 +65,16 @@ function castToDb(value: any, type: CastType): any {
 
 function applyCastsFromDb<T extends Record<string, any>>(row: T, casts: Casts): T {
   const out: any = { ...row }
-  for (const [key, type] of Object.entries(casts)) {
-    if (key in out) out[key] = castFromDb(out[key], type as CastType)
+  for (const [key, cast] of Object.entries(casts)) {
+    if (key in out) out[key] = runCast(cast, out[key], 'get')
   }
   return out
 }
 
 function applyCastsToDb<T extends Record<string, any>>(attrs: Partial<T>, casts: Casts): Partial<T> {
   const out: any = { ...attrs }
-  for (const [key, type] of Object.entries(casts)) {
-    if (key in out) out[key] = castToDb(out[key], type as CastType)
+  for (const [key, cast] of Object.entries(casts)) {
+    if (key in out) out[key] = runCast(cast, out[key], 'set')
   }
   return out
 }
@@ -567,23 +583,30 @@ export class Model<T extends Record<string, any> = Record<string, any>> {
     return children
   }
 
-  toJSON(): Record<string, any> {
+  /**
+   * Serializes attributes with hidden fields omitted. Hidden fields can be
+   * overridden per call; they remain on the instance either way. Datetime
+   * values serialize as ISO strings for stable output.
+   */
+  toJSON(options?: { hidden?: string[] }): Record<string, any> {
     const ctor: any = (this as any).constructor
-    const hidden: string[] = ctor.hidden ?? []
+    const hidden = options?.hidden ?? ctor.hidden ?? []
     const casts: Casts = ctor.casts ?? {}
     const out: any = {}
     for (const [k, v] of Object.entries(this.attributes as any)) {
       if (hidden.includes(k)) continue
-      out[k] = v
-      // casts already applied on attributes; keep as is
       // ensure datetime is serialized as ISO if Date
-      if (casts[k] === 'datetime' && v instanceof Date) out[k] = v.toISOString()
+      if (casts[k] === 'datetime' && v instanceof Date) {
+        out[k] = v.toISOString()
+      } else {
+        out[k] = v
+      }
     }
     return out
   }
 
-  toArray(): Record<string, any> {
-    return this.toJSON()
+  toArray(options?: { hidden?: string[] }): Record<string, any> {
+    return this.toJSON(options)
   }
 }
 

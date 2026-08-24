@@ -235,6 +235,11 @@ Project.relations = {
   tasks: () => hasMany(Task, { foreignKey: 'project_id' }),
 } as const
 
+class Doc extends Model<{ id: string; title: string; secret: string; owner_id: string }> {
+  static table = 'docs'
+  static hidden = ['secret'] as const
+}
+
 describe('Model — typed fields & CRUD', () => {
   it('creates and finds', async () => {
     const p = await Project.create({
@@ -498,5 +503,75 @@ describe('Model — query API', () => {
     const res = await Project.paginate(1, 10)
     expect(res.total).toBe(1)
     expect(res.data[0].get('name')).toBe('only')
+  })
+})
+
+describe('Model — casts and serialization', () => {
+  it('supports custom cast functions in both directions', async () => {
+    class Tagged extends Model<{ id: string; tags: string[] }> {
+      static table = 'tagged'
+      static casts = {
+        // stored as comma-separated string, application sees an array
+        tags: (value: any, direction: 'get' | 'set') => {
+          if (value == null) return value
+          return direction === 'get' ? String(value).split(',') : value.join(',')
+        },
+      } as const
+    }
+
+    const t = await Tagged.create({ id: 't1', tags: ['a', 'b'] } as any)
+    // round-trips through the DB as the set representation
+    expect(store.get('tagged')!.get('t1')!.tags).toBe('a,b')
+    expect(t.get('tags')).toEqual(['a', 'b'])
+
+    const found = await Tagged.find('t1')
+    expect(found?.get('tags')).toEqual(['a', 'b'])
+  })
+
+  it('named casts still work for json and number', async () => {
+    class Config extends Model<{ id: string; meta: object; retries: number }> {
+      static table = 'configs'
+      static casts = { meta: 'json', retries: 'number' } as const
+    }
+
+    const c = await Config.create({ id: 'c1', meta: { theme: 'dark' }, retries: '3' } as any)
+    expect(c.get('meta')).toEqual({ theme: 'dark' })
+    expect(c.get('retries')).toBe(3)
+
+    const found = await Config.find('c1')
+    expect(found?.get('retries')).toBe(3)
+  })
+
+  it('toJSON supports per-call hidden overrides', async () => {
+    const d = await Doc.create({ id: 'd1', title: 'T', secret: 's3cr3t', owner_id: 'u1' } as any)
+    expect(d.toJSON().secret).toBeUndefined()
+    expect(d.toJSON().title).toBe('T')
+
+    // override: hide more
+    expect(d.toJSON({ hidden: ['secret', 'owner_id'] }).owner_id).toBeUndefined()
+    // override: hide nothing
+    expect(d.toJSON({ hidden: [] }).secret).toBe('s3cr3t')
+    // hidden fields stay on the instance regardless
+    expect(d.get('secret')).toBe('s3cr3t')
+  })
+
+  it('serializes datetime attributes as ISO strings', async () => {
+    const now = new Date('2026-01-15T10:30:00.000Z')
+    await Project.create({
+      id: 'dt1',
+      name: 'iso',
+      description: null,
+      owner_id: null,
+      created_at: now.toISOString(),
+    } as any)
+    const p = await Project.find('dt1')
+    expect(p?.get('created_at')).toEqual(now)
+    expect(p!.toJSON().created_at).toBe('2026-01-15T10:30:00.000Z')
+  })
+
+  it('toArray mirrors toJSON', async () => {
+    const d = await Doc.create({ id: 'd2', title: 'X', secret: 'pw', owner_id: 'u1' } as any).catch(() => null)
+    const doc = d ?? (await Doc.find('d2'))!
+    expect(doc.toArray()).toEqual(doc.toJSON())
   })
 })
