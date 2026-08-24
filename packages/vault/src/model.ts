@@ -63,27 +63,57 @@ function applyCastsToDb<T extends Record<string, any>>(attrs: Partial<T>, casts:
   return out
 }
 
-// --- relation descriptors (stub for S4) ---
+// --- relation descriptors ---
 
-export interface RelationDescriptor {
-  type: 'belongsTo' | 'hasMany'
+/**
+ * A `belongsTo` relation: this model's table holds a foreign key column
+ * pointing at the related model's table.
+ */
+export interface BelongsToRelation {
+  type: 'belongsTo'
   relatedModel: typeof Model<any>
+  /** Column on this model's table holding the related record's key. */
   foreignKey: string
+  /** Column on the related model's table (defaults to its primary key). */
   references?: string
 }
 
-export function belongsTo<T extends Record<string, any>>(
-  relatedModel: typeof Model<T>,
-  opts: { foreignKey: string; references?: string } = { foreignKey: '' }
-): RelationDescriptor {
+/**
+ * A `hasMany` relation: the related model's table holds a foreign key column
+ * pointing back at this model.
+ */
+export interface HasManyRelation {
+  type: 'hasMany'
+  relatedModel: typeof Model<any>
+  /** Column on the related model's table holding this record's key. */
+  foreignKey: string
+  /** Column on this model's table (defaults to its primary key). */
+  references?: string
+}
+
+export type RelationDescriptor = BelongsToRelation | HasManyRelation
+
+export function belongsTo(
+  relatedModel: typeof Model<any>,
+  opts: { foreignKey: string; references?: string }
+): BelongsToRelation {
   return { type: 'belongsTo', relatedModel, foreignKey: opts.foreignKey, references: opts.references }
 }
 
-export function hasMany<T extends Record<string, any>>(
-  relatedModel: typeof Model<T>,
-  opts: { foreignKey: string; references?: string } = { foreignKey: '' }
-): RelationDescriptor {
+export function hasMany(
+  relatedModel: typeof Model<any>,
+  opts: { foreignKey: string; references?: string }
+): HasManyRelation {
   return { type: 'hasMany', relatedModel, foreignKey: opts.foreignKey, references: opts.references }
+}
+
+/** Symbol-keyed bag for relations hydrated via `.with()` / `related()`. */
+const LOADED_RELATIONS = Symbol('towerLoadedRelations')
+
+function setLoadedRelation(instance: Model<any>, name: string, value: unknown): void {
+  const bag = (instance as any)[LOADED_RELATIONS] ?? {}
+  bag[name] = value
+  ;(instance as any)[LOADED_RELATIONS] = bag
 }
 
 // --- query builder ---
@@ -135,8 +165,57 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
   }
 
   with(...relations: string[]): this {
+    for (const name of relations) {
+      if (!(this.modelClass as any).relations?.[name]) {
+        throw new Error(`Unknown relation "${name}" on ${this.table}`)
+      }
+    }
     this.eager.push(...relations)
     return this
+  }
+
+  /**
+   * Hydrates the requested relations on already-fetched instances.
+   *
+   * Runs exactly one additional query per relation (batched with `whereIn`),
+   * never one query per row.
+   */
+  private async eagerLoad(instances: Array<Model<T>>): Promise<void> {
+    if (instances.length === 0) return
+    const ctor = this.modelClass as any
+    for (const name of this.eager) {
+      const relFn = ctor.relations?.[name]
+      if (!relFn) throw new Error(`Unknown relation "${name}" on ${this.table}`)
+      const rel: RelationDescriptor = relFn()
+      const related = rel.relatedModel as any
+
+      if (rel.type === 'belongsTo') {
+        const refs = rel.references ?? related.primaryKey ?? 'id'
+        const fkValues = [
+          ...new Set(instances.map((i) => (i.attributes as any)[rel.foreignKey]).filter((v) => v != null)),
+        ]
+        const parents = fkValues.length > 0 ? await related.query(this.trx).whereIn(refs, fkValues).get() : []
+        const byKey = new Map<any, Model<any>>(parents.map((p: Model<any>) => [(p.attributes as any)[refs], p]))
+        for (const inst of instances) {
+          setLoadedRelation(inst, name, byKey.get((inst.attributes as any)[rel.foreignKey]) ?? null)
+        }
+      } else {
+        const localKey = rel.references ?? ctor.primaryKey ?? 'id'
+        const keys = [...new Set(instances.map((i) => (i.attributes as any)[localKey]).filter((v) => v != null))]
+        const children = keys.length > 0 ? await related.query(this.trx).whereIn(rel.foreignKey, keys).get() : []
+        const grouped = new Map<any, Array<Model<any>>>()
+        for (const child of children) {
+          const key = (child.attributes as any)[rel.foreignKey]
+          const group = grouped.get(key)
+          if (group) group.push(child)
+          else grouped.set(key, [child])
+        }
+        for (const inst of instances) {
+          setLoadedRelation(inst, name, grouped.get((inst.attributes as any)[localKey]) ?? [])
+        }
+      }
+    }
+    this.eager = []
   }
 
   scope(name: string, ...args: any[]): this {
@@ -161,22 +240,18 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
 
   async get(): Promise<Array<Model<T>>> {
     const rows: T[] = await this.builder.execute()
-    let instances = rows.map((r) => {
+    const instances = rows.map((r) => {
       const casted = applyCastsFromDb(r as any, (this.modelClass as any).casts ?? {})
       return new (this.modelClass as any)(casted) as Model<T>
     })
-    // S4: handle eager with() via additional queries — prototype just stubs
-    if (this.eager.length > 0) {
-      // no-op for now; will be batched in S4
-    }
+    await this.eagerLoad(instances)
     return instances
   }
 
   async first(): Promise<Model<T> | null> {
-    const rows: T[] = await this.builder.limit(1).execute()
-    if (!rows[0]) return null
-    const casted = applyCastsFromDb(rows[0] as any, (this.modelClass as any).casts ?? {})
-    return new (this.modelClass as any)(casted) as Model<T>
+    this.builder = this.builder.limit(1)
+    const instances = await this.get()
+    return instances[0] ?? null
   }
 
   async firstOrFail(): Promise<Model<T>> {
@@ -225,8 +300,10 @@ export class Model<T extends Record<string, any> = Record<string, any>> {
     return new Proxy(this, {
       get(target, prop, receiver) {
         if (prop in target) return Reflect.get(target as any, prop, receiver)
-        if (typeof prop === 'string' && prop in (target.attributes as any)) {
-          return (target.attributes as any)[prop]
+        if (typeof prop === 'string') {
+          const loaded = (target as any)[LOADED_RELATIONS]
+          if (loaded && prop in loaded) return loaded[prop]
+          if (prop in (target.attributes as any)) return (target.attributes as any)[prop]
         }
         return undefined
       },
@@ -383,22 +460,42 @@ export class Model<T extends Record<string, any> = Record<string, any>> {
     this.original = { ...fresh.attributes }
   }
 
-  async related<R extends Record<string, any>>(name: string): Promise<Model<R> | Array<Model<R>> | null> {
+  /**
+   * Lazily loads a single relation declared in `static relations`.
+   * Prefer `.with(name)` when loading for many instances — it batches.
+   */
+  async related<R extends Record<string, any> = any>(name: string): Promise<Model<R> | Array<Model<R>> | null> {
     const ctor: any = (this as any).constructor
     const relFn = ctor.relations?.[name]
     if (!relFn) throw new Error(`Unknown relation "${name}" on ${ctor.table}`)
     const rel: RelationDescriptor = relFn()
-    const foreignKey = rel.foreignKey
     const related = rel.relatedModel as any
-    const pk = ctor.primaryKey ?? 'id'
+
     if (rel.type === 'belongsTo') {
-      const fkVal = (this.attributes as any)[foreignKey]
-      if (!fkVal) return null
-      return related.find(fkVal)
+      const refs = rel.references ?? related.primaryKey ?? 'id'
+      const fkVal = (this.attributes as any)[rel.foreignKey]
+      if (fkVal == null) {
+        setLoadedRelation(this as any, name, null)
+        return null
+      }
+      const parent =
+        refs === (related.primaryKey ?? 'id')
+          ? await related.find(fkVal)
+          : await related.where(refs as any, '=', fkVal).first()
+      setLoadedRelation(this as any, name, parent)
+      return parent
     }
+
     // hasMany
-    const id = (this.attributes as any)[pk]
-    return related.where(foreignKey as any, '=', id).get()
+    const localKey = rel.references ?? ctor.primaryKey ?? 'id'
+    const id = (this.attributes as any)[localKey]
+    if (id == null) {
+      setLoadedRelation(this as any, name, [])
+      return []
+    }
+    const children = await related.where(rel.foreignKey as any, '=', id).get()
+    setLoadedRelation(this as any, name, children)
+    return children
   }
 
   toJSON(): Record<string, any> {

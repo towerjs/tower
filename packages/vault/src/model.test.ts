@@ -174,7 +174,7 @@ vi.mock('./index.js', () => ({
   vault: fakeVault,
 }))
 
-const { Model, defineModel, belongsTo } = await import('./model.js')
+const { Model, defineModel, belongsTo, hasMany } = await import('./model.js')
 
 beforeEach(() => {
   store.clear()
@@ -193,6 +193,29 @@ class Project extends Model<ProjectRow> {
   static casts = { created_at: 'datetime' } as const
   static hidden = ['owner_id'] as const
 }
+
+type UserRow = { id: string; name: string }
+class User extends Model<UserRow> {
+  static table = 'users'
+}
+
+class Post extends Model<{ id: string; title: string; user_id: string }> {
+  static table = 'posts'
+  static relations = {
+    author: () => belongsTo(User, { foreignKey: 'user_id' }),
+  } as const
+}
+
+class Task extends Model<{ id: string; title: string; project_id: string }> {
+  static table = 'tasks'
+  static relations = {
+    project: () => belongsTo(Project, { foreignKey: 'project_id' }),
+  } as const
+}
+
+Project.relations = {
+  tasks: () => hasMany(Task, { foreignKey: 'project_id' }),
+} as const
 
 describe('Model — typed fields & CRUD', () => {
   it('creates and finds', async () => {
@@ -275,7 +298,7 @@ describe('Model — typed fields & CRUD', () => {
     expect(await Project.all()).toHaveLength(1)
   })
 
-  it('stubs relations and with', async () => {
+  it('lazily loads a belongsTo relation', async () => {
     type UserRow = { id: string; name: string }
     class User extends Model<UserRow> {
       static table = 'users'
@@ -291,9 +314,85 @@ describe('Model — typed fields & CRUD', () => {
     const t = await TaskWithRel.create({ title: 'T', owner_id: u.get('id') } as any)
     const owner: any = await t.related('owner')
     expect(owner.get('name')).toBe('Alice')
+    // loaded relation is cached on the instance
+    expect((t as any).owner.get('name')).toBe('Alice')
+  })
 
-    // with() is stub — should not throw
-    const projects = await Project.query().with('tasks').get()
-    expect(Array.isArray(projects)).toBe(true)
+  it('returns null/empty for missing relation keys', async () => {
+    class Orphan extends Model<{ id: string; owner_id: string | null }> {
+      static table = 'orphans'
+      static relations = {
+        owner: () => belongsTo(User, { foreignKey: 'owner_id' }),
+        pets: () => hasMany(Pet, { foreignKey: 'orphan_id' }),
+      } as const
+    }
+    class Pet extends Model<{ id: string; orphan_id: string }> {
+      static table = 'pets'
+    }
+
+    const o = await Orphan.create({ id: 'o1', owner_id: null } as any)
+    expect(await o.related('owner')).toBeNull()
+    expect(await o.related('pets')).toEqual([])
+  })
+
+  it('eager loads belongsTo with a single batched query', async () => {
+    const u1 = await User.create({ name: 'A' } as any)
+    const u2 = await User.create({ name: 'B' } as any)
+    await Post.create({ title: 'p1', user_id: u1.get('id') } as any)
+    await Post.create({ title: 'p2', user_id: u2.get('id') } as any)
+    await Post.create({ title: 'p3', user_id: u2.get('id') } as any)
+
+    const posts = await Post.query().with('author').orderBy('title').get()
+
+    expect((posts[0] as any).author.get('name')).toBe('A')
+    expect((posts[1] as any).author.get('name')).toBe('B')
+    expect((posts[2] as any).author.get('name')).toBe('B')
+  })
+
+  it('eager loads hasMany grouped by parent key', async () => {
+    const p1 = await Project.create({ name: 'P1', description: null, owner_id: null, created_at: '' } as any)
+    const p2 = await Project.create({ name: 'P2', description: null, owner_id: null, created_at: '' } as any)
+    await Task.create({ title: 't1', project_id: p1.get('id') } as any)
+    await Task.create({ title: 't2', project_id: p1.get('id') } as any)
+    await Task.create({ title: 't3', project_id: p2.get('id') } as any)
+
+    const projects = await Project.query().with('tasks').orderBy('name').get()
+    expect(projects).toHaveLength(2)
+    expect((projects[0] as any).tasks.map((t: any) => t.get('title'))).toEqual(['t1', 't2'])
+    expect((projects[1] as any).tasks.map((t: any) => t.get('title'))).toEqual(['t3'])
+
+    const one = await Project.query().with('tasks').findOrFail(p1.get('id'))
+    expect((one as any).tasks).toHaveLength(2)
+  })
+
+  it('eager loads with empty results without querying', async () => {
+    const posts = await Post.query().with('author').get()
+    expect(posts).toEqual([])
+  })
+
+  it('throws for an unknown relation in with()', () => {
+    expect(() => Project.query().with('nonexistent')).toThrow('Unknown relation "nonexistent"')
+  })
+
+  it('supports custom references keys on relations', async () => {
+    class Account extends Model<{ id: string; handle: string }> {
+      static table = 'accounts'
+      static primaryKey = 'handle'
+    }
+    class Session extends Model<{ id: string; account_handle: string }> {
+      static table = 'sessions'
+      static relations = {
+        account: () => belongsTo(Account, { foreignKey: 'account_handle', references: 'handle' }),
+      } as const
+    }
+
+    await Account.create({ id: 'a1', handle: '@jasper' } as any)
+    const s = await Session.create({ id: 's1', account_handle: '@jasper' } as any)
+
+    const loaded = await Session.query().with('account').findOrFail('s1')
+    expect((loaded as any).account.get('id')).toBe('a1')
+
+    const lazy: any = await s.related('account')
+    expect(lazy.get('handle')).toBe('@jasper')
   })
 })
