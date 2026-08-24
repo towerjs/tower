@@ -13,6 +13,7 @@ const { fakeVault, store } = vi.hoisted(() => {
     let orderByCol: string | null = null
     let orderDir: 'asc' | 'desc' = 'asc'
     let limitVal: number | null = null
+    let offsetVal: number | null = null
     let selectCols: string[] | null = null
 
     const builder: any = {
@@ -20,6 +21,7 @@ const { fakeVault, store } = vi.hoisted(() => {
         const [col, op, val] = args
         if (op === '=') whereClauses.push((r) => r[col] === val)
         else if (op === 'in') whereClauses.push((r) => (val as any[]).includes(r[col]))
+        else if (op === 'like') whereClauses.push((r) => String(r[col]).includes(String(val).replaceAll('%', '')))
         else whereClauses.push(() => true)
         return builder
       },
@@ -32,7 +34,8 @@ const { fakeVault, store } = vi.hoisted(() => {
         limitVal = n
         return builder
       },
-      offset(_n: number) {
+      offset(n: number) {
+        offsetVal = n
         return builder
       },
       select(cols: string[]) {
@@ -45,6 +48,13 @@ const { fakeVault, store } = vi.hoisted(() => {
       async execute() {
         const t = getTableStore(table)
         let rows = Array.from(t.values()).filter((r) => whereClauses.every((fn) => fn(r)))
+        const countAlias =
+          Array.isArray(selectCols) && selectCols.length === 1 && selectCols[0]?.__countAlias !== undefined
+            ? (selectCols[0].__countAlias as string)
+            : !Array.isArray(selectCols) && selectCols && (selectCols as any).__countAlias !== undefined
+              ? (selectCols as any).__countAlias
+              : undefined
+        const projected = countAlias === undefined && Array.isArray(selectCols) ? selectCols : null
         if (orderByCol) {
           rows = [...rows].sort((a, b) => {
             const av = a[orderByCol!]
@@ -54,17 +64,20 @@ const { fakeVault, store } = vi.hoisted(() => {
             return 0
           })
         }
+        if (offsetVal != null) rows = rows.slice(offsetVal)
         if (limitVal != null) rows = rows.slice(0, limitVal)
-        if (selectCols)
-          rows = rows.map((r) => {
-            const o: any = {}
-            for (const c of selectCols!) o[c] = r[c]
-            return o
-          })
         whereClauses = []
         orderByCol = null
         limitVal = null
+        offsetVal = null
         selectCols = null
+        if (countAlias !== undefined) return [{ [countAlias]: rows.length }]
+        if (projected)
+          rows = rows.map((r) => {
+            const o: any = {}
+            for (const c of projected!) o[c] = r[c]
+            return o
+          })
         return rows
       },
       async executeTakeFirst() {
@@ -84,8 +97,12 @@ const { fakeVault, store } = vi.hoisted(() => {
         whereClauses = []
         orderByCol = null
         limitVal = null
+        offsetVal = null
         selectCols = null
         return {
+          where(...args: any[]) {
+            return builder.where(...args)
+          },
           selectAll() {
             return builder
           },
@@ -157,8 +174,9 @@ const { fakeVault, store } = vi.hoisted(() => {
       fn: {
         countAll() {
           return {
-            as(_alias: string) {
-              return {}
+            __countAll: true,
+            as(alias: string) {
+              return { __countAlias: alias }
             },
           }
         },
@@ -394,5 +412,91 @@ describe('Model — typed fields & CRUD', () => {
 
     const lazy: any = await s.related('account')
     expect(lazy.get('handle')).toBe('@jasper')
+  })
+})
+
+describe('Model — query API', () => {
+  it('findBy and findByOrFail match on all attributes', async () => {
+    await Project.create({ name: 'Acme', description: null, owner_id: 'u1', created_at: '' } as any)
+    await Project.create({ name: 'Beta', description: null, owner_id: 'u1', created_at: '' } as any)
+
+    const found = await Project.findBy({ name: 'Acme' })
+    expect(found?.get('owner_id')).toBe('u1')
+    expect(await Project.findBy({ name: 'missing' })).toBeNull()
+
+    const orFail = await Project.findByOrFail({ name: 'Beta', owner_id: 'u1' })
+    expect(orFail.get('name')).toBe('Beta')
+    await expect(Project.findByOrFail({ name: 'missing' })).rejects.toThrow('not found matching')
+  })
+
+  it('builder-level findBy composes with other clauses', async () => {
+    await Project.create({ name: 'A', description: null, owner_id: 'u1', created_at: '' } as any)
+    await Project.create({ name: 'B', description: null, owner_id: 'u2', created_at: '' } as any)
+    const found = await Project.query().findBy({ name: 'B', owner_id: 'u2' })
+    expect(found?.get('name')).toBe('B')
+  })
+
+  it('applies zero-arg and parameterized scopes', async () => {
+    class Scoped extends Model<{ id: string; name: string; active: boolean; owner: string }> {
+      static table = 'scoped'
+      static scopes = {
+        active: (q: any) => q.where('active', '=', true),
+        ownedBy: (ownerId: string) => (q: any) => q.where('owner', '=', ownerId),
+      } as const
+    }
+
+    await Scoped.create({ id: 's1', name: 'on', active: true, owner: 'u1' } as any)
+    await Scoped.create({ id: 's2', name: 'off', active: false, owner: 'u1' } as any)
+    await Scoped.create({ id: 's3', name: 'other', active: true, owner: 'u2' } as any)
+
+    expect((await Scoped.scope('active').get()).map((m) => m.get('id'))).toEqual(['s1', 's3'])
+    expect((await Scoped.scope('ownedBy', 'u1').get()).map((m) => m.get('id'))).toEqual(['s1', 's2'])
+    // scopes compose
+    expect(
+      (await Scoped.query().scope('active').scope('ownedBy', 'u1').get()).map((m) => m.get('id'))
+    ).toEqual(['s1'])
+  })
+
+  it('throws for an unknown scope', () => {
+    expect(() => Project.query().scope('nonexistent')).toThrow('Unknown scope "nonexistent"')
+  })
+
+  it('count respects applied filters', async () => {
+    await Project.create({ name: 'A', description: null, owner_id: 'u1', created_at: '' } as any)
+    await Project.create({ name: 'B', description: null, owner_id: 'u1', created_at: '' } as any)
+    await Project.create({ name: 'C', description: null, owner_id: 'u2', created_at: '' } as any)
+    expect(await Project.query().where('owner_id', '=', 'u1').count()).toBe(2)
+    expect(await Project.query().count()).toBe(3)
+  })
+
+  it('paginates with accurate totals and metadata', async () => {
+    for (let i = 1; i <= 7; i++) {
+      await Project.create({ name: `P${i}`, description: null, owner_id: null, created_at: '' } as any)
+    }
+
+    const page1 = await Project.query().orderBy('name').paginate(1, 3)
+    expect(page1.total).toBe(7)
+    expect(page1.page).toBe(1)
+    expect(page1.perPage).toBe(3)
+    expect(page1.lastPage).toBe(3)
+    expect(page1.data.map((p) => p.get('name'))).toEqual(['P1', 'P2', 'P3'])
+
+    const page3 = await Project.query().orderBy('name').paginate(3, 3)
+    expect(page3.data.map((p) => p.get('name'))).toEqual(['P7'])
+
+    const empty = await Project.query().where('name', '=', 'nope').paginate(1, 3)
+    expect(empty.data).toEqual([])
+    expect(empty.total).toBe(0)
+    expect(empty.lastPage).toBe(1)
+
+    await expect(Project.query().paginate(0, 3)).rejects.toThrow('Page must be')
+    await expect(Project.query().paginate(1, 0)).rejects.toThrow('Per page must be')
+  })
+
+  it('static paginate mirrors the builder', async () => {
+    await Project.create({ name: 'only', description: null, owner_id: null, created_at: '' } as any)
+    const res = await Project.paginate(1, 10)
+    expect(res.total).toBe(1)
+    expect(res.data[0].get('name')).toBe('only')
   })
 })

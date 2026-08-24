@@ -124,6 +124,7 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
   private trx?: Vault
   private builder: any
   private eager: string[] = []
+  private wheres: any[][] = []
 
   constructor(modelClass: typeof Model<T>, trx?: Vault) {
     this.modelClass = modelClass
@@ -136,11 +137,13 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
 
   where(...args: any[]): this {
     this.builder = this.builder.where(...args)
+    this.wheres.push(args)
     return this
   }
 
   whereIn(column: string, values: any[]): this {
     this.builder = this.builder.where(column as any, 'in', values)
+    this.wheres.push([column, 'in', values])
     return this
   }
 
@@ -218,23 +221,21 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
     this.eager = []
   }
 
+  /**
+   * Applies a named scope. Scopes are either `(q) => q.where(...)` for
+   * zero-argument scopes or `(arg) => (q) => q.where(...)` when they take
+   * parameters.
+   */
   scope(name: string, ...args: any[]): this {
-    const scopes: any = (this.modelClass as any).scopes ?? {}
+    const scopes = (this.modelClass as any).scopes ?? {}
     const fn = scopes[name]
-    if (!fn) throw new Error(`Unknown scope "${name}" on ${this.table}`)
-    // scopes are (q) => q.where(...) or (arg) => (q) => q.where...
-    const maybeFn = fn(...args)
-    if (typeof maybeFn === 'function') {
-      const res: any = maybeFn(this)
-      if (res instanceof ModelQueryBuilder) return res as unknown as this
-      this.builder = res
-      return this
-    }
-    if (typeof fn === 'function') {
-      const res: any = fn(this)
-      if (res instanceof ModelQueryBuilder) return res as unknown as this
-      this.builder = res
-    }
+    if (typeof fn !== 'function') throw new Error(`Unknown scope "${name}" on ${this.table}`)
+    // Zero-arg scopes are `(q) => q.where(...)`; parameterized scopes are
+    // `(arg) => (q) => q.where(...)`.
+    const apply = args.length > 0 ? fn(...args) : fn
+    if (typeof apply !== 'function') throw new Error(`Scope "${name}" did not resolve to a query function`)
+    const result = apply(this)
+    if (result instanceof ModelQueryBuilder) return result as unknown as this
     return this
   }
 
@@ -262,7 +263,10 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
 
   async count(): Promise<number> {
     const db: any = this.trx ?? (vault as any)
-    const res: any = await db.selectFrom(this.table).select(db.fn.countAll().as('count')).executeTakeFirst()
+    // Rebuild the query with the tracked filters so totals reflect them.
+    let q = db.selectFrom(this.table)
+    for (const w of this.wheres) q = q.where(...w)
+    const res: any = await q.select(db.fn.countAll().as('count')).executeTakeFirst()
     return Number(res?.count ?? 0)
   }
 
@@ -276,6 +280,46 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
     if (!found) throw new Error(`${this.table} ${id} not found`)
     return found
   }
+
+  /** Finds the first record matching every attribute in `attrs`. */
+  async findBy(attrs: Partial<T>): Promise<Model<T> | null> {
+    const entries = Object.entries(attrs)
+    if (entries.length === 0) return this.first()
+    let q = this.where(entries[0][0] as any, '=', entries[0][1])
+    for (const [key, value] of entries.slice(1)) {
+      q = q.where(key as any, '=', value)
+    }
+    return q.first()
+  }
+
+  async findByOrFail(attrs: Partial<T>): Promise<Model<T>> {
+    const found = await this.findBy(attrs)
+    if (!found) throw new Error(`${this.table} not found matching ${JSON.stringify(attrs)}`)
+    return found
+  }
+
+  /**
+   * Returns one page of results plus pagination metadata. `count()` runs
+   * before the limit/offset are applied so totals stay accurate.
+   */
+  async paginate(page = 1, perPage = 15): Promise<PaginatedResult<Model<T>>> {
+    if (!Number.isInteger(page) || page < 1) throw new Error(`Page must be an integer >= 1, got ${page}`)
+    if (!Number.isInteger(perPage) || perPage < 1) {
+      throw new Error(`Per page must be an integer >= 1, got ${perPage}`)
+    }
+    const total = await this.count()
+    if (total === 0) return { data: [], total: 0, page, perPage, lastPage: 1 }
+    const data = await this.limit(perPage).offset((page - 1) * perPage).get()
+    return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) }
+  }
+}
+
+export interface PaginatedResult<T> {
+  data: Array<T>
+  total: number
+  page: number
+  perPage: number
+  lastPage: number
 }
 
 // --- Model base ---
@@ -372,6 +416,31 @@ export class Model<T extends Record<string, any> = Record<string, any>> {
     opts?: { trx?: Vault }
   ): Promise<Model<T>> {
     return (this as any).query(opts?.trx).findOrFail(id)
+  }
+
+  /** Finds the first record matching every attribute in `attrs`. */
+  static async findBy<T extends Record<string, any>>(
+    this: typeof Model<T>,
+    attrs: Partial<T>,
+    opts?: { trx?: Vault }
+  ): Promise<Model<T> | null> {
+    return (this as any).query(opts?.trx).findBy(attrs)
+  }
+
+  static async findByOrFail<T extends Record<string, any>>(
+    this: typeof Model<T>,
+    attrs: Partial<T>,
+    opts?: { trx?: Vault }
+  ): Promise<Model<T>> {
+    return (this as any).query(opts?.trx).findByOrFail(attrs)
+  }
+
+  static paginate<T extends Record<string, any>>(
+    this: typeof Model<T>,
+    page = 1,
+    perPage = 15
+  ): Promise<PaginatedResult<Model<T>>> {
+    return (this as any).query().paginate(page, perPage)
   }
 
   static async all<T extends Record<string, any>>(
