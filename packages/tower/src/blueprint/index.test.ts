@@ -1,25 +1,22 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { defineTower, env, getModuleFactory, registerModule } from './index.js'
-import { resetModuleFactories } from './internal.js'
+import type { TowerModule } from '../foundation/types.js'
+import { defineTower, env } from './index.js'
 
 describe('defineTower', () => {
   it('returns the config as-is', () => {
-    const config = defineTower({
-      modules: { vault: { provider: 'neon' } },
-    })
+    const mod: TowerModule = { name: 'vault', dependsOn: [] }
+    const config = defineTower({ modules: [mod] })
 
-    expect(config).toEqual({
-      modules: { vault: { provider: 'neon' } },
-    })
+    expect(config).toEqual({ modules: [mod] })
   })
 
-  it('accepts an empty modules object', () => {
+  it('accepts an empty modules array', () => {
     const config = defineTower({
-      modules: {},
+      modules: [],
     })
 
-    expect(config.modules).toEqual({})
+    expect(config.modules).toEqual([])
   })
 })
 
@@ -48,46 +45,5 @@ describe('env', () => {
     process.env.TOWER_TEST_URL = 'localhost:3000'
     expect(() => env.url('TOWER_TEST_URL')).toThrow('TOWER_TEST_URL must be a valid URL')
     delete process.env.TOWER_TEST_URL
-  })
-})
-
-describe('module registry', () => {
-  afterEach(() => {
-    resetModuleFactories()
-  })
-
-  it('stores and retrieves a module factory', () => {
-    const factory = () => ({ name: 'test', init: async () => {} })
-    registerModule('test', factory)
-
-    expect(getModuleFactory('test')).toBe(factory)
-  })
-
-  it('returns undefined for an unregistered module', () => {
-    expect(getModuleFactory('nonexistent')).toBeUndefined()
-  })
-
-  it('overwrites a factory when registered twice', () => {
-    const factory1 = () => ({ name: 'test', init: async () => {} })
-    const factory2 = () => ({ name: 'test', init: async () => {} })
-    registerModule('test', factory1)
-    registerModule('test', factory2)
-
-    expect(getModuleFactory('test')).toBe(factory2)
-  })
-
-  it('handles empty string module name', () => {
-    const factory = () => ({ name: '', init: async () => {} })
-    registerModule('', factory)
-    expect(getModuleFactory('')).toBe(factory)
-  })
-
-  it('stores factory that throws', () => {
-    const factory = () => {
-      throw new Error('factory error')
-    }
-    registerModule('broken', factory)
-    const retrieved = getModuleFactory('broken')
-    expect(typeof retrieved).toBe('function')
   })
 })

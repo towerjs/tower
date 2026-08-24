@@ -15,16 +15,17 @@ pnpm add @towerjs/gatehouse
 Configure Gatehouse in your `tower.config.ts`:
 
 ```ts
-import { defineTower } from '@towerjs/blueprint'
+import { gatehouse } from '@towerjs/gatehouse'
+import { defineTower } from '@towerjs/tower'
 
 export default defineTower({
-  modules: {
-    gatehouse: {
+  modules: [
+    gatehouse({
       provider: 'better-auth',
       credentials: true,
       social: { google: {}, github: {} },
-    },
-  },
+    }),
+  ],
 })
 ```
 

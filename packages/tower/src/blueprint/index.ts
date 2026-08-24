@@ -1,11 +1,4 @@
 import type { TowerConfig } from '../foundation/types.js'
-import {
-  getModuleDeclarations,
-  getModuleDependencies,
-  getModuleFactory,
-  getRegisteredModules,
-  registerModule,
-} from './internal.js'
 
 export type TowerBlueprint = TowerConfig
 
@@ -19,30 +12,24 @@ export type TowerBlueprint = TowerConfig
  * @example
  * ```ts
  * // tower.config.ts
+ * import { vault } from '@towerjs/vault'
+ * import { gatehouse } from '@towerjs/gatehouse'
+ *
  * export default defineTower({
- *   modules: {
- *     vault: { connectionString: process.env.DATABASE_URL },
- *     gatehouse: { provider: "better-auth", credentials: true },
- *     courier: { email: { provider: "console" } },
- *   },
+ *   modules: [
+ *     vault({ connectionString: process.env.DATABASE_URL }),
+ *     gatehouse({ provider: 'better-auth', credentials: true }),
+ *   ],
  * })
+ * ```
  */
 export function defineTower(config: TowerConfig): TowerConfig {
   return config
 }
 
-export { registerModule, getModuleFactory, getModuleDependencies, getRegisteredModules, getModuleDeclarations }
-
 export { towerContext } from '../foundation/context/index.js'
 export { env } from './env.js'
 
-export type {
-  TowerConfig,
-  TowerModule,
-  TowerContext,
-  TowerInitContext,
-  ServiceRegistry,
-  ModuleDeclaration,
-} from '../foundation/types.js'
+export type { TowerConfig, TowerModule, TowerContext, TowerInitContext, ServiceRegistry } from '../foundation/types.js'
 export type { TowerContextProvider, RequestContext } from '../foundation/context/index.js'
 export type { TowerApp } from '../foundation/app.js'

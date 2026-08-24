@@ -15,16 +15,17 @@ pnpm add @towerjs/courier
 Configure Courier in your `tower.config.ts`:
 
 ```ts
-import { defineTower } from '@towerjs/blueprint'
+import { courier } from '@towerjs/courier'
+import { defineTower } from '@towerjs/tower'
 
 export default defineTower({
-  modules: {
-    courier: {
+  modules: [
+    courier({
       email: { provider: 'resend' },
       sms: { provider: 'twilio' },
       push: { provider: 'web-push' },
-    },
-  },
+    }),
+  ],
 })
 ```
 

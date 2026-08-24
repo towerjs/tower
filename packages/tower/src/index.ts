@@ -22,8 +22,6 @@ export type {
   TowerModule,
   TowerContext,
   TowerInitContext,
-  ModuleFactory,
-  ModuleDeclaration,
   ServiceRegistry,
 } from './foundation/types.js'
 export type { DependencyValidationResult, DependencyError } from './foundation/dependency-graph.js'

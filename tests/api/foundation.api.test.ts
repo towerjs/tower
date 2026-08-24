@@ -21,7 +21,7 @@ afterEach(() => {
 describe('Foundation public API contract', () => {
   describe('createTowerApp', () => {
     it('returns an object with config, container, runtime, shutdown', async () => {
-      const app = await createTowerApp({ modules: {} })
+      const app = await createTowerApp({ modules: [] })
       expect(app).toHaveProperty('config')
       expect(app).toHaveProperty('container')
       expect(app).toHaveProperty('runtime')
@@ -30,13 +30,13 @@ describe('Foundation public API contract', () => {
     })
 
     it('exposes the config that was passed in', async () => {
-      const config = { modules: {} }
+      const config = { modules: [] }
       const app = await createTowerApp(config)
       expect(app.config).toBe(config)
     })
 
     it('detects and exposes the runtime', async () => {
-      const app = await createTowerApp({ modules: {} })
+      const app = await createTowerApp({ modules: [] })
       expect(app.runtime).toHaveProperty('name')
       expect(app.runtime).toHaveProperty('isServerless')
       expect(app.runtime.name).toBe('node-server')
@@ -44,32 +44,25 @@ describe('Foundation public API contract', () => {
     })
 
     it('returns a ServiceContainer as container', async () => {
-      const app = await createTowerApp({ modules: {} })
+      const app = await createTowerApp({ modules: [] })
       expect(app.container).toBeInstanceOf(ServiceContainer)
     })
 
-    it('throws for an unknown module when a factory function is provided', async () => {
-      const factory = (_name: string) => undefined
-      await expect(createTowerApp({ modules: { nonexistent: {} } }, factory)).rejects.toThrow(
-        'Unknown module "nonexistent"'
+    it('rejects a legacy object-form modules config', async () => {
+      await expect(createTowerApp({ modules: { nonexistent: {} } } as unknown as { modules: never[] })).rejects.toThrow(
+        'modules must be an array of module definitions'
       )
     })
 
-    it('silently ignores unknown modules when no factory function is provided', async () => {
-      const app = await createTowerApp({ modules: { nonexistent: {} } })
-      expect(app).toHaveProperty('config')
-      expect(app.container.has('nonexistent')).toBe(false)
-    })
-
     it('runs shutdown without throwing when no modules have shutdown hooks', async () => {
-      const app = await createTowerApp({ modules: {} })
+      const app = await createTowerApp({ modules: [] })
       await expect(app.shutdown()).resolves.toBeUndefined()
     })
   })
 
   describe('createTower', () => {
     it('returns a real TowerApp augmented with module services', async () => {
-      const tower = await createTower({ modules: {} })
+      const tower = await createTower({ modules: [] })
       expect(tower).toHaveProperty('config')
       expect(tower).toHaveProperty('container')
       expect(tower).toHaveProperty('runtime')

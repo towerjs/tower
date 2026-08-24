@@ -16,20 +16,14 @@ function getAppPromise(): Promise<TowerApp> | undefined {
   return (globalThis as any)[APP_PROMISE_KEY]
 }
 
-async function buildApp(config: TowerConfig, modules: TowerModule[]): Promise<TowerApp> {
-  const factory = Array.isArray(config.modules)
-    ? undefined
-    : (name: string) => {
-        const mod = modules.find((m) => m.name === name)
-        return mod ? (_options: Record<string, unknown>) => mod : undefined
-      }
-  const app = await createTowerApp(config, factory)
-  await registerModuleServices(app, modules)
+async function buildApp(config: TowerConfig): Promise<TowerApp> {
+  const app = await createTowerApp(config)
+  await registerModuleServices(app)
   return app
 }
 
-async function registerModuleServices(app: TowerApp, modules: TowerModule[]) {
-  for (const mod of modules) {
+function registerModuleServices(app: TowerApp) {
+  for (const mod of app.config.modules) {
     if (app.container.has(mod.name)) {
       registerService(mod.name, app.container.get(mod.name))
     }
@@ -41,7 +35,7 @@ export function getTowerApp(): Promise<TowerApp> {
   if (existing) return existing
 
   const promise = resolveConfig()
-    .then((config) => buildApp(config, []))
+    .then((config) => buildApp(config))
     .catch((err) => {
       setAppPromise(undefined)
       throw err
@@ -62,7 +56,7 @@ export function initTower(modules: TowerModule[] = [], config?: TowerBlueprint):
     const cfg = config ? (config as unknown as TowerConfig) : await resolveConfig()
     // `initTower` receives concrete module definitions; make them the
     // composition root even when a discovered config also exists.
-    return buildApp({ ...(cfg as TowerConfig), ...(modules.length > 0 ? { modules } : {}) }, modules)
+    return buildApp({ ...(cfg as TowerConfig), ...(modules.length > 0 ? { modules } : {}) })
   })().catch((err) => {
     setAppPromise(undefined)
     throw err

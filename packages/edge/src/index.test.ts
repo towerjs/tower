@@ -23,7 +23,7 @@ describe('@towerjs/edge public API contract', () => {
       mkdirSync(fixtureDir, { recursive: true })
       writeFileSync(
         configPath,
-        `import { defineTower } from "@towerjs/tower/blueprint";\nexport default defineTower({ modules: {} });\n`
+        `import { defineTower } from "@towerjs/tower/blueprint";\nexport default defineTower({ modules: [] });\n`
       )
       process.chdir(fixtureDir)
       warnings = []

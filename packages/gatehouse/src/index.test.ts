@@ -6,7 +6,6 @@ const mocks = vi.hoisted(() => {
   let alsStore: Record<string, any> = {}
   const mockBetterAuth = vi.fn()
   const mockToNextJsHandler = vi.fn()
-  const mockRegisterModule = vi.fn()
   const mockSignInEmail = vi.fn()
   const mockSignUpEmail = vi.fn()
   const mockSignOut = vi.fn()
@@ -24,7 +23,6 @@ const mocks = vi.hoisted(() => {
     alsStore,
     mockBetterAuth,
     mockToNextJsHandler,
-    mockRegisterModule,
     mockSignInEmail,
     mockSignUpEmail,
     mockSignOut,
@@ -96,14 +94,8 @@ vi.mock('@towerjs/tower/foundation', () => ({
   getRequestContextResolver: vi.fn().mockReturnValue(undefined),
 }))
 
-vi.mock('@towerjs/blueprint', () => ({
-  towerContext: mockTowerContext,
-  registerModule: mocks.mockRegisterModule,
-}))
-
 vi.mock('@towerjs/tower/blueprint', () => ({
   towerContext: mockTowerContext,
-  registerModule: mocks.mockRegisterModule,
 }))
 
 vi.mock('@towerjs/tower/runtime', async (importOriginal) => {

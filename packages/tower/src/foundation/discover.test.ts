@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getModuleFactory, registerModule } from '../blueprint/index.js'
-import { resetModuleFactories } from '../blueprint/internal.js'
 import { createTower } from './app.js'
+import type { TowerModule } from './types.js'
 
 const mocks = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
@@ -14,41 +13,42 @@ vi.mock('node:fs', async (importOriginal) => {
 })
 
 describe('createTower with auto-discovery', () => {
+  const oldCwd = process.cwd()
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   afterEach(() => {
-    resetModuleFactories()
+    process.chdir(oldCwd)
   })
 
   it('throws when no tower.config found', async () => {
     mocks.mockExistsSync.mockReturnValue(false)
+    process.chdir('/')
 
     await expect(createTower()).rejects.toThrow('Could not find tower.config')
   })
 
   it('accepts explicit config and skips discovery', async () => {
-    registerModule('test', () => ({
-      name: 'test',
-      async init() {},
-    }))
+    const mod: TowerModule = { name: 'test', dependsOn: [], initialize: async () => {} }
 
-    const result = await createTower({ modules: { test: {} } }, getModuleFactory)
+    const result = await createTower({ modules: [mod] })
 
     expect(result).toBeDefined()
     expect(mocks.mockExistsSync).not.toHaveBeenCalled()
   })
 
   it('returns TowerApp with runtime and container', async () => {
-    registerModule('alpha', () => ({
+    const alpha: TowerModule = {
       name: 'alpha',
-      async init(ctx: any) {
-        ctx.container.register('alpha', { val: 1 })
+      dependsOn: [],
+      async initialize(ctx) {
+        ctx.services.register('alpha', { val: 1 })
       },
-    }))
+    }
 
-    const result = await createTower({ modules: { alpha: {} } }, getModuleFactory)
+    const result = await createTower({ modules: [alpha] })
 
     expect(result.runtime).toEqual({ name: 'node-server', isServerless: false })
     expect(result.alpha).toEqual({ val: 1 })

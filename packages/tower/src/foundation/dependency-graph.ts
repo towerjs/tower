@@ -1,4 +1,4 @@
-import type { ModuleDeclaration, TowerModule } from './types.js'
+import type { TowerModule } from './types.js'
 
 export interface DependencyError {
   type: 'missing' | 'circular' | 'self-reference'
@@ -79,13 +79,4 @@ export function resolveDependencyOrder(modules: TowerModule[]): DependencyValida
   if (errors.length > 0) return { valid: false, order: [], errors }
 
   return { valid: true, order, errors }
-}
-
-export function validateDeclarations(declarations: ModuleDeclaration[]): DependencyValidationResult {
-  const asModules: TowerModule[] = declarations.map((d) => ({
-    name: d.name,
-    dependsOn: d.dependsOn,
-  }))
-
-  return resolveDependencyOrder(asModules)
 }

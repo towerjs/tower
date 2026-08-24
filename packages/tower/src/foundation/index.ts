@@ -32,8 +32,6 @@ export type {
   TowerModule,
   TowerContext,
   TowerInitContext,
-  ModuleFactory,
-  ModuleDeclaration,
   ServiceRegistry,
 } from './types.js'
 export type { DependencyValidationResult, DependencyError } from './dependency-graph.js'

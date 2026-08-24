@@ -6,7 +6,7 @@ export interface TowerRuntime {
 }
 
 export interface TowerConfig {
-  modules: TowerModule[] | Record<string, Record<string, unknown>>
+  modules: TowerModule[]
 }
 
 export interface TowerContext {
@@ -23,14 +23,6 @@ export interface TowerModule {
   initialize?(ctx: TowerContext): Promise<void>
   shutdown?(ctx: TowerContext): Promise<void>
 }
-
-export interface ModuleDeclaration {
-  name: string
-  dependsOn?: string[]
-  factory: ModuleFactory
-}
-
-export type ModuleFactory = (config: Record<string, unknown>) => TowerModule
 
 export interface TowerInitContext {
   container: ServiceRegistry

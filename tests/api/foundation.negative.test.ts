@@ -21,44 +21,39 @@ afterEach(() => {
 describe('Foundation negative / edge cases', () => {
   describe('createTowerApp with invalid input', () => {
     it('handles empty modules config', async () => {
-      const app = await createTowerApp({ modules: {} })
+      const app = await createTowerApp({ modules: [] })
       expect(app).toHaveProperty('config')
       expect(app.container).toBeDefined()
     })
 
-    it('throws when factory returns a module without a name', async () => {
-      const factory = (_name: string) => ((_config: Record<string, unknown>) => ({})) as any
-      await expect(createTowerApp({ modules: { foo: {} } }, factory)).rejects.toThrow(
-        'returned a module without a name'
+    it('rejects a legacy object-form modules config', async () => {
+      await expect(createTowerApp({ modules: { foo: {} } } as unknown as { modules: never[] })).rejects.toThrow(
+        'modules must be an array of module definitions'
       )
     })
 
+    it('throws when a module definition is missing a name', async () => {
+      const nameless = { dependsOn: [] } as any
+      await expect(createTowerApp({ modules: [nameless] })).rejects.toThrow('Module definition missing name')
+    })
+
     it('detects missing dependencies', async () => {
-      const factory = (name: string) => {
-        if (name === 'gatehouse') {
-          return ((_config: Record<string, unknown>) => ({
-            name: 'gatehouse',
-            dependsOn: ['vault', 'nonexistent'],
-          })) as any
-        }
-        // vault has a factory, nonexistent does not
-        if (name === 'vault') {
-          return ((_config: Record<string, unknown>) => ({ name: 'vault' })) as any
-        }
-        return undefined as any
+      const gatehouse = {
+        name: 'gatehouse',
+        dependsOn: ['vault', 'nonexistent'],
       }
-      await expect(createTowerApp({ modules: { gatehouse: {} } }, factory)).rejects.toThrow('not in the modules array')
+      await expect(createTowerApp({ modules: [gatehouse] as any })).rejects.toThrow('not in the modules array')
     })
 
     it('propagates init errors', async () => {
-      const factory = (_name: string) =>
-        ((_config: Record<string, unknown>) => ({
-          name: 'exploder',
-          async initialize() {
-            throw new Error('init failed')
-          },
-        })) as any
-      await expect(createTowerApp({ modules: { exploder: {} } }, factory)).rejects.toThrow('init failed')
+      const exploder = {
+        name: 'exploder',
+        dependsOn: [],
+        async initialize() {
+          throw new Error('init failed')
+        },
+      }
+      await expect(createTowerApp({ modules: [exploder] })).rejects.toThrow('init failed')
     })
   })
 

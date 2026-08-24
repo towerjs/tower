@@ -10,13 +10,16 @@ This tutorial walks through setting up authentication in a Tower + Next.js appli
 ## 1. Configure Gatehouse
 
 ```ts filename="tower.config.ts"
-import { defineTower } from '@towerjs/tower/blueprint'
+import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
+import { defineTower } from '@towerjs/tower'
+import { vault } from '@towerjs/vault'
 
 export default defineTower({
-  modules: {
-    vault: {},
-    courier: { email: { provider: 'console', from: 'noreply@example.com' } },
-    gatehouse: {
+  modules: [
+    vault(),
+    courier({ email: { provider: 'console', from: 'noreply@example.com' } }),
+    gatehouse({
       provider: 'better-auth',
       appName: 'My App',
       baseURL: 'http://localhost:3000',
@@ -25,8 +28,8 @@ export default defineTower({
       emailVerification: { sendOnSignUp: true, autoSignInAfterVerification: true },
       social: { google: {}, github: {} },
       magicLinks: true,
-    },
-  },
+    }),
+  ],
 })
 ```
 

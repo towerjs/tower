@@ -67,7 +67,7 @@ Import individual modules directly:
 | `@towerjs/tower/gatehouse/react-server` | Gatehouse for React Server Components                          |
 | `@towerjs/tower/vault`                  | `vault` (incl. `db`, `migrate`, `seed`), types                 |
 | `@towerjs/tower/courier`                | `courier` (incl. `email`, `sms`)                               |
-| `@towerjs/tower/runtime`                | `initTower`, `getTowerApp`, `getModuleFactory`                 |
+| `@towerjs/tower/runtime`                | `initTower`, `getTowerApp`, `createLazyModule`                 |
 
 ## What's included
 
