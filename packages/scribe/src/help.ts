@@ -21,6 +21,7 @@ export function helpText(): string[] {
     '  db setup          Migrate, auth migrations, then seed — first-run helper',
     '  make model|migration|policy|factory|job <Name>  Generate starter files',
     '  config show      Print the resolved configuration (secrets redacted)',
+    '  dev              Validate and start the Next.js dev server on port 3000',
     '  help             Show this message',
     '  --version, -v    Show version',
     '',

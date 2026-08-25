@@ -12,6 +12,7 @@ import { createJiti } from 'jiti'
 import { configCommand } from './commands/config.js'
 import { createCommand } from './commands/create.js'
 import { dbCommand } from './commands/db.js'
+import { devCommand } from './commands/dev.js'
 import { makeCommand, makeHelp } from './generators/make.js'
 import { helpText } from './help.js'
 import { createModuleDefinitions } from './runtime.js'
@@ -47,6 +48,7 @@ export async function run(command: string | undefined, flags: string[], configPa
   }
   if (command === 'db') return await dbCommand(flags, configPath)
   if (command === 'config') return await configCommand(flags, configPath)
+  if (command === 'dev') return await devCommand(flags)
 
   const runSeed = flags.includes('--seed') || flags.includes('-s')
   const skipMigrate = flags.includes('--skip-migrate')
