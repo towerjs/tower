@@ -10,6 +10,7 @@ import type { TowerApp, TowerConfig, TowerModule } from '@towerjs/tower/foundati
 import { createJiti } from 'jiti'
 
 import { createCommand } from './commands/create.js'
+import { dbCommand } from './commands/db.js'
 import { makeCommand, makeHelp } from './generators/make.js'
 import { helpText } from './help.js'
 import { createModuleDefinitions } from './runtime.js'
@@ -30,11 +31,11 @@ interface CliModule {
   close?(): Promise<void>
 }
 
-function ok(lines: string[]): CliResult {
+export function ok(lines: string[]): CliResult {
   return { stdout: lines, stderr: [], exitCode: 0 }
 }
 
-function fail(msg: string): CliResult {
+export function fail(msg: string): CliResult {
   return { stdout: [], stderr: [msg], exitCode: 1 }
 }
 
@@ -43,6 +44,7 @@ export async function run(command: string | undefined, flags: string[], configPa
   if (command === '--version' || command === '-v') {
     return ok([versionText()])
   }
+  if (command === 'db') return await dbCommand(flags, configPath)
 
   const runSeed = flags.includes('--seed') || flags.includes('-s')
   const skipMigrate = flags.includes('--skip-migrate')
