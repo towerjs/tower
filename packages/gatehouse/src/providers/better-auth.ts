@@ -368,6 +368,30 @@ export class BetterAuthAdapter {
     return session
   }
 
+  /**
+   * Issues a Better Auth session for an existing user — Gatehouse's social
+   * lifecycle (#83) calls this after resolving/linking the identity. The
+   * session row matches Better Auth's own schema, so the resulting Tower
+   * session is indistinguishable from any other sign-in.
+   */
+  async createSessionForUser(userId: string): Promise<{ token: string }> {
+    const token = randomToken()
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 30)
+    await (this.db as any)
+      .insertInto('session')
+      .values({
+        id: `ghs_${randomToken(12)}`,
+        expiresAt,
+        token,
+        createdAt: now,
+        updatedAt: now,
+        userId,
+      })
+      .execute()
+    return { token }
+  }
+
   // ─── Users ────────────────────────────────────────────────────────
 
   async findUser(id: string, headers: Headers): Promise<GatehouseUser | null> {
@@ -427,6 +451,12 @@ function env(key: string): string | undefined {
     process.env[`AUTH_${key}`] ||
     process.env[`BETTER_AUTH_${key}`]
   )
+}
+
+function randomToken(length = 32): string {
+  const bytes = new Uint8Array(length)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 function expandSocial(

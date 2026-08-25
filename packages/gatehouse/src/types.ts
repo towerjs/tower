@@ -441,6 +441,12 @@ export type GatehouseSocialConfig = string[] | Record<string, SocialProviderEntr
 export interface GatehouseConfig {
   provider: 'better-auth' | import('./provider.js').GatehouseProvider
 
+  /**
+   * Social providers for Gatehouse-owned social sign-in and linking (#83).
+   * Configured providers become available through `gatehouse.social.*`.
+   */
+  socialProviders?: import('./social.js').SocialProvider[]
+
   credentials?:
     | boolean
     | {
@@ -797,6 +803,19 @@ export interface GatehouseModule {
    * internals bypasses Gatehouse's Tower-owned semantics.
    */
   provider: any
+
+  /** Gatehouse-owned social sign-in / linking API (#83). */
+  social: {
+    redirect(
+      providerId: string,
+      options?: import('./social.js').SocialRedirectOptions
+    ): Promise<import('./social.js').SocialRedirect>
+    authenticate(params: {
+      provider: string
+      code: string
+    }): Promise<import('./social-lifecycle.js').SocialSignInResult>
+    linkCurrent(params: { provider: string; code: string }): Promise<import('./social-lifecycle.js').LinkResult>
+  }
 
   /** Capability declaration of the configured provider. */
   readonly capabilities: import('./provider.js').GatehouseProviderCapabilities

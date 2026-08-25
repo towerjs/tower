@@ -136,6 +136,11 @@ export class TestProvider implements GatehouseProvider {
     return session
   }
 
+  /** Issues a Tower session for an existing user (social lifecycle port). */
+  async createSessionForUser(userId: string): Promise<{ token: string }> {
+    return { token: this.issueToken(userId) }
+  }
+
   async from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
     const headers = request instanceof Request ? request.headers : request.headers
     const resolved = this.resolveToken(headers)

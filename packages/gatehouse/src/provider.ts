@@ -101,6 +101,14 @@ export interface GatehouseProvider {
 
   /** Optional middleware hook that guards paths and redirects. */
   createProxy?(options?: ProxyOptions): ProxyResult
+
+  /**
+   * Issues a Tower session for an existing user — the session port used by
+   * Gatehouse-owned flows such as social sign-in (#83). Providers that can't
+   * mint sessions for existing users omit this and those flows report an
+   * unsupported capability.
+   */
+  createSessionForUser?(userId: string): Promise<{ token: string }>
 }
 
 /** Thrown when invoking a capability the configured provider does not implement. */

@@ -116,6 +116,16 @@ export type { TestSocialProviderOptions } from './providers/social/test-social-p
 export { defineSocialProviderContract } from './social-contract.js'
 export type { SocialProviderContractHarness } from './social-contract.js'
 
+// Social identity lifecycle (#83): Gatehouse-owned user/session linking.
+export {
+  SocialIdentityAlreadyLinkedError,
+  SocialIdentityLifecycle,
+  type LinkResult,
+  type SocialSignInResult,
+} from './social-lifecycle.js'
+export { KyselySocialIdentityStore, SocialEmailTakenError } from './social-kysely-store.js'
+export { SocialIdentityConflictError, type SocialIdentityRecord, type SocialIdentityStore } from './social-store.js'
+
 export type {
   GatehouseEmailVerificationConfig,
   GatehouseEmailVerificationMethod,
@@ -458,6 +468,28 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
     }
 
     await provider.init({ db: vault })
+
+    // Social lifecycle (#83): wired when social providers are configured.
+    const socialProviders = config.socialProviders ?? []
+    if (socialProviders.length > 0) {
+      if (!vault) throw new Error('Gatehouse social sign-in requires the Vault module for identity storage.')
+      if (typeof provider.createSessionForUser !== 'function') {
+        throw new Error(
+          `The "${provider.name}" provider does not support session issuance ` +
+            `(createSessionForUser), which Gatehouse social sign-in requires.`
+        )
+      }
+      const { KyselySocialIdentityStore } = await import('./social-kysely-store.js')
+      const store = new KyselySocialIdentityStore(vault)
+      await store.ensureSchema()
+      const { SocialIdentityLifecycle } = await import('./social-lifecycle.js')
+      socialLifecycleInstance = new SocialIdentityLifecycle(store, {
+        issueSession: (userId) => provider.createSessionForUser!(userId),
+        resolveByEmail: false,
+      })
+      socialProvidersById = new Map(socialProviders.map((p) => [p.id, p]))
+    }
+
     // Replace the lazy placeholder with the real runtime API so container
     // lookups resolve to a usable service (mirrors vault's initialize).
     ctx.services.register('gatehouse', createRuntimeService())
@@ -500,6 +532,8 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
     async migrate() {
       return getAdapter()!.migrate()
     },
+
+    social: socialService,
   } as TowerModule & GatehouseModule
 }
 
@@ -524,6 +558,65 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
 // Immediately invoke async function to trigger dynamic rendering in Next.js
 // During static prerendering, awaiting `headers()` throws a
 // DynamicServerError which makes Next.js treat the route as dynamic.
+// Social lifecycle state, populated during doInit when social providers
+// are configured. Module-scoped like the adapter singleton.
+let socialLifecycleInstance: import('./social-lifecycle.js').SocialIdentityLifecycle | undefined
+let socialProvidersById: Map<string, import('./social.js').SocialProvider> | undefined
+
+/**
+ * The Tower-owned social sign-in / linking API (#83).
+ *
+ * Applications configure social providers in tower.config.ts:
+ *
+ * ```ts
+ * gatehouse({
+ *   provider: 'better-auth',
+ *   credentials: true,
+ *   socialProviders: [googleSocial()],
+ * })
+ * ```
+ *
+ * Then the happy path is:
+ *
+ * ```ts
+ * // 1. redirect the browser
+ * const { url } = await gatehouse.social.redirect('google')
+ *
+ * // 2. in the callback route: exchange + resolve/link + issue session
+ * const result = await gatehouse.social.authenticate({ provider: 'google', code })
+ * ```
+ */
+const socialService = {
+  async redirect(providerId: string, options?: import('./social.js').SocialRedirectOptions) {
+    const provider = socialProvidersById?.get(providerId)
+    if (!provider) throw new Error(`Unknown social provider "${providerId}". Is it configured in socialProviders?`)
+    return provider.redirect(options)
+  },
+
+  /** Social sign-in: identity -> resolve/create user -> link -> session. */
+  async authenticate(params: { provider: string; code: string }) {
+    if (!socialLifecycleInstance || !socialProvidersById) {
+      throw new Error('Gatehouse social sign-in is not configured. Add socialProviders to your gatehouse config.')
+    }
+    const provider = socialProvidersById.get(params.provider)
+    if (!provider) throw new Error(`Unknown social provider "${params.provider}".`)
+    const identity = await provider.callback({ code: params.code })
+    return socialLifecycleInstance.signIn(identity)
+  },
+
+  /** Links an identity to the CURRENT user (request context required). */
+  async linkCurrent(params: { provider: string; code: string }) {
+    if (!socialLifecycleInstance || !socialProvidersById) {
+      throw new Error('Gatehouse social linking is not configured. Add socialProviders to your gatehouse config.')
+    }
+    const user = await requestRequireUser()
+    const provider = socialProvidersById.get(params.provider)
+    if (!provider) throw new Error(`Unknown social provider "${params.provider}".`)
+    const identity = await provider.callback({ code: params.code })
+    return socialLifecycleInstance.link(user.id, identity)
+  },
+}
+
 let initPromise: Promise<void> | undefined
 ;(async () => {
   try {
