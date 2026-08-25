@@ -296,7 +296,11 @@ vi.mock('execa', () => ({
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
   writeFile: vi.fn().mockResolvedValue(undefined),
-  readFile: vi.fn().mockResolvedValue('# Next.js project\n'),
+  readFile: vi.fn(async (_path: unknown) =>
+    String(_path).endsWith('package.json')
+      ? JSON.stringify({ name: 'test', scripts: { dev: 'next dev' } })
+      : '# Next.js project\n'
+  ),
 }))
 
 vi.mock('../package-manager.js', () => ({

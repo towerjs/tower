@@ -45,6 +45,7 @@ describe('scaffolding — real file output', () => {
           JSON.stringify({
             name: baseState.projectName,
             private: true,
+            scripts: { dev: 'next dev' },
             dependencies: { next: 'latest', react: 'latest' },
           })
         )
@@ -83,6 +84,8 @@ describe('scaffolding — real file output', () => {
     expect(existsSync(join(projectDir, 'src', 'proxy.ts'))).toBe(true)
     expect(existsSync(join(projectDir, '.prettierrc'))).toBe(true)
     expect(existsSync(join(projectDir, 'AGENTS.md'))).toBe(true)
+    const pkg = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf-8'))
+    expect(pkg.scripts.dev).toBe('tower dev')
 
     const config = readFileSync(join(projectDir, 'tower.config.ts'), 'utf-8')
     expect(config).toContain('defineTower')

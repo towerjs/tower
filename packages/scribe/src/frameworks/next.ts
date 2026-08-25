@@ -88,6 +88,13 @@ export const nextAdapter: FrameworkAdapter = {
 
     await writeFile(join(projectDir, '.prettierrc'), prettierConfig(useTailwind))
 
+    // The dev script goes through Tower so apps get validation + diagnostics
+    // (tower dev always serves on port 3000).
+    const pkgPath = join(projectDir, 'package.json')
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as { scripts: Record<string, string> }
+    pkg.scripts.dev = 'tower dev'
+    await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+
     const agentsPath = join(projectDir, 'AGENTS.md')
     const generated = await readFile(agentsPath, 'utf8').catch(() => '')
     const towerSection = agentsMd(state)
