@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
@@ -50,6 +50,11 @@ export const nextAdapter: FrameworkAdapter = {
     })
 
     const projectDir = join(targetDir, state.projectName)
+
+    // Newer create-next-app emits a pnpm-workspace.yaml (for ignored builds),
+    // which makes pnpm treat the app as a workspace and reject `pnpm add`.
+    // Generated apps aren't workspaces.
+    await rm(join(projectDir, 'pnpm-workspace.yaml'), { force: true })
     const configFile = useTypeScript ? 'tower.config.ts' : 'tower.config.js'
     const pageFile = useTypeScript ? 'page.tsx' : 'page.jsx'
 

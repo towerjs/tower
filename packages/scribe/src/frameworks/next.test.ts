@@ -296,6 +296,7 @@ vi.mock('execa', () => ({
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
   writeFile: vi.fn().mockResolvedValue(undefined),
+  rm: vi.fn().mockResolvedValue(undefined),
   readFile: vi.fn(async (_path: unknown) =>
     String(_path).endsWith('package.json')
       ? JSON.stringify({ name: 'test', scripts: { dev: 'next dev' } })
