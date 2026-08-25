@@ -3,6 +3,7 @@ import { getRequestContextResolver, towerContext } from '@towerjs/tower/foundati
 import { createLazyModule } from '@towerjs/tower/runtime'
 
 import { ContextRequiredError } from './context.js'
+import { policies } from './policies.js'
 import type { BetterAuthAdapter } from './providers/better-auth.js'
 import { parseGatehouseConfig } from './schemas.js'
 import type {
@@ -93,6 +94,10 @@ export { UnsupportedCapabilityError, requireCapability } from './provider.js'
 export { TestProvider } from './providers/test-provider.js'
 export { defineGatehouseProviderContract } from './provider-contract.js'
 export type { ProviderContractHarness } from './provider-contract.js'
+
+// Policies (S7): provider-independent application authorization.
+export { policies, definePolicy, PolicyRegistry } from './policies.js'
+export type { Policy, PolicyDecision } from './policies.js'
 
 export type {
   GatehouseEmailVerificationConfig,
@@ -233,6 +238,25 @@ export async function requireUser(): Promise<GatehouseUser> {
 }
 
 /**
+ * Evaluates a policy action for the current user against a resource.
+ * Returns false when unauthenticated; throws only when no policy is
+ * registered. See {@link policies} for registration.
+ */
+export async function can(resource: object | string, action: string, ...args: unknown[]): Promise<boolean> {
+  const s = await requestGetSession()
+  return policies.can(s?.user, resource, action, ...args)
+}
+
+/**
+ * Evaluates a policy action and enforces it: unauthenticated requests throw
+ * AuthenticationError, denied requests throw AuthorizationError.
+ */
+export async function authorize(resource: object | string, action: string, ...args: unknown[]): Promise<void> {
+  const s = await requestGetSession()
+  await policies.authorize(s?.user, resource, action, ...args)
+}
+
+/**
  * Lists all sessions for the current user.
  */
 export async function getUserSessions(): Promise<GatehouseSession[]> {
@@ -299,6 +323,8 @@ type GatehouseApiMethods = {
   session(): Promise<Session | null>
   user(): Promise<GatehouseUser | null>
   requireUser(): Promise<GatehouseUser>
+  can(resource: object | string, action: string, ...args: unknown[]): Promise<boolean>
+  authorize(resource: object | string, action: string, ...args: unknown[]): Promise<void>
   getUserSessions(): Promise<GatehouseSession[]>
   getApiKeys(userId: string): Promise<ApiKeyInfo[]>
   getOrganizations(): Promise<Organization[]>
@@ -364,6 +390,8 @@ function createRuntimeService(): GatehouseRuntimeAPI {
     session: () => requestGetSession(),
     user: () => withRequestContext((instance) => instance.user()),
     requireUser: () => requestRequireUser(),
+    can: (resource: object | string, action: string, ...args: unknown[]) => can(resource, action, ...args),
+    authorize: (resource: object | string, action: string, ...args: unknown[]) => authorize(resource, action, ...args),
     getUserSessions: () => withRequestContext((instance) => instance.sessions.list()),
     getApiKeys: (userId: string, options?: ApiKeyListOptions) =>
       withRequestContext(async (instance) => {
