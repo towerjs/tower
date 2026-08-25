@@ -10,6 +10,7 @@ import type { TowerApp, TowerConfig, TowerModule } from '@towerjs/tower/foundati
 import { createJiti } from 'jiti'
 
 import { createCommand } from './commands/create.js'
+import { makeCommand, makeHelp } from './generators/make.js'
 import { helpText } from './help.js'
 import { createModuleDefinitions } from './runtime.js'
 
@@ -58,6 +59,9 @@ export async function run(command: string | undefined, flags: string[], configPa
         return await runMigrate(runSeed, configPath)
       case 'seed':
         return await runSeedCmd(skipMigrate, configPath)
+      case 'make':
+        if (flags.includes('--help') || flags.includes('-h') || flags.length === 0) return ok(makeHelp())
+        return ok(makeCommand(flags))
       case undefined:
       case 'help':
       case '--help':

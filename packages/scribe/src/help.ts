@@ -12,6 +12,7 @@ export function helpText(): string[] {
     '  migrate --seed   Run migrations, then seeds',
     '  seed             Run seeds (runs migrations first unless --skip-migrate)',
     '  seed --skip-migrate  Run seeds without running migrations first',
+    '  make model|migration|policy|factory|job <Name>  Generate starter files',
     '  help             Show this message',
     '  --version, -v    Show version',
     '',
