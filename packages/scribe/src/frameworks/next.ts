@@ -84,6 +84,19 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(migrationsDir, '.gitkeep'), '')
       await mkdir(seedsDir, { recursive: true })
       await writeFile(join(seedsDir, '.gitkeep'), '')
+
+      // Model-backed golden path (#97): a sample model + its initial
+      // migration + factory, and a dashboard page reading through the model API.
+      if (useTypeScript) {
+        await mkdir(join(projectDir, 'src', 'models'), { recursive: true })
+        await writeFile(join(projectDir, 'src', 'models', 'project.ts'), projectModel())
+        await mkdir(join(projectDir, 'src', 'factories'), { recursive: true })
+        await writeFile(join(projectDir, 'src', 'factories', 'project.ts'), projectFactory())
+        await writeFile(join(migrationsDir, '0001_projects.ts'), projectsMigration())
+        const dashboardDir = join(projectDir, 'src', 'app', 'dashboard')
+        await mkdir(dashboardDir, { recursive: true })
+        await writeFile(join(dashboardDir, 'page.tsx'), dashboardPage(state))
+      }
     }
 
     await writeFile(join(projectDir, '.prettierrc'), prettierConfig(useTailwind))
@@ -300,6 +313,131 @@ export default function Home() {
 
 function authRoute(): string {
   return `export { GET, POST } from "@towerjs/gatehouse/next";
+`
+}
+
+/** Sample model for the generated app's golden path (#97). */
+function projectModel(): string {
+  return `import { Model } from '@towerjs/vault/model'
+
+export type ProjectRow = {
+  id: string
+  name: string
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
+export class Project extends Model<ProjectRow> {
+  static table = 'projects'
+
+  static scopes = {
+    recent: (q) => q.orderBy('created_at', 'desc').limit(20),
+  } as const
+}
+`
+}
+
+function projectFactory(): string {
+  return `import { defineFactory } from '@towerjs/vault/factory'
+import { Project } from '../models/project.js'
+
+// Factories build valid rows through Project.create(), honoring casts and
+// the provider boundary. Use them in seeds, tests, and e2e:
+//   await ProjectFactory.create({ name: 'Override' })
+export const ProjectFactory = defineFactory(Project, ({ seq }) => ({
+  name: \`Project \${seq}\`,
+  description: null,
+}))
+`
+}
+
+function projectsMigration(): string {
+  return `import type { Vault } from '@towerjs/vault'
+
+export async function up(db: Vault) {
+  await db.schema
+    .createTable('projects')
+    .addColumn('id', 'uuid', (col) => col.primaryKey().defaultTo(db.fn('gen_random_uuid')))
+    .addColumn('name', 'varchar(255)', (col) => col.notNull())
+    .addColumn('description', 'text')
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(db.fn('now')))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(db.fn('now')))
+    .execute()
+}
+
+export async function down(db: Vault) {
+  await db.schema.dropTable('projects').execute()
+}
+`
+}
+
+/** Server-rendered dashboard reading through the model API. */
+function dashboardPage(state: ProjectState): string {
+  const signInLink = state.modules.gatehouse
+    ? `        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Dashboard</h1>
+          <a
+            href="/api/auth/sign-out"
+            className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+          >
+            Sign out
+          </a>
+        </div>`
+    : `        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Dashboard</h1>`
+
+  return `import { Project } from '@/models/project'
+
+export const dynamic = 'force-dynamic'
+
+export default async function DashboardPage() {
+  // Reads go through the Tower model API. Drop to vault.selectFrom(...) or
+  // Kysely's sql tag when you need more control.
+  let projects: Awaited<ReturnType<typeof Project.all>> = []
+  let error: string | null = null
+  try {
+    projects = await Project.scope('recent').get()
+  } catch {
+    error = 'Database not reachable yet — run migrations first.'
+  }
+
+  return (
+    <main className="min-h-screen bg-white dark:bg-neutral-950 px-6 py-16">
+      <div className="mx-auto max-w-3xl space-y-8">
+${signInLink}
+        <p className="text-neutral-500 dark:text-neutral-400">
+          Reading from your Vault database through the Tower model API.
+        </p>
+
+        {error && (
+          <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            {error}
+          </p>
+        )}
+        {projects.length > 0 ? (
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {projects.map((project) => (
+              <li key={project.get('id')} className="flex items-center justify-between px-4 py-3">
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">{project.get('name')}</span>
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {project.get('description')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          !error && (
+            <p className="rounded-lg border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
+              No projects yet. Create one with{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 dark:bg-neutral-800">Project.create({'{'} name: {'"First project"'} {'}'})</code>{' '}
+              or seed some with <code className="rounded bg-neutral-100 px-1 py-0.5 dark:bg-neutral-800">ProjectFactory</code>.
+            </p>
+          )
+        )}
+      </div>
+    </main>
+  )
+}
 `
 }
 
