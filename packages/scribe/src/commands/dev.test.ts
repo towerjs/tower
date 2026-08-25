@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { devDiagnostic, formatPortDiagnostic, resolveDevCommand } from './dev.js'
+import { DEV_PORT, devDiagnostic, pickFreePort, resolveDevCommand } from './dev.js'
 
 describe('resolveDevCommand', () => {
-  it('always pins port 3000', () => {
+  it('always passes a port and runs next dev', () => {
     for (const pm of ['npm', 'pnpm', 'yarn', 'bun'] as const) {
       const { cmd, args } = resolveDevCommand(pm)
       expect(args).toContain('--port')
-      expect(args[args.indexOf('--port') + 1]).toBe('3000')
+      expect(args[args.indexOf('--port') + 1]).toBe(String(DEV_PORT))
       expect(args.join(' ')).toContain('next dev')
       if (pm === 'npm') {
         expect(cmd).toBe('npx')
@@ -17,16 +17,17 @@ describe('resolveDevCommand', () => {
       }
     }
   })
+
+  it('binds the fallback port passed in', () => {
+    const { args } = resolveDevCommand('pnpm', 3001)
+    expect(args[args.indexOf('--port') + 1]).toBe('3001')
+  })
 })
 
-describe('formatPortDiagnostic', () => {
-  it('states the invariant and includes the PID when known', () => {
-    const base = formatPortDiagnostic(3000)
-    expect(base).toContain('Port 3000 is already in use')
-    expect(base).toContain('port 3000')
-
-    const withPid = formatPortDiagnostic(3000, 4242)
-    expect(withPid).toContain('PID 4242')
+describe('pickFreePort', () => {
+  it('returns the base port when nothing occupies it', async () => {
+    // No listener is bound here; the first probe should win.
+    await expect(pickFreePort()).resolves.toBe(DEV_PORT)
   })
 })
 

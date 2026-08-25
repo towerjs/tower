@@ -9,35 +9,18 @@ import { type PackageManager, detectPackageManager } from '../package-manager.js
 
 /**
  * `tower dev` — validates the application, then orchestrates the framework
- * dev server. Tower always serves on port 3000 regardless of framework;
- * port conflicts are reported as diagnostics, never silently re-bound.
+ * dev server. Serving starts on port 3000; when it's taken, tower dev walks
+ * upward (3001, 3002, …) and reports which port it actually bound.
  */
 
 export const DEV_PORT = 3000
+/** How many consecutive ports tower dev will probe before giving up. */
+export const MAX_PORT_PROBES = 10
 
 /** Resolves the command that runs the framework dev server for a package manager. */
-export function resolveDevCommand(pm: PackageManager): { cmd: string; args: string[] } {
-  if (pm === 'npm') return { cmd: 'npx', args: ['next', 'dev', '--port', String(DEV_PORT)] }
-  return { cmd: pm, args: ['exec', 'next', 'dev', '--port', String(DEV_PORT)] }
-}
-
-/** Formats the diagnostic shown when the port is already taken. */
-export function formatPortDiagnostic(port: number, pid?: number): string {
-  const base =
-    `Port ${port} is already in use. tower dev always serves on port ${port} — ` +
-    'stop the other process and try again.'
-  return pid ? `${base} (PID ${pid})` : base
-}
-
-/** Best-effort lookup of what is bound to the port; never throws. */
-function findPortPid(port: number): number | undefined {
-  try {
-    const { execSync } = require('node:child_process') as typeof import('node:child_process')
-    const out = execSync(`lsof -ti :${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-    return Number(out.trim().split('\n')[0]) || undefined
-  } catch {
-    return undefined
-  }
+export function resolveDevCommand(pm: PackageManager, port = DEV_PORT): { cmd: string; args: string[] } {
+  if (pm === 'npm') return { cmd: 'npx', args: ['next', 'dev', '--port', String(port)] }
+  return { cmd: pm, args: ['exec', 'next', 'dev', '--port', String(port)] }
 }
 
 /** Checks whether the port can be bound right now. */
@@ -50,6 +33,19 @@ export function portInUse(port: number): Promise<boolean> {
   })
 }
 
+/**
+ * Picks the first free port starting at DEV_PORT, probing up to
+ * MAX_PORT_PROBES candidates. Returns null when all of them are taken.
+ */
+export async function pickFreePort(): Promise<number | null> {
+  let port = DEV_PORT
+  for (let attempt = 0; attempt < MAX_PORT_PROBES; attempt++) {
+    if (!(await portInUse(port))) return port
+    port += 1
+  }
+  return null
+}
+
 interface DevValidation {
   configPath: string
 }
@@ -60,14 +56,10 @@ async function validate(configPath?: string): Promise<DevValidation> {
   const app = await loadApp(configPath_)
   await app.shutdown()
 
-  if (!existsSync(joinNodeModulesBin())) {
+  if (!existsSync('node_modules/.bin/next')) {
     throw new Error("Next.js is not installed. Run your package manager's install command first.")
   }
   return { configPath: configPath_ }
-}
-
-function joinNodeModulesBin(): string {
-  return 'node_modules/.bin/next'
 }
 
 /** Runs `tower dev`. */
@@ -80,14 +72,22 @@ export async function devCommand(args: string[] = []): Promise<CliResult> {
     return fail(devDiagnostic(err))
   }
 
-  const pm = detectPackageManager()
-  const { cmd, args: cmdArgs } = resolveDevCommand(pm)
-
-  if (await portInUse(DEV_PORT)) {
-    return fail(formatPortDiagnostic(DEV_PORT, findPortPid(DEV_PORT)))
+  const port = await pickFreePort()
+  if (port === null) {
+    return fail(
+      `No free port found between ${DEV_PORT} and ${DEV_PORT + MAX_PORT_PROBES - 1}. ` +
+        'Stop the processes holding them and try again.'
+    )
   }
 
-  process.stdout.write(`Starting Next.js dev server on http://localhost:${DEV_PORT}...\n`)
+  const pm = detectPackageManager()
+  const { cmd, args: cmdArgs } = resolveDevCommand(pm, port)
+  process.stdout.write(
+    port === DEV_PORT
+      ? `Starting Next.js dev server on http://localhost:${port}...\n`
+      : `Port ${DEV_PORT} was in use — serving on http://localhost:${port} instead.\n`
+  )
+
   let child: ResultPromise
   try {
     child = execa(cmd, cmdArgs, { stdio: 'inherit', cwd: process.cwd(), env: { ...process.env } })
@@ -131,7 +131,8 @@ function devHelp(): string[] {
     'Usage: tower dev',
     '',
     'Validates the application, then starts the Next.js dev server.',
-    'tower dev always serves on port 3000 — conflicts are reported as diagnostics.',
+    'Serving starts on port 3000 and falls back to the next free ports',
+    '(3001, 3002, …) when they are taken.',
     '',
     'Flags:',
     '  --config=<path>  Path to tower.config.ts (defaults to auto-discovery)',
