@@ -144,7 +144,7 @@ describe('scaffolding — real file output', () => {
 
     const proxy = readFileSync(join(projectDir, 'src', 'proxy.ts'), 'utf-8')
     expect(proxy).toContain('gatehouse.proxy')
-    expect(proxy).not.toContain('/sign-in')
+    expect(proxy).toContain('/sign-in')
   })
 
   it('scaffolds JavaScript files when typescript is disabled', async () => {

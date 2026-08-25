@@ -74,6 +74,17 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(authDir, useTypeScript ? 'route.ts' : 'route.js'), authRoute())
 
       await writeFile(join(projectDir, useTypeScript ? 'src/proxy.ts' : 'src/proxy.js'), proxyFile())
+
+      // Auth starter (#84): working sign-in/sign-up pages over the shared
+      // gatehouse server actions, so a new app signs in without manual edits.
+      if (useTypeScript) {
+        const signInDir = join(projectDir, 'src', 'app', 'sign-in')
+        const signUpDir = join(projectDir, 'src', 'app', 'sign-up')
+        await mkdir(signInDir, { recursive: true })
+        await mkdir(signUpDir, { recursive: true })
+        await writeFile(join(signInDir, 'page.tsx'), signInPage(state))
+        await writeFile(join(signUpDir, 'page.tsx'), signUpPage(state))
+      }
     }
 
     if (state.modules.vault) {
@@ -374,20 +385,24 @@ export async function down(db: Vault) {
 
 /** Server-rendered dashboard reading through the model API. */
 function dashboardPage(state: ProjectState): string {
-  const signInLink = state.modules.gatehouse
+  const header = state.modules.gatehouse
     ? `        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Dashboard</h1>
-          <a
-            href="/api/auth/sign-out"
-            className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            Sign out
-          </a>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              Sign out
+            </button>
+          </form>
         </div>`
     : `        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Dashboard</h1>`
 
-  return `import { Project } from '@/models/project'
+  const imports = state.modules.gatehouse ? `import { signOut } from '@towerjs/gatehouse/actions'\n` : ''
 
+  return `import { Project } from '@/models/project'
+${imports}
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
@@ -404,7 +419,7 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen bg-white dark:bg-neutral-950 px-6 py-16">
       <div className="mx-auto max-w-3xl space-y-8">
-${signInLink}
+${header}
         <p className="text-neutral-500 dark:text-neutral-400">
           Reading from your Vault database through the Tower model API.
         </p>
@@ -441,6 +456,191 @@ ${signInLink}
 `
 }
 
+const AUTH_FORM_CLASSES = {
+  input:
+    'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100',
+  label: 'mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-100',
+} as const
+
+function formStyles(): string {
+  return `const styles = {
+  input: '${AUTH_FORM_CLASSES.input}',
+  label: '${AUTH_FORM_CLASSES.label}',
+}
+`
+}
+
+function signInPage(state: ProjectState): string {
+  const magic = state.frameworkAnswers.magicLinks === true
+  return `'use client'
+
+import { requestMagicLink, signIn } from '@towerjs/gatehouse/actions'
+import type { ActionResult } from '@towerjs/gatehouse/next'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useActionState, useEffect } from 'react'
+
+const inputClass =
+  'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100'
+const labelClass = 'mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-100'
+
+export default function SignInPage() {
+  const router = useRouter()
+  const [pw, pwAction, pwPending] = useActionState<ActionResult | undefined, FormData>(signIn, undefined)
+  ${
+    magic
+      ? `const [magic, magicAction, magicPending] = useActionState<ActionResult | undefined, FormData>(
+    requestMagicLink,
+    undefined
+  )`
+      : ''
+  }
+${''}
+  useEffect(() => {
+    if (pw?.ok) router.push('/dashboard')
+  }, [pw, router])
+
+  return (
+    <main className="min-h-screen bg-white dark:bg-neutral-950 flex flex-col items-center justify-center px-4 py-20">
+      <div className="w-full max-w-sm space-y-6">
+        <h1 className="text-center text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+          Sign in
+        </h1>
+
+        <form action={pwAction} className="space-y-4">
+          {pw?.error && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+              {pw.error}
+            </div>
+          )}
+          <div>
+            <label htmlFor="email" className={labelClass}>
+              Email
+            </label>
+            <input id="email" name="email" type="email" required placeholder="you@example.com" className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="password" className={labelClass}>
+              Password
+            </label>
+            <input id="password" name="password" type="password" required className={inputClass} />
+          </div>
+          <button
+            type="submit"
+            disabled={pwPending}
+            className="w-full rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            Sign in
+          </button>
+        </form>
+${''}
+${
+  magic
+    ? `        <form action={magicAction} className="space-y-3 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+          {magic?.ok && (
+            <div className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              If an account exists for that email, we&apos;ve sent you a magic link.
+            </div>
+          )}
+          <input type="hidden" name="type" value="sign-in" />
+          <input id="magic-email" name="email" type="email" required placeholder="Email me a magic link" className={inputClass} />
+          <button
+            type="submit"
+            disabled={magicPending}
+            className="w-full rounded-md border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-100 disabled:opacity-60 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
+          >
+            Send magic link
+          </button>
+        </form>`
+    : ''
+}
+${''}
+        <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+          No account?{' '}
+          <Link href="/sign-up" className="font-medium text-neutral-900 underline underline-offset-2 dark:text-neutral-100">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </main>
+  )
+}
+`
+}
+
+function signUpPage(_state: ProjectState): string {
+  return `'use client'
+
+import { signUp } from '@towerjs/gatehouse/actions'
+import type { ActionResult } from '@towerjs/gatehouse/next'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useActionState, useEffect } from 'react'
+
+${formStyles()}
+
+export default function SignUpPage() {
+  const router = useRouter()
+  const [state, action, pending] = useActionState<ActionResult | undefined, FormData>(signUp, undefined)
+
+  useEffect(() => {
+    if (state?.ok) router.push('/dashboard')
+  }, [state, router])
+
+  return (
+    <main className="min-h-screen bg-white dark:bg-neutral-950 flex flex-col items-center justify-center px-4 py-20">
+      <div className="w-full max-w-sm space-y-6">
+        <h1 className="text-center text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+          Create your account
+        </h1>
+
+        <form action={action} className="space-y-4">
+          {state?.error && !state.ok && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+              {state.error}
+            </div>
+          )}
+            <label htmlFor="name" className={styles.label}>
+              Name
+            </label>
+            <input id="name" name="name" type="text" required className={styles.input} />
+          </div>
+          <div>
+            <label htmlFor="email" className={styles.label}>
+              Email
+            </label>
+            <input id="email" name="email" type="email" required placeholder="you@example.com" className={styles.input} />
+          </div>
+          <div>
+            <label htmlFor="password" className={styles.label}>
+              Password
+            </label>
+            <input id="password" name="password" type="password" required minLength={8} className={styles.input} />
+          </div>
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            Create account
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+          Already have an account?{' '}
+          <Link href="/sign-in" className="font-medium text-neutral-900 underline underline-offset-2 dark:text-neutral-100">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </main>
+  )
+}
+`
+}
+
 function nextConfig(): string {
   return `import { withTowerEdge } from "@towerjs/edge";
 
@@ -452,7 +652,7 @@ function proxyFile(): string {
   return `import { gatehouse } from "@towerjs/gatehouse";
 
 const { handler } = gatehouse.proxy({
-  public: ["/"],
+  public: ["/", "/sign-in", "/sign-up"],
 });
 
 export const proxy = handler;

@@ -433,7 +433,7 @@ describe('nextAdapter.generate', () => {
     expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('proxy.ts'), expect.any(String))
   })
 
-  it('does not generate sign-in, sign-up, or dashboard pages', async () => {
+  it('generates sign-in, sign-up pages for gatehouse', async () => {
     const stateWithGatehouse: ProjectState = {
       ...state,
       modules: { gatehouse: { credentials: true } },
@@ -441,11 +441,16 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
 
-    expect(mkdir).not.toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-in')), { recursive: true })
-    expect(mkdir).not.toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-up')), { recursive: true })
-    expect(mkdir).not.toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'dashboard')), {
-      recursive: true,
-    })
+    expect(mkdir).toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-in')), { recursive: true })
+    expect(mkdir).toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-up')), { recursive: true })
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('sign-in'),
+      expect.stringContaining('gatehouse/actions')
+    )
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('sign-up'),
+      expect.stringContaining('gatehouse/actions')
+    )
   })
 
   it('writes a minimal homepage', async () => {
