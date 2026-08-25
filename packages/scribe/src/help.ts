@@ -20,6 +20,7 @@ export function helpText(): string[] {
     '  db seed           Run database seeds',
     '  db setup          Migrate, auth migrations, then seed — first-run helper',
     '  make model|migration|policy|factory|job <Name>  Generate starter files',
+    '  config show      Print the resolved configuration (secrets redacted)',
     '  help             Show this message',
     '  --version, -v    Show version',
     '',

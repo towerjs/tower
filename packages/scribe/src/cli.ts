@@ -9,6 +9,7 @@ import type { TowerApp, TowerConfig, TowerModule } from '@towerjs/tower/foundati
 
 import { createJiti } from 'jiti'
 
+import { configCommand } from './commands/config.js'
 import { createCommand } from './commands/create.js'
 import { dbCommand } from './commands/db.js'
 import { makeCommand, makeHelp } from './generators/make.js'
@@ -45,6 +46,7 @@ export async function run(command: string | undefined, flags: string[], configPa
     return ok([versionText()])
   }
   if (command === 'db') return await dbCommand(flags, configPath)
+  if (command === 'config') return await configCommand(flags, configPath)
 
   const runSeed = flags.includes('--seed') || flags.includes('-s')
   const skipMigrate = flags.includes('--skip-migrate')
