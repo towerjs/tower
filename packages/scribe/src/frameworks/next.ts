@@ -704,6 +704,7 @@ export default function SignUpPage() {
               {state.error}
             </div>
           )}
+          <div>
             <label htmlFor="name" className={styles.label}>
               Name
             </label>
