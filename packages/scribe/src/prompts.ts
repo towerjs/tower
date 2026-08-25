@@ -265,6 +265,7 @@ export async function collectProjectStateFromFlags(flags: CreateFlags): Promise<
     framework: DEFAULT_FRAMEWORK,
     modules,
     frameworkAnswers: { tailwind, typescript },
+    template: flags.template,
     deployment,
     runtime,
   }

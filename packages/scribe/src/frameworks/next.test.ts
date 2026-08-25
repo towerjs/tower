@@ -433,7 +433,7 @@ describe('nextAdapter.generate', () => {
     expect(writeFile).toHaveBeenCalledWith(expect.stringContaining('proxy.ts'), expect.any(String))
   })
 
-  it('generates sign-in, sign-up pages for gatehouse', async () => {
+  it('does not generate sign-in/sign-up pages by default — only with --template auth', async () => {
     const stateWithGatehouse: ProjectState = {
       ...state,
       modules: { gatehouse: { credentials: true } },
@@ -441,15 +441,33 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
 
-    expect(mkdir).toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-in')), { recursive: true })
-    expect(mkdir).toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-up')), { recursive: true })
+    expect(mkdir).not.toHaveBeenCalledWith(expect.stringContaining(join('src', 'app', 'sign-in')), { recursive: true })
+  })
+
+  it('auth template emits ui components, auth pages, dashboard, and model files', async () => {
+    const authState: ProjectState = {
+      ...state,
+      template: 'auth',
+      modules: { vault: {}, gatehouse: { credentials: true } },
+    }
+
+    await nextAdapter.generate(authState, '/target')
+
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining(join('ui', 'button.tsx')), expect.any(String))
     expect(writeFile).toHaveBeenCalledWith(
       expect.stringContaining('sign-in'),
       expect.stringContaining('gatehouse/actions')
     )
     expect(writeFile).toHaveBeenCalledWith(
-      expect.stringContaining('sign-up'),
-      expect.stringContaining('gatehouse/actions')
+      expect.stringContaining('dashboard'),
+      expect.stringContaining('Project.scope')
+    )
+    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining(join('models', 'project.ts')), expect.any(String))
+  })
+
+  it('rejects unknown templates', async () => {
+    await expect(nextAdapter.generate({ ...state, template: 'bogus' }, '/target')).rejects.toThrow(
+      'Unknown template "bogus"'
     )
   })
 

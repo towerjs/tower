@@ -10,12 +10,14 @@ export interface CreateFlags {
   features?: string[]
   email?: 'resend' | 'smtp' | 'ses' | 'skip'
   sms?: 'twilio' | 'skip'
+  template?: string
 }
 
 const DEPLOYMENTS: DeploymentTarget[] = ['vercel', 'cloudflare', 'other']
 const VAULT_BRANDS: CreateFlags['vault'][] = ['neon', 'supabase', 'railway', 'other', 'skip']
 const GATEHOUSE_FEATURES = ['credentials', 'social', 'magicLinks', 'twoFactor', 'organization', 'phoneNumber']
 const EMAIL_PROVIDERS: CreateFlags['email'][] = ['resend', 'smtp', 'ses', 'skip']
+export const TEMPLATES = ['auth']
 const SMS_PROVIDERS: CreateFlags['sms'][] = ['twilio', 'skip']
 
 function takeValue(args: string[], index: number): { value: string | undefined; next: number } {

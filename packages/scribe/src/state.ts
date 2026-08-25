@@ -13,4 +13,6 @@ export type ProjectState = {
   frameworkAnswers: Record<string, unknown>
   deployment: DeploymentTarget
   runtime: Runtime
+  /** Opt-in scaffold template (e.g. 'auth'). None unless --template is passed. */
+  template?: string
 }

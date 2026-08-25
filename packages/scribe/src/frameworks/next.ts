@@ -74,17 +74,6 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(authDir, useTypeScript ? 'route.ts' : 'route.js'), authRoute())
 
       await writeFile(join(projectDir, useTypeScript ? 'src/proxy.ts' : 'src/proxy.js'), proxyFile())
-
-      // Auth starter (#84): working sign-in/sign-up pages over the shared
-      // gatehouse server actions, so a new app signs in without manual edits.
-      if (useTypeScript) {
-        const signInDir = join(projectDir, 'src', 'app', 'sign-in')
-        const signUpDir = join(projectDir, 'src', 'app', 'sign-up')
-        await mkdir(signInDir, { recursive: true })
-        await mkdir(signUpDir, { recursive: true })
-        await writeFile(join(signInDir, 'page.tsx'), signInPage(state))
-        await writeFile(join(signUpDir, 'page.tsx'), signUpPage(state))
-      }
     }
 
     if (state.modules.vault) {
@@ -95,19 +84,6 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(migrationsDir, '.gitkeep'), '')
       await mkdir(seedsDir, { recursive: true })
       await writeFile(join(seedsDir, '.gitkeep'), '')
-
-      // Model-backed golden path (#97): a sample model + its initial
-      // migration + factory, and a dashboard page reading through the model API.
-      if (useTypeScript) {
-        await mkdir(join(projectDir, 'src', 'models'), { recursive: true })
-        await writeFile(join(projectDir, 'src', 'models', 'project.ts'), projectModel())
-        await mkdir(join(projectDir, 'src', 'factories'), { recursive: true })
-        await writeFile(join(projectDir, 'src', 'factories', 'project.ts'), projectFactory())
-        await writeFile(join(migrationsDir, '0001_projects.ts'), projectsMigration())
-        const dashboardDir = join(projectDir, 'src', 'app', 'dashboard')
-        await mkdir(dashboardDir, { recursive: true })
-        await writeFile(join(dashboardDir, 'page.tsx'), dashboardPage(state))
-      }
     }
 
     await writeFile(join(projectDir, '.prettierrc'), prettierConfig(useTailwind))
@@ -116,6 +92,10 @@ export const nextAdapter: FrameworkAdapter = {
     const generated = await readFile(agentsPath, 'utf8').catch(() => '')
     const towerSection = agentsMd(state)
     await writeFile(agentsPath, generated + '\n\n' + towerSection)
+
+    if (state.template) {
+      await applyTemplate(state, projectDir, useTypeScript)
+    }
 
     // Install tower core + selected modules
     const towerDeps: string[] = ['@towerjs/tower']
@@ -146,6 +126,107 @@ export const nextAdapter: FrameworkAdapter = {
     }
     await execa(pm, [...addCommand(pm, true).slice(1), ...prettierDeps], { cwd: projectDir, stdio: 'inherit' })
   },
+}
+
+/**
+ * Opt-in scaffold templates (`--template <name>`). Templates are opinionated
+ * starting points layered on top of the bare default scaffold; the default
+ * stays minimal so applications never start by deleting example code.
+ */
+const TEMPLATES: Record<string, (state: ProjectState, projectDir: string, useTypeScript: boolean) => Promise<void>> = {
+  async auth(state: ProjectState, projectDir: string, useTypeScript: boolean) {
+    if (!useTypeScript) throw new Error(`The "auth" template currently requires TypeScript.`)
+    if (!state.modules.vault || !state.modules.gatehouse) {
+      throw new Error(
+        `The "auth" template requires the vault and gatehouse modules. ` +
+          `Re-run with --modules vault,gatehouse or scaffold without a template.`
+      )
+    }
+
+    const uiDir = join(projectDir, 'src', 'components', 'ui')
+    await mkdir(uiDir, { recursive: true })
+    await writeFile(join(uiDir, 'button.tsx'), buttonComponent())
+    await writeFile(join(uiDir, 'input.tsx'), inputComponent())
+
+    const modelsDir = join(projectDir, 'src', 'models')
+    await mkdir(modelsDir, { recursive: true })
+    await writeFile(join(modelsDir, 'project.ts'), projectModel())
+    const factoriesDir = join(projectDir, 'src', 'factories')
+    await mkdir(factoriesDir, { recursive: true })
+    await writeFile(join(factoriesDir, 'project.ts'), projectFactory())
+
+    const migrationsDir = join(projectDir, 'src', 'vault', 'migrations')
+    await writeFile(join(migrationsDir, '0001_projects.ts'), projectsMigration())
+
+    const signInDir = join(projectDir, 'src', 'app', 'sign-in')
+    const signUpDir = join(projectDir, 'src', 'app', 'sign-up')
+    const dashDir = join(projectDir, 'src', 'app', 'dashboard')
+    await mkdir(signInDir, { recursive: true })
+    await mkdir(signUpDir, { recursive: true })
+    await mkdir(dashDir, { recursive: true })
+    await writeFile(join(signInDir, 'page.tsx'), signInPage(state))
+    await writeFile(join(signUpDir, 'page.tsx'), signUpPage(state))
+    await writeFile(join(dashDir, 'page.tsx'), dashboardPage(state))
+  },
+}
+
+async function applyTemplate(state: ProjectState, projectDir: string, useTypeScript: boolean): Promise<void> {
+  const template = TEMPLATES[state.template!]
+  if (!template) {
+    throw new Error(`Unknown template "${state.template}". Available templates: ${Object.keys(TEMPLATES).join(', ')}.`)
+  }
+  await template(state, projectDir, useTypeScript)
+}
+
+function buttonComponent(): string {
+  return `import { forwardRef } from 'react'
+
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { pending?: boolean }
+
+// Minimal button — restyle or replace freely.
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { className = '', pending, disabled, ...props },
+  ref
+) {
+  return (
+    <button
+      ref={ref}
+      disabled={disabled || pending}
+      className={\`inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 \${className}\`}
+      {...props}
+    />
+  )
+})
+`
+}
+
+function inputComponent(): string {
+  return `import { forwardRef } from 'react'
+
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { label?: string }
+
+// Minimal labeled input — restyle or replace freely.
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { className = '', label, id, ...props },
+  ref
+) {
+  return (
+    <div>
+      {label && (
+        <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          {label}
+        </label>
+      )}
+      <input
+        ref={ref}
+        id={id}
+        className={\`w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 \${className}\`}
+        {...props}
+      />
+    </div>
+  )
+})
+`
 }
 
 const CLI_ONLY_KEYS = new Set(['brand'])
@@ -299,21 +380,26 @@ export default function Home() {
         </div>
         <div className="pt-2 space-x-4">
           ${
-            state.modules.gatehouse
+            state.template === 'auth' && state.modules.gatehouse
               ? `<Link
             href="/sign-in"
             className="inline-flex items-center rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
           >
             Sign in
-          </Link>`
-              : ''
-          }
+          </Link>
           <Link
             href="/dashboard"
             className="inline-flex items-center rounded-md border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
           >
             Open dashboard
-          </Link>
+          </Link>`
+              : `<a
+            href="https://towerjs.dev"
+            className="inline-flex items-center rounded-md border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
+          >
+            Read the docs
+          </a>`
+          }
         </div>
       </div>
     </main>
@@ -477,6 +563,8 @@ function signInPage(state: ProjectState): string {
 import { requestMagicLink, signIn } from '@towerjs/gatehouse/actions'
 import type { ActionResult } from '@towerjs/gatehouse/next'
 
+import { Button } from '@/components/ui/button'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useActionState, useEffect } from 'react'
@@ -526,13 +614,13 @@ ${''}
             </label>
             <input id="password" name="password" type="password" required className={inputClass} />
           </div>
-          <button
+          <Button
             type="submit"
-            disabled={pwPending}
-            className="w-full rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
+            pending={pwPending}
+            className="w-full bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900"
           >
             Sign in
-          </button>
+          </Button>
         </form>
 ${''}
 ${
@@ -545,13 +633,13 @@ ${
           )}
           <input type="hidden" name="type" value="sign-in" />
           <input id="magic-email" name="email" type="email" required placeholder="Email me a magic link" className={inputClass} />
-          <button
+          <Button
             type="submit"
-            disabled={magicPending}
-            className="w-full rounded-md border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-100 disabled:opacity-60 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
+            pending={magicPending}
+            className="w-full border border-neutral-300 text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
           >
             Send magic link
-          </button>
+          </Button>
         </form>`
     : ''
 }
@@ -574,6 +662,8 @@ function signUpPage(_state: ProjectState): string {
 
 import { signUp } from '@towerjs/gatehouse/actions'
 import type { ActionResult } from '@towerjs/gatehouse/next'
+
+import { Button } from '@/components/ui/button'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -619,13 +709,13 @@ export default function SignUpPage() {
             </label>
             <input id="password" name="password" type="password" required minLength={8} className={styles.input} />
           </div>
-          <button
+          <Button
             type="submit"
-            disabled={pending}
-            className="w-full rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
+            pending={pending}
+            className="w-full bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900"
           >
             Create account
-          </button>
+          </Button>
         </form>
 
         <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
