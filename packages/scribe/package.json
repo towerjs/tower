@@ -31,7 +31,8 @@
     "@towerjs/tower": "workspace:*",
     "@towerjs/vault": "workspace:*",
     "execa": "^10.0.1",
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "kysely": "^0.29.5"
   },
   "devDependencies": {
     "@types/node": "^26.2.0"
