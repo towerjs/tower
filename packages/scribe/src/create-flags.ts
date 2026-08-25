@@ -41,6 +41,13 @@ export function parseCreateFlags(args: string[]): CreateFlags {
   while (i < args.length) {
     const arg = args[i]
     switch (arg) {
+      case '--template': {
+        const { value, next } = takeValue(args, i)
+        if (value === undefined) throw new Error(`Missing value for ${arg}`)
+        flags.template = value
+        i = next + 1
+        break
+      }
       case '--name':
       case '--project-name': {
         const { value, next } = takeValue(args, i)
