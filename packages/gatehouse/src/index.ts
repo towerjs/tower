@@ -92,8 +92,6 @@ export type {
 } from './provider.js'
 export { UnsupportedCapabilityError, requireCapability } from './provider.js'
 export { TestProvider } from './providers/test-provider.js'
-export { defineGatehouseProviderContract } from './provider-contract.js'
-export type { ProviderContractHarness } from './provider-contract.js'
 
 // Policies (S7): provider-independent application authorization.
 export { policies, definePolicy, PolicyRegistry } from './policies.js'
@@ -113,8 +111,6 @@ export type {
 } from './social.js'
 export { TestSocialProvider } from './providers/social/test-social-provider.js'
 export type { TestSocialProviderOptions } from './providers/social/test-social-provider.js'
-export { defineSocialProviderContract } from './social-contract.js'
-export type { SocialProviderContractHarness } from './social-contract.js'
 
 // Social identity lifecycle (#83): Gatehouse-owned user/session linking.
 export {

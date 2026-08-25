@@ -5,6 +5,7 @@ import { defaultExclude, defineConfig } from 'vitest/config'
 const aliases = [
   { find: /^@towerjs\/gatehouse\/next$/, replacement: resolve('packages/gatehouse/src/frameworks/next.ts') },
   { find: /^@towerjs\/gatehouse\/client$/, replacement: resolve('packages/gatehouse/src/client.ts') },
+  { find: /^@towerjs\/gatehouse\/testing$/, replacement: resolve('packages/gatehouse/src/testing.ts') },
   { find: /^@towerjs\/blueprint\/internal$/, replacement: resolve('packages/tower/src/blueprint/internal.ts') },
   { find: /^@towerjs\/blueprint$/, replacement: resolve('packages/tower/src/blueprint/index.ts') },
   { find: /^@towerjs\/foundation$/, replacement: resolve('packages/tower/src/foundation/index.ts') },

@@ -1,7 +1,7 @@
 {
   "name": "@towerjs/gatehouse",
   "version": "0.1.0",
-  "description": "Authentication and authorization for Tower — email/password, social, 2FA, organizations, and more",
+  "description": "Authentication and authorization for Tower \u2014 email/password, social, 2FA, organizations, and more",
   "type": "module",
   "exports": {
     ".": {
@@ -23,6 +23,10 @@
     "./react-server": {
       "types": "./dist/frameworks/react-server.d.ts",
       "default": "./dist/frameworks/react-server.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
     }
   },
   "files": [
