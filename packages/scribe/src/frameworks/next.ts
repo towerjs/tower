@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
@@ -51,9 +52,8 @@ export const nextAdapter: FrameworkAdapter = {
 
     const projectDir = join(targetDir, state.projectName)
 
-    // Newer create-next-app emits a pnpm-workspace.yaml (for ignored builds),
-    // which makes pnpm treat the app as a workspace and reject `pnpm add`.
-    // Generated apps aren't workspaces.
+    // Newer create-next-app emits a partial pnpm-workspace.yaml that breaks
+    // plain `pnpm add` in generated apps. Generated apps are not workspaces.
     await rm(join(projectDir, 'pnpm-workspace.yaml'), { force: true })
     const configFile = useTypeScript ? 'tower.config.ts' : 'tower.config.js'
     const pageFile = useTypeScript ? 'page.tsx' : 'page.jsx'
@@ -96,8 +96,18 @@ export const nextAdapter: FrameworkAdapter = {
     // The dev script goes through Tower so apps get validation + diagnostics
     // (tower dev always serves on port 3000).
     const pkgPath = join(projectDir, 'package.json')
-    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as { scripts: Record<string, string> }
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as {
+      scripts: Record<string, string>
+      pnpm?: { overrides?: Record<string, string> }
+    }
     pkg.scripts.dev = 'tower dev'
+    // Local-tarball installs must not let nested @towerjs/* deps resolve to
+    // stale published versions from the registry.
+    const packDir = process.env.TOWER_PACK_DIR
+    if (packDir) {
+      pkg.pnpm ??= {}
+      pkg.pnpm.overrides = Object.fromEntries(ALL_TOWER_PACKAGES.map((name) => [name, tarball(packDir, name)]))
+    }
     await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
     const agentsPath = join(projectDir, 'AGENTS.md')
@@ -108,25 +118,35 @@ export const nextAdapter: FrameworkAdapter = {
     if (state.template) {
       await applyTemplate(state, projectDir, useTypeScript)
     }
+    // Internal affordance: UI-preview mode is intentionally not a public
+    // create-tower flag. Tooling opts in via TOWER_UI_PREVIEW=1.
+    const previewUi = state.previewUi === true || process.env.TOWER_UI_PREVIEW === '1'
+    if (previewUi) {
+      await applyUiPreview({ ...state, previewUi: true }, projectDir, useTypeScript)
+    }
 
-    // Install tower core + selected modules
+    // Install tower core + selected modules. Tooling can skip this step
+    // (TOWER_SKIP_INSTALL=1) and drive installs itself.
+    if (process.env.TOWER_SKIP_INSTALL === '1') {
+      return
+    }
     const towerDeps: string[] = ['@towerjs/tower']
     for (const moduleName of ['vault', 'gatehouse', 'courier']) {
       if (state.modules[moduleName]) towerDeps.push(`@towerjs/${moduleName}`)
     }
-    await execa(pm, [...addCommand(pm).slice(1), ...towerInstallArgs(pm, towerDeps)], {
+    await execa(pm, [...localAddArgs(pm, towerDeps)], {
       cwd: projectDir,
       stdio: 'inherit',
     })
 
     const cliDevDeps: string[] = ['@towerjs/scribe']
-    await execa(pm, [...addCommand(pm, true).slice(1), ...towerInstallArgs(pm, cliDevDeps)], {
+    await execa(pm, [...localAddArgs(pm, cliDevDeps, true)], {
       cwd: projectDir,
       stdio: 'inherit',
     })
 
     if (isEdge) {
-      await execa(pm, [...addCommand(pm, true).slice(1), ...towerInstallArgs(pm, ['@towerjs/edge'])], {
+      await execa(pm, [...localAddArgs(pm, ['@towerjs/edge'], true)], {
         cwd: projectDir,
         stdio: 'inherit',
       })
@@ -239,6 +259,35 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   )
 })
 `
+}
+
+/**
+ * Visual-development mode (`tower create --preview-ui`).
+ *
+ * Strips every auth gate — the proxy (both redirect directions included) is
+ * removed outright — and rewrites config to courier-console only so pages
+ * render with no database. Dashboard data becomes static samples. This mode
+ * exists purely to design UI; never ship it.
+ */
+async function applyUiPreview(state: ProjectState, projectDir: string, useTypeScript: boolean): Promise<void> {
+  await rm(join(projectDir, useTypeScript ? 'src/proxy.ts' : 'src/proxy.js'), { force: true })
+
+  const configFile = join(projectDir, useTypeScript ? 'tower.config.ts' : 'tower.config.js')
+  await writeFile(
+    configFile,
+    `import { courier } from "@towerjs/courier";\nimport { defineTower } from "@towerjs/tower";\n\n// UI preview mode: no auth, no database. Never ship this config.\nexport default defineTower({\n  modules: [\n    courier({ email: { provider: "console", from: "Preview <preview@example.com>" } }),\n  ],\n});\n`
+  )
+
+  // Env contract shrinks to nothing meaningful in preview mode.
+  await writeFile(join(projectDir, '.env.example'), '# UI preview mode — no environment variables required.\n')
+  await rm(join(projectDir, '.env'), { force: true })
+
+  if (useTypeScript && state.modules.vault && existsSync(join(projectDir, 'src', 'app', 'dashboard'))) {
+    await writeFile(
+      join(projectDir, 'src', 'app', 'dashboard', 'page.tsx'),
+      dashboardPage({ ...state, previewUi: true })
+    )
+  }
 }
 
 const CLI_ONLY_KEYS = new Set(['brand'])
@@ -481,24 +530,52 @@ export async function down(db: Vault) {
 `
 }
 
-/** Server-rendered dashboard reading through the model API. */
+/** Server-rendered dashboard reading through the model API. In UI-preview mode it renders static samples with no imports at all. */
 function dashboardPage(state: ProjectState): string {
   const header = state.modules.gatehouse
     ? `        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Dashboard</h1>
           <form action={signOut}>
-            <button
-              type="submit"
-              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
+            <button type="submit" className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
               Sign out
             </button>
           </form>
         </div>`
     : `        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Dashboard</h1>`
 
-  const imports = state.modules.gatehouse ? `import { signOut } from '@towerjs/gatehouse/actions'\n` : ''
+  if (state.previewUi) {
+    return `'use client'
 
+const sampleProjects = [
+  { id: '1', name: 'Design System', description: 'Landing page polish' },
+  { id: '2', name: 'Auth flows', description: 'Sign-in / sign-up' },
+  { id: '3', name: 'Dashboard', description: 'Model API list' },
+]
+
+export default function DashboardPage() {
+  return (
+    <main className="min-h-screen bg-white dark:bg-neutral-950 px-6 py-16">
+      <div className="mx-auto max-w-3xl space-y-8">
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Dashboard</h1>
+        <p className="text-neutral-500 dark:text-neutral-400">
+          Reading from your Vault database through the Tower model API.
+        </p>
+
+        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          {sampleProjects.map((project) => (
+            <li key={project.id} className="flex items-center justify-between px-4 py-3">
+              <span className="font-medium text-neutral-900 dark:text-neutral-100">{project.name}</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">{project.description}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </main>
+  )
+}
+`
+  }
+  const imports = state.modules.gatehouse ? `import { signOut } from '@towerjs/gatehouse/actions'\n` : ''
   return `import { Project } from '@/models/project'
 ${imports}
 export const dynamic = 'force-dynamic'
@@ -532,18 +609,14 @@ ${header}
             {projects.map((project) => (
               <li key={project.get('id')} className="flex items-center justify-between px-4 py-3">
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">{project.get('name')}</span>
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {project.get('description')}
-                </span>
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">{project.get('description')}</span>
               </li>
             ))}
           </ul>
         ) : (
           !error && (
             <p className="rounded-lg border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
-              No projects yet. Create one with{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 dark:bg-neutral-800">Project.create({'{'} name: {'"First project"'} {'}'})</code>{' '}
-              or seed some with <code className="rounded bg-neutral-100 px-1 py-0.5 dark:bg-neutral-800">ProjectFactory</code>.
+              No projects yet.
             </p>
           )
         )}
@@ -964,6 +1037,14 @@ const ALL_TOWER_PACKAGES = [
   '@towerjs/scribe',
 ]
 
+const tarball = towerTarball
+/** pnpm add args for local development against packed tarballs. */
+function localAddArgs(pm: PackageManager, names: string[], dev = false): string[] {
+  const args = addCommand(pm, dev).slice(1)
+  // Local-pack installs often run inside a monorepo; pnpm needs explicit consent.
+  if (pm === 'pnpm' && process.env.TOWER_PACK_DIR) args.push('-w')
+  return [...args, ...towerInstallArgs(pm, names)]
+}
 function towerTarball(packDir: string, name: string): string {
   const base = name.startsWith('@') ? name.replace('@towerjs/', 'towerjs-') : name
   return join(packDir, `${base}-${version}.tgz`)

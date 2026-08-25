@@ -15,4 +15,6 @@ export type ProjectState = {
   runtime: Runtime
   /** Opt-in scaffold template (e.g. 'auth'). None unless --template is passed. */
   template?: string
+  /** Visual-development mode: no auth gating, no database required. */
+  previewUi?: boolean
 }

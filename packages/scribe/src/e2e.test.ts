@@ -35,6 +35,7 @@ describe('scaffolding — real file output', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.npm_config_user_agent = 'pnpm/10.0.0'
+    delete process.env.TOWER_PACK_DIR
     tmpDir = mkdtempSync(join(tmpdir(), 'tower-e2e-'))
 
     vi.mocked(execa).mockImplementation(async (bin: string) => {

@@ -3,7 +3,8 @@ node_modules
 .pnpm-store
 .next
 dist
-*.tsbuildinfo
+*.tsbuildinfo\
+.cache
 .env
 package-lock.json
 .playwright-mcp
@@ -14,5 +15,6 @@ package-lock.json
 *.d.ts
 *.d.ts.map
 
-# macOS
 .DS_Store
+
+.preview/

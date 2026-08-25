@@ -22,7 +22,11 @@ export type GatehouseClientOptions = BetterAuthClientOptions & {
   ]
 }
 
-export const gatehouseClient: ReactAuthClient<GatehouseClientOptions> = createAuthClient({
+// Vendor inference drift: better-auth's plugin-inferred client enriches the
+// session user with plugin fields (twoFactorEnabled, banned, …). Gatehouse's
+// public client contract intentionally exposes the base user shape, so we
+// pin the type at this boundary instead of leaking plugin fields.
+export const gatehouseClient = createAuthClient({
   baseURL: typeof window !== 'undefined' ? window.location.origin : undefined,
   plugins: [
     adminClient(),
@@ -32,4 +36,4 @@ export const gatehouseClient: ReactAuthClient<GatehouseClientOptions> = createAu
     phoneNumberClient(),
     twoFactorClient(),
   ],
-})
+}) as unknown as ReactAuthClient<GatehouseClientOptions>

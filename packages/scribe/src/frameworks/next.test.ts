@@ -322,6 +322,7 @@ describe('nextAdapter.generate', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    delete process.env.TOWER_PACK_DIR
   })
 
   it('calls execa with create-next-app and correct flags', async () => {
