@@ -566,24 +566,27 @@ let socialProvidersById: Map<string, import('./social.js').SocialProvider> | und
 /**
  * The Tower-owned social sign-in / linking API (#83).
  *
- * Applications configure social providers in tower.config.ts:
+ * Applications configure social providers in tower.config.ts. Better Auth
+ * remains the production social path (`gatehouse.signIn.social`); the
+ * SocialProvider contract exists so curated adapters can implement the same
+ * semantics — e.g. a future Clerk adapter, or TestSocialProvider in tests:
  *
  * ```ts
  * gatehouse({
  *   provider: 'better-auth',
  *   credentials: true,
- *   socialProviders: [googleSocial()],
+ *   socialProviders: [myProvider()],
  * })
  * ```
  *
- * Then the happy path is:
+ * Then the flow is:
  *
  * ```ts
  * // 1. redirect the browser
- * const { url } = await gatehouse.social.redirect('google')
+ * const { url } = await gatehouse.social.redirect('acme')
  *
  * // 2. in the callback route: exchange + resolve/link + issue session
- * const result = await gatehouse.social.authenticate({ provider: 'google', code })
+ * const result = await gatehouse.social.authenticate({ provider: 'acme', code })
  * ```
  */
 const socialService = {

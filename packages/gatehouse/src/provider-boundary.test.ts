@@ -102,7 +102,6 @@ describe('Gatehouse runtime boundary (Edge compatibility of the contract)', () =
       'types.ts',
       'context.ts',
       'map-user.ts',
-      'providers/social/google.ts',
       'providers/social/test-social-provider.ts',
     ]
     const forbidden = /from\s+['"](better-auth|next\/|node:)/
@@ -111,21 +110,5 @@ describe('Gatehouse runtime boundary (Edge compatibility of the contract)', () =
       const content = fs.readFileSync(path.join(dir, file), 'utf-8')
       expect(forbidden.test(content), `${file} must not import Node, Next, or Better Auth`).toBe(false)
     }
-  })
-
-  it('loads the social contract graph under the same hostile module set', async () => {
-    vi.resetModules()
-    // google.ts uses only fetch + Web Crypto; if it (or social.ts) pulled in
-    // better-auth/next/node, the hostile mocks would reject the import.
-    const { GoogleSocialProvider } = await import('./providers/social/google.js')
-    const { TestSocialProvider } = await import('./providers/social/test-social-provider.js')
-
-    const testProvider = new TestSocialProvider()
-    expect((await testProvider.redirect()).url.startsWith('https://')).toBe(true)
-
-    const google = new GoogleSocialProvider({ clientId: 'c', clientSecret: 's' })
-    const redirect = await google.redirect()
-    expect(redirect.url).toContain('accounts.google.com')
-    expect(redirect.state).toBeTruthy()
   })
 })
