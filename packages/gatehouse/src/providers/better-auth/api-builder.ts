@@ -1,6 +1,6 @@
-import { mapSession, mapUser } from './map-user.js'
-import type { Session, SignInResult } from './types.js'
-import { AuthenticationError } from './types.js'
+import { mapSession, mapUser } from '../../map-user.js'
+import type { Session, SignInResult } from '../../types.js'
+import { AuthenticationError } from '../../types.js'
 
 // ─── Mapping: Better Auth method → Gatehouse path ─────────────────
 // Every path is a dot-separated sequence of keys.

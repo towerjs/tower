@@ -223,7 +223,7 @@ describe('getCurrentGatehouse', () => {
 
 describe('buildApi', () => {
   it('maps API methods to nested paths', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const source = {
       signInEmail: vi.fn(),
@@ -240,7 +240,7 @@ describe('buildApi', () => {
   })
 
   it('sends single object params as body for POST methods', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers({ cookie: 'x' })
     const inner = vi.fn().mockResolvedValue({
       user: { id: 'u1', name: 'A', email: 'a@b.com', emailVerified: true },
@@ -256,7 +256,7 @@ describe('buildApi', () => {
   })
 
   it('sends single object params as query for GET methods', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const inner = vi.fn().mockResolvedValue([])
     const gatehouse = buildApi({ listSessions: inner } as any, headers)
@@ -266,7 +266,7 @@ describe('buildApi', () => {
   })
 
   it('shapes positional id arguments for revoke', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const inner = vi.fn().mockResolvedValue(undefined)
     const gatehouse = buildApi({ revokeSession: inner } as any, headers)
@@ -276,7 +276,7 @@ describe('buildApi', () => {
   })
 
   it('maps revoke-all-sessions to the revokeSessions endpoint', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const inner = vi.fn().mockResolvedValue(undefined)
     const gatehouse = buildApi({ revokeSessions: inner } as any, headers)
@@ -286,7 +286,7 @@ describe('buildApi', () => {
   })
 
   it('shapes string TOTP arguments into body objects', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const enable = vi.fn().mockResolvedValue(undefined)
     const verify = vi.fn().mockResolvedValue(undefined)
@@ -300,7 +300,7 @@ describe('buildApi', () => {
   })
 
   it('shapes API key update with keyId body', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const inner = vi.fn().mockResolvedValue(undefined)
     const gatehouse = buildApi({ updateApiKey: inner } as any, headers)
@@ -310,7 +310,7 @@ describe('buildApi', () => {
   })
 
   it('collects unmapped methods in api passthrough', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const source = { customPlugin: vi.fn(), signInEmail: vi.fn() }
     const gatehouse = buildApi(source as any, headers)
@@ -318,7 +318,7 @@ describe('buildApi', () => {
   })
 
   it('skips mappings for undefined methods', async () => {
-    const { buildApi } = await import('./api-builder.js')
+    const { buildApi } = await import('./providers/better-auth/api-builder.js')
     const headers = new Headers()
     const source = { signInEmail: undefined }
     const gatehouse = buildApi(source as any, headers)

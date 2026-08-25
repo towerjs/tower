@@ -1,11 +1,11 @@
 import type { EmailOTPOptions } from 'better-auth/plugins'
 import { type Kysely, sql } from 'kysely'
 
-import { buildApi } from '../api-builder.js'
 import { mapSession, mapUser } from '../map-user.js'
 import type { GatehouseProviderCapabilities } from '../provider.js'
 import type { GatehouseConfig, GatehouseInstance, GatehouseUser, ProxyOptions, ProxyResult, Session } from '../types.js'
 import { AuthenticationError } from '../types.js'
+import { buildApi } from './better-auth/api-builder.js'
 
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
