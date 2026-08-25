@@ -99,6 +99,23 @@ export type { ProviderContractHarness } from './provider-contract.js'
 export { policies, definePolicy, PolicyRegistry } from './policies.js'
 export type { Policy, PolicyDecision } from './policies.js'
 
+// Social identity (S7): provider-independent OAuth/OIDC contract.
+export { SocialProviderError, SocialStateMismatchError, mergeScopes } from './social.js'
+export type {
+  SocialCallbackParams,
+  SocialEmail,
+  SocialIdentity,
+  SocialIdentityTokens,
+  SocialProvider,
+  SocialProviderCapabilities,
+  SocialRedirect,
+  SocialRedirectOptions,
+} from './social.js'
+export { TestSocialProvider } from './providers/social/test-social-provider.js'
+export type { TestSocialProviderOptions } from './providers/social/test-social-provider.js'
+export { defineSocialProviderContract } from './social-contract.js'
+export type { SocialProviderContractHarness } from './social-contract.js'
+
 export type {
   GatehouseEmailVerificationConfig,
   GatehouseEmailVerificationMethod,
