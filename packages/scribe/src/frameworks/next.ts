@@ -150,10 +150,10 @@ const TEMPLATES: Record<string, (state: ProjectState, projectDir: string, useTyp
       )
     }
 
-    const uiDir = join(projectDir, 'src', 'components', 'ui')
-    await mkdir(uiDir, { recursive: true })
-    await writeFile(join(uiDir, 'button.tsx'), buttonComponent())
-    await writeFile(join(uiDir, 'input.tsx'), inputComponent())
+    const componentsDir = join(projectDir, 'src', 'components')
+    await mkdir(componentsDir, { recursive: true })
+    await writeFile(join(componentsDir, 'button.tsx'), buttonComponent())
+    await writeFile(join(componentsDir, 'input.tsx'), inputComponent())
 
     const modelsDir = join(projectDir, 'src', 'models')
     await mkdir(modelsDir, { recursive: true })
@@ -570,7 +570,7 @@ function signInPage(state: ProjectState): string {
 import { requestMagicLink, signIn } from '@towerjs/gatehouse/actions'
 import type { ActionResult } from '@towerjs/gatehouse/next'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/button'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -670,7 +670,7 @@ function signUpPage(_state: ProjectState): string {
 import { signUp } from '@towerjs/gatehouse/actions'
 import type { ActionResult } from '@towerjs/gatehouse/next'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/button'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

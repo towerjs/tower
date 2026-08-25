@@ -457,7 +457,10 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(authState, '/target')
 
-    expect(writeFile).toHaveBeenCalledWith(expect.stringContaining(join('ui', 'button.tsx')), expect.any(String))
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining(join('components', 'button.tsx')),
+      expect.any(String)
+    )
     expect(writeFile).toHaveBeenCalledWith(
       expect.stringContaining('sign-in'),
       expect.stringContaining('gatehouse/actions')
