@@ -229,62 +229,66 @@ ${modules}
 function homePage(state: ProjectState): string {
   const moduleNames = Object.keys(state.modules)
   const moduleDescriptions: Record<string, string> = {
-    vault: 'Vault (PostgreSQL + Kysely)',
-    gatehouse: 'Gatehouse (Better Auth)',
-    courier: 'Courier (Console Email)',
-  }
-  const providers: Record<string, string> = {}
-  for (const [name, cfg] of Object.entries(state.modules)) {
-    if (cfg?.provider) providers[name] = cfg.provider as string
+    vault: 'PostgreSQL + Kysely',
+    gatehouse: 'Better Auth',
+    courier: 'Email / SMS / Push',
   }
 
   return `import Link from 'next/link'
 
 export default function Home() {
   const modules = [
-    ${moduleNames.map((n) => `{ name: '${n}', description: '${moduleDescriptions[n]}', provider: '${providers[n] ?? 'default'}' }`).join(',\n    ')}
+    ${moduleNames.map((n) => `{ name: '${n}', description: '${moduleDescriptions[n]}' }`).join(',\n    ')}
   ]
 
   return (
     <main className="min-h-screen bg-white dark:bg-neutral-950 flex flex-col items-center justify-center px-4 py-20">
-      <div className="max-w-2xl w-full space-y-8 text-center">
-        <div className="flex flex-col items-center gap-2">
-          <svg className="w-12 h-12 text-neutral-900 dark:text-neutral-100" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div className="max-w-2xl w-full space-y-10 text-center">
+        <div className="flex items-center justify-center gap-3">
+          <svg className="w-10 h-10 text-neutral-900 dark:text-neutral-100" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="32" height="32" rx="8" fill="currentColor"/>
             <path d="M8 16L14 22L24 10" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Tower</span>
+          <span className="text-neutral-300 dark:text-neutral-700 text-2xl font-light">+</span>
+          <svg className="w-9 h-9" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Next.js">
+            <circle cx="90" cy="90" r="90" className="fill-neutral-900 dark:fill-neutral-100" />
+            <path
+              d="M149.508 157.52L69.142 54H54v71.97h12.114V69.384l84.535 106.695a90.304 90.304 0 0 0-1.141-18.559z"
+              className="fill-white dark:fill-neutral-950"
+            />
+            <path d="M115 54h12v72h-12z" className="fill-white dark:fill-neutral-950" />
+          </svg>
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-          Tower + Next.js
+          Your Tower application is ready
         </h1>
         <p className="text-lg text-neutral-500 dark:text-neutral-400">
-          Your Tower application is ready. Selected modules:
+          Tower scaffolded your infrastructure. The application is yours to build.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 text-left">
           {modules.map((mod) => (
-            <div key={mod.name} className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-left dark:border-neutral-800 dark:bg-neutral-900">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
-                  {mod.name.charAt(0).toUpperCase()}
-                </span>
-                <span className="font-medium text-neutral-900 dark:text-neutral-100">{mod.name}</span>
-              </div>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                {mod.description + (mod.provider ? ' \u2014 ' + mod.provider : '')}
-              </p>
+            <div key={mod.name} className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
+              <span className="font-medium capitalize text-neutral-900 dark:text-neutral-100">{mod.name}</span>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{mod.description}</p>
             </div>
           ))}
         </div>
-        <div className="pt-4">
+        <div className="pt-2 space-x-4">
+          ${
+            state.modules.gatehouse
+              ? `<Link
+            href="/sign-in"
+            className="inline-flex items-center rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
+          >
+            Sign in
+          </Link>`
+              : ''
+          }
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
+            className="inline-flex items-center rounded-md border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-            </svg>
-            Go to Dashboard
+            Open dashboard
           </Link>
         </div>
       </div>
