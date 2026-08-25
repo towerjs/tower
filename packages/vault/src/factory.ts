@@ -102,8 +102,9 @@ export function defineFactory<T extends Record<string, any>>(
       for (const [name, attrs] of Object.entries(statesMap)) {
         variants[name] = createState(modelClass, definition, { ...attrs }, counter)
       }
-      return Object.assign(Object.create(Object.getPrototypeOf(factory)), factory, variants) as ModelFactory<T> &
-        { [K in keyof S]: FactoryState<T> }
+      return Object.assign(Object.create(Object.getPrototypeOf(factory)), factory, variants) as ModelFactory<T> & {
+        [K in keyof S]: FactoryState<T>
+      }
     },
   }
 

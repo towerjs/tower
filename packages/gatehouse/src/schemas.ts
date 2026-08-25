@@ -11,7 +11,18 @@ import { z } from 'zod'
  */
 export const gatehouseConfigSchema = z
   .object({
-    provider: z.literal('better-auth'),
+    provider: z.union([
+      z.literal('better-auth'),
+      // A GatehouseProvider instance (curated custom/test providers). It must
+      // at minimum look like the contract: name, capabilities, init.
+      z.custom<{ name: string; capabilities: unknown; init: (...args: unknown[]) => unknown }>(
+        (v) =>
+          typeof v === 'object' &&
+          v !== null &&
+          typeof (v as { init?: unknown }).init === 'function' &&
+          typeof (v as { name?: unknown }).name === 'string'
+      ),
+    ]),
 
     credentials: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
 

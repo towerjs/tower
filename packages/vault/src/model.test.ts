@@ -457,9 +457,7 @@ describe('Model — query API', () => {
     expect((await Scoped.scope('active').get()).map((m) => m.get('id'))).toEqual(['s1', 's3'])
     expect((await Scoped.scope('ownedBy', 'u1').get()).map((m) => m.get('id'))).toEqual(['s1', 's2'])
     // scopes compose
-    expect(
-      (await Scoped.query().scope('active').scope('ownedBy', 'u1').get()).map((m) => m.get('id'))
-    ).toEqual(['s1'])
+    expect((await Scoped.query().scope('active').scope('ownedBy', 'u1').get()).map((m) => m.get('id'))).toEqual(['s1'])
   })
 
   it('throws for an unknown scope', () => {

@@ -77,6 +77,23 @@ export type {
   EmailOtpSendParams,
 } from './types.js'
 
+// Provider contract (S6): Tower-owned provider interface, capabilities, and
+// the reusable contract suite every curated provider must pass.
+export type {
+  AuthContext,
+  GatehouseProvider,
+  GatehouseProviderCapabilities,
+  GatehouseProviderInitOptions,
+  GatehouseProviderRoutes,
+  ProviderAuthenticationCapabilities,
+  ProviderRuntimeCapabilities,
+  ProviderSessionCapabilities,
+} from './provider.js'
+export { UnsupportedCapabilityError, requireCapability } from './provider.js'
+export { TestProvider } from './providers/test-provider.js'
+export { defineGatehouseProviderContract } from './provider-contract.js'
+export type { ProviderContractHarness } from './provider-contract.js'
+
 export type {
   GatehouseEmailVerificationConfig,
   GatehouseEmailVerificationMethod,
@@ -370,12 +387,32 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
   parseGatehouseConfig(config as unknown as Record<string, unknown>)
 
   const doInit = async (ctx: TowerContext) => {
-    const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
     const vaultProxy = ctx.services.get<any>('vault')
     const vault = vaultProxy?._kysely ?? vaultProxy
     const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
-    setAdapter(new (BaAdapter as any)(withCourierTransport(config, courier), vault) as BetterAuthAdapter)
-    await (getAdapter() as any).init()
+
+    let provider: import('./provider.js').GatehouseProvider
+    if (typeof config.provider === 'object' && config.provider !== null) {
+      // A GatehouseProvider instance — curated custom or test providers.
+      provider = config.provider
+      if (!getAdapter()) {
+        setAdapter(provider as unknown as BetterAuthAdapter)
+      }
+    } else {
+      const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
+      provider = new (BaAdapter as any)(withCourierTransport(config, courier), vault) as BetterAuthAdapter
+      setAdapter(provider as unknown as BetterAuthAdapter)
+    }
+
+    if (ctx.runtime.name === 'edge' && !provider.capabilities.runtime.edge) {
+      throw new Error(
+        `The "${provider.name}" provider does not support Edge runtimes ` +
+          `(runtime.edge is not declared in its capabilities). ` +
+          `Run Gatehouse on Node.js with this provider, or choose an edge-capable provider.`
+      )
+    }
+
+    await provider.init({ db: vault })
     // Replace the lazy placeholder with the real runtime API so container
     // lookups resolve to a usable service (mirrors vault's initialize).
     ctx.services.register('gatehouse', createRuntimeService())
@@ -393,6 +430,10 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
 
     get provider() {
       return getAdapter()!.provider
+    },
+
+    get capabilities() {
+      return getAdapter()!.capabilities
     },
 
     get routes() {
@@ -652,6 +693,16 @@ export const gatehouse = new Proxy(gatehouseTarget, {
 // Legacy aliases for hermetic tests — internal, not part of public contract
 export const defineGatehouse = createGatehouseModuleDefinition
 export const createGatehouseModule = createGatehouseModuleDefinition
+
+/**
+ * The Better Auth provider adapter — the reference implementation of the
+ * GatehouseProvider contract. Exported so curated providers and integration
+ * tests can construct it directly.
+ */
+export async function betterAuthProvider(config: GatehouseConfig, db: unknown) {
+  const { BetterAuthAdapter } = await import('./providers/better-auth.js')
+  return new (BetterAuthAdapter as any)(config, db) as import('./provider.js').GatehouseProvider
+}
 
 function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
   if (!courier) return config

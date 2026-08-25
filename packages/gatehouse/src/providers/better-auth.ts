@@ -3,11 +3,36 @@ import { type Kysely, sql } from 'kysely'
 
 import { buildApi } from '../api-builder.js'
 import { mapSession, mapUser } from '../map-user.js'
+import type { GatehouseProviderCapabilities } from '../provider.js'
 import type { GatehouseConfig, GatehouseInstance, GatehouseUser, ProxyOptions, ProxyResult, Session } from '../types.js'
 import { AuthenticationError } from '../types.js'
 
 /** Adapter wrapping better-auth behind the Gatehouse interface. */
 export class BetterAuthAdapter {
+  readonly name = 'better-auth' as const
+
+  /**
+   * Better Auth's session middleware and cookie handling rely on Node.js
+   * APIs. Edge support must come from a different provider, not from here.
+   */
+  readonly capabilities: GatehouseProviderCapabilities = {
+    runtime: { node: true, edge: false },
+    authentication: {
+      password: true,
+      social: true,
+      magicLink: true,
+      emailVerification: true,
+      emailOtp: true,
+      phoneOtp: true,
+      passkeys: true,
+      twoFactor: true,
+      organizations: true,
+      apiKeys: true,
+      admin: true,
+    },
+    sessions: { database: true },
+  }
+
   private auth: any
   private api: any
   private authOptions: Record<string, unknown> | null = null
@@ -244,6 +269,11 @@ export class BetterAuthAdapter {
     return this.auth
   }
 
+  /** Level-3 escape hatch — the raw provider SDK, outside the portability contract. */
+  get raw(): unknown {
+    return this.auth
+  }
+
   /** Next.js route handlers (GET/POST) for the auth API. */
   get routes() {
     if (!this._routes) throw new Error('Routes not available. Gatehouse must be initialized first.')
@@ -264,6 +294,9 @@ export class BetterAuthAdapter {
       headers,
       provider: this.auth,
       requireUser: async () => (await this.requireAuth({ headers })).user,
+      signOut: async () => {
+        await this.api.signOut({ headers })
+      },
       can: (params) => this.checkPermission(params),
       ...api,
       // Manual service blocks override the generic api surface where present,

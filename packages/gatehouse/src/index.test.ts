@@ -917,3 +917,75 @@ describe('social provider expansion', () => {
     delete process.env.GATEHOUSE_GOOGLE_CLIENT_SECRET
   })
 })
+
+// ─── Provider contract injection (S6) ──────────────────────────
+
+describe('custom GatehouseProvider injection', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    ;(globalThis as any)['___tower_gatehouse_adapter___'] = undefined
+  })
+
+  function makeFakeProvider(runtime = { node: true, edge: true }) {
+    const initCalls: any[] = []
+    const provider = {
+      name: 'fake',
+      capabilities: {
+        runtime,
+        authentication: { password: true },
+        sessions: { database: true },
+      },
+      init: vi.fn(async (opts: any) => {
+        initCalls.push(opts)
+      }),
+      migrate: vi.fn(async () => {}),
+      getSession: async () => null,
+      requireAuth: async () => {
+        throw new Error('unauthenticated')
+      },
+      from: async () => ({ session: async () => null, user: async () => null }),
+      raw: undefined as unknown,
+    }
+    return { provider, initCalls }
+  }
+
+  it('initializes an injected provider without touching better-auth', async () => {
+    const { defineGatehouse } = await import('./index.js')
+    const { provider } = makeFakeProvider()
+    const ctx = mockCtx()
+
+    await defineGatehouse({ provider: provider as any }).initialize!(ctx)
+
+    expect(mocks.mockBetterAuth).not.toHaveBeenCalled()
+    // receives the app's database handle (the resolved vault service)
+    expect(provider.init).toHaveBeenCalledWith({ db: { db: { selectFrom: expect.any(Function) } } })
+    expect(ctx.services.register).toHaveBeenCalledWith('gatehouse', expect.anything())
+  })
+
+  it('exposes the configured provider capabilities on the module', async () => {
+    const { defineGatehouse } = await import('./index.js')
+    const { provider } = makeFakeProvider()
+
+    const mod = defineGatehouse({ provider: provider as any })
+    await mod.initialize!(mockCtx())
+
+    expect(mod.capabilities).toEqual(provider.capabilities)
+    expect(mod.capabilities.runtime.edge).toBe(true)
+  })
+
+  it('throws an actionable error when a Node-only provider is initialized on Edge', async () => {
+    const { defineGatehouse } = await import('./index.js')
+    const { provider } = makeFakeProvider({ node: true, edge: false })
+
+    await expect(
+      defineGatehouse({ provider: provider as any }).initialize!(
+        mockCtx({
+          runtime: { name: 'edge', isServerless: true },
+        })
+      )
+    ).rejects.toThrow('does not support Edge runtimes')
+
+    // init must not run when the runtime is unsupported
+    expect(provider.init).not.toHaveBeenCalled()
+  })
+})

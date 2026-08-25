@@ -325,7 +325,9 @@ export class ModelQueryBuilder<T extends Record<string, any>> {
     }
     const total = await this.count()
     if (total === 0) return { data: [], total: 0, page, perPage, lastPage: 1 }
-    const data = await this.limit(perPage).offset((page - 1) * perPage).get()
+    const data = await this.limit(perPage)
+      .offset((page - 1) * perPage)
+      .get()
     return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) }
   }
 }

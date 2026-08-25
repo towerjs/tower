@@ -1,5 +1,6 @@
 import { mapSession, mapUser } from './map-user.js'
 import type { Session, SignInResult } from './types.js'
+import { AuthenticationError } from './types.js'
 
 // ─── Mapping: Better Auth method → Gatehouse path ─────────────────
 // Every path is a dot-separated sequence of keys.
@@ -367,14 +368,35 @@ function toSessionResult(raw: Record<string, unknown>): Session {
   }
 }
 
+/**
+ * Translates provider-level unauthorized failures into Gatehouse's
+ * Tower-owned AuthenticationError so callers never see provider SDK errors
+ * across the contract boundary.
+ */
+function mapAuthErrors(fn: (...args: any[]) => Promise<unknown>): (...args: any[]) => Promise<unknown> {
+  return async (...args: any[]) => {
+    try {
+      return await fn(...args)
+    } catch (err) {
+      const e = err as { status?: string; body?: { code?: string }; message?: string } | null
+      if (e && (e.status === 'UNAUTHORIZED' || e.body?.code === 'INVALID_EMAIL_OR_PASSWORD')) {
+        throw new AuthenticationError(e.message || 'Authentication failed')
+      }
+      throw err
+    }
+  }
+}
+
 function wrapResponse(path: string, fn: (...args: any[]) => Promise<unknown>): (...args: any[]) => Promise<any> {
+  let wrapped = fn
   if (SIGN_IN_RESULT_PATHS.has(path)) {
-    return async (...args: any[]) => toSignInResult((await fn(...args)) as Record<string, unknown>)
+    wrapped = async (...args: any[]) => toSignInResult((await fn(...args)) as Record<string, unknown>)
+  } else if (SESSION_RESULT_PATHS.has(path)) {
+    wrapped = async (...args: any[]) => toSessionResult((await fn(...args)) as Record<string, unknown>)
   }
-  if (SESSION_RESULT_PATHS.has(path)) {
-    return async (...args: any[]) => toSessionResult((await fn(...args)) as Record<string, unknown>)
-  }
-  return fn
+  // Every built method translates provider unauthorized failures into
+  // Gatehouse's AuthenticationError.
+  return mapAuthErrors(wrapped)
 }
 
 export function buildApi(api: Record<string, Function>, headers: Headers): Record<string, any> {

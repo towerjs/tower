@@ -433,12 +433,13 @@ export type GatehouseSocialConfig = string[] | Record<string, SocialProviderEntr
  * magic links, OTP, passkeys, TOTP, organizations, admin, API keys) and how
  * they behave.
  *
- * The provider is selected with `provider: 'better-auth'`. Feature options are
- * Tower-owned; provider-specific settings (secrets, model names, custom
+ * The provider is selected with `provider: 'better-auth'` or by supplying a
+ * GatehouseProvider instance (curated custom/test providers). Feature options
+ * are Tower-owned; provider-specific settings (secrets, model names, custom
  * plugins) pass through via `passThrough` and `plugins`.
  */
 export interface GatehouseConfig {
-  provider: 'better-auth'
+  provider: 'better-auth' | import('./provider.js').GatehouseProvider
 
   credentials?:
     | boolean
@@ -601,6 +602,14 @@ export interface GatehouseInstance {
   session(): Promise<Session | null>
   user(): Promise<GatehouseUser | null>
   readonly headers: Headers
+
+  /**
+   * Signs the current session out of the Tower application.
+   *
+   * Core API: portable across all providers.
+   */
+  signOut(): Promise<void>
+
   /**
    * Raw provider instance.
    *
@@ -788,6 +797,9 @@ export interface GatehouseModule {
    * internals bypasses Gatehouse's Tower-owned semantics.
    */
   provider: any
+
+  /** Capability declaration of the configured provider. */
+  readonly capabilities: import('./provider.js').GatehouseProviderCapabilities
 
   routes: {
     GET: (req: Request) => Promise<Response>

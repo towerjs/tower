@@ -47,6 +47,9 @@ export default defineConfig({
           name: 'integration',
           include: ['tests/integration/**/*.test.ts'],
           globalSetup: ['tests/integration/global-setup.ts'],
+          // Files run serially: multiple files trigger provider migrations
+          // against the same database, and concurrent DDL races Postgres.
+          fileParallelism: false,
           testTimeout: 120_000,
         },
       },
