@@ -1,4 +1,5 @@
 packages:
+  - '.preview/*'
   - 'packages/*'
   - 'examples/*'
 allowBuilds:

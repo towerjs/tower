@@ -1,7 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
 import { execa } from 'execa'
@@ -9,8 +8,6 @@ import { execa } from 'execa'
 import { type PackageManager, addCommand, detectPackageManager, nextAppFlag } from '../package-manager.js'
 import type { ProjectState } from '../state.js'
 import type { FrameworkAdapter } from './adapter.js'
-
-const { version } = createRequire(import.meta.url)('../../package.json')
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -106,7 +103,12 @@ export const nextAdapter: FrameworkAdapter = {
     const packDir = process.env.TOWER_PACK_DIR
     if (packDir) {
       pkg.pnpm ??= {}
-      pkg.pnpm.overrides = Object.fromEntries(ALL_TOWER_PACKAGES.map((name) => [name, tarball(packDir, name)]))
+      pkg.pnpm.overrides = Object.fromEntries(
+        ALL_TOWER_PACKAGES.map((name) => {
+          const dir = name.startsWith('@') ? name.replace('@towerjs/', '') : name
+          return [name, 'link:' + join(packDir, dir)]
+        })
+      )
     }
     await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
@@ -125,28 +127,54 @@ export const nextAdapter: FrameworkAdapter = {
       await applyUiPreview({ ...state, previewUi: true }, projectDir, useTypeScript)
     }
 
+    /** pnpm add args for installs; -w when running inside an ancestor workspace. */
+    const localAddArgs = (names: string[], dev = false): string[] => {
+      const args = addCommand(pm, dev).slice(1)
+      if (pm === 'pnpm' && process.env.TOWER_PACK_DIR) args.push('-w')
+      return [...args, ...towerInstallArgs(pm, names)]
+    }
+
     // Install tower core + selected modules. Tooling can skip this step
     // (TOWER_SKIP_INSTALL=1) and drive installs itself.
     if (process.env.TOWER_SKIP_INSTALL === '1') {
+      // Write dependency specs directly so tooling can run one `pnpm install`.
+      const pkgPath = join(projectDir, 'package.json')
+      const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as {
+        dependencies: Record<string, string>
+        devDependencies?: Record<string, string>
+      }
+      const spec = (name: string) => {
+        const dir = name.startsWith('@') ? name.replace('@towerjs/', '') : name
+        return 'link:' + join(process.env.TOWER_PACK_DIR!, dir)
+      }
+      pkg.dependencies ??= {}
+      pkg.dependencies['@towerjs/tower'] = spec('@towerjs/tower')
+      for (const moduleName of ['vault', 'gatehouse', 'courier']) {
+        if (state.modules[moduleName]) pkg.dependencies[`@towerjs/${moduleName}`] = spec(`@towerjs/${moduleName}`)
+      }
+      pkg.devDependencies ??= {}
+      pkg.devDependencies['@towerjs/scribe'] = spec('@towerjs/scribe')
+      if ((state.runtime ?? 'node') === 'edge') pkg.devDependencies['@towerjs/edge'] = spec('@towerjs/edge')
+      await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
       return
     }
     const towerDeps: string[] = ['@towerjs/tower']
     for (const moduleName of ['vault', 'gatehouse', 'courier']) {
       if (state.modules[moduleName]) towerDeps.push(`@towerjs/${moduleName}`)
     }
-    await execa(pm, [...localAddArgs(pm, towerDeps)], {
+    await execa(pm, [...localAddArgs(towerDeps)], {
       cwd: projectDir,
       stdio: 'inherit',
     })
 
     const cliDevDeps: string[] = ['@towerjs/scribe']
-    await execa(pm, [...localAddArgs(pm, cliDevDeps, true)], {
+    await execa(pm, [...localAddArgs(cliDevDeps, true)], {
       cwd: projectDir,
       stdio: 'inherit',
     })
 
     if (isEdge) {
-      await execa(pm, [...localAddArgs(pm, ['@towerjs/edge'], true)], {
+      await execa(pm, [...localAddArgs(['@towerjs/edge'], true)], {
         cwd: projectDir,
         stdio: 'inherit',
       })
@@ -1037,35 +1065,17 @@ const ALL_TOWER_PACKAGES = [
   '@towerjs/scribe',
 ]
 
-const tarball = towerTarball
-/** pnpm add args for local development against packed tarballs. */
-function localAddArgs(pm: PackageManager, names: string[], dev = false): string[] {
-  const args = addCommand(pm, dev).slice(1)
-  // Local-pack installs often run inside a monorepo; pnpm needs explicit consent.
-  if (pm === 'pnpm' && process.env.TOWER_PACK_DIR) args.push('-w')
-  return [...args, ...towerInstallArgs(pm, names)]
-}
-function towerTarball(packDir: string, name: string): string {
-  const base = name.startsWith('@') ? name.replace('@towerjs/', 'towerjs-') : name
-  return join(packDir, `${base}-${version}.tgz`)
-}
-
 /**
- * Resolves tower package names to install args. When TOWER_PACK_DIR is set,
- * installs from locally-packed tarballs instead of the npm registry. Every
- * @towerjs/* package is installed explicitly because @towerjs/tower depends on
- * all of them and npm would otherwise try to fetch the unpublished versions.
+ * Resolves tower package names to install args. When TOWER_PACK_DIR is set
+ * it points at the monorepo's packages/ directory: packages are linked in
+ * place (no copies, no packing), so preview apps always run current code.
  */
 function towerInstallArgs(pm: PackageManager, names: string[]): string[] {
   const packDir = process.env.TOWER_PACK_DIR
   if (!packDir) return names
-
-  if (pm === 'npm') {
-    const tarballs = new Set(names.map((n) => towerTarball(packDir, n)))
-    for (const name of ALL_TOWER_PACKAGES) tarballs.add(towerTarball(packDir, name))
-    return [...tarballs]
-  }
-  // pnpm/yarn/bun resolve `@towerjs/*` to the workspace registry in a monorepo;
-  // prefer the packed tarballs directly so the generated app is self-contained.
-  return [...new Set(ALL_TOWER_PACKAGES.map((n) => towerTarball(packDir, n)))]
+  const specs = names.map((name) => {
+    const dir = name.startsWith('@') ? name.replace('@towerjs/', '') : name
+    return 'link:' + join(packDir, dir)
+  })
+  return pm === 'npm' ? specs : specs
 }
