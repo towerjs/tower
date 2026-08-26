@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEV_PORT, devDiagnostic, pickFreePort, resolveDevCommand } from './dev.js'
+import { DEV_PORT, MAX_PORT_PROBES, devDiagnostic, pickFreePort, resolveDevCommand } from './dev.js'
 
 describe('resolveDevCommand', () => {
   it('always passes a port and runs next dev', () => {
@@ -25,9 +25,24 @@ describe('resolveDevCommand', () => {
 })
 
 describe('pickFreePort', () => {
-  it('returns the base port when nothing occupies it', async () => {
-    // No listener is bound here; the first probe should win.
-    await expect(pickFreePort()).resolves.toBe(DEV_PORT)
+  it('skips occupied ports and returns the first free one', async () => {
+    const { createServer } = await import('node:net')
+    const servers = [createServer(), createServer()]
+    await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.listen(0, '127.0.0.1', resolve))))
+    const ports = servers.map((s) => (s.address() as { port: number }).port)
+    void ports
+    // Occupy DEV_PORT itself when it is currently free.
+    const blocker = createServer()
+    await new Promise<void>((resolve) => blocker.listen(DEV_PORT, '127.0.0.1', resolve))
+    try {
+      const port = await pickFreePort()
+      expect(port).not.toBe(DEV_PORT)
+      expect(port).toBeGreaterThanOrEqual(DEV_PORT)
+      expect(port).toBeLessThan(DEV_PORT + MAX_PORT_PROBES)
+    } finally {
+      blocker.close()
+      for (const s of servers) s.close()
+    }
   })
 })
 

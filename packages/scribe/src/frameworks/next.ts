@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -57,6 +57,26 @@ export const nextAdapter: FrameworkAdapter = {
 
     await writeFile(join(projectDir, 'src', 'app', pageFile), homePage(state))
     await writeFile(join(projectDir, configFile), towerConfig(state))
+
+    // create-next-app wires Geist via next/font and points Tailwind's
+    // --font-sans at it. Tower scaffolds use the system sans-serif stack:
+    // no font packages, no network fonts.
+    await writeFile(join(projectDir, 'src', 'app', 'layout.tsx'), defaultLayout(state))
+    {
+      const globalsPath = join(projectDir, 'src', 'app', 'globals.css')
+      let globals = ''
+      try {
+        globals = readFileSync(globalsPath, 'utf8')
+      } catch {}
+      if (!globals.includes('font-sans: system')) {
+        globals +=
+          '\n/* System font stack — replaces create-next-app\'s Geist wiring */\n' +
+          '@theme inline {\n' +
+          '  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\n' +
+          '}\n'
+        await writeFile(globalsPath, globals)
+      }
+    }
     if (isEdge) {
       await writeFile(join(projectDir, useTypeScript ? 'next.config.ts' : 'next.config.mjs'), nextConfig())
     }
@@ -227,7 +247,52 @@ const TEMPLATES: Record<string, (state: ProjectState, projectDir: string, useTyp
     await writeFile(join(signInDir, 'page.tsx'), signInPage(state))
     await writeFile(join(signUpDir, 'page.tsx'), signUpPage(state))
     await writeFile(join(dashDir, 'page.tsx'), dashboardPage(state))
+
+    // Inter var via the rsms.me CDN: preconnect + preload + stylesheet, and a
+    // font-family override so Tailwind's font-sans resolves to it.
+    await writeFile(join(projectDir, 'src', 'app', 'layout.tsx'), authLayout(state))
+    const globalsPath = join(projectDir, 'src', 'app', 'globals.css')
+    let globals = ''
+    try {
+      globals = readFileSync(globalsPath, 'utf8')
+    } catch {}
+    if (!globals.includes("'Inter var'")) {
+      globals +=
+        "\n/* Auth template typography — Inter variable font (rsms.me) */\n" +
+        ":root { --font-sans: 'Inter var', ui-sans-serif, system-ui, -apple-system, sans-serif; }\n" +
+        "body { font-family: var(--font-sans); }\n"
+      await writeFile(globalsPath, globals)
+    }
   },
+}
+
+/** Root layout for the auth template: loads Inter var from rsms.me. */
+function authLayout(_state: ProjectState): string {
+  return `import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "Tower",
+  description: "Built with Tower",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://rsms.me/" />
+        <link rel="preload" as="style" href="https://rsms.me/inter/inter.css" />
+        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+      </head>
+      <body className="antialiased">{children}</body>
+    </html>
+  );
+}
+`
 }
 
 async function applyTemplate(state: ProjectState, projectDir: string, useTypeScript: boolean): Promise<void> {
@@ -417,6 +482,33 @@ export default defineTower({
 ${modules}
   ],
 })
+`
+}
+
+/**
+ * Default root layout — no next/font, no Geist. Tailwind's default
+ * font-sans (system UI stack) applies to everything.
+ */
+function defaultLayout(state: ProjectState): string {
+  return `import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "${state.projectName}",
+  description: "Built with Tower",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className="antialiased">{children}</body>
+    </html>
+  );
+}
 `
 }
 
