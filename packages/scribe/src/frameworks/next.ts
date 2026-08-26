@@ -304,22 +304,33 @@ async function applyTemplate(state: ProjectState, projectDir: string, useTypeScr
 }
 
 function buttonComponent(): string {
-  return `import { forwardRef } from 'react'
+  return `import Link from 'next/link'
+import { forwardRef } from 'react'
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { pending?: boolean }
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  href?: string
+  pending?: boolean
+}
 
-// Minimal button — restyle or replace freely.
+// Single primitive for every call-to-action — <Button> renders a button,
+// <Button href="/path"> renders a styled link. All visual styling lives
+// here; call sites use <Button> or <Button href="..."> with no classes.
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className = '', pending, disabled, ...props },
+  { href, className = '', pending, disabled, children, ...props },
   ref
 ) {
+  const classes = \`inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200 \${className}\`
+  if (href) {
+    return (
+      <Link href={href} className={classes}>
+        {children}
+      </Link>
+    )
+  }
   return (
-    <button
-      ref={ref}
-      disabled={disabled || pending}
-      className={\`inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 \${className}\`}
-      {...props}
-    />
+    <button ref={ref} disabled={disabled || pending} className={classes} {...props}>
+      {children}
+    </button>
   )
 })
 `
@@ -519,10 +530,9 @@ function homePage(state: ProjectState): string {
     gatehouse: 'Better Auth',
     courier: 'Email / SMS / Push',
   }
+  const isAuth = state.template === 'auth'
 
-  return `import Link from 'next/link'
-
-export default function Home() {
+  return `${isAuth ? `import { Button } from '@/components/button'\n\n` : ''}export default function Home() {
   const modules = [
     ${moduleNames.map((n) => `{ name: '${n}', description: '${moduleDescriptions[n]}' }`).join(',\n    ')}
   ]
@@ -559,27 +569,12 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <div className="pt-2 space-x-4">
+        <div className="pt-2 flex items-center justify-center gap-3">
           ${
             state.template === 'auth' && state.modules.gatehouse
-              ? `<Link
-            href="/sign-in"
-            className="inline-flex items-center rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center rounded-md border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
-          >
-            Open dashboard
-          </Link>`
-              : `<a
-            href="https://towerjs.dev"
-            className="inline-flex items-center rounded-md border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
-          >
-            Read the docs
-          </a>`
+              ? `<Button href="/sign-in">Sign in</Button>
+          <Button href="/dashboard">Open dashboard</Button>`
+              : `<a href="https://towerjs.dev" className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200">Read the docs</a>`
           }
         </div>
       </div>
@@ -610,7 +605,7 @@ export class Project extends Model<ProjectRow> {
   static table = 'projects'
 
   static scopes = {
-    recent: (q) => q.orderBy('created_at', 'desc').limit(20),
+    recent: (q: any) => q.orderBy('created_at', 'desc').limit(20),
   } as const
 }
 `
@@ -819,11 +814,7 @@ ${''}
             </label>
             <input id="password" name="password" type="password" required className={inputClass} />
           </div>
-          <Button
-            type="submit"
-            pending={pwPending}
-            className="w-full bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900"
-          >
+          <Button type="submit" pending={pwPending}>
             Sign in
           </Button>
         </form>
@@ -838,11 +829,7 @@ ${
           )}
           <input type="hidden" name="type" value="sign-in" />
           <input id="magic-email" name="email" type="email" required placeholder="Email me a magic link" className={inputClass} />
-          <Button
-            type="submit"
-            pending={magicPending}
-            className="w-full border border-neutral-300 text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
-          >
+          <Button type="submit" pending={magicPending}>
             Send magic link
           </Button>
         </form>`
@@ -915,11 +902,7 @@ export default function SignUpPage() {
             </label>
             <input id="password" name="password" type="password" required minLength={8} className={styles.input} />
           </div>
-          <Button
-            type="submit"
-            pending={pending}
-            className="w-full bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900"
-          >
+          <Button type="submit" pending={pending}>
             Create account
           </Button>
         </form>

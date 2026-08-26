@@ -42,10 +42,9 @@ cd "$PREVIEW_DIR"
 TOWER_UI_PREVIEW=1 TOWER_SKIP_INSTALL=1 node "$ROOT/packages/scribe/dist/cli.js" create "${FLAGS[@]}" "$NAME"
 
 echo "==> Wiring $NAME into the workspace (temporary)"
-PREVIEW_ROOT="$ROOT" node - <<'NODE'
+node - "$NAME" "$ROOT" <<'NODE'
 const { readFileSync, writeFileSync, rmSync } = require('node:fs')
-const name = process.argv[2]
-const root = process.env.PREVIEW_ROOT
+const [name, root] = process.argv.slice(2)
 const dir = `${root}/.preview/${name}`
 
 // App manifest: workspace deps only.
