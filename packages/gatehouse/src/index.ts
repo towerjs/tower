@@ -434,6 +434,43 @@ function createRuntimeService(): GatehouseRuntimeAPI {
   }) as GatehouseRuntimeAPI
 }
 
+function proxyConfig(options?: ProxyOptions): ProxyResult['config'] {
+  const configuredPaths = [...(options?.public ?? []), ...(options?.redirectIfAuthenticated ?? [])].filter(
+    (path) => path !== '/'
+  )
+  return {
+    matcher: configuredPaths.length > 0 ? configuredPaths : ['/((?!_next/static|favicon.ico).*)'],
+  }
+}
+
+/**
+ * Creates a cold-start-safe proxy handler.
+ *
+ * Next.js evaluates proxy modules before Tower has initialized. Capturing a
+ * no-op handler at module evaluation time would permanently fail open, so the
+ * returned handler resolves the default Tower application on its first
+ * request and only then delegates to the configured Gatehouse provider.
+ */
+function createDeferredProxy(options?: ProxyOptions): ProxyResult {
+  return {
+    config: proxyConfig(options),
+    async handler(request) {
+      if (!getAdapter()) {
+        const { getTowerApp } = await import('@towerjs/tower/runtime')
+        await getTowerApp()
+      }
+
+      const adapter = getAdapter()
+      if (!adapter) {
+        throw new Error('Gatehouse proxy could not initialize the configured authentication provider.')
+      }
+
+      const providerProxy = adapter.createProxy(options)
+      return providerProxy.handler(request)
+    },
+  }
+}
+
 function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule & GatehouseModule {
   parseGatehouseConfig(config as unknown as Record<string, unknown>)
 
@@ -657,10 +694,7 @@ async function markDynamicAndInit(): Promise<any> {
           if (!getAdapter()) throw new Error('gatehouse.fromHeaders() called before Gatehouse was initialized')
           return getAdapter()!.from({ headers: h })
         },
-        proxy: (opts: any) => {
-          if (!getAdapter()) return { handler: async () => undefined, config: { matcher: [] } }
-          return getAdapter()!.createProxy(opts)
-        },
+        proxy: (opts: any) => createDeferredProxy(opts),
         migrate: () => {
           if (!getAdapter()) throw new Error('gatehouse.migrate() called before Gatehouse was initialized')
           return getAdapter()!.migrate()
@@ -770,8 +804,8 @@ function createDeepCall(path: string[]) {
       if (!getAdapter() && (path[0] === 'from' || path[0] === 'fromHeaders' || path[0] === 'migrate')) {
         throw new Error(`gatehouse.${path[0]}() called before Gatehouse was initialized`)
       }
-      if (path[0] === 'proxy' && !getAdapter()) {
-        return { handler: async () => undefined, config: { matcher: [] } }
+      if (path[0] === 'proxy') {
+        return createDeferredProxy(args[0])
       }
       return markDynamicAndInit().then((r) => {
         let v = r

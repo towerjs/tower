@@ -560,6 +560,22 @@ describe('gatehouse combined proxy', () => {
     expect(result.config).toBeDefined()
   })
 
+  it('does not capture a fail-open handler before initialization', async () => {
+    const { gatehouse } = await import('./index.js')
+    const result = (gatehouse as any).proxy({ public: ['/about'] })
+
+    mocks.mockGetSession.mockResolvedValue(null)
+    await expect(result.handler(new Request('https://example.com/protected'))).rejects.toThrow(
+      'Gatehouse proxy could not initialize'
+    )
+
+    await initModule()
+    const response = await result.handler(new Request('https://example.com/protected'))
+    expect(response?.status).toBe(302)
+    expect(response?.headers.get('location')).toBe('https://example.com/sign-in')
+    expect(result.config.matcher).toEqual(['/about'])
+  })
+
   it('returns provider and routes from adapter', async () => {
     await initModule()
     const { gatehouse } = await import('./index.js')
