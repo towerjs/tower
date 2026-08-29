@@ -1,21 +1,38 @@
 #!/usr/bin/env bash
 #
-# Scaffolds an app from the LOCAL workspace code and runs it in UI-preview
-# mode (`TOWER_UI_PREVIEW=1`, internal): no auth gating, no database — every
-# page renders so you can design freely.
+# Preview a create-tower app scaffolded from the LOCAL working tree.
 #
-# The app is generated into <repo>/.preview/<name>, which is gitignored and
-# becomes a temporary workspace member so @towerjs/* resolves to the local
-# packages (zero duplicated node_modules).
+# Builds the workspace, scaffolds with the local scribe CLI in UI-preview
+# mode (`TOWER_UI_PREVIEW=1`, internal: no auth gating, no database — every
+# page renders so you can design freely), and starts the dev server.
 #
-# Usage: scripts/preview-app.sh [auth|default] [app-name]
+# The app resolves @towerjs/* via `link:` deps pointing at packages/*, so it
+# always runs the code in your working tree (rebuild with `pnpm build` — or
+# re-run this script — to pick up package changes). It is a fully standalone
+# pnpm project with its own lockfile and node_modules: nothing in the repo is
+# modified, and turbo/pnpm never see it. It lives in the gitignored
+# <repo>/.preview/ — it must stay inside the repo, because Turbopack only
+# resolves the link: symlinks when packages/ is under its root.
+#
+# Typical loop: run this, edit the app's UI under .preview/<name>/src with
+# the dev server running, then copy the result back into the scaffold
+# templates in packages/scribe/src/frameworks/next.ts.
+#
+# Usage: scripts/preview-app.sh [auth|default] [options]
+#   --name <name>   app directory name        (default: preview-<template>)
+#   --fresh         delete the app and re-scaffold (discards your UI edits!)
+#   --no-dev        set up only; don't start the dev server
+#
+# Re-running without --fresh keeps the existing app (and your edits) and
+# just rebuilds the packages and starts the dev server.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TEMPLATE="${1:-default}"
-NAME="${2:-preview-$TEMPLATE}"
-PREVIEW_DIR="$ROOT/.preview"
-APP_DIR="$PREVIEW_DIR/$NAME"
+TEMPLATE="default"
+if [ $# -gt 0 ] && [[ "$1" != --* ]]; then
+  TEMPLATE="$1"
+  shift
+fi
 
 case "$TEMPLATE" in
   auth) FLAGS=(--template auth --tailwind --modules vault,gatehouse,courier) ;;
@@ -23,85 +40,57 @@ case "$TEMPLATE" in
   *) echo "Unknown template '$TEMPLATE'. Use 'auth' or 'default'." >&2; exit 1 ;;
 esac
 
+NAME="preview-$TEMPLATE"
+PARENT_DIR="$ROOT/.preview"
+FRESH=0
+RUN_DEV=1
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --name) NAME="$2"; shift 2 ;;
+    --fresh) FRESH=1; shift ;;
+    --no-dev) RUN_DEV=0; shift ;;
+    *) echo "Unknown option '$1'." >&2; exit 1 ;;
+  esac
+done
+APP_DIR="$PARENT_DIR/$NAME"
+
 echo "==> Building workspace"
-# A leftover .preview workspace entry breaks turbo/pnpm here — strip it first.
-python3 - "$ROOT/pnpm-workspace.yaml" <<'PY'
-import sys
-p = sys.argv[1]
-s = open(p).read()
-cleaned = '\n'.join(l for l in s.splitlines() if '.preview' not in l)
-if cleaned != s:
-    open(p, 'w').write(cleaned.rstrip() + '\n')
-PY
 (cd "$ROOT" && pnpm build > /dev/null)
 
-echo "==> Scaffolding $NAME (--preview-ui, no installs)"
-rm -rf "$APP_DIR"
-mkdir -p "$PREVIEW_DIR"
-cd "$PREVIEW_DIR"
-TOWER_UI_PREVIEW=1 TOWER_SKIP_INSTALL=1 node "$ROOT/packages/scribe/dist/cli.js" create "${FLAGS[@]}" "$NAME"
+if [ -d "$APP_DIR" ] && [ "$FRESH" -eq 0 ]; then
+  echo "==> Reusing existing app at $APP_DIR (pass --fresh to re-scaffold)"
+else
+  echo "==> Scaffolding $NAME (UI-preview mode, local packages via link:)"
+  rm -rf "$APP_DIR"
+  mkdir -p "$PARENT_DIR"
+  cd "$PARENT_DIR"
+  # npm_config_user_agent makes scribe treat this as a pnpm-driven scaffold,
+  # matching the pnpm install below. TOWER_SKIP_INSTALL defers all installs
+  # to that single install; TOWER_PACK_DIR makes @towerjs/* resolve as link:
+  # deps into the local packages.
+  TOWER_UI_PREVIEW=1 TOWER_SKIP_INSTALL=1 TOWER_PACK_DIR="$ROOT/packages" \
+    npm_config_user_agent="pnpm/$(pnpm --version) node/$(node --version)" \
+    node "$ROOT/packages/scribe/dist/cli.js" create "${FLAGS[@]}" "$NAME"
 
-echo "==> Wiring $NAME into the workspace (temporary)"
-node - "$NAME" "$ROOT" <<'NODE'
-const { readFileSync, writeFileSync, rmSync } = require('node:fs')
-const [name, root] = process.argv.slice(2)
-const dir = `${root}/.preview/${name}`
+  # Standalone workspace marker: keeps pnpm from walking up into the tower
+  # monorepo (when generated under .preview/) and mirrors its build allowances.
+  cat > "$APP_DIR/pnpm-workspace.yaml" <<'YAML'
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+YAML
 
-// App manifest: workspace deps only.
-const pkgPath = `${dir}/package.json`
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
-pkg.dependencies = {
-  '@towerjs/gatehouse': 'workspace:*',
-  '@towerjs/vault': 'workspace:*',
-  '@towerjs/courier': 'workspace:*',
-  '@towerjs/tower': 'workspace:*',
-  next: pkg.dependencies?.next ?? 'latest',
-  react: pkg.dependencies?.react ?? 'latest',
-  'react-dom': pkg.dependencies?.['react-dom'] ?? 'latest',
-}
-pkg.devDependencies = { '@towerjs/scribe': 'workspace:*' }
-// No build script: turbo must not treat the preview as a buildable package.
-if (pkg.scripts) delete pkg.scripts.build
-delete pkg.pnpm
-writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
-
-// Standalone-workspace file from create-next-app must go — the app joins the
-// monorepo workspace instead.
-rmSync(`${dir}/pnpm-workspace.yaml`, { force: true })
-
-// tsconfig paths mirror examples/with-nextjs.
-const tsPath = `${dir}/tsconfig.json`
-let ts = {}
-try { ts = JSON.parse(readFileSync(tsPath, 'utf8')) } catch {}
-const base = '../../packages'
-const paths = (ts.compilerOptions ??= {}).paths ??= {}
-Object.assign(paths, {
-  '@/*': ['./src/*'],
-  '@towerjs/tower': [`${base}/tower/dist/index`],
-  '@towerjs/vault': [`${base}/vault/dist/index`],
-  '@towerjs/vault/model': [`${base}/vault/dist/model`],
-  '@towerjs/vault/factory': [`${base}/vault/dist/factory`],
-  '@towerjs/gatehouse': [`${base}/gatehouse/dist/index`],
-  '@towerjs/gatehouse/actions': [`${base}/gatehouse/dist/frameworks/actions/index`],
-  '@towerjs/gatehouse/next': [`${base}/gatehouse/dist/frameworks/next`],
-  '@towerjs/courier': [`${base}/courier/dist/index`],
-})
-writeFileSync(tsPath, JSON.stringify(ts, null, 2) + '\n')
-
-// Root workspace gains the preview app (local-only change).
-const wsPath = `${root}/pnpm-workspace.yaml`
-let ws = readFileSync(wsPath, 'utf8')
-if (!ws.includes('.preview')) {
-  ws = ws.replace(/packages:\n/, "packages:\n  - '.preview/*'\n")
-  writeFileSync(wsPath, ws)
-}
-NODE
-
-echo "==> Installing dependencies"
-(cd "$ROOT" && pnpm install > /dev/null 2>&1)
+  echo "==> Installing dependencies"
+  (cd "$APP_DIR" && pnpm install)
+fi
 
 echo ""
 echo "==> UI preview ready: $APP_DIR"
+if [ "$RUN_DEV" -eq 0 ]; then
+  echo "==> Start it with: cd ${APP_DIR#"$ROOT/"} && pnpm dev"
+  exit 0
+fi
 echo "==> All routes are public. Starting dev server (Ctrl+C to stop)"
 cd "$APP_DIR"
 exec pnpm dev

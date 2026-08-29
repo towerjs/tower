@@ -2,11 +2,13 @@
 #
 # Generated-app test (create-tower scaffolding path).
 #
-# Verifies the consumer experience of scaffolding a brand-new app: packs the
-# real tower packages, runs `tower create` through the local create-tower bin
-# with non-interactive flags, then installs the generated project, loads its
-# config through the tower CLI, and builds it. Runs once for TypeScript and
-# once for plain JavaScript.
+# Verifies the consumer experience of scaffolding a brand-new app: runs
+# `tower create` through the local create-tower bin with non-interactive
+# flags (with @towerjs/* linked to the local packages via TOWER_PACK_DIR),
+# then installs the generated project, loads its config through the tower
+# CLI, and builds it. Runs once for TypeScript and once for plain
+# JavaScript. The published-artifact structure itself is covered by
+# scripts/verify-tarball.sh.
 #
 # This is the one check that can't live in the unit test suite — it needs
 # network (create-next-app) and does a real npm install + next build. Run it
@@ -26,15 +28,15 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 echo "=== Generated app (create-tower scaffolding path, requires network) ==="
-echo "  Running: tower create (TypeScript + JavaScript, from local packs) + npm install + tower about + npm run build"
+echo "  Running: tower create (TypeScript + JavaScript, from local packages) + npm install + tower about + npm run build"
 echo ""
 
-TEST_APP_DIR="$(mktemp -d)"
-PACK_DIR="$TEST_APP_DIR/packs"
-mkdir -p "$PACK_DIR"
-for pkg in tower foundation blueprint vault gatehouse courier edge scribe; do
-  (cd "$ROOT/packages/$pkg" && pnpm pack --pack-destination "$PACK_DIR" >/dev/null 2>&1)
-done
+# The apps must live inside the repo: @towerjs/* installs are symlinks into
+# packages/ (TOWER_PACK_DIR), and Turbopack only resolves symlink targets
+# under its root. Registry installs (real consumers) copy files and have no
+# such constraint.
+mkdir -p "$ROOT/.cache"
+TEST_APP_DIR="$(mktemp -d "$ROOT/.cache/generated-app-test.XXXXXX")"
 
 cleanup() {
   rm -rf "$TEST_APP_DIR"
@@ -45,7 +47,7 @@ scaffold_and_verify() {
   local app_name="$1"
   shift
   cd "$TEST_APP_DIR"
-  if TOWER_PACK_DIR="$PACK_DIR" \
+  if TOWER_PACK_DIR="$ROOT/packages" \
      node "$ROOT/packages/create-tower/dist/index.js" "$app_name" "$@" >/dev/null 2>&1 && \
      cd "$TEST_APP_DIR/$app_name" && npm install >/dev/null 2>&1 && \
      npx tower about >/dev/null 2>&1 && \
