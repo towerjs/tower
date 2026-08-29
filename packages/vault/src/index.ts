@@ -21,6 +21,12 @@ export async function runSeeds(db: Vault, config: VaultSeedConfig, name?: string
   return mod.runSeeds(db, config, name)
 }
 
+/**
+ * Kysely's raw-SQL tag, re-exported so the documented escape hatch works
+ * without adding kysely as a direct dependency of the application.
+ */
+export { sql } from 'kysely'
+
 // Provider abstraction — consumers can name the provider types (closes #93)
 export type { VaultProvider, VaultProviderName, VaultProviderDef, VaultPoolConfig, VaultMigrator } from './types.js'
 export { resolveProviderName, resolveVaultProvider, pgProvider, neonProvider } from './providers.js'
