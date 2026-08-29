@@ -12,9 +12,11 @@
 #   - Docs marked as planned ("badge: 'Coming Soon'" or "Status: Planned")
 #     describe target APIs that are not implemented yet — their blocks are
 #     not compiled.
-#   - Illustrative fragments (config shapes, API signature listings) must not
-#     be fenced as ```ts/```tsx — use a plain ``` fence so the checker treats
-#     them as prose, not as an executable example.
+#   - Illustrative listings (config shapes, API signature tables) are not
+#     executable — fence them as ```ts signature. They keep their syntax
+#     highlighting on the docs site (which reads only the language and
+#     filename="..." from the fence) but are not compiled. Use this only for
+#     pseudo-code: anything a reader could paste into a project must compile.
 #
 # Usage: bash scripts/verify-docs.sh
 
@@ -22,12 +24,27 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOCS_DIR="$ROOT/docs"
-TMP_DIR="$(mktemp -d)"
+# Blocks are compiled inside the example app: its node_modules resolve react,
+# next, and the @towerjs/* packages through their published `exports` maps, so
+# a documented import only passes here if it would work in a real project.
+APP_DIR="$ROOT/examples/with-nextjs"
+TMP_DIR="$APP_DIR/.cache/verify-docs"
 FAILED=0
 
 cleanup() {
   rm -rf "$TMP_DIR"
 }
+
+if [ ! -d "$ROOT/packages/tower/dist" ]; then
+  echo "ERROR: packages are not built. Run 'pnpm build' first."
+  exit 1
+fi
+
+rm -rf "$TMP_DIR"
+mkdir -p "$TMP_DIR"
+# Docs examples are ESM (top-level await, ESM-only packages), so the compiled
+# blocks must be treated as ESM too.
+echo '{ "type": "module" }' > "$TMP_DIR/package.json"
 trap cleanup EXIT
 
 echo "=== Extracting TypeScript code blocks from docs ==="
@@ -58,6 +75,7 @@ function isPlanned(file) {
 
 let blockCount = 0;
 let plannedCount = 0;
+let signatureCount = 0;
 for (const file of files) {
   const planned = isPlanned(file);
   const lines = readFileSync(file, 'utf8').split('\n');
@@ -67,10 +85,12 @@ for (const file of files) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const openMatch = line.match(/^\s*```([a-zA-Z]+)/);
+    const openMatch = line.match(/^\s*```([a-zA-Z]+)(.*)$/);
     if (openMatch) {
       const lang = openMatch[1];
-      if (/^(ts|tsx|typescript)$/.test(lang)) {
+      const signature = /(^|\s)signature(\s|$)/.test(openMatch[2]);
+      if (signature) signatureCount++;
+      if (/^(ts|tsx|typescript)$/.test(lang) && !signature) {
         inBlock = true;
         buf = [];
         start = i + 1;
@@ -94,7 +114,12 @@ for (const file of files) {
         console.error('Extracted an empty block from ' + file + ':' + start + ' — the extractor is broken.');
         process.exit(1);
       }
-      writeFileSync(join(blocksDir, name), buf.join('\n') + '\n');
+      // Each block is its own module: without an import or export, a block
+      // shares the global scope with every other block (duplicate
+      // declarations) and cannot use top-level await.
+      const body = buf.join('\n');
+      const isModule = /^\s*(import|export)\s/m.test(body);
+      writeFileSync(join(blocksDir, name), body + '\n' + (isModule ? '' : '\nexport {}\n'));
       console.log('  ' + name + ' <- ' + file.slice(docsDir.length + 1) + ':' + start);
       blockCount++;
       continue;
@@ -104,8 +129,12 @@ for (const file of files) {
   }
 }
 
+const skipped = [
+  plannedCount > 0 ? plannedCount + ' in planned docs' : null,
+  signatureCount > 0 ? signatureCount + ' signature listings' : null,
+].filter(Boolean);
 console.log('  Extracted ' + blockCount + ' blocks from ' + files.length + ' files'
-  + (plannedCount > 0 ? ' (skipped ' + plannedCount + ' blocks in planned docs)' : ''));
+  + (skipped.length > 0 ? ' (skipped ' + skipped.join(', ') + ')' : ''));
 console.log(blockCount === 0 ? 'NO_BLOCKS' : 'BLOCKS_OK');
 NODESCRIPT
 
@@ -126,30 +155,14 @@ fi
 echo ""
 echo "=== Compiling extracted examples ==="
 
-# Docs import from bare '@towerjs/tower' and '@towerjs/tower/*' (the package name
-# as users write it), not individual '@towerjs/*' packages. Add path mappings so
-# tsc can resolve them.
+# Inherit the example app's compiler options so blocks are checked exactly as
+# Next.js app code is, and @towerjs/* resolves the way a consumer resolves it:
+# through each package's exports map in node_modules.
 node -e "
 const fs = require('fs');
-const path = require('path');
-const root = '$ROOT';
 const config = {
-  compilerOptions: {
-    target: 'ES2022',
-    module: 'nodenext',
-    moduleResolution: 'nodenext',
-    strict: true,
-    noEmit: true,
-    skipLibCheck: true,
-    esModuleInterop: true,
-    jsx: 'react-jsx',
-    lib: ['ES2022', 'DOM'],
-    paths: {
-      '@towerjs/tower': [path.join(root, 'packages/tower/src/index.ts')],
-      '@towerjs/tower/*': [path.join(root, 'packages/tower/src/*'), path.join(root, 'packages/tower/src/*/index.ts')],
-      '@towerjs/*': [path.join(root, 'packages/*/src/index.ts')]
-    }
-  },
+  extends: '../../tsconfig.json',
+  compilerOptions: { noEmit: true, incremental: false },
   include: ['blocks/*.tsx']
 };
 fs.writeFileSync('$TMP_DIR/tsconfig.json', JSON.stringify(config, null, 2));
@@ -179,8 +192,8 @@ echo ""
 echo "=== DOCS CONTRACT TEST FAILED ==="
 echo ""
 echo "The following code blocks do not compile. Either fix the example or, if"
-echo "the block is an illustrative fragment (config shape / API signature),"
-echo "re-fence it as a plain code block (\`\`\`) instead of \`\`\`ts/\`\`\`tsx."
+echo "the block is an illustrative listing (config shape / API signature),"
+echo "re-fence it as \`\`\`ts signature so it is highlighted but not compiled."
 echo ""
 echo "Note: tsc reports semantic errors only once every block parses, so a run"
 echo "that lists syntax errors may surface more after those are fixed."
