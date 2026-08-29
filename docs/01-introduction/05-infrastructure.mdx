@@ -22,7 +22,7 @@ Tower does not hide Postgres behind a generic "database" abstraction that preten
 Vault's query API is Kysely. `vault.selectFrom()`, `vault.insertInto()`, `vault.updateTable()`, `vault.deleteFrom()`, transactions, and `db.schema` are all Kysely — typed, composable, and close to SQL.
 
 ```ts
-import { vault } from '@towerjs/tower/vault'
+import { vault } from '@towerjs/vault'
 
 const users = await vault.selectFrom('users').selectAll().where('email', '=', 'alice@example.com').execute()
 

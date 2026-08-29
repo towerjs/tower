@@ -39,25 +39,35 @@ await gatehouse.account.delete()
 
 The `deleteAccount` action requires the current `password` — destructive operations re-authenticate first. Configure cleanup hooks:
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
+  provider: 'better-auth',
   user: {
     deleteUser: {
-      beforeDelete: async (user) => { await deleteUserAssets(user.id) },
-      afterDelete: async (user) => { await audit.log('user.deleted', user.id) },
+      beforeDelete: async (user) => {
+        await deleteUserAssets(user.id)
+      },
+      afterDelete: async (user) => {
+        await audit.log('user.deleted', user.id)
+      },
     },
   },
-}
+})
 ```
 
 ## Admin API
 
 Enable it, then manage users from your admin UI:
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
+  provider: 'better-auth',
   admin: true,
-}
+})
 ```
 
 ```ts

@@ -18,7 +18,7 @@ Tower works alongside your web framework rather than replacing it. Next.js stays
 Tower apps are initialized on first use, not at import time. This is critical for Edge and SSR compatibility where you may import module symbols at the top level but never use them.
 
 ```ts
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 
 // No initialization happens here
 

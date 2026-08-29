@@ -7,12 +7,14 @@ Passkeys replace passwords with WebAuthn credentials stored on the user's device
 
 ## Enable
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
   provider: 'better-auth',
   appName: 'My App',
   passkeys: true,
-}
+})
 ```
 
 ## Register a passkey
@@ -22,7 +24,7 @@ Passkey registration is a WebAuthn ceremony driven from a signed-in context. Gen
 ```ts filename="src/app/settings/passkeys/actions.ts"
 'use server'
 
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 
 export async function generateRegistrationOptions() {
   return gatehouse.passkeys.generateRegistrationOptions()

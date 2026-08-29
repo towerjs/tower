@@ -11,7 +11,7 @@ The server API has two shapes:
 ## The `gatehouse` singleton
 
 ```ts
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 ```
 
 ### Session access
@@ -115,7 +115,7 @@ await gh.identities.getAccessToken(providerId)
 
 ### Passkeys
 
-```ts
+```ts signature
 await gh.passkeys.list()
 await gh.passkeys.update(id, { name })
 await gh.passkeys.delete(id)
@@ -143,7 +143,7 @@ await gh.backupCodes.verify(code)
 
 ### Organizations
 
-```ts
+```ts signature
 await gh.organizations.create({ name, slug })
 await gh.organizations.list()
 await gh.organizations.getFull(id)                // includes members + invitations
@@ -172,7 +172,7 @@ await gh.organizations.roles.delete({ roleId | roleName, organizationId? })
 
 ### API keys
 
-```ts
+```ts signature
 await gh.apiKeys.create({ name, userId, expiresIn?, permissions? })
 await gh.apiKeys.list(userId, options?)
 await gh.apiKeys.get(keyId)
@@ -183,7 +183,7 @@ await gh.apiKeys.verify({ key })
 
 ### Admin
 
-```ts
+```ts signature
 await gh.admin.createUser({ name, email, password, role? })
 await gh.admin.getUser(userId)
 await gh.admin.listUsers(options?)               // { users, total? }

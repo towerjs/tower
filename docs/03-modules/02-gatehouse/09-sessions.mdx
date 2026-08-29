@@ -17,7 +17,7 @@ Once a user signs in, a session cookie is set. Here's how to read it in every pa
 ## Server components
 
 ```tsx filename="src/app/layout.tsx"
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 
 export default async function RootLayout({ children }) {
   const session = await gatehouse.getSession()
@@ -31,13 +31,13 @@ export default async function RootLayout({ children }) {
 
 ## Server actions
 
-Reading the session works in any server context — the framework adapter resolves the request headers automatically. Mutations that call the instance surface (organizations, account, sessions, ...) need the `action()` wrapper from `@towerjs/tower/gatehouse/next`, which provides the request context. Put custom actions in `src/actions/`:
+Reading the session works in any server context — the framework adapter resolves the request headers automatically. Mutations that call the instance surface (organizations, account, sessions, ...) need the `action()` wrapper from `@towerjs/gatehouse/next`, which provides the request context. Put custom actions in `src/actions/`:
 
 ```ts filename="src/actions/profile.ts"
 'use server'
 
-import { gatehouse } from '@towerjs/tower/gatehouse'
-import { action } from '@towerjs/tower/gatehouse/next'
+import { gatehouse } from '@towerjs/gatehouse'
+import { action } from '@towerjs/gatehouse/next'
 
 export const updateProfileName = action(async (formData: FormData) => {
   const user = await gatehouse.requireUser()
@@ -78,7 +78,7 @@ export async function GET(request: Request) {
 ```tsx filename="src/app/dashboard/profile-button.tsx"
 'use client'
 
-import { gatehouseClient } from '@towerjs/tower/gatehouse/client'
+import { gatehouseClient } from '@towerjs/gatehouse/client'
 
 function ProfileButton() {
   const { data: session, isPending } = gatehouseClient.useSession()
@@ -92,14 +92,17 @@ Use `useSession` for presentation only — authorize on the server.
 
 ## Session behavior
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
+  provider: 'better-auth',
   session: {
-    expiresIn: 604800,              // 7 days
-    updateAge: 86400,               // sliding expiry after 1 day
+    expiresIn: 604800, // 7 days
+    updateAge: 86400, // sliding expiry after 1 day
     disableSessionRefresh: false,
   },
-}
+})
 ```
 
 - Sessions are stored in the database and refreshed on activity (sliding expiry)

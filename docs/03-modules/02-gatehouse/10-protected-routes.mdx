@@ -43,7 +43,7 @@ The proxy resolves the session with `getSession()` — database-backed — and r
 Once the proxy has let a request through, pages read the session without any redirect logic — the proxy already handled it:
 
 ```tsx filename="src/app/dashboard/page.tsx"
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 
 export default async function Dashboard() {
   const user = await gatehouse.requireUser() // signed in — the proxy made sure of it

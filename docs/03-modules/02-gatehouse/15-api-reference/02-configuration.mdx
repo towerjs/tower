@@ -5,8 +5,10 @@ description: 'Every Gatehouse option in tower.config.ts: features, credentials, 
 
 Gatehouse is configured under the `gatehouse` key in `tower.config.ts`. Features are opt-in — omit a feature to disable it.
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
   provider: 'better-auth',
   appName: 'My App',
   baseURL: 'http://localhost:3000',
@@ -22,7 +24,7 @@ gatehouse: {
   organization: true,
   admin: true,
   apiKey: true,
-}
+})
 ```
 
 ## Core
@@ -78,7 +80,7 @@ How users prove they own their email. `true` enables it with default behavior (l
 
 Provider list or map. Credentials resolve from env vars (`GOOGLE_CLIENT_ID`, etc.):
 
-```ts
+```ts signature
 social: ['google', 'github'],
 // or
 social: {

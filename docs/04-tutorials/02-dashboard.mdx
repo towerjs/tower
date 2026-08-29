@@ -7,12 +7,14 @@ This tutorial builds a dashboard application with organization support — membe
 
 ## 1. Configure Organizations
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
   provider: 'better-auth',
   credentials: { enabled: true },
   organization: true,
-}
+})
 ```
 
 ## 2. Seed an Organization
@@ -40,7 +42,7 @@ npx tower seed
 ## 3. Organization List
 
 ```tsx filename="src/app/dashboard/page.tsx"
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 
 export default async function DashboardPage() {
   const orgs = await gatehouse.getOrganizations()
@@ -67,7 +69,7 @@ export default async function DashboardPage() {
 ## 4. Organization Detail
 
 ```tsx filename="src/app/dashboard/organizations/[id]/page.tsx"
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 
 export default async function OrgPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -103,13 +105,13 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
 
 ## 5. Invite Members
 
-Server actions that touch the gatehouse instance need the `action()` wrapper from `@towerjs/tower/gatehouse/next` — it provides the request context the facade reads headers/session from. Put them in `src/actions/`:
+Server actions that touch the gatehouse instance need the `action()` wrapper from `@towerjs/gatehouse/next` — it provides the request context the facade reads headers/session from. Put them in `src/actions/`:
 
 ```ts filename="src/actions/organizations.ts"
 'use server'
 
-import { gatehouse } from '@towerjs/tower/gatehouse'
-import { action } from '@towerjs/tower/gatehouse/next'
+import { gatehouse } from '@towerjs/gatehouse'
+import { action } from '@towerjs/gatehouse/next'
 
 export const inviteMember = action(async (formData: FormData) => {
   const orgId = formData.get('orgId') as string

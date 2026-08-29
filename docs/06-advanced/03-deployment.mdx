@@ -36,10 +36,12 @@ TOWER_CONFIG_PATH=/path/to/config  # Custom config file path
 Use [Neon](https://neon.tech) for PostgreSQL with serverless support:
 
 ```ts
-vault: {
+import { vault } from '@towerjs/vault'
+
+vault({
   connectionString: process.env.DATABASE_URL,
   // Neon is auto-detected and uses the kysely-neon HTTP dialect
-}
+})
 ```
 
 ### 3. Edge Runtime (optional)

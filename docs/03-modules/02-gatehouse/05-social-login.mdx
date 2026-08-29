@@ -7,12 +7,14 @@ Social login lets users authenticate with their existing Google or GitHub accoun
 
 ## Enable
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
   provider: 'better-auth',
   appName: 'My App',
   social: { google: {}, github: {} },
-}
+})
 ```
 
 Credentials resolve automatically from environment variables:
@@ -29,7 +31,7 @@ GITHUB_CLIENT_SECRET=...
 ```tsx filename="src/app/sign-in/social-buttons.tsx"
 'use client'
 
-import { gatehouseClient } from '@towerjs/tower/gatehouse/client'
+import { gatehouseClient } from '@towerjs/gatehouse/client'
 
 export function SocialButtons() {
   return (
@@ -57,14 +59,19 @@ proxy({
 ## Provider options
 
 ```ts
-social: {
-  google: {
-    disableSignUp: true,          // only existing accounts
-    scope: ['openid', 'profile', 'email'],
-    overrideUserInfoOnSignIn: true, // refresh name/avatar each sign-in
-    redirectURI: 'https://app.example.com/api/auth/callback/google',
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
+  provider: 'better-auth',
+  social: {
+    google: {
+      disableSignUp: true, // only existing accounts
+      scope: ['openid', 'profile', 'email'],
+      overrideUserInfoOnSignIn: true, // refresh name/avatar each sign-in
+      redirectURI: 'https://app.example.com/api/auth/callback/google',
+    },
   },
-},
+})
 ```
 
 Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disableSignUp`, `disableImplicitSignUp`, `overrideUserInfoOnSignIn`, `prompt`, `responseMode`.

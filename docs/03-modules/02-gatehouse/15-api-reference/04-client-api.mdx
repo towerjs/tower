@@ -6,7 +6,7 @@ description: 'gatehouseClient for browser code: sign-in, sign-up, session hooks,
 The client API is a typed Better Auth client for browser code. Import it from the client entry:
 
 ```ts
-import { gatehouseClient } from '@towerjs/tower/gatehouse/client'
+import { gatehouseClient } from '@towerjs/gatehouse/client'
 ```
 
 It talks to the auth API mounted at `/api/auth` and keeps a session cache on the client.
@@ -45,7 +45,7 @@ if (error) {
 ```tsx filename="src/app/dashboard/profile-button.tsx"
 'use client'
 
-import { gatehouseClient } from '@towerjs/tower/gatehouse/client'
+import { gatehouseClient } from '@towerjs/gatehouse/client'
 
 function ProfileButton() {
   const { data: session, isPending } = gatehouseClient.useSession()

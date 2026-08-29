@@ -8,7 +8,7 @@ description: 'Performance considerations for Tower applications.'
 Tower modules are initialized on first use, not at import time. This means you can import module symbols at the top level without paying the initialization cost on every request:
 
 ```ts
-import { gatehouse } from '@towerjs/tower/gatehouse'
+import { gatehouse } from '@towerjs/gatehouse'
 
 // No initialization cost here
 
@@ -23,14 +23,16 @@ export async function handler() {
 Configure your database pool for your workload:
 
 ```ts
-vault: {
+import { vault } from '@towerjs/vault'
+
+vault({
   connectionString: process.env.DATABASE_URL,
   pool: {
-    max: 20,                    // max connections in pool
-    idleTimeoutMillis: 30000,   // close idle connections after 30s
+    max: 20, // max connections in pool
+    idleTimeoutMillis: 30000, // close idle connections after 30s
     connectionTimeoutMillis: 5000,
   },
-}
+})
 ```
 
 Guidelines:

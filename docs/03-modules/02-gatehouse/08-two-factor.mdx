@@ -7,12 +7,14 @@ Add a second factor: after the password, users must enter a TOTP code from their
 
 ## Enable
 
-```ts filename="tower.config.ts"
-gatehouse: {
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
   provider: 'better-auth',
   appName: 'My App',
   twoFactor: true,
-}
+})
 ```
 
 ## Enabling 2FA for a user

@@ -53,7 +53,7 @@ Each module validates its config when it initializes, so a malformed config fail
 
 ### Vault
 
-```ts
+```ts signature
 vault({
   provider: 'neon' | 'pg'      // auto-detected from connectionString
   connectionString: env.string('DATABASE_URL') // defaults to DATABASE_URL
@@ -72,7 +72,7 @@ Provider auto-detection: connection strings containing `.neon.tech` resolve to `
 
 ### Gatehouse
 
-```ts
+```ts signature
 gatehouse({
   provider: 'better-auth'
 
@@ -111,7 +111,7 @@ Social provider credentials resolve automatically from environment variables: fo
 
 ### Courier
 
-```ts
+```ts signature
 courier({
   email: {
     provider: 'console' | 'resend' | 'smtp' | 'ses'

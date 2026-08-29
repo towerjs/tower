@@ -30,9 +30,12 @@ RESEND_API_KEY=re_...
 Gatehouse uses Better Auth's built-in CSRF protection. Configure trusted origins:
 
 ```ts
-gatehouse: {
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
+  provider: 'better-auth',
   trustedOrigins: ['https://example.com'],
-}
+})
 ```
 
 Disable CSRF check only when necessary:
@@ -48,11 +51,14 @@ advanced: {
 Configure secure cookies for production:
 
 ```ts
-gatehouse: {
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
+  provider: 'better-auth',
   advanced: {
-    useSecureCookies: true
-  }
-}
+    useSecureCookies: true,
+  },
+})
 ```
 
 On Vercel/HTTPS deployments, secure cookies are enabled by default.
@@ -66,13 +72,16 @@ Always serve production sites over HTTPS. Vercel provides this automatically. Fo
 Better Auth provides built-in rate limiting:
 
 ```ts
-gatehouse: {
+import { gatehouse } from '@towerjs/gatehouse'
+
+gatehouse({
+  provider: 'better-auth',
   rateLimit: {
     enabled: true,
-    window: 60,    // seconds
-    max: 10,       // requests per window
-  }
-}
+    window: 60, // seconds
+    max: 10, // requests per window
+  },
+})
 ```
 
 ## CSP Headers
