@@ -39,17 +39,20 @@ import { gatehouse } from '@towerjs/gatehouse'
 
 ## The per-request instance
 
-```ts
+```ts filename="src/app/api/me/route.ts"
 import { Gatehouse } from '@towerjs/gatehouse'
 
-const gh = await Gatehouse.from(request)
+export async function GET(request: Request) {
+  const gh = await Gatehouse.from(request)
+  return Response.json(await gh.session())
+}
 ```
 
 Every method is bound to the request's session. The instance exposes the full operation surface:
 
 ### Sign in / up / out
 
-```ts
+```ts signature
 await gh.signIn.email({ email, password })
 await gh.signIn.emailOtp({ email, otp })
 await gh.signIn.magicLink({ email, callbackURL })
@@ -63,7 +66,7 @@ await gh.requireUser() // session or AuthenticationError
 
 ### Sessions
 
-```ts
+```ts signature
 await gh.sessions.list()
 await gh.sessions.revoke(token)
 await gh.sessions.revokeOther()
@@ -73,7 +76,7 @@ await gh.sessions.signOut()
 
 ### Account
 
-```ts
+```ts signature
 await gh.account.update({ name, image })
 await gh.account.delete()
 await gh.account.setPassword(newPassword)
@@ -82,7 +85,7 @@ await gh.account.changeEmail(newEmail)
 
 ### Password
 
-```ts
+```ts signature
 await gh.password.forgot({ email })
 await gh.password.reset({ newPassword, token })
 await gh.password.change({ currentPassword, newPassword })
@@ -91,7 +94,7 @@ await gh.password.confirm({ password }) // boolean
 
 ### Email & phone
 
-```ts
+```ts signature
 await gh.email.sendVerification({ email })
 await gh.email.verify({ token })
 await gh.email.otp.send({ email, type }) // 'sign-in' | 'email-verification' | 'forget-password' | 'change-email'
@@ -102,7 +105,7 @@ await gh.phone.otp.confirm({ phoneNumber, code })
 
 ### Users, roles, identities
 
-```ts
+```ts signature
 await gh.users.get(userId)
 await gh.users.findByEmail(email)
 await gh.roles.assign(userId, role)
@@ -131,7 +134,7 @@ See [Passkeys](/docs/gatehouse/passkeys) for the full ceremony flow.
 
 ### Two-factor
 
-```ts
+```ts signature
 await gh.totp.enable(password) // { totpURI, backupCodes }
 await gh.totp.verify({ code, trustDevice })
 await gh.totp.disable(password)
@@ -201,7 +204,7 @@ await gh.admin.revokeUserSessions(userId)
 
 ### Authorization
 
-```ts
+```ts signature
 await gh.can({ user, permission, organizationId? })   // boolean
 ```
 
@@ -224,6 +227,7 @@ import { AuthenticationError, AuthorizationError } from '@towerjs/gatehouse'
 `runWithRequest` provides the request context so the `gatehouse` singleton works in plain handlers:
 
 ```ts filename="src/app/api/me/route.ts"
+import { gatehouse } from '@towerjs/gatehouse'
 import { runWithRequest } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {

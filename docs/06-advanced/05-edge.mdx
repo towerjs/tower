@@ -32,6 +32,8 @@ On Vercel Edge, runtime detection returns `{ name: 'edge', isServerless: true }`
 ### Vault on Edge
 
 ```ts
+import { vault } from '@towerjs/vault'
+
 // Querying works
 const users = await vault.selectFrom('users').selectAll().execute()
 

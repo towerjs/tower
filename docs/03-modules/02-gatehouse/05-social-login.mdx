@@ -81,9 +81,11 @@ Per-provider options: `clientId`, `clientSecret`, `scope`, `redirectURI`, `disab
 Users can connect providers to their existing account so the same identity works everywhere:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.identities.list() // connected providers
 await gatehouse.identities.link('github') // start linking flow
-await gatehouse.identities.unlink({ providerId, accountId }) // disconnect
+await gatehouse.identities.unlink({ providerId: 'google', accountId: 'acc_123' }) // disconnect
 ```
 
 The `unlinkAccount` action takes `providerId` + `accountId`.

@@ -8,7 +8,9 @@ Users manage their own profile from the account API; admins manage everyone from
 ## Profile
 
 ```ts
-await gatehouse.account.update({ name, image })
+import { gatehouse } from '@towerjs/gatehouse'
+
+await gatehouse.account.update({ name: 'Ada Lovelace', image: null })
 await gatehouse.user() // updated user
 ```
 
@@ -17,7 +19,9 @@ Action: `updateProfile` (`name`).
 ## Change email
 
 ```ts
-await gatehouse.account.changeEmail(newEmail)
+import { gatehouse } from '@towerjs/gatehouse'
+
+await gatehouse.account.changeEmail('ada@example.com')
 ```
 
 With `user.changeEmail.enabled`, the new address must be confirmed before it takes effect.
@@ -25,8 +29,10 @@ With `user.changeEmail.enabled`, the new address must be confirmed before it tak
 ## Change password
 
 ```ts
-await gatehouse.password.change({ currentPassword, newPassword })
-await gatehouse.password.confirm({ password }) // boolean — verify before sensitive actions
+import { gatehouse } from '@towerjs/gatehouse'
+
+await gatehouse.password.change({ currentPassword: 'old-password', newPassword: 'new-password' })
+await gatehouse.password.confirm({ password: 'new-password' }) // boolean — verify before sensitive actions
 ```
 
 Actions: `changePassword` (`currentPassword`, `newPassword`), `verifyPassword` (`password`).
@@ -34,6 +40,8 @@ Actions: `changePassword` (`currentPassword`, `newPassword`), `verifyPassword` (
 ## Delete account
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.account.delete()
 ```
 
@@ -46,11 +54,12 @@ gatehouse({
   provider: 'better-auth',
   user: {
     deleteUser: {
+      enabled: true,
       beforeDelete: async (user) => {
-        await deleteUserAssets(user.id)
+        console.log('deleting', user.id)
       },
       afterDelete: async (user) => {
-        await audit.log('user.deleted', user.id)
+        console.log('deleted', user.id)
       },
     },
   },
@@ -71,18 +80,26 @@ gatehouse({
 ```
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+const userId = 'usr_123'
+
 await gatehouse.admin.listUsers({ searchField: 'email', searchValue: 'ada@' })
 // { users, total }
 
 await gatehouse.admin.getUser(userId)
 await gatehouse.admin.removeUser(userId)
-await gatehouse.admin.setUserPassword(userId, newPassword)
-await gatehouse.admin.setRole({ userId, role })
+await gatehouse.admin.setUserPassword(userId, 'new-password')
+await gatehouse.admin.setRole({ userId, role: 'admin' })
 ```
 
 ### Banning
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+const userId = 'usr_123'
+
 await gatehouse.admin.banUser(userId, {
   banReason: 'Spam',
   banExpiresIn: 7 * 86400, // seconds; omit for permanent
@@ -95,6 +112,10 @@ Banned users are blocked at sign-in and lose their sessions. `user.banned` / `us
 ### Impersonation
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+const userId = 'usr_123'
+
 await gatehouse.admin.impersonateUser(userId)
 await gatehouse.admin.stopImpersonating()
 ```
@@ -104,6 +125,11 @@ Impersonation shows up as `session.impersonatedBy` on the impersonated session �
 ### Sessions & permissions
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
+const userId = 'usr_123'
+const sessionToken = 'ses_456'
+
 await gatehouse.admin.listUserSessions(userId)
 await gatehouse.admin.revokeUserSession(sessionToken)
 await gatehouse.admin.revokeUserSessions(userId)

@@ -10,6 +10,8 @@ Authentication answers _who you are_; authorization answers _what you can do_. G
 The one function for permission checks:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.can({ user, permission: 'project.update' })
 // boolean
 ```
@@ -19,6 +21,8 @@ await gatehouse.can({ user, permission: 'project.update' })
 - `organizationId` — optional; when given, the check is scoped to the user's membership in that organization
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 const user = await gatehouse.requireUser()
 
 if (await gatehouse.can({ user, permission: 'project.update' })) {
@@ -39,6 +43,7 @@ A user's permissions are the union of:
 ## A `requireCan` helper
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
 import { AuthorizationError } from '@towerjs/gatehouse'
 
 export async function requireCan(params) {
@@ -55,6 +60,8 @@ await requireCan({ user, permission: 'project.update' })
 Combine with [organizations](/docs/gatehouse/organizations): check the user's role _inside_ a specific organization.
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 const canEdit = await gatehouse.can({
   user,
   permission: ['project.update', 'project.delete'],
@@ -65,6 +72,8 @@ const canEdit = await gatehouse.can({
 Create custom roles with permission maps and assign them via invites or members:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.roles.create({
   role: 'editor',
   permission: { project: ['update'] },
@@ -81,7 +90,9 @@ Built-in organization roles: `owner`, `admin`, `member` — `owner` and `admin` 
 ## User roles (admin)
 
 ```ts
-await gatehouse.admin.setRole({ userId, role: 'admin' }) // or any custom role
+import { gatehouse } from '@towerjs/gatehouse'
+
+await gatehouse.admin.setRole({ userId: 'usr_123', role: 'admin' }) // or any custom role
 await gatehouse.roles.assign(userId, role) // same, module-level
 await gatehouse.can({ user, permission: 'user.delete' })
 ```

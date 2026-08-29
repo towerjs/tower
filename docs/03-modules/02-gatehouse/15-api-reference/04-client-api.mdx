@@ -14,22 +14,26 @@ It talks to the auth API mounted at `/api/auth` and keeps a session cache on the
 ## Sign in / up
 
 ```ts
+import { gatehouseClient } from '@towerjs/gatehouse/client'
+
 await gatehouseClient.signUp.email({
   name: 'Jasper',
   email: 'jasper@example.com',
   password: 'password123',
 })
 
-await gatehouseClient.signIn.email({ email, password })
+await gatehouseClient.signIn.email({ email: 'ada@example.com', password: 'password123' })
 await gatehouseClient.signIn.social({ provider: 'google' })
-await gatehouseClient.signIn.magicLink({ email })
+await gatehouseClient.signIn.magicLink({ email: 'ada@example.com' })
 await gatehouseClient.signOut()
 ```
 
 Results follow Better Auth's shape — `{ data, error }`:
 
 ```ts
-const { data, error } = await gatehouseClient.signIn.email({ email, password })
+import { gatehouseClient } from '@towerjs/gatehouse/client'
+
+const { data, error } = await gatehouseClient.signIn.email({ email: 'ada@example.com', password: 'password123' })
 
 if (error) {
   console.error(error.message)
@@ -68,11 +72,13 @@ See [Passkeys](/docs/gatehouse/passkeys).
 ## Two-factor
 
 ```ts
-const { data, error } = await gatehouseClient.twoFactor.enable({ password })
+import { gatehouseClient } from '@towerjs/gatehouse/client'
+
+const { data, error } = await gatehouseClient.twoFactor.enable({ password: 'password123' })
 // data.totpURI, data.backupCodes
 
-await gatehouseClient.twoFactor.verify({ code, trustDevice })
-await gatehouseClient.twoFactor.disable({ password })
+await gatehouseClient.twoFactor.verify({ code: '123456', trustDevice: true })
+await gatehouseClient.twoFactor.disable({ password: 'password123' })
 ```
 
 See [Two-Factor Auth](/docs/gatehouse/two-factor).
@@ -80,11 +86,13 @@ See [Two-Factor Auth](/docs/gatehouse/two-factor).
 ## OTP and phone
 
 ```ts
-await gatehouseClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' })
-await gatehouseClient.emailOtp.verifyVerificationOtp({ email, otp })
+import { gatehouseClient } from '@towerjs/gatehouse/client'
 
-await gatehouseClient.phoneNumber.sendOtp({ phoneNumber })
-await gatehouseClient.phoneNumber.verifyOtp({ phoneNumber, otp })
+await gatehouseClient.emailOtp.sendVerificationOtp({ email: 'ada@example.com', type: 'sign-in' })
+await gatehouseClient.emailOtp.verifyVerificationOtp({ email: 'ada@example.com', otp: '123456' })
+
+await gatehouseClient.phoneNumber.sendOtp({ phoneNumber: '+15555550123' })
+await gatehouseClient.phoneNumber.verifyOtp({ phoneNumber: '+15555550123', otp: '123456' })
 ```
 
 ## When to use the client vs server actions

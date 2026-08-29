@@ -62,6 +62,7 @@ export async function GET(request: Request) {
 ```
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
 import { runWithRequest } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {
@@ -112,6 +113,8 @@ gatehouse({
 ## Revocation
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.sessions.list() // all sessions for the user
 await gatehouse.sessions.revoke(token)
 await gatehouse.sessions.revokeOther() // everywhere except this device
@@ -126,6 +129,7 @@ Actions: `revokeSession` (`token`), `revokeOtherSessions`, `revokeAllSessions`. 
 `requireUser()` throws `AuthenticationError` when there's no session. The proxy normally keeps such requests out — catch the error when you want to render an alternative state instead of letting it propagate:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
 import { AuthenticationError } from '@towerjs/gatehouse'
 
 try {

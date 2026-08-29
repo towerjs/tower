@@ -20,6 +20,8 @@ gatehouse({
 ## Enabling 2FA for a user
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 const { totpURI, backupCodes } = await gatehouse.totp.enable(password)
 // totpURI      — feed to an authenticator app (QR code or manual entry)
 // backupCodes  — one-time recovery codes, show them once
@@ -32,7 +34,9 @@ The `enableTwoFactor` action takes `password` and returns both in its response.
 Two steps on the server:
 
 ```ts
-await gatehouse.totp.verify({ code, trustDevice })
+import { gatehouse } from '@towerjs/gatehouse'
+
+await gatehouse.totp.verify({ code: '123456', trustDevice: true })
 ```
 
 - `trustDevice` — mark this device trusted and skip 2FA on it for the `trustDeviceMaxAge` period
@@ -45,6 +49,8 @@ Action: `verifyTwoFactor` (`code`, `trustDevice`).
 Users who lose their authenticator can fall back to recovery codes:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.backupCodes.generate(password) // new codes
 await gatehouse.backupCodes.verify(code) // code is consumed on use
 ```
@@ -54,6 +60,8 @@ Actions: `generateBackupCodes` (`password`), `verifyBackupCode` (`code`).
 ## Disabling 2FA
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.totp.disable(password)
 ```
 

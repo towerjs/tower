@@ -55,6 +55,8 @@ export default async function Dashboard() {
 Pages that render both states use `getSession()`:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 const session = await gatehouse.getSession()
 const user = session?.user ?? null // null when signed out
 ```

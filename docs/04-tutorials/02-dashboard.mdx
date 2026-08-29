@@ -128,6 +128,8 @@ export const inviteMember = action(async (formData: FormData) => {
 ## 6. Set Active Organization
 
 ```ts filename="src/actions/organizations.ts"
+import { gatehouse } from '@towerjs/gatehouse'
+
 export const switchOrganization = action(async (formData: FormData) => {
   const orgId = formData.get('orgId') as string
   await gatehouse.organizations.setActive(orgId)
@@ -139,6 +141,8 @@ The active organization is used for session-scoped operations.
 ## 7. Permissions
 
 ```ts filename="src/actions/organizations.ts"
+import { gatehouse } from '@towerjs/gatehouse'
+
 export const deleteProject = action(async (formData: FormData) => {
   const projectId = formData.get('projectId') as string
   const orgId = formData.get('orgId') as string

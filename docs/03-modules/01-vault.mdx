@@ -44,6 +44,8 @@ await vault.deleteFrom('users').where('id', '=', userId).execute()
 ## Transactions
 
 ```ts
+import { vault } from '@towerjs/vault'
+
 await vault.transaction(async (trx) => {
   const user = await trx.insertInto('users').values({ name: 'Alice' }).returningAll().executeTakeFirstOrThrow()
 
@@ -131,6 +133,8 @@ const result = await vault.selectFrom('users').select(vault.fn.countAll().as('co
 On Edge (Vercel Edge, Cloudflare Workers), Vault uses the same Neon HTTP dialect (`kysely-neon`) as everywhere else — no connection pool is involved. Migrations and seeds are unavailable on Edge (filesystem-dependent).
 
 ```ts
+import { vault } from '@towerjs/vault'
+
 // vault.migrate()  // throws on Edge (filesystem unavailable)
 // vault.seed()     // throws on Edge (filesystem unavailable)
 ```
@@ -138,6 +142,8 @@ On Edge (Vercel Edge, Cloudflare Workers), Vault uses the same Neon HTTP dialect
 ## Closing
 
 ```ts
+import { vault } from '@towerjs/vault'
+
 await vault.close()
 ```
 

@@ -22,6 +22,8 @@ gatehouse({
 **Create** — the creator becomes the owner:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.create({ name: 'Acme', slug: 'acme' })
 ```
 
@@ -30,6 +32,8 @@ Action: `createOrganization` (`name`, `slug`).
 **Invite** — email invites with a role:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.invitations.create('org_id', {
   email: 'ada@example.com',
   role: 'member',
@@ -41,6 +45,8 @@ Action: `inviteMember` (`orgId`, `email`, `role`).
 **Accept** — the invitee accepts (or rejects) and joins:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.invitations.accept(invitationId)
 await gatehouse.organizations.invitations.reject(invitationId)
 await gatehouse.organizations.invitations.cancel(invitationId)
@@ -51,6 +57,8 @@ Actions: `acceptInvitation` / `rejectInvitation` (`invitationId`), `cancelInvita
 **Switch** — users work in one organization at a time:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.setActive(organizationId)
 ```
 
@@ -59,6 +67,8 @@ Action: `setActiveOrganization` (`organizationId`).
 **Check** — `requireUser()` is per-user; query the active org for context:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 const orgs = await gatehouse.getOrganizations() // memberships
 const org = await gatehouse.getOrganization(orgId) // full: members + invitations
 ```
@@ -66,6 +76,8 @@ const org = await gatehouse.getOrganization(orgId) // full: members + invitation
 ## Members
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.members.add(organizationId, userId, 'member')
 await gatehouse.organizations.members.update(memberId, 'admin', organizationId)
 await gatehouse.organizations.members.remove(organizationId, memberId)
@@ -76,6 +88,8 @@ Actions: `addMember` (`organizationId`, `email`, `role`), `updateMemberRole` (`m
 ## Custom roles
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.roles.create({
   role: 'editor',
   permission: { project: ['update'] },
@@ -96,6 +110,8 @@ Built-in roles: `owner`, `admin`, `member` — see [Authorization](/docs/gatehou
 ## Permission checks
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.can({
   user,
   permission: 'project.update',
@@ -110,6 +126,8 @@ For the signed-in user in their active organization, check the session user with
 `OrganizationInvitation` carries `email`, `role`, `status` (`pending` / `accepted` / `rejected` / `canceled`), `inviterId`, `expiresAt`. List and inspect before rendering invite UI:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.organizations.invitations.list(organizationId)
 await gatehouse.organizations.invitations.get(invitationId)
 ```

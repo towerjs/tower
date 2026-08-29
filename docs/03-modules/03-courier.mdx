@@ -140,6 +140,8 @@ await courier.push.send({
 ```ts
 import { WelcomeEmail } from '@/emails/welcome'
 
+import { courier } from '@towerjs/courier'
+
 await courier.email.send({
   to: 'user@example.com',
   subject: 'Welcome!',

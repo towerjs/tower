@@ -20,6 +20,8 @@ gatehouse({
 ## Create a key
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.apiKeys.create({
   name: 'Deploy CLI',
   userId: 'user_123', // required — the key's owner
@@ -37,6 +39,8 @@ Action: `createApiKey` (`name`, `expiresIn`) — returns `{ ok: true }` or `{ er
 Verify on every programmatic request:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
 // { valid, error, key } — runtime shape; key carries id, name, permissions, expiresAt, ...
 ```
@@ -46,6 +50,8 @@ Invalid, expired, or revoked keys return `{ valid: false, error }`.
 Route-handler guard:
 
 ```ts filename="src/app/api/deploy/route.ts"
+import { gatehouse } from '@towerjs/gatehouse'
+
 export async function POST(request: Request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '')
   const { valid, key } = await gatehouse.apiKeys.verify({ key: token })
@@ -60,6 +66,8 @@ export async function POST(request: Request) {
 ## List, rotate, revoke
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
+
 await gatehouse.apiKeys.list(userId, { sortBy: 'createdAt' })
 await gatehouse.apiKeys.get(keyId)
 await gatehouse.apiKeys.update(id, { name, expiresIn }) // rotate: shorten expiry or change permissions

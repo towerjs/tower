@@ -48,7 +48,7 @@ See [Actions](/docs/gatehouse/api-reference/actions) for the full list.
 ```ts
 import { gatehouseClient } from '@towerjs/gatehouse/client'
 
-const { data, error } = await gatehouseClient.signIn.email({ email, password })
+const { data, error } = await gatehouseClient.signIn.email({ email: 'ada@example.com', password: 'password123' })
 ```
 
 ## The flow
