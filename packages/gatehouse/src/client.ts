@@ -22,11 +22,7 @@ export type GatehouseClientOptions = BetterAuthClientOptions & {
   ]
 }
 
-// Vendor inference drift: better-auth's plugin-inferred client enriches the
-// session user with plugin fields (twoFactorEnabled, banned, …). Gatehouse's
-// public client contract intentionally exposes the base user shape, so we
-// pin the type at this boundary instead of leaking plugin fields.
-export const gatehouseClient = createAuthClient({
+const client = createAuthClient({
   baseURL: typeof window !== 'undefined' ? window.location.origin : undefined,
   plugins: [
     adminClient(),
@@ -36,4 +32,20 @@ export const gatehouseClient = createAuthClient({
     phoneNumberClient(),
     twoFactorClient(),
   ],
-}) as unknown as ReactAuthClient<GatehouseClientOptions>
+})
+
+/** Session-reading members whose user shape Gatehouse pins. */
+type SessionMembers = 'useSession' | 'getSession'
+
+/**
+ * The browser client.
+ *
+ * Vendor inference drift: better-auth's plugin-inferred client enriches the
+ * session user with plugin fields (twoFactorEnabled, banned, …). Gatehouse's
+ * public contract exposes the base user shape, so the session-reading members
+ * are pinned here — while the plugin surfaces (magic links, email OTP, two
+ * factor, organizations) keep their inferred types, because that is what
+ * browser code calls.
+ */
+export const gatehouseClient = client as unknown as Omit<typeof client, SessionMembers> &
+  Pick<ReactAuthClient<GatehouseClientOptions>, SessionMembers>
