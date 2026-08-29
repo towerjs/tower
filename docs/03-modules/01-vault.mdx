@@ -23,33 +23,65 @@ export default defineTower({
 })
 ```
 
+## Typing your schema
+
+`vault` is a Kysely instance. Describe your tables once and hand that type to `vault`, and every query is checked against it — table names, column names, and result shapes:
+
+```ts filename="src/vault/db.ts"
+import type { VaultModule } from '@towerjs/vault'
+import { vault } from '@towerjs/vault'
+
+export interface Database {
+  users: { id: string; name: string; email: string }
+  profiles: { id: string; userId: string; bio: string }
+}
+
+export const db = vault as VaultModule<Database>
+```
+
+Import `db` wherever you query. The examples below repeat a trimmed-down version of that file so each one stands alone.
+
 ## Querying
 
 ```ts
+import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
+const db = vault as VaultModule<{ users: { id: string; name: string; email: string } }>
+const userId = 'usr_123'
+
 // Select
-const users = await vault.selectFrom('users').selectAll().where('email', '=', 'user@example.com').execute()
+const users = await db.selectFrom('users').selectAll().where('email', '=', 'user@example.com').execute()
 
 // Insert
-await vault.insertInto('users').values({ name: 'Alice', email: 'alice@example.com' }).execute()
+await db.insertInto('users').values({ id: userId, name: 'Alice', email: 'alice@example.com' }).execute()
 
 // Update
-await vault.updateTable('users').set({ name: 'Alice Smith' }).where('id', '=', userId).execute()
+await db.updateTable('users').set({ name: 'Alice Smith' }).where('id', '=', userId).execute()
 
 // Delete
-await vault.deleteFrom('users').where('id', '=', userId).execute()
+await db.deleteFrom('users').where('id', '=', userId).execute()
 ```
 
 ## Transactions
 
 ```ts
+import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-await vault.transaction(async (trx) => {
-  const user = await trx.insertInto('users').values({ name: 'Alice' }).returningAll().executeTakeFirstOrThrow()
+const db = vault as VaultModule<{
+  users: { id: string; name: string; email: string }
+  profiles: { id: string; userId: string; bio: string }
+}>
 
-  await trx.insertInto('profiles').values({ userId: user.id, bio: 'Hello' }).execute()
+await db.transaction(async (trx) => {
+  const user = await trx
+    .insertInto('users')
+    .values({ id: 'usr_123', name: 'Alice', email: 'alice@example.com' })
+    .returningAll()
+    .executeTakeFirstOrThrow()
+
+  await trx.insertInto('profiles').values({ id: 'pro_123', userId: user.id, bio: 'Hello' }).execute()
 })
 ```
 
@@ -105,10 +137,10 @@ Run migrations with your package manager of choice:
 Create seed files in `src/vault/seeds/`:
 
 ```ts filename="src/vault/seeds/example.ts"
-import { type Vault } from '@towerjs/vault'
+import type { Vault } from '@towerjs/vault'
 
-export default async function seed(db: Vault) {
-  await db.insertInto('projects').values({ name: 'My First Project' }).execute()
+export default async function seed(db: Vault<{ projects: { id: string; name: string } }>) {
+  await db.insertInto('projects').values({ id: 'prj_123', name: 'My First Project' }).execute()
 }
 ```
 
@@ -123,9 +155,12 @@ By default, migrations run before seeds. Skip migrations with `npx tower seed --
 ## Advanced: Using Kysely Functions
 
 ```ts
+import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-const result = await vault.selectFrom('users').select(vault.fn.countAll().as('count')).executeTakeFirst()
+const db = vault as VaultModule<{ users: { id: string; name: string; email: string } }>
+
+const result = await db.selectFrom('users').select(db.fn.countAll().as('count')).executeTakeFirst()
 ```
 
 ## Edge Runtime

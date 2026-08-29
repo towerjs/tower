@@ -77,7 +77,7 @@ import { gatehouseClient } from '@towerjs/gatehouse/client'
 const { data, error } = await gatehouseClient.twoFactor.enable({ password: 'password123' })
 // data.totpURI, data.backupCodes
 
-await gatehouseClient.twoFactor.verify({ code: '123456', trustDevice: true })
+await gatehouseClient.twoFactor.verifyTotp({ code: '123456', trustDevice: true })
 await gatehouseClient.twoFactor.disable({ password: 'password123' })
 ```
 
@@ -89,10 +89,10 @@ See [Two-Factor Auth](/docs/gatehouse/two-factor).
 import { gatehouseClient } from '@towerjs/gatehouse/client'
 
 await gatehouseClient.emailOtp.sendVerificationOtp({ email: 'ada@example.com', type: 'sign-in' })
-await gatehouseClient.emailOtp.verifyVerificationOtp({ email: 'ada@example.com', otp: '123456' })
+await gatehouseClient.emailOtp.checkVerificationOtp({ email: 'ada@example.com', otp: '123456', type: 'sign-in' })
 
 await gatehouseClient.phoneNumber.sendOtp({ phoneNumber: '+15555550123' })
-await gatehouseClient.phoneNumber.verifyOtp({ phoneNumber: '+15555550123', otp: '123456' })
+await gatehouseClient.phoneNumber.verify({ phoneNumber: '+15555550123', code: '123456' })
 ```
 
 ## When to use the client vs server actions

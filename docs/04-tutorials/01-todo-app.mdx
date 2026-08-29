@@ -57,30 +57,44 @@ export async function down(db: Vault) {
 
 ## 3. Server Actions
 
+Describe the table once so every query is typed — see [Typing your schema](/docs/vault):
+
+```ts filename="src/vault/db.ts"
+import type { VaultModule } from '@towerjs/vault'
+import { vault } from '@towerjs/vault'
+
+export interface Database {
+  todos: { id: string; title: string; completed: boolean; user_id: string; created_at: Date }
+}
+
+export const db = vault as VaultModule<Database>
+```
+
 ```ts filename="src/actions/todos.ts"
 'use server'
 
+import { db } from '@/vault/db'
+
 import { gatehouse } from '@towerjs/gatehouse'
-import { vault } from '@towerjs/vault'
 
 export async function addTodo(formData: FormData) {
   const session = await gatehouse.getSession()
   if (!session) throw new Error('Not authenticated')
 
   const title = formData.get('title') as string
-  await vault.insertInto('todos').values({ title, user_id: session.user.id }).execute()
+  await db.insertInto('todos').values({ title, user_id: session.user.id }).execute()
 }
 
 export async function toggleTodo(formData: FormData) {
   const id = formData.get('id') as string
-  const todo = await vault.selectFrom('todos').select('completed').where('id', '=', id).executeTakeFirst()
+  const todo = await db.selectFrom('todos').select('completed').where('id', '=', id).executeTakeFirst()
 
-  await vault.updateTable('todos').set({ completed: !todo?.completed }).where('id', '=', id).execute()
+  await db.updateTable('todos').set({ completed: !todo?.completed }).where('id', '=', id).execute()
 }
 
 export async function deleteTodo(formData: FormData) {
   const id = formData.get('id') as string
-  await vault.deleteFrom('todos').where('id', '=', id).execute()
+  await db.deleteFrom('todos').where('id', '=', id).execute()
 }
 ```
 
@@ -88,13 +102,19 @@ export async function deleteTodo(formData: FormData) {
 
 ```tsx filename="src/app/todos/page.tsx"
 import { addTodo, deleteTodo, toggleTodo } from '@/actions/todos'
+import { db } from '@/vault/db'
 
 import { gatehouse } from '@towerjs/gatehouse'
-import { vault } from '@towerjs/vault'
+
+interface Todo {
+  id: string
+  title: string
+  completed: boolean
+}
 
 export default async function TodosPage() {
   const session = await gatehouse.requireUser()
-  const todos = await vault
+  const todos = await db
     .selectFrom('todos')
     .selectAll()
     .where('user_id', '=', session.id)
@@ -111,7 +131,7 @@ export default async function TodosPage() {
       </form>
 
       <ul>
-        {todos.map((todo) => (
+        {todos.map((todo: Todo) => (
           <li key={todo.id}>
             <form action={toggleTodo} style={{ display: 'inline' }}>
               <input type="hidden" name="id" value={todo.id} />
@@ -134,12 +154,16 @@ export default async function TodosPage() {
 
 ```ts filename="src/actions/todos.ts"
 import { courier } from '@towerjs/courier'
+import { gatehouse } from '@towerjs/gatehouse'
 
 export async function addTodo(formData: FormData) {
+  const session = await gatehouse.requireUser()
+  const title = formData.get('title') as string
+
   // ... save todo
 
   await courier.email.send({
-    to: session.user.email,
+    to: session.email,
     subject: 'Todo Created',
     html: `<p>Created: ${title}</p>`,
   })

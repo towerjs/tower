@@ -140,6 +140,13 @@ NODESCRIPT
 
 BLOCKS_DIR="$TMP_DIR/blocks"
 EXTRACT_OUT=$(node "$EXTRACT_SCRIPT" "$DOCS_DIR" "$BLOCKS_DIR")
+
+# Examples that span several files import the ones the reader creates through
+# the app's own @/ alias. Those paths belong to the reader's project, so they
+# resolve to `any` here; everything else in the block is still checked.
+cat > "$BLOCKS_DIR/app-local.d.ts" <<'DTS'
+declare module '@/*'
+DTS
 echo "$EXTRACT_OUT" | sed '$d'
 
 if echo "$EXTRACT_OUT" | grep -q '^NO_BLOCKS$'; then
@@ -163,7 +170,7 @@ const fs = require('fs');
 const config = {
   extends: '../../tsconfig.json',
   compilerOptions: { noEmit: true, incremental: false },
-  include: ['blocks/*.tsx']
+  include: ['blocks/*.tsx', 'blocks/*.d.ts']
 };
 fs.writeFileSync('$TMP_DIR/tsconfig.json', JSON.stringify(config, null, 2));
 "

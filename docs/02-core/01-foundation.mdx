@@ -34,7 +34,7 @@ In application code you never call `createTowerApp` directly — `tower.config.t
 
 ### TowerApp interface
 
-```ts
+```ts signature
 interface TowerApp {
   config: TowerConfig
   container: ServiceContainer
@@ -71,10 +71,14 @@ Detection checks environment variables: `VERCEL`, `AWS_LAMBDA_FUNCTION_NAME`, `A
 Per-app DI container:
 
 ```ts
-container.register('key', instance)
+import { ServiceContainer } from '@towerjs/tower/foundation'
+
+const container = new ServiceContainer()
+
+container.register('key', { ready: true })
 container.has('key') // → boolean
-container.get('key') // → T
-container.registerFactory('key', () => new Instance())
+container.get<{ ready: boolean }>('key') // → T
+container.registerFactory('lazy', () => ({ ready: true }))
 ```
 
 Each module registers its service under its bare name (e.g. `vault`, `gatehouse`). The `module.` prefix is used only for the internal lifecycle wrapper and is not part of the public API — resolve services by their bare name: `app.container.get('vault')`.
@@ -86,7 +90,9 @@ For cross-module access after initialization:
 ```ts
 import { getService, registerService } from '@towerjs/tower/foundation'
 
-registerService('database', pool)
+import { Pool } from 'pg'
+
+registerService('database', new Pool())
 const pool = getService<Pool>('database')
 ```
 
@@ -97,7 +103,9 @@ Tower uses AsyncLocalStorage to provide request-scoped context:
 ```ts
 import { towerContext } from '@towerjs/tower/foundation'
 
-towerContext.run({ request, headers }, () => {
+const request = new Request('https://example.com')
+
+await towerContext.run({ request, headers: request.headers }, async () => {
   // Gatehouse reads headers from context
 })
 ```

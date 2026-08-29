@@ -1,36 +1,70 @@
 ---
 title: 'Authorization'
-description: 'Permission checks with can(), roles, and ownership — scoped to users or organizations.'
+description: 'Policies with can() and authorize(), plus roles, organization scopes, and ownership.'
 ---
 
-Authentication answers _who you are_; authorization answers _what you can do_. Gatehouse gives you `can()` for permission checks, plus roles for users and organizations.
+Authentication answers _who you are_; authorization answers _what you can do_. Gatehouse answers it with **policies**: plain application code that decides whether a user may perform an action on a resource.
 
-## `can()`
+## Policies
 
-The one function for permission checks:
+A policy is an object of action handlers. Each handler receives the authenticated Tower user and the resource — it never fetches the user itself, so policies unit-test without a request context:
 
-```ts
-import { gatehouse } from '@towerjs/gatehouse'
+```ts filename="src/policies/project.ts"
+import { definePolicy, policies } from '@towerjs/gatehouse'
 
-await gatehouse.can({ user, permission: 'project.update' })
-// boolean
+interface Project {
+  id: string
+  ownerId: string
+}
+
+export const projectPolicy = definePolicy<Project>({
+  view: (user, project) => project.ownerId === user.id,
+  update: (user, project) => project.ownerId === user.id,
+})
+
+policies.register('project', projectPolicy)
 ```
 
-- `user` — the user to check (from `getSession().user` or `requireUser()`)
-- `permission` — a `string` or `string[]`; an array is **any-of** (checks that the user has at least one)
-- `organizationId` — optional; when given, the check is scoped to the user's membership in that organization
+Register against a class (`policies.register(Project, projectPolicy)`) or a string key, as above.
+
+## `can()` and `authorize()`
+
+`can()` returns a boolean for the current user; `authorize()` throws instead — `AuthenticationError` when nobody is signed in, `AuthorizationError` when the policy denies:
 
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
-const user = await gatehouse.requireUser()
+const project = { id: 'prj_123', ownerId: 'usr_123' }
 
-if (await gatehouse.can({ user, permission: 'project.update' })) {
+if (await gatehouse.can(project, 'update')) {
   // ...
+}
+
+await gatehouse.authorize(project, 'update') // throws when denied
+```
+
+Both resolve the signed-in user from the request context, so they work inside `action()`, route handlers wrapped in `runWithRequest`, and the framework adapter's context. `can()` returns `false` for an unauthenticated visitor and throws only when no policy is registered for the resource.
+
+## Permission checks
+
+Role and permission checks — as opposed to resource policies — live on the per-request instance:
+
+```ts
+import { Gatehouse } from '@towerjs/gatehouse'
+
+export async function GET(request: Request) {
+  const gh = await Gatehouse.from(request)
+  const user = await gh.requireUser()
+
+  const allowed = await gh.can({ user, permission: 'project.update' })
+
+  return Response.json({ allowed })
 }
 ```
 
-For the signed-in user in their current context, check the session user with `gatehouse.can({ user: session.user, permission })`.
+- `user` — the user to check (from `session()` or `requireUser()`)
+- `permission` — a `string` or `string[]`; an array is **any-of** (checks that the user has at least one)
+- `organizationId` — optional; when given, the check is scoped to the user's membership in that organization
 
 ## Where permissions come from
 
@@ -40,33 +74,25 @@ A user's permissions are the union of:
 2. **Organization roles** — the user's role inside the organization being checked, when `organizationId` is provided
 3. **Ad-hoc grants** — plugin-defined permissions evaluated by the adapter
 
-## A `requireCan` helper
-
-```ts
-import { gatehouse } from '@towerjs/gatehouse'
-import { AuthorizationError } from '@towerjs/gatehouse'
-
-export async function requireCan(params) {
-  if (!(await gatehouse.can(params))) throw new AuthorizationError('Insufficient permissions')
-}
-```
-
-```ts
-await requireCan({ user, permission: 'project.update' })
-```
-
 ## Organization-scoped checks
 
 Combine with [organizations](/docs/gatehouse/organizations): check the user's role _inside_ a specific organization.
 
 ```ts
-import { gatehouse } from '@towerjs/gatehouse'
+import { Gatehouse } from '@towerjs/gatehouse'
 
-const canEdit = await gatehouse.can({
-  user,
-  permission: ['project.update', 'project.delete'],
-  organizationId: 'org_id',
-})
+export async function GET(request: Request) {
+  const gh = await Gatehouse.from(request)
+  const user = await gh.requireUser()
+
+  const canEdit = await gh.can({
+    user,
+    permission: ['project.update', 'project.delete'],
+    organizationId: 'org_123',
+  })
+
+  return Response.json({ canEdit })
+}
 ```
 
 Create custom roles with permission maps and assign them via invites or members:
@@ -79,7 +105,7 @@ await gatehouse.organizations.roles.create({
   permission: { project: ['update'] },
 })
 
-await gatehouse.organizations.invitations.create('org_id', {
+await gatehouse.organizations.invitations.create('org_123', {
   email: 'ada@example.com',
   role: 'editor',
 })
@@ -92,9 +118,11 @@ Built-in organization roles: `owner`, `admin`, `member` — `owner` and `admin` 
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
-await gatehouse.admin.setRole({ userId: 'usr_123', role: 'admin' }) // or any custom role
+const userId = 'usr_123'
+const role = 'admin'
+
+await gatehouse.admin.setRole({ userId, role }) // or any custom role
 await gatehouse.roles.assign(userId, role) // same, module-level
-await gatehouse.can({ user, permission: 'user.delete' })
 ```
 
 Actions: `assignRole` (`userId`, `role`), `removeRole` (`userId`).
@@ -104,17 +132,23 @@ Actions: `assignRole` (`userId`, `role`), `removeRole` (`userId`).
 Role checks don't cover "is this _their_ record". Check ownership separately:
 
 ```ts
-const project = await getProject(id)
+import { AuthorizationError, gatehouse } from '@towerjs/gatehouse'
+
+const user = await gatehouse.requireUser()
+const project = { id: 'prj_123', ownerId: 'usr_123' }
+
 if (project.ownerId !== user.id) throw new AuthorizationError()
 ```
+
+A policy is the place for this rule once more than one call site needs it — that is exactly what the `projectPolicy` above encodes.
 
 ## Enforcement points
 
 | Where          | How                                                                                             |
 | -------------- | ----------------------------------------------------------------------------------------------- |
-| Server actions | `await requireCan({ user, permission })` first line                                             |
+| Server actions | `await gatehouse.authorize(resource, action)` on the first line                                 |
 | Route handlers | `Gatehouse.from(request)` then `can()`                                                          |
 | API keys       | `apiKeys.verify()` with a permission map                                                        |
 | Pages          | Render what the session allows — access is gated by the proxy, so pages don't redirect for auth |
 
-Fail closed: `can()` returns `false` on unknown permissions — and when no `organizationId` is provided — rather than guessing. It never throws; wrap it with `requireCan` (above) to raise `AuthorizationError` (→ 403) where you want one.
+Fail closed: an unauthenticated visitor is denied rather than guessed at, and permission checks return `false` for unknown permissions — and when no `organizationId` is provided. Use `authorize()` where a denial should raise `AuthorizationError` (→ 403) instead of returning `false`.

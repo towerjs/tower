@@ -32,10 +32,13 @@ On Vercel Edge, runtime detection returns `{ name: 'edge', isServerless: true }`
 ### Vault on Edge
 
 ```ts
+import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
+const db = vault as VaultModule<{ users: { id: string; email: string } }>
+
 // Querying works
-const users = await vault.selectFrom('users').selectAll().execute()
+const users = await db.selectFrom('users').selectAll().execute()
 
 // Migrations and seeds throw
 await vault.migrate() // Error: migrations unavailable on Edge

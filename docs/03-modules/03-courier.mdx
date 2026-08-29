@@ -112,6 +112,7 @@ courier({
 ## Sending
 
 ```ts
+import type { PushSubscription } from '@towerjs/courier'
 import { courier } from '@towerjs/courier'
 
 // Email
@@ -129,8 +130,13 @@ await courier.sms.send({
 })
 
 // Push
+const subscription: PushSubscription = {
+  endpoint: 'https://push.example.com/subscription-id',
+  keys: { p256dh: '...', auth: '...' },
+}
+
 await courier.push.send({
-  subscription: pushSubscription,
+  subscription,
   payload: { title: 'New message', body: 'You have a notification' },
 })
 ```
@@ -151,7 +157,7 @@ await courier.email.send({
 
 ## Types
 
-```ts
+```ts signature
 interface EmailSendParams {
   to: string | string[]
   subject: string

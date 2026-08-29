@@ -19,7 +19,7 @@ Once a user signs in, a session cookie is set. Here's how to read it in every pa
 ```tsx filename="src/app/layout.tsx"
 import { gatehouse } from '@towerjs/gatehouse'
 
-export default async function RootLayout({ children }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await gatehouse.getSession()
 
   return (
@@ -115,6 +115,8 @@ gatehouse({
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
+const token = 'tok_123'
+
 await gatehouse.sessions.list() // all sessions for the user
 await gatehouse.sessions.revoke(token)
 await gatehouse.sessions.revokeOther() // everywhere except this device
@@ -132,11 +134,13 @@ Actions: `revokeSession` (`token`), `revokeOtherSessions`, `revokeAllSessions`. 
 import { gatehouse } from '@towerjs/gatehouse'
 import { AuthenticationError } from '@towerjs/gatehouse'
 
-try {
-  const user = await gatehouse.requireUser()
-} catch (error) {
-  if (error instanceof AuthenticationError) return null // render the signed-out state
-  throw error
+export async function currentUser() {
+  try {
+    return await gatehouse.requireUser()
+  } catch (error) {
+    if (error instanceof AuthenticationError) return null // render the signed-out state
+    throw error
+  }
 }
 ```
 

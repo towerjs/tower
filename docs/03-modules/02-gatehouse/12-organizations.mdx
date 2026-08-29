@@ -47,6 +47,8 @@ Action: `inviteMember` (`orgId`, `email`, `role`).
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
+const invitationId = 'inv_123'
+
 await gatehouse.organizations.invitations.accept(invitationId)
 await gatehouse.organizations.invitations.reject(invitationId)
 await gatehouse.organizations.invitations.cancel(invitationId)
@@ -59,6 +61,8 @@ Actions: `acceptInvitation` / `rejectInvitation` (`invitationId`), `cancelInvita
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
+const organizationId = 'org_123'
+
 await gatehouse.organizations.setActive(organizationId)
 ```
 
@@ -70,13 +74,17 @@ Action: `setActiveOrganization` (`organizationId`).
 import { gatehouse } from '@towerjs/gatehouse'
 
 const orgs = await gatehouse.getOrganizations() // memberships
-const org = await gatehouse.getOrganization(orgId) // full: members + invitations
+const org = await gatehouse.getOrganization('org_123') // full: members + invitations
 ```
 
 ## Members
 
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
+
+const userId = 'usr_123'
+const organizationId = 'org_123'
+const memberId = 'mem_123'
 
 await gatehouse.organizations.members.add(organizationId, userId, 'member')
 await gatehouse.organizations.members.update(memberId, 'admin', organizationId)
@@ -110,16 +118,23 @@ Built-in roles: `owner`, `admin`, `member` — see [Authorization](/docs/gatehou
 ## Permission checks
 
 ```ts
-import { gatehouse } from '@towerjs/gatehouse'
+import { Gatehouse } from '@towerjs/gatehouse'
 
-await gatehouse.can({
-  user,
-  permission: 'project.update',
-  organizationId: 'org_id', // scope the check to an org
-})
+export async function GET(request: Request) {
+  const gh = await Gatehouse.from(request)
+  const user = await gh.requireUser()
+
+  const allowed = await gh.can({
+    user,
+    permission: 'project.update',
+    organizationId: 'org_123', // scope the check to an org
+  })
+
+  return Response.json({ allowed })
+}
 ```
 
-For the signed-in user in their active organization, check the session user with `gatehouse.can({ user: session.user, permission })`.
+Permission checks live on the per-request instance. Resource-level rules belong in a policy — see [Authorization](/docs/gatehouse/authorization).
 
 ## Invitation fields
 
@@ -127,6 +142,9 @@ For the signed-in user in their active organization, check the session user with
 
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
+
+const organizationId = 'org_123'
+const invitationId = 'inv_123'
 
 await gatehouse.organizations.invitations.list(organizationId)
 await gatehouse.organizations.invitations.get(invitationId)

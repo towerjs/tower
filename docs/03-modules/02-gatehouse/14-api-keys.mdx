@@ -41,11 +41,11 @@ Verify on every programmatic request:
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
-await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
-// { valid, error, key } — runtime shape; key carries id, name, permissions, expiresAt, ...
+const key = await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
+// ApiKeyInfo — id, name, prefix, permissions, expiresAt, ... — or null
 ```
 
-Invalid, expired, or revoked keys return `{ valid: false, error }`.
+Invalid, expired, and revoked keys verify to `null`.
 
 Route-handler guard:
 
@@ -53,9 +53,9 @@ Route-handler guard:
 import { gatehouse } from '@towerjs/gatehouse'
 
 export async function POST(request: Request) {
-  const token = request.headers.get('Authorization')?.replace('Bearer ', '')
-  const { valid, key } = await gatehouse.apiKeys.verify({ key: token })
-  if (!valid) return Response.json({ error: 'Invalid key' }, { status: 401 })
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
+  const key = await gatehouse.apiKeys.verify({ key: token })
+  if (!key) return Response.json({ error: 'Invalid key' }, { status: 401 })
   if (!key.permissions?.['project']?.includes('deploy')) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -68,10 +68,13 @@ export async function POST(request: Request) {
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
+const userId = 'usr_123'
+const keyId = 'key_123'
+
 await gatehouse.apiKeys.list(userId, { sortBy: 'createdAt' })
 await gatehouse.apiKeys.get(keyId)
-await gatehouse.apiKeys.update(id, { name, expiresIn }) // rotate: shorten expiry or change permissions
-await gatehouse.apiKeys.delete(id)
+await gatehouse.apiKeys.update(keyId, { name: 'CI deploy', expiresIn: 30 * 86400 }) // rotate expiry or permissions
+await gatehouse.apiKeys.delete(keyId)
 ```
 
 Actions: `updateApiKey` (`id`, `name`), `deleteApiKey` (`id`), `verifyApiKey` (`key`).

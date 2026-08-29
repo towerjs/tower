@@ -30,7 +30,7 @@ Each `vault()` / `gatehouse()` call is both the config factory and the runtime h
 
 `defineTower` takes `TowerConfig { modules: TowerModule[] }` where each `TowerModule` carries its own identity and lifecycle:
 
-```ts
+```ts signature
 interface TowerModule {
   name: string
   dependsOn?: string[]
@@ -42,7 +42,7 @@ interface TowerModule {
 
 Example (from `@towerjs/vault`):
 
-```ts
+```ts signature
 export const vault = new Proxy(createVaultModuleDefinition, {
   get(_target, prop) {
     /* lazy runtime */
@@ -69,6 +69,7 @@ If validation fails, an error is thrown with details about the conflict.
 
 ```ts
 import { defineTower, env } from '@towerjs/tower/blueprint'
+import { vault } from '@towerjs/vault'
 
 export default defineTower({
   modules: [vault({ connectionString: env.string('DATABASE_URL') })],

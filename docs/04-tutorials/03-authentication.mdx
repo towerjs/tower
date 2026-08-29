@@ -112,7 +112,7 @@ export function SignInForm() {
 ## 4. Sign-In Page
 
 ```tsx filename="src/app/sign-in/page.tsx"
-import { SignInForm } from './sign-in-form'
+import { SignInForm } from '@/app/sign-in/sign-in-form'
 
 export default function SignInPage() {
   return <SignInForm />
@@ -121,9 +121,32 @@ export default function SignInPage() {
 
 ## 5. Protected Dashboard
 
-```tsx filename="src/app/dashboard/page.tsx"
-import { gatehouse } from '@towerjs/gatehouse'
+```tsx filename="src/app/dashboard/sign-out-button.tsx"
+'use client'
+
 import { signOut } from '@towerjs/gatehouse/actions'
+
+import { useActionState } from 'react'
+
+export function SignOutButton() {
+  const [, action, pending] = useActionState(signOut, undefined)
+
+  return (
+    <form action={action}>
+      <button type="submit" disabled={pending}>
+        Sign Out
+      </button>
+    </form>
+  )
+}
+```
+
+The pre-built actions are form actions — `(prevState, formData)` — so they go through `useActionState` in a client component rather than straight into `<form action>`.
+
+```tsx filename="src/app/dashboard/page.tsx"
+import { SignOutButton } from '@/app/dashboard/sign-out-button'
+
+import { gatehouse } from '@towerjs/gatehouse'
 
 import { redirect } from 'next/navigation'
 
@@ -134,9 +157,7 @@ export default async function Dashboard() {
   return (
     <div>
       <h1>Welcome, {session.user.name}</h1>
-      <form action={signOut}>
-        <button type="submit">Sign Out</button>
-      </form>
+      <SignOutButton />
     </div>
   )
 }
@@ -178,7 +199,7 @@ Then in your app:
 ```ts
 import { enableTwoFactor, verifyTwoFactor } from '@towerjs/gatehouse/actions'
 
-// In a settings page:
-const result = await enableTwoFactor(new FormData()) // shows QR code
-await verifyTwoFactor(new FormData()) // completes setup
+// In a settings page
+const result = await enableTwoFactor(new FormData()) // returns the QR data
+await verifyTwoFactor(undefined, new FormData()) // form action: (prevState, formData)
 ```

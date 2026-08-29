@@ -22,20 +22,28 @@ Tower does not hide Postgres behind a generic "database" abstraction that preten
 Vault's query API is Kysely. `vault.selectFrom()`, `vault.insertInto()`, `vault.updateTable()`, `vault.deleteFrom()`, transactions, and `db.schema` are all Kysely — typed, composable, and close to SQL.
 
 ```ts
+import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-const users = await vault.selectFrom('users').selectAll().where('email', '=', 'alice@example.com').execute()
+const db = vault as VaultModule<{
+  users: { id: string; name: string; email: string }
+  profiles: { id: string; userId: string }
+}>
 
-await vault.transaction(async (trx) => {
+const users = await db.selectFrom('users').selectAll().where('email', '=', 'alice@example.com').execute()
+
+await db.transaction(async (trx) => {
   const user = await trx
     .insertInto('users')
-    .values({ name: 'Alice', email: 'alice@example.com' })
+    .values({ id: 'usr_123', name: 'Alice', email: 'alice@example.com' })
     .returningAll()
     .executeTakeFirstOrThrow()
 
-  await trx.insertInto('profiles').values({ userId: user.id }).execute()
+  await trx.insertInto('profiles').values({ id: 'pro_123', userId: user.id }).execute()
 })
 ```
+
+See [Typing your schema](/docs/vault) for the `src/vault/db.ts` file this cast normally lives in.
 
 Kysely was chosen because it is type-safe without an ORM's statefulness, it works on both Node and Edge (via `kysely-neon`), and it composes — future Tower primitives (models, policies) can build on it rather than replace it.
 
@@ -46,7 +54,8 @@ Tower does not wrap you in a leaky abstraction. The underlying engine is always 
 - **Raw SQL** — Kysely's `sql` tag is available alongside Vault. Use it when the query builder is not enough.
 
   ```ts
-  import { sql } from 'kysely'
+  import type { Vault, VaultModule } from '@towerjs/vault'
+  import { sql, vault } from '@towerjs/vault'
 
   // in a migration
   export async function up(db: Vault) {
@@ -57,7 +66,9 @@ Tower does not wrap you in a leaky abstraction. The underlying engine is always 
   }
 
   // in application code
-  const result = await vault
+  const db = vault as VaultModule<{ users: { id: string; email: string } }>
+
+  const result = await db
     .selectFrom('users')
     .select(sql<string>`lower(email)`.as('email'))
     .execute()
@@ -71,8 +82,11 @@ Tower does not wrap you in a leaky abstraction. The underlying engine is always 
 
 Vault's provider boundary is intentionally narrow: Neon HTTP (`kysely-neon`) for serverless/edge and standard `pg` for everything else. Swapping providers is a configuration change — no query, migration, or seed changes:
 
-```ts
-// tower.config.ts — same application code, different provider
+```ts filename="tower.config.ts"
+import { defineTower, env } from '@towerjs/tower'
+import { vault } from '@towerjs/vault'
+
+// same application code, different provider
 export default defineTower({
   modules: [
     vault({
@@ -84,6 +98,9 @@ export default defineTower({
 ```
 
 ```ts
+import { env } from '@towerjs/tower'
+import { vault } from '@towerjs/vault'
+
 // swap to pg — no application changes
 vault({
   provider: 'pg',

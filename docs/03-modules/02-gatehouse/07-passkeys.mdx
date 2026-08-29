@@ -38,7 +38,7 @@ export async function verifyRegistration(response: Record<string, unknown>) {
 ```tsx filename="src/app/settings/passkeys/register-passkey.tsx"
 'use client'
 
-import { generateRegistrationOptions, verifyRegistration } from './actions'
+import { generateRegistrationOptions, verifyRegistration } from '@/app/settings/passkeys/actions'
 
 export function RegisterPasskey() {
   async function handleRegister() {
@@ -60,8 +60,16 @@ Passkey sign-in runs the WebAuthn ceremony in the browser: `generateAuthenticati
 import { gatehouse } from '@towerjs/gatehouse'
 
 const opts = await gatehouse.passkeys.generateAuthenticationOptions()
-const credential = await navigator.credentials.get({ publicKey: opts })
-const { user, session } = await gatehouse.passkeys.verifyAuthentication({ response: credential })
+
+// The options come back as WebAuthn JSON — decode them for the browser API.
+const publicKey = PublicKeyCredential.parseRequestOptionsFromJSON(
+  opts as unknown as PublicKeyCredentialRequestOptionsJSON
+)
+const credential = await navigator.credentials.get({ publicKey })
+
+const { user, session } = await gatehouse.passkeys.verifyAuthentication({
+  response: credential as unknown as Record<string, unknown>,
+})
 ```
 
 ## Manage passkeys
@@ -72,8 +80,8 @@ List, rename, and remove from the server:
 import { gatehouse } from '@towerjs/gatehouse'
 
 await gatehouse.passkeys.list() // [{ id, name, createdAt }]
-await gatehouse.passkeys.update(id, { name })
-await gatehouse.passkeys.delete(id)
+await gatehouse.passkeys.update('psk_123', { name: 'MacBook Touch ID' })
+await gatehouse.passkeys.delete('psk_123')
 ```
 
 Actions: `updatePasskey` (`id`, `name`), `deletePasskey` (`id`).

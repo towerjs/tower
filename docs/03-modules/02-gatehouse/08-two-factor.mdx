@@ -22,7 +22,7 @@ gatehouse({
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
-const { totpURI, backupCodes } = await gatehouse.totp.enable(password)
+const { totpURI, backupCodes } = await gatehouse.totp.enable('password123')
 // totpURI      — feed to an authenticator app (QR code or manual entry)
 // backupCodes  — one-time recovery codes, show them once
 ```
@@ -51,6 +51,9 @@ Users who lose their authenticator can fall back to recovery codes:
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
+const password = 'password123'
+const code = '123456'
+
 await gatehouse.backupCodes.generate(password) // new codes
 await gatehouse.backupCodes.verify(code) // code is consumed on use
 ```
@@ -61,6 +64,8 @@ Actions: `generateBackupCodes` (`password`), `verifyBackupCode` (`code`).
 
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
+
+const password = 'password123'
 
 await gatehouse.totp.disable(password)
 ```
