@@ -45,6 +45,9 @@ jobs:
       - run: pnpm check:versions
       - run: pnpm build
 
+      # Compiles every documented example against the built packages.
+      - run: pnpm check:docs
+
       - run: node ../../packages/scribe/dist/cli.js about
         working-directory: examples/with-nextjs
 

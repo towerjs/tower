@@ -16,6 +16,7 @@
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down -v",
     "check:deps": "npx tsx scripts/check-dependencies.ts",
+    "check:docs": "bash scripts/verify-docs.sh",
     "check:versions": "node scripts/check-release-versions.mjs",
     "check:initial-version": "node scripts/check-release-versions.mjs --initial",
     "release:patch": "node scripts/release.mjs patch",
