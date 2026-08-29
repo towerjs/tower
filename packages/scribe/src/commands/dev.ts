@@ -23,13 +23,38 @@ export function resolveDevCommand(pm: PackageManager, port = DEV_PORT): { cmd: s
   return { cmd: pm, args: ['exec', 'next', 'dev', '--port', String(port)] }
 }
 
+/**
+ * Addresses a dev server can occupy: the loopback addresses a browser
+ * reaches through `localhost`, plus the wildcard `next dev` binds by
+ * default (`undefined`). Probing only the wildcard is not enough — macOS
+ * lets a wildcard bind succeed while another process already holds
+ * 127.0.0.1 on that port, so the port would look free and `next dev` would
+ * end up shadowed by the other server.
+ */
+const PROBE_HOSTS: (string | undefined)[] = ['127.0.0.1', '::1', undefined]
+
 /** Checks whether the port can be bound right now. */
-export function portInUse(port: number): Promise<boolean> {
+export async function portInUse(port: number): Promise<boolean> {
+  for (const host of PROBE_HOSTS) {
+    if (await bindConflicts(port, host)) return true
+  }
+  return false
+}
+
+/**
+ * Resolves true when something already holds the address. Errors that mean
+ * the address itself is unavailable (no IPv6 stack, for instance) are not
+ * conflicts — nothing can be serving there.
+ */
+function bindConflicts(port: number, host: string | undefined): Promise<boolean> {
   return new Promise((resolve) => {
     const probe = createServer()
-    probe.once('error', () => resolve(true))
+    probe.once('error', (err: NodeJS.ErrnoException) => {
+      resolve(err.code === 'EADDRINUSE' || err.code === 'EACCES')
+    })
     probe.once('listening', () => probe.close(() => resolve(false)))
-    probe.listen(port)
+    if (host === undefined) probe.listen(port)
+    else probe.listen(port, host)
   })
 }
 

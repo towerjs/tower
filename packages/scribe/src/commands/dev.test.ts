@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEV_PORT, MAX_PORT_PROBES, devDiagnostic, pickFreePort, resolveDevCommand } from './dev.js'
+import { DEV_PORT, MAX_PORT_PROBES, devDiagnostic, pickFreePort, portInUse, resolveDevCommand } from './dev.js'
 
 describe('resolveDevCommand', () => {
   it('always passes a port and runs next dev', () => {
@@ -24,25 +24,40 @@ describe('resolveDevCommand', () => {
   })
 })
 
+/** Occupies `port` on `host` for the duration of `run`. */
+async function holding(port: number, host: string, run: () => Promise<void>): Promise<void> {
+  const { createServer } = await import('node:net')
+  const server = createServer()
+  await new Promise<void>((resolve) => server.listen(port, host, resolve))
+  try {
+    await run()
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+  }
+}
+
+describe('portInUse', () => {
+  it('reports a port held on loopback as in use, and free once released', async () => {
+    const { createServer } = await import('node:net')
+    const server = createServer()
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const port = (server.address() as { port: number }).port
+    // A wildcard-only probe misses this on macOS: the wildcard bind succeeds
+    // while the loopback address is taken, so the port looks free.
+    expect(await portInUse(port)).toBe(true)
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    expect(await portInUse(port)).toBe(false)
+  })
+})
+
 describe('pickFreePort', () => {
   it('skips occupied ports and returns the first free one', async () => {
-    const { createServer } = await import('node:net')
-    const servers = [createServer(), createServer()]
-    await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.listen(0, '127.0.0.1', resolve))))
-    const ports = servers.map((s) => (s.address() as { port: number }).port)
-    void ports
-    // Occupy DEV_PORT itself when it is currently free.
-    const blocker = createServer()
-    await new Promise<void>((resolve) => blocker.listen(DEV_PORT, '127.0.0.1', resolve))
-    try {
+    await holding(DEV_PORT, '127.0.0.1', async () => {
       const port = await pickFreePort()
       expect(port).not.toBe(DEV_PORT)
       expect(port).toBeGreaterThanOrEqual(DEV_PORT)
       expect(port).toBeLessThan(DEV_PORT + MAX_PORT_PROBES)
-    } finally {
-      blocker.close()
-      for (const s of servers) s.close()
-    }
+    })
   })
 })
 
