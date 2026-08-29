@@ -134,6 +134,8 @@ Changes to generated output must remain consistent with the documentation that d
 
 Internal refactors, dependency updates, tests, and other changes that do not affect behavior generally do not require documentation updates.
 
+`pnpm format` (Prettier) runs over `docs/**/*.mdx`. Prettier's MDX printer corrupts multi-line fenced code blocks nested inside JSX (it joins them onto one line), so every `<CodeTabs>` block is preceded by an `{/* prettier-ignore */}` comment that protects it — rest of the file still formats normally. Do the same for any new `<CodeTabs>` block, and for any other JSX element whose only child is a fenced code block.
+
 ## Pull requests
 
 A good pull request should make it easy to understand **what changed, why it changed, and how it was verified**.

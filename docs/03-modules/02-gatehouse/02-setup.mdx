@@ -11,6 +11,7 @@ Get authentication running end to end: install the module, enable it, mount the 
 
 `@towerjs/tower` bundles every module. Install the individual `@towerjs/gatehouse` package too, because the proxy imports `gatehouse` from it directly:
 
+{/* prettier-ignore */}
 <CodeTabs>
   <CodeTab title="pnpm">
     ```bash
@@ -77,6 +78,7 @@ This mounts the full Better Auth API under `/api/auth` — the `gatehouseClient`
 
 The auth tables (users, sessions, accounts, organizations, ...) live in the Vault database. The `tower` CLI runs both the Vault and Gatehouse migrations for you:
 
+{/* prettier-ignore */}
 <CodeTabs>
   <CodeTab title="pnpm">
     ```bash
