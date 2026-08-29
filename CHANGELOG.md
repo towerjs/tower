@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Scaffolded `tower.config` files now import only the selected modules — previously they always imported vault, gatehouse, and courier, so apps created without all three failed `next build` type checking.
+- Scaffolds without Tailwind now set the system font stack with plain CSS instead of Tailwind's `@theme` at-rule, which Turbopack flagged as invalid CSS.
+- `tower` CLI errors now include the stack trace, making scaffold and migration failures debuggable.
+
 - Republished all packages at 0.1.1 with tarballs built from the current codebase — the 0.1.0 tarballs shipped stale pre-rename output that broke `pnpm create tower` by installing the never-published `towerjs` package ([#98](https://github.com/towerjs/tower/issues/98)).
 
 ## [0.1.0] - 2026-08-19

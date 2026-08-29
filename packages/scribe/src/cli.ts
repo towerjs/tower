@@ -77,8 +77,9 @@ export async function run(command: string | undefined, flags: string[], configPa
         return fail(`Unknown command: ${command}`)
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    process.stderr.write(`${message}\n`)
+    // err.stack starts with the message, so this reports each error once,
+    // with the trace that makes scaffold/migrate failures debuggable.
+    const message = err instanceof Error ? (err.stack ?? err.message) : String(err)
     return fail(message)
   }
 }

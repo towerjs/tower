@@ -33,6 +33,18 @@ describe('towerConfig', () => {
     expect(result).toContain('modules: [')
   })
 
+  it('imports only the selected modules — unselected packages are not installed', () => {
+    const state: ProjectState = {
+      ...baseState,
+      modules: { vault: {}, gatehouse: {} },
+    }
+    const result = towerConfig(state)
+
+    expect(result).toContain('import { vault } from "@towerjs/vault"')
+    expect(result).toContain('import { gatehouse } from "@towerjs/gatehouse"')
+    expect(result).not.toContain('@towerjs/courier')
+  })
+
   it('keeps architecture in tower.config.ts and credentials in the environment contract', () => {
     const stateWithSocial: ProjectState = {
       ...baseState,

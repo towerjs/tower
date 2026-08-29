@@ -42,6 +42,12 @@ export const nextAdapter: FrameworkAdapter = {
       flags.push('--no-tailwind')
     }
 
+    // TOWER_SKIP_INSTALL means tooling drives every install itself, so
+    // create-next-app must not run one either.
+    if (process.env.TOWER_SKIP_INSTALL === '1') {
+      flags.push('--skip-install')
+    }
+
     await execa('npx', ['create-next-app@latest', ...flags], {
       cwd: targetDir,
       stdio: 'inherit',
@@ -68,12 +74,15 @@ export const nextAdapter: FrameworkAdapter = {
       try {
         globals = readFileSync(globalsPath, 'utf8')
       } catch {}
-      if (!globals.includes('font-sans: system')) {
+      const fontStack = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+      if (!globals.includes('ui-sans-serif, system-ui')) {
+        // @theme is a Tailwind at-rule; plain-CSS scaffolds override the body
+        // font directly.
         globals +=
-          '\n/* System font stack — replaces create-next-app\'s Geist wiring */\n' +
-          '@theme inline {\n' +
-          '  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\n' +
-          '}\n'
+          "\n/* System font stack — replaces create-next-app's Geist wiring */\n" +
+          (useTailwind
+            ? `@theme inline {\n  --font-sans: ${fontStack};\n}\n`
+            : `body {\n  font-family: ${fontStack};\n}\n`)
         await writeFile(globalsPath, globals)
       }
     }
@@ -115,21 +124,8 @@ export const nextAdapter: FrameworkAdapter = {
     const pkgPath = join(projectDir, 'package.json')
     const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as {
       scripts: Record<string, string>
-      pnpm?: { overrides?: Record<string, string> }
     }
     pkg.scripts.dev = 'tower dev'
-    // Local-tarball installs must not let nested @towerjs/* deps resolve to
-    // stale published versions from the registry.
-    const packDir = process.env.TOWER_PACK_DIR
-    if (packDir) {
-      pkg.pnpm ??= {}
-      pkg.pnpm.overrides = Object.fromEntries(
-        ALL_TOWER_PACKAGES.map((name) => {
-          const dir = name.startsWith('@') ? name.replace('@towerjs/', '') : name
-          return [name, 'link:' + join(packDir, dir)]
-        })
-      )
-    }
     await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
     const agentsPath = join(projectDir, 'AGENTS.md')
@@ -151,7 +147,7 @@ export const nextAdapter: FrameworkAdapter = {
     const localAddArgs = (names: string[], dev = false): string[] => {
       const args = addCommand(pm, dev).slice(1)
       if (pm === 'pnpm' && process.env.TOWER_PACK_DIR) args.push('-w')
-      return [...args, ...towerInstallArgs(pm, names)]
+      return [...args, ...names.map((name) => towerSpec(pm, name))]
     }
 
     // Install tower core + selected modules. Tooling can skip this step
@@ -163,9 +159,11 @@ export const nextAdapter: FrameworkAdapter = {
         dependencies: Record<string, string>
         devDependencies?: Record<string, string>
       }
+      // A bare package name is not a valid version spec in package.json,
+      // so without TOWER_PACK_DIR the specs fall back to the registry.
       const spec = (name: string) => {
-        const dir = name.startsWith('@') ? name.replace('@towerjs/', '') : name
-        return 'link:' + join(process.env.TOWER_PACK_DIR!, dir)
+        const linked = towerSpec(pm, name)
+        return linked === name ? 'latest' : linked
       }
       pkg.dependencies ??= {}
       pkg.dependencies['@towerjs/tower'] = spec('@towerjs/tower')
@@ -258,9 +256,9 @@ const TEMPLATES: Record<string, (state: ProjectState, projectDir: string, useTyp
     } catch {}
     if (!globals.includes("'Inter var'")) {
       globals +=
-        "\n/* Auth template typography — Inter variable font (rsms.me) */\n" +
+        '\n/* Auth template typography — Inter variable font (rsms.me) */\n' +
         ":root { --font-sans: 'Inter var', ui-sans-serif, system-ui, -apple-system, sans-serif; }\n" +
-        "body { font-family: var(--font-sans); }\n"
+        'body { font-family: var(--font-sans); }\n'
       await writeFile(globalsPath, globals)
     }
   },
@@ -483,10 +481,13 @@ export function towerConfig(state: ProjectState): string {
     })
     .join('\n')
 
-  return `import { defineTower } from "@towerjs/tower"
-import { vault } from "@towerjs/vault"
-import { gatehouse } from "@towerjs/gatehouse"
-import { courier } from "@towerjs/courier"
+  // Only selected modules are installed, so only they may be imported.
+  const imports = ['import { defineTower } from "@towerjs/tower"']
+  for (const name of ['vault', 'gatehouse', 'courier']) {
+    if (state.modules[name]) imports.push(`import { ${name} } from "@towerjs/${name}"`)
+  }
+
+  return `${imports.join('\n')}
 
 export default defineTower({
   modules: [
@@ -1131,26 +1132,16 @@ function agentsMd(state: ProjectState): string {
   return lines.join('\n')
 }
 
-const ALL_TOWER_PACKAGES = [
-  '@towerjs/tower',
-  '@towerjs/vault',
-  '@towerjs/gatehouse',
-  '@towerjs/courier',
-  '@towerjs/edge',
-  '@towerjs/scribe',
-]
-
 /**
- * Resolves tower package names to install args. When TOWER_PACK_DIR is set
- * it points at the monorepo's packages/ directory: packages are linked in
- * place (no copies, no packing), so preview apps always run current code.
+ * Resolves a tower package name to an install spec. When TOWER_PACK_DIR is
+ * set it points at the monorepo's packages/ directory: packages are linked
+ * in place (no copies, no packing), so generated apps always run current
+ * code. npm has no `link:` protocol; its `file:` installs directory deps as
+ * symlinks, which is the same thing.
  */
-function towerInstallArgs(pm: PackageManager, names: string[]): string[] {
+function towerSpec(pm: PackageManager, name: string): string {
   const packDir = process.env.TOWER_PACK_DIR
-  if (!packDir) return names
-  const specs = names.map((name) => {
-    const dir = name.startsWith('@') ? name.replace('@towerjs/', '') : name
-    return 'link:' + join(packDir, dir)
-  })
-  return pm === 'npm' ? specs : specs
+  if (!packDir) return name
+  const dir = name.startsWith('@') ? name.replace('@towerjs/', '') : name
+  return (pm === 'npm' ? 'file:' : 'link:') + join(packDir, dir)
 }
