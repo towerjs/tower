@@ -43,6 +43,15 @@ vi.mock('@towerjs/tower/foundation', () => ({
   setRequestContextResolver: vi.fn(),
 }))
 
+vi.mock('@towerjs/tower/runtime', () => ({
+  getTowerApp: vi.fn().mockResolvedValue({}),
+  initTower: vi.fn().mockResolvedValue({}),
+}))
+
+vi.mock('@towerjs/tower/runtime/node', () => ({
+  installNodeContext: vi.fn(),
+}))
+
 vi.mock('next/headers.js', () => ({
   headers: vi.fn(() => new Headers()),
 }))
