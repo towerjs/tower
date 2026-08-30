@@ -145,9 +145,10 @@ describe('scaffolding — real file output', () => {
 
     const route = readFileSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', 'route.ts'), 'utf-8')
     expect(route).toContain('@towerjs/gatehouse/next')
+    expect(route).toContain('createGatehouseHandlers(tower)')
 
     const proxy = readFileSync(join(projectDir, 'src', 'proxy.ts'), 'utf-8')
-    expect(proxy).toContain('gatehouse.proxy')
+    expect(proxy).toContain('createGatehouseProxy(tower')
     expect(proxy).toContain('/sign-in')
   })
 
@@ -184,20 +185,9 @@ describe('scaffolding — real file output', () => {
 
   it('installs @towerjs/tower and the tower CLI', async () => {
     await nextAdapter.generate(baseState, tmpDir)
-    expect(execa).toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '@towerjs/tower'],
-      expect.objectContaining({
-        cwd: projectDir,
-      })
-    )
-    expect(execa).toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '-D', '@towerjs/scribe'],
-      expect.objectContaining({
-        cwd: projectDir,
-      })
-    )
+    const pkg = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf-8'))
+    expect(pkg.dependencies['@towerjs/tower']).toBeDefined()
+    expect(pkg.devDependencies['@towerjs/scribe']).toBeDefined()
   })
 
   it('generates valid tower.config.ts for all module combinations', async () => {
@@ -280,33 +270,17 @@ describe('scaffolding — real file output', () => {
             expect(existsSync(join(projectDir, proxyFile))).toBe(hasGatehouse)
             expect(existsSync(join(projectDir, 'src', 'app', 'api', 'auth', '[...all]', routeFile))).toBe(hasGatehouse)
 
-            const towerAddCalls = vi
-              .mocked(execa)
-              .mock.calls.filter(([bin, args]) => bin === 'pnpm' && Array.isArray(args) && args[0] === 'add')
+            const pkg = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf-8'))
             // Selected @towerjs/* modules are direct deps so pnpm's strict
             // dependency isolation works for real generated applications.
-            for (const pkg of ['@towerjs/gatehouse', '@towerjs/vault', '@towerjs/courier']) {
-              const directDep = towerAddCalls.some(([, args]) => (args as string[]).includes(pkg))
-              expect(directDep).toBe(Boolean(modules[pkg.split('/').pop()!]))
+            for (const name of ['@towerjs/gatehouse', '@towerjs/vault', '@towerjs/courier']) {
+              const directDep = Boolean(pkg.dependencies?.[name])
+              expect(directDep).toBe(Boolean(modules[name.split('/').pop()! as keyof typeof modules]))
             }
 
-            const edgeDevDep = towerAddCalls.some(
-              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/edge')
-            )
-            expect(edgeDevDep).toBe(isEdge)
-
-            const scribeDevDep = towerAddCalls.some(
-              ([, args]) => (args as string[]).includes('-D') && (args as string[]).includes('@towerjs/scribe')
-            )
-            expect(scribeDevDep).toBe(true)
-
-            const tailwindPluginInstall = vi
-              .mocked(execa)
-              .mock.calls.some(
-                ([bin, args]) =>
-                  bin === 'pnpm' && Array.isArray(args) && (args as string[]).includes('prettier-plugin-tailwindcss')
-              )
-            expect(tailwindPluginInstall).toBe(useTailwind)
+            expect(Boolean(pkg.devDependencies?.['@towerjs/edge'])).toBe(isEdge)
+            expect(Boolean(pkg.devDependencies?.['@towerjs/scribe'])).toBe(true)
+            expect(Boolean(pkg.devDependencies?.['prettier-plugin-tailwindcss'])).toBe(useTailwind)
 
             rmSync(projectDir, { recursive: true, force: true })
             vi.clearAllMocks()

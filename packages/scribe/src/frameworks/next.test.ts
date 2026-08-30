@@ -351,7 +351,7 @@ describe('nextAdapter.generate', () => {
         '--no-react-compiler',
         '--agents-md',
       ]),
-      { cwd: '/target', stdio: 'inherit' }
+      { cwd: '/target', stdio: 'pipe' }
     )
   })
 
@@ -366,7 +366,7 @@ describe('nextAdapter.generate', () => {
     expect(execa).toHaveBeenCalledWith(
       'npx',
       expect.arrayContaining(['create-next-app@latest', '--js', '--tailwind']),
-      { cwd: '/target', stdio: 'inherit' }
+      { cwd: '/target', stdio: 'pipe' }
     )
   })
 
@@ -476,8 +476,8 @@ describe('nextAdapter.generate', () => {
       expect.any(String)
     )
     expect(writeFile).toHaveBeenCalledWith(
-      expect.stringContaining('sign-in'),
-      expect.stringContaining('gatehouse/actions')
+      expect.stringContaining(join('app', 'sign-in', 'page.tsx')),
+      expect.stringContaining('@/actions/gatehouse')
     )
     expect(writeFile).toHaveBeenCalledWith(
       expect.stringContaining('dashboard'),
@@ -566,10 +566,12 @@ describe('nextAdapter.generate', () => {
   it('installs @towerjs/tower dependency', async () => {
     await nextAdapter.generate(state, '/target')
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '@towerjs/tower'], {
-      cwd: expect.stringContaining('my-app'),
-      stdio: 'inherit',
-    })
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.dependencies['@towerjs/tower']).toBeDefined()
   })
 
   it('installs @towerjs/gatehouse when gatehouse is selected', async () => {
@@ -580,10 +582,13 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithGatehouse, '/target')
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '@towerjs/tower', '@towerjs/gatehouse'], {
-      cwd: expect.stringContaining('my-app'),
-      stdio: 'inherit',
-    })
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.dependencies['@towerjs/tower']).toBeDefined()
+    expect(pkg.dependencies['@towerjs/gatehouse']).toBeDefined()
   })
 
   it('installs selected vault and courier dependencies directly', async () => {
@@ -594,19 +599,25 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithModules, '/target')
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '@towerjs/tower', '@towerjs/vault', '@towerjs/courier'], {
-      cwd: expect.stringContaining('my-app'),
-      stdio: 'inherit',
-    })
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.dependencies['@towerjs/tower']).toBeDefined()
+    expect(pkg.dependencies['@towerjs/vault']).toBeDefined()
+    expect(pkg.dependencies['@towerjs/courier']).toBeDefined()
   })
 
   it('does not install @towerjs/gatehouse without gatehouse', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const gatehouseAdd = vi
-      .mocked(execa)
-      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('@towerjs/gatehouse'))
-    expect(gatehouseAdd).toBeUndefined()
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.dependencies['@towerjs/gatehouse']).toBeUndefined()
   })
 
   it('does not add product-specific pnpm workspace configuration', async () => {
@@ -621,10 +632,12 @@ describe('nextAdapter.generate', () => {
   it('does not install @towerjs/edge on node runtime', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const edgeAdd = vi
-      .mocked(execa)
-      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('@towerjs/edge'))
-    expect(edgeAdd).toBeUndefined()
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.devDependencies?.['@towerjs/edge']).toBeUndefined()
   })
 
   it('does not write next.config.ts with withTowerEdge on node runtime', async () => {
@@ -644,10 +657,12 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(edgeState, '/target')
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '-D', '@towerjs/edge'], {
-      cwd: expect.stringContaining('my-app'),
-      stdio: 'inherit',
-    })
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.devDependencies['@towerjs/edge']).toBeDefined()
   })
 
   it('writes next.config.ts with withTowerEdge on edge runtime', async () => {
@@ -692,20 +707,25 @@ describe('nextAdapter.generate', () => {
   it('installs prettier and prettier-plugin-organize-imports', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const prettierCalls = vi
-      .mocked(execa)
-      .mock.calls.filter(([, args]) => Array.isArray(args) && args.includes('prettier-plugin-organize-imports'))
-    expect(prettierCalls.length).toBeGreaterThanOrEqual(1)
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.devDependencies['prettier']).toBeDefined()
+    expect(pkg.devDependencies['prettier-plugin-organize-imports']).toBeDefined()
   })
 
   it('installs tailwind prettier plugins when tailwind is selected', async () => {
     await nextAdapter.generate(state, '/target')
 
-    const tailwindCall = vi
-      .mocked(execa)
-      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'))
-    expect(tailwindCall).toBeDefined()
-    expect(tailwindCall![1]).toContain('prettier-plugin-tailwindcss-canonical-classes')
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.devDependencies['prettier-plugin-tailwindcss']).toBeDefined()
+    expect(pkg.devDependencies['prettier-plugin-tailwindcss-canonical-classes']).toBeDefined()
   })
 
   it('does not install tailwind prettier plugins without tailwind', async () => {
@@ -716,9 +736,11 @@ describe('nextAdapter.generate', () => {
 
     await nextAdapter.generate(stateWithoutTailwind, '/target')
 
-    const tailwindCall = vi
-      .mocked(execa)
-      .mock.calls.find(([, args]) => Array.isArray(args) && args.includes('prettier-plugin-tailwindcss'))
-    expect(tailwindCall).toBeUndefined()
+    const [, deps] = vi
+      .mocked(writeFile)
+      .mock.calls.filter(([path]) => typeof path === 'string' && path.endsWith('package.json'))
+      .at(-1) ?? ['', '']
+    const pkg = JSON.parse(String(deps))
+    expect(pkg.devDependencies['prettier-plugin-tailwindcss']).toBeUndefined()
   })
 })
