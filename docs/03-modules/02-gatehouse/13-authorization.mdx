@@ -9,7 +9,7 @@ Authentication answers _who you are_; authorization answers _what you can do_. G
 
 A policy is an object of action handlers. Each handler receives the authenticated Tower user and the resource — it never fetches the user itself, so policies unit-test without a request context:
 
-```ts filename="src/policies/project.ts"
+```ts signature filename="src/policies/project.ts"
 import { definePolicy, definePolicyRegistration } from '@towerjs/gatehouse'
 
 export class Project {
@@ -29,7 +29,7 @@ export const projectPolicyRegistration = definePolicyRegistration(Project, proje
 
 Policies are part of the application blueprint rather than process-global state:
 
-```ts filename="tower.config.ts"
+```ts signature filename="tower.config.ts"
 import { gatehouse } from '@towerjs/gatehouse'
 
 import { projectPolicyRegistration } from './src/policies/project'
@@ -44,7 +44,7 @@ gatehouse({
 
 `can()` returns a boolean for the current user; `authorize()` throws instead — `AuthenticationError` when nobody is signed in, `AuthorizationError` when the policy denies:
 
-```ts
+```ts signature
 import { Project } from '@/policies/project'
 
 import { gatehouse } from '@towerjs/gatehouse'
@@ -64,7 +64,7 @@ Both resolve the signed-in user from the request context, so they work inside `a
 
 Role and permission checks — as opposed to resource policies — live on the per-request instance:
 
-```ts
+```ts signature
 import { Gatehouse } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {
@@ -93,7 +93,7 @@ A user's permissions are the union of:
 
 Combine with [organizations](/docs/gatehouse/organizations): check the user's role _inside_ a specific organization.
 
-```ts
+```ts signature
 import { Gatehouse } from '@towerjs/gatehouse'
 
 export async function GET(request: Request) {
@@ -112,7 +112,7 @@ export async function GET(request: Request) {
 
 Create custom roles with permission maps and assign them via invites or members:
 
-```ts
+```ts signature
 import { gatehouse } from '@towerjs/gatehouse'
 
 await gatehouse.organizations.roles.create({
@@ -130,7 +130,7 @@ Built-in organization roles: `owner`, `admin`, `member` — `owner` and `admin` 
 
 ## User roles (admin)
 
-```ts
+```ts signature
 import { gatehouse } from '@towerjs/gatehouse'
 
 const userId = 'usr_123'
@@ -146,7 +146,7 @@ Actions: `assignRole` (`userId`, `role`), `removeRole` (`userId`).
 
 Role checks don't cover "is this _their_ record". Check ownership separately:
 
-```ts
+```ts signature
 import { AuthorizationError, gatehouse } from '@towerjs/gatehouse'
 
 const user = await gatehouse.requireUser()

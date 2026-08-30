@@ -7,7 +7,7 @@ API keys let services (CLIs, webhooks, cron jobs) authenticate without a user se
 
 ## Enable
 
-```ts
+```ts signature
 import { gatehouse } from '@towerjs/gatehouse'
 
 gatehouse({
@@ -19,7 +19,7 @@ gatehouse({
 
 ## Create a key
 
-```ts
+```ts signature
 import { gatehouse } from '@towerjs/gatehouse'
 
 await gatehouse.apiKeys.create({
@@ -38,7 +38,7 @@ Action: `createApiKey` (`name`, `expiresIn`) — returns `{ ok: true }` or `{ er
 
 Verify on every programmatic request — the provider returns a verification result:
 
-```ts
+```ts signature
 import { gatehouse } from '@towerjs/gatehouse'
 
 const { valid, error, key } = await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
@@ -48,7 +48,7 @@ if (!valid) return Response.json({ error: error?.message ?? 'Invalid key' }, { s
 
 `permissions` and `configId` can be passed to enforce scoped verification:
 
-```ts
+```ts signature
 const result = await gatehouse.apiKeys.verify({
   key: 'tower_live_...',
   permissions: { project: ['deploy'] },
@@ -58,8 +58,8 @@ if (!result.valid) return Response.json({ error: 'Forbidden' }, { status: 403 })
 
 Route-handler guard:
 
-```ts filename="src/app/api/deploy/route.ts"
-import { gatehouse } from '@towerjs/gatehouse'
+```ts signature filename="src/app/api/deploy/route.ts"
+import { gatehouse from '@towerjs/gatehouse'
 
 export async function POST(request: Request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
 ## List, rotate, revoke
 
-```ts
+```ts signature
 import { gatehouse } from '@towerjs/gatehouse'
 
 const userId = 'usr_123'

@@ -31,18 +31,18 @@ On Vercel Edge, runtime detection returns `{ name: 'edge', isServerless: true }`
 
 ### Vault on Edge
 
-```ts
+```ts verify
 import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-const db = vault as VaultModule<{ users: { id: string; email: string } }>
+const db = vault as unknown as VaultModule<{ users: { id: string; email: string } }>
 
 // Querying works
 const users = await db.selectFrom('users').selectAll().execute()
 
 // Migrations and seeds throw
-await vault.migrate() // Error: migrations unavailable on Edge
-await vault.seed() // Error: seeds unavailable on Edge
+await (vault as unknown as any).migrate() // Error: migrations unavailable on Edge
+await (vault as unknown as any).seed() // Error: seeds unavailable on Edge
 ```
 
 ### Neon Serverless
@@ -57,4 +57,25 @@ When using Neon, Vault uses the HTTP dialect from `kysely-neon` on every runtime
 
 ## Gatehouse on Edge
 
-Gatehouse (which wraps Better Auth) requires Node.js-compatible runtime APIs for session and cookie handling. It works on the Node.js runtime and Vercel Serverless, but **not** on Vercel Edge or Cloudflare Workers. Edge support for Gatehouse is planned. Keep auth-dependent routes on the Node.js runtime.
+Gatehouse is provider-boundary driven. The `better-auth` provider requires Node.js APIs for session/cookie handling; custom `GatehouseProvider` implementations can be Edge-compatible.
+
+```ts
+import { gatehouse } from '@towerjs/gatehouse'
+import type { GatehouseProvider } from '@towerjs/gatehouse'
+
+const edgeProvider: GatehouseProvider = {
+  name: 'edge-auth',
+  capabilities: {
+    runtime: { node: true, edge: true },
+    authentication: { password: true },
+    sessions: { database: true },
+  },
+  init: async () => {},
+  getSession: async () => null,
+  from: async () => ({ session: async () => null }) as any,
+} as any
+
+gatehouse({ provider: edgeProvider })
+```
+
+A Node-only provider initialized on Edge throws an actionable error (`does not support Edge runtimes`) during `initialize` — the provider's `init` never runs. Vault (Neon HTTP) and Courier work natively on Edge.

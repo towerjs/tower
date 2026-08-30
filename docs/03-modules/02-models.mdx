@@ -1,0 +1,227 @@
+---
+title: 'Models'
+description: 'Typed models on top of Vault — fields, CRUD, relations, queries, casts, and factories.'
+---
+
+Models are the application layer on top of [Vault](/docs/03-modules/01-vault). They add typed fields, relationships, and a query API without introducing a second schema language. `vault.db` (Kysely) stays the escape hatch.
+
+```ts
+import { vault } from '@towerjs/vault'
+import { defineModel } from '@towerjs/vault/model'
+```
+
+## Define a model
+
+```ts filename="src/models/project.ts"
+import { defineModel } from '@towerjs/vault/model'
+
+export type Project = {
+  id: string
+  name: string
+  description: string | null
+  created_at: Date
+  updated_at: Date
+}
+
+export const Project = defineModel<Project>('projects', {
+  casts: { created_at: 'datetime', updated_at: 'datetime' },
+  hidden: [],
+})
+```
+
+`table` is the first argument. Options: `primaryKey` (default `id`), `casts`, `hidden`, `scopes`, `relations`. Models are generic — `Project` is `Model<Project>`.
+
+## CRUD
+
+```ts
+import { Project } from '@/models/project'
+
+const created = await Project.create({ name: 'My Project' })
+const found = await Project.find(created.id)
+const foundOrFail = await Project.findOrFail(created.id)
+await created.update({ name: 'Renamed' })
+await created.save()
+await created.delete()
+await created.refresh()
+await Project.destroy(created.id)
+await Project.all()
+```
+
+Transaction-scoped CRUD takes a `trx` handle:
+
+```ts
+import { Project } from '@/models/project'
+
+import { vault } from '@towerjs/vault'
+// or Model.transaction
+import { Model } from '@towerjs/vault/model'
+
+await (vault as unknown as any).transaction(async (trx: any) => {
+  const a = await Project.create({ name: 'A' }, { trx })
+  const b = await Project.find(a.id, { trx })
+  await a.update({ name: 'B' }, { trx })
+  await Project.destroy(a.id, { trx })
+})
+
+await Model.transaction(async (trx) => {
+  await Project.create({ name: 'Tx' }, { trx })
+})
+```
+
+`vault.transaction` and `Model.transaction` both delegate to the same pool.
+
+## Relationships
+
+Declare `belongsTo` and `hasMany` against the typed model class. The foreign key lives on the table that holds it:
+
+```ts verify filename="src/models/user.ts"
+import { belongsTo, defineModel, hasMany } from '@towerjs/vault/model'
+
+export type User = { id: string; name: string }
+export type Post = { id: string; user_id: string; title: string }
+
+export const UserModel = defineModel<User>('users')
+export const PostModel = defineModel<Post>('posts', {
+  relations: {
+    author: () => belongsTo(UserModel, { foreignKey: 'user_id' }),
+  },
+})
+
+export const UserWithPosts = defineModel<User>('users', {
+  relations: {
+    posts: () => hasMany(PostModel, { foreignKey: 'user_id' }),
+  },
+})
+```
+
+Eager loading batches — one query per relation, never per row:
+
+```ts
+import { PostModel } from '@/models/user'
+
+const posts = await PostModel.query().with('author').get()
+const first = posts[0]
+if (first) {
+  const author = (first as any).author
+}
+
+// per-instance lazy load
+const post = await PostModel.find('post_123')
+if (post) await post.related('author')
+```
+
+Use `references` when the foreign key points at a non-`id` column.
+
+## Query API
+
+```ts
+import { Project } from '@/models/project'
+
+await Project.query().where('name', '=', 'My Project').get()
+await Project.query().where('name', 'like', '%Project%').orderBy('created_at', 'desc').get()
+await Project.query().limit(10).offset(10).get()
+await Project.query().select(['id', 'name']).get()
+await Project.query().first()
+await Project.query().firstOrFail()
+await Project.query().find('prj_123')
+await Project.query().findOrFail('prj_123')
+await Project.query().findBy({ name: 'My Project' })
+await Project.query().findByOrFail({ name: 'My Project' })
+await Project.query().count()
+await Project.query().paginate(1, 15)
+await Project.where('name', '=', 'My Project').get()
+await Project.with('author' as any).get()
+await Project.scope('published' as any).get()
+```
+
+Scopes are named query fragments declared on the model:
+
+```ts verify
+import { defineModel } from '@towerjs/vault/model'
+
+type PostRow = { id: string; published: boolean }
+export const ScopedPost = defineModel<PostRow>('posts', {
+  scopes: {
+    published: (q: any) => q.where('published', '=', true),
+    byAuthor: (authorId: string) => (q: any) => q.where('author_id', '=', authorId),
+  },
+})
+
+await ScopedPost.scope('published').get()
+await ScopedPost.scope('byAuthor', 'user_123').get()
+```
+
+Pagination returns `PaginatedResult<Model<T>>`:
+
+```ts
+type PaginatedResult<T> = { data: Array<T>; total: number; page: number; perPage: number; lastPage: number }
+```
+
+## Casts, hidden fields, serialization
+
+```ts verify
+import { defineModel } from '@towerjs/vault/model'
+
+type Row = { id: string; metadata: Record<string, unknown>; secret: string; created_at: Date }
+export const CastModel = defineModel<Row>('rows', {
+  casts: {
+    metadata: 'json',
+    created_at: 'datetime',
+    // custom: (value, direction) => direction === 'get' ? transform(value) : raw(value)
+  },
+  hidden: ['secret'],
+})
+
+const instance = await CastModel.find('row_1')
+instance?.toJSON() // { id, metadata, created_at } — secret omitted, datetime as ISO string
+instance?.toJSON({ hidden: ['metadata'] }) // override per call
+instance?.toArray() // alias for toJSON
+```
+
+Available named casts: `string`, `number`, `boolean`, `datetime`, `json`. Custom casts are `(value, direction: 'get' | 'set') => any`.
+
+## Factories
+
+Factories build valid rows through `Model.create` so casts apply:
+
+```ts
+import { Project } from '@/models/project'
+
+import { defineFactory } from '@towerjs/vault/factory'
+
+export const ProjectFactory = defineFactory(Project, ({ seq }) => ({
+  name: `Project ${seq}`,
+}))
+
+await ProjectFactory.create()
+await ProjectFactory.create({ name: 'Override' })
+await ProjectFactory.createMany(5)
+ProjectFactory.make() // not persisted
+ProjectFactory.make({ name: 'Draft' })
+
+const withStates = ProjectFactory.states({ archived: { name: 'Archived' } })
+await withStates.archived.create()
+```
+
+Use factories from tests, seeds, and e2e:
+
+```ts
+import { ProjectFactory } from '@/factories/project'
+
+const seeded = await ProjectFactory.createMany(3)
+```
+
+## Escape hatch
+
+For anything beyond the model API, use `vault` directly — same connection, same transaction boundary:
+
+```ts verify
+import { vault } from '@towerjs/vault'
+import type { VaultModule } from '@towerjs/vault'
+
+type Database = { projects: { id: string; name: string } }
+const db = vault as unknown as VaultModule<Database>
+await db.selectFrom('projects').selectAll().execute()
+```
+
+Models don't replace Kysely — they sit on top of it.

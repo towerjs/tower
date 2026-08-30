@@ -95,3 +95,68 @@ my-app/
 ```
 
 Vault projects get `src/vault/migrations/` and `src/vault/seeds/` out of the box — scaffolded with `.gitkeep` files so the folders exist before your first migration or seed. Drop your migration and seed files in there (see [Vault](/docs/vault)).
+
+## The `tower` CLI
+
+Every scaffolded app ships `tower` — run migrations, seeds, generators, diagnostics, and the dev server without leaving the project.
+
+### `tower about` / `tower config`
+
+```bash
+npx tower about          # runtime, modules, providers, env diagnostics
+npx tower config show    # resolved config — secrets redacted
+npx tower config show --json
+```
+
+`config show` prints the resolved `tower.config.ts` with `*_SECRET`, `*_KEY`, `DATABASE_URL`, etc. redacted.
+
+### `tower db` — database
+
+`db` is the v0.2 command group for everything that touches the database. Legacy `tower migrate` / `tower seed` still work — `db` is the new, complete surface:
+
+```bash
+npx tower db migrate     # run pending vault + gatehouse migrations (stepped: one transaction per migration, re-runnable)
+npx tower db rollback    # roll back the most recent migration
+npx tower db status      # executed vs pending — checks kysely_migration table
+npx tower db refresh     # rollback all, then re-migrate
+npx tower db fresh       # DROP SCHEMA public CASCADE; CREATE SCHEMA public; migrate + seed (--force in production)
+npx tower db seed        # run seeds (migrations first by default)
+npx tower db seed --skip-migrate  # seeds only
+npx tower db setup       # migrate + gatehouse migrate + seed — first-run helper
+```
+
+Flags for every destructive subcommand (`rollback`, `refresh`, `fresh`):
+
+- `--pretend` — compile migrations against a `DummyDriver` and print the SQL instead of executing. Nothing is written.
+- `--force` — required when `NODE_ENV=production` — without it, `fresh`/`refresh`/`rollback` in production either ask for interactive `yes` confirmation or (non-TTY) fail with an actionable error.
+- Isolated execution — pending migrations run `migrateTo(target)` one-by-one so a failure leaves earlier migrations applied.
+
+```bash
+npx tower db migrate --pretend
+npx tower db fresh --force   # production
+```
+
+The legacy form `npx tower migrate --seed` (`-s`) is still supported.
+
+### `tower make` — generators
+
+```bash
+npx tower make model Project        # src/models/project.ts — typed class extending Model
+npx tower make migration AddProjects # src/vault/migrations/0001_add-projects.ts — Kysely up/down stub
+npx tower make policy Project       # src/policies/project.ts — definePolicy + registration
+npx tower make factory Project       # src/factories/project.ts — defineFactory(Product, ({seq})=>...)
+npx tower make job SendEmail         # src/jobs/send-email.ts — deferred work entry point
+npx tower make --help                # list generators
+```
+
+Names are normalized: `Project` → `project` file + `projects` table. Migrations are numbered from existing migration count (`0001_...`, `0002_...`).
+
+### `tower dev`
+
+```bash
+npx tower dev             # validate config + run diagnostics, then start `next dev`
+```
+
+- Runs Tower validation/diagnostics before the framework dev server.
+- Always serves on `3000`; if `3000` is taken it falls back to the next free port and prints the chosen port.
+- Wires `tower dev` as the `dev` script in generated `package.json` so `pnpm dev` is the canonical command.

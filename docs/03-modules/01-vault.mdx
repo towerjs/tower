@@ -50,13 +50,14 @@ In application code, bind the schema with a cast:
 ```ts filename="src/vault/db.ts"
 import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
+import type { Generated } from '@towerjs/vault'
 
 export type Database = {
   users: { id: Generated<string>; name: string; email: string; created_at: Generated<Date> }
   profiles: { id: Generated<string>; userId: string; bio: string }
 }
 
-export const db = vault as VaultModule<Database>
+export const db = vault as unknown as VaultModule<Database>
 ```
 
 Import `db` wherever you query. The examples below repeat a trimmed-down version of that file so each one stands alone.
@@ -69,7 +70,7 @@ Import `db` wherever you query. The examples below repeat a trimmed-down version
 import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-const db = vault as VaultModule<{ users: { id: string; name: string; email: string } }>
+const db = vault as unknown as VaultModule<{ users: { id: string; name: string; email: string } }>
 const userId = 'usr_123'
 
 // Select
@@ -91,7 +92,7 @@ await db.deleteFrom('users').where('id', '=', userId).execute()
 import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-const db = vault as VaultModule<{
+const db = vault as unknown as VaultModule<{
   users: { id: string; name: string; email: string }
   profiles: { id: string; userId: string; bio: string }
 }>
@@ -180,7 +181,7 @@ By default, migrations run before seeds. Skip migrations with `npx tower seed --
 import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-const db = vault as VaultModule<{ users: { id: string; name: string; email: string } }>
+const db = vault as unknown as VaultModule<{ users: { id: string; name: string; email: string } }>
 
 const result = await db.selectFrom('users').select(db.fn.countAll().as('count')).executeTakeFirst()
 ```
@@ -196,12 +197,16 @@ import { vault } from '@towerjs/vault'
 // vault.seed()     // throws on Edge (filesystem unavailable)
 ```
 
+## Models
+
+For typed application models on top of Vault — `defineModel`, relations, query API, casts, and factories — see [Models](/docs/03-modules/02-models).
+
 ## Closing
 
 ```ts
 import { vault } from '@towerjs/vault'
 
-await vault.close()
+await (vault as unknown as any).close()
 ```
 
 Typically handled automatically during app shutdown.

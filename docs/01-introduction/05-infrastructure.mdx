@@ -25,7 +25,7 @@ Vault's query API is Kysely. `vault.selectFrom()`, `vault.insertInto()`, `vault.
 import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-const db = vault as VaultModule<{
+const db = vault as unknown as VaultModule<{
   users: { id: string; name: string; email: string }
   profiles: { id: string; userId: string }
 }>
@@ -66,7 +66,7 @@ Tower does not wrap you in a leaky abstraction. The underlying engine is always 
   }
 
   // in application code
-  const db = vault as VaultModule<{ users: { id: string; email: string } }>
+  const db = vault as unknown as VaultModule<{ users: { id: string; email: string } }>
 
   const result = await db
     .selectFrom('users')

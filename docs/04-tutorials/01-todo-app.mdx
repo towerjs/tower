@@ -67,7 +67,7 @@ export interface Database {
   todos: { id: string; title: string; completed: boolean; user_id: string; created_at: Date }
 }
 
-export const db = vault as VaultModule<Database>
+export const db = vault as unknown as VaultModule<Database>
 ```
 
 ```ts filename="src/actions/todos.ts"

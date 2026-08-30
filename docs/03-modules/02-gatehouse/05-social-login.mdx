@@ -7,23 +7,28 @@ Social login lets users authenticate with their existing Google or GitHub accoun
 
 ## Enable
 
+Tower social providers are provider-independent — the same `social` config works against any supported auth library. The current provider is `better-auth`; Gatehouse maps the config to provider credentials automatically.
+
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
 gatehouse({
   provider: 'better-auth',
   appName: 'My App',
-  social: { google: {}, github: {} },
+  social: ['google', 'github'],
+  // or with per-provider options:
+  // social: { google: { scope: ['openid', 'profile'] }, github: {} },
 })
 ```
 
-Credentials resolve automatically from environment variables:
+`social` accepts an array of provider names or a map of `provider -> options`. Credentials resolve automatically from environment variables. Gatehouse checks `GATEHOUSE_*`, `AUTH_*`, and `BETTER_AUTH_*` prefixes:
 
 ```bash
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
+# also works as AUTH_GOOGLE_CLIENT_ID, GATEHOUSE_GOOGLE_CLIENT_SECRET, etc.
 ```
 
 ## Add the sign-in buttons
