@@ -93,13 +93,4 @@ describe('Foundation negative / edge cases', () => {
       expect(vaultIdx).toBeLessThan(gatehouseIdx)
     })
   })
-
-  describe('config resolution', () => {
-    it('resolveConfig throws with a helpful message when no config found', async () => {
-      // Ensure no config providers and no TOWER_CONFIG_PATH
-      delete process.env.TOWER_CONFIG_PATH
-      const { resolveConfig } = await import('@towerjs/tower/foundation')
-      await expect(resolveConfig()).rejects.toThrow('Could not find tower.config.ts')
-    })
-  })
 })

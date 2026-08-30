@@ -11,7 +11,7 @@ const TOWER_DIR = resolve(ROOT_DIR, 'packages', 'tower')
 
 // Must match packages/tower/package.json exports (public subpaths)
 // Since S1, @towerjs/tower is the core (Foundation + Blueprint internal); modules are separate @towerjs/* packages
-const SUBPATHS = ['.', './blueprint', './foundation', './runtime']
+const SUBPATHS = ['.', './blueprint', './foundation', './runtime', './runtime/node']
 
 describe('@towerjs/tower tarball structure', () => {
   let extractDir: string

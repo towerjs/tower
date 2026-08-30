@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getTowerApp, initTower } from './runtime.js'
+import { getTowerApp, initTower, registerTowerConfigProvider } from './runtime.js'
 
 const mocks = vi.hoisted(() => ({
-  mockRegisterService: vi.fn(),
   mockResolveConfig: vi.fn(),
   mockCreateTowerApp: vi.fn(),
 }))
@@ -16,39 +15,15 @@ vi.mock('./foundation/app.js', async (importOriginal) => {
   }
 })
 
-vi.mock('./foundation/resolve-config.js', async (importOriginal) => {
-  const actual = (await importOriginal()) as any
-  return {
-    ...actual,
-    resolveConfig: mocks.mockResolveConfig,
-  }
-})
-
-vi.mock('@towerjs/foundation', () => ({
-  resolveConfig: mocks.mockResolveConfig,
-  createTowerApp: mocks.mockCreateTowerApp,
-  registerService: mocks.mockRegisterService,
-  registerConfigProvider: vi.fn(),
-}))
-
-vi.mock('@towerjs/tower/foundation', () => ({
-  resolveConfig: mocks.mockResolveConfig,
-  createTowerApp: mocks.mockCreateTowerApp,
-  registerService: mocks.mockRegisterService,
-  registerConfigProvider: vi.fn(),
-}))
-
 describe('getTowerApp / initTower caching', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset the cached app promise between tests.
-    const APP_PROMISE_KEY = '___tower_app_promise___'
-    delete (globalThis as any)[APP_PROMISE_KEY]
+    delete (globalThis as any).___tower_default_application___
+    registerTowerConfigProvider(mocks.mockResolveConfig)
   })
 
   afterEach(() => {
-    const APP_PROMISE_KEY = '___tower_app_promise___'
-    delete (globalThis as any)[APP_PROMISE_KEY]
+    delete (globalThis as any).___tower_default_application___
   })
 
   function makeApp(modules: unknown[] = []) {

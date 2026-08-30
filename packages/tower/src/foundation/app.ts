@@ -94,12 +94,7 @@ export async function createTowerApp(config: TowerConfig): Promise<TowerApp> {
   }
 }
 
-export async function createTower(config?: TowerConfig): Promise<TowerApp & Record<string, unknown>> {
-  if (!config) {
-    const { resolveConfig: _resolveConfig } = await import('./resolve-config.js')
-    config = await _resolveConfig()
-  }
-
+export async function createTower(config: TowerConfig): Promise<TowerApp & Record<string, unknown>> {
   const app = await createTowerApp(config)
 
   const tower: TowerApp & Record<string, unknown> = {

@@ -1,12 +1,12 @@
-import { registerConfigProvider } from '@towerjs/tower'
+import { registerTowerConfigProvider } from '@towerjs/tower/runtime'
 
 import { describe, expect, it } from 'vitest'
 
 // Register a config provider BEFORE any @towerjs/tower access to avoid the
 // tower.config.ts discovery that fails in the test environment.
-registerConfigProvider(async () => ({ modules: [] as any }))
+registerTowerConfigProvider(async () => ({ modules: [] as any }))
 
-describe('Towerjs meta-package public API contract', () => {
+describe('Tower core public API contract', () => {
   describe('main entry exports', () => {
     it('exports getTowerApp and initTower', async () => {
       const { getTowerApp, initTower } = await import('@towerjs/tower/runtime')

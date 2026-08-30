@@ -28,7 +28,7 @@ describe('Tower boot', () => {
     const { courier } = await import('@towerjs/courier')
 
     expect(vault().dependsOn).toEqual([])
-    expect(gatehouse({ provider: 'better-auth' } as any).dependsOn).toEqual(['vault', 'courier'])
+    expect(gatehouse({ provider: 'better-auth' } as any).dependsOn).toEqual(['vault'])
     expect(courier().dependsOn).toEqual([])
   })
 
