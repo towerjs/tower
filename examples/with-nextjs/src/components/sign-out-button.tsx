@@ -1,6 +1,6 @@
 'use client'
 
-import { signOut } from '@towerjs/gatehouse/actions'
+import { signOut } from '@/actions/gatehouse'
 
 import { useRouter } from 'next/navigation'
 import { useActionState, useEffect } from 'react'

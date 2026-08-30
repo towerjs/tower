@@ -1,16 +1,15 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-
 import {
   cancelInvitation,
   deleteOrganization,
   inviteMember,
   removeMember,
   updateOrganization,
-} from '@towerjs/gatehouse/actions'
+} from '@/actions/gatehouse'
+import { Button } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 
 import { useActionState } from 'react'
 

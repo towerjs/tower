@@ -1,10 +1,9 @@
 'use client'
 
+import { changePassword, updateProfile } from '@/actions/gatehouse'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-
-import { changePassword, updateProfile } from '@towerjs/gatehouse/actions'
 
 import { useActionState } from 'react'
 

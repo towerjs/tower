@@ -1,9 +1,9 @@
 'use client'
 
+import { requestMagicLink, sendVerificationOTP, signIn, signInWithOTP } from '@/actions/gatehouse'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-import { requestMagicLink, sendVerificationOTP, signIn, signInWithOTP } from '@towerjs/gatehouse/actions'
 import type { ActionResult } from '@towerjs/gatehouse/next'
 
 import Link from 'next/link'

@@ -1,9 +1,8 @@
 'use client'
 
+import { signUp } from '@/actions/gatehouse'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-import { signUp } from '@towerjs/gatehouse/actions'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

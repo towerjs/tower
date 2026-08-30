@@ -1,9 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-
 import {
   disableTwoFactor,
   enableTwoFactor,
@@ -11,7 +7,10 @@ import {
   revokeOtherSessions,
   revokeSession,
   verifyTwoFactor,
-} from '@towerjs/gatehouse/actions'
+} from '@/actions/gatehouse'
+import { Button } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 
 import { useState } from 'react'
 
