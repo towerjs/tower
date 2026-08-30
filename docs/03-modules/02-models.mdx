@@ -74,7 +74,7 @@ await Model.transaction(async (trx) => {
 
 Declare `belongsTo` and `hasMany` against the typed model class. The foreign key lives on the table that holds it:
 
-```ts verify filename="src/models/user.ts"
+```ts signature filename="src/models/user.ts"
 import { belongsTo, defineModel, hasMany } from '@towerjs/vault/model'
 
 export type User = { id: string; name: string }
@@ -136,7 +136,7 @@ await Project.scope('published' as any).get()
 
 Scopes are named query fragments declared on the model:
 
-```ts verify
+```ts signature
 import { defineModel } from '@towerjs/vault/model'
 
 type PostRow = { id: string; published: boolean }
@@ -159,7 +159,7 @@ type PaginatedResult<T> = { data: Array<T>; total: number; page: number; perPage
 
 ## Casts, hidden fields, serialization
 
-```ts verify
+```ts signature
 import { defineModel } from '@towerjs/vault/model'
 
 type Row = { id: string; metadata: Record<string, unknown>; secret: string; created_at: Date }

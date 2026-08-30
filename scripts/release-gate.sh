@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 #
-# v0.1.0 Release Gate Checklist
+# v0.2.0 Release Gate Checklist
 #
 # These checks verify the Tower product from a consumer's perspective. They
 # require network access and are intended to be run manually before tagging
-# v0.1.0, not as part of the standard CI test suite.
+# v0.2.0, not as part of the standard CI test suite. Covers the full v0.2
+# application layer: core restructure, models + factories, policies + social,
+# tower db/make/dev/config, and the model-backed generated app.
 #
 # Usage: bash scripts/release-gate.sh
 #
