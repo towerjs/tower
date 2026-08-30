@@ -16,6 +16,7 @@ const aliases = [
   { find: /^@towerjs\/tower$/, replacement: resolve('packages/tower/src/index.ts') },
   { find: /^@towerjs\/tower\/foundation$/, replacement: resolve('packages/tower/src/foundation/index.ts') },
   { find: /^@towerjs\/tower\/blueprint$/, replacement: resolve('packages/tower/src/blueprint/index.ts') },
+  { find: /^@towerjs\/tower\/runtime\/node$/, replacement: resolve('packages/tower/src/runtime-node.ts') },
   { find: /^@towerjs\/tower\/runtime$/, replacement: resolve('packages/tower/src/runtime.ts') },
 ]
 

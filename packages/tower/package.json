@@ -12,6 +12,10 @@
       "types": "./dist/runtime.d.ts",
       "default": "./dist/runtime.js"
     },
+    "./runtime/node": {
+      "types": "./dist/runtime-node.d.ts",
+      "default": "./dist/runtime-node.js"
+    },
     "./blueprint": {
       "types": "./dist/blueprint/index.d.ts",
       "default": "./dist/blueprint/index.js"

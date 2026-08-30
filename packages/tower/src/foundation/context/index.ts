@@ -1,5 +1,3 @@
-import { createRequire } from 'node:module'
-
 export interface TowerContextProvider {
   run<T>(data: Record<string, unknown>, handler: () => Promise<T>): Promise<T>
   get<T = unknown>(key: string): T | undefined
@@ -16,46 +14,36 @@ function noop(): TowerContextProvider {
   }
 }
 
-function detectEdge(): boolean {
-  if (typeof process === 'undefined') return true
-  if (process.env?.VERCEL_ENV === 'edge') return true
-  if (process.env?.CLOUDFLARE_WORKER) return true
-  return false
-}
-
 const GLOBAL_KEY = '___tower_context_provider___'
 
-let _towerContext: TowerContextProvider | undefined = (globalThis as any)[GLOBAL_KEY] as
-  TowerContextProvider | undefined
-
-if (!_towerContext) {
-  if (detectEdge()) {
-    _towerContext = noop()
-  } else {
-    try {
-      const require = createRequire(import.meta.url)
-      const { AsyncLocalStorage } = require('node:async_hooks') as typeof import('node:async_hooks')
-      const storage = new AsyncLocalStorage<Record<string, unknown>>()
-      _towerContext = {
-        run<T>(data: Record<string, unknown>, handler: () => Promise<T>) {
-          return storage.run(data, handler)
-        },
-        get<T = unknown>(key: string): T | undefined {
-          return storage.getStore()?.[key] as T | undefined
-        },
-      }
-    } catch {
-      _towerContext = noop()
-    }
-  }
-  ;(globalThis as any)[GLOBAL_KEY] = _towerContext
+function provider(): TowerContextProvider {
+  return ((globalThis as any)[GLOBAL_KEY] as TowerContextProvider | undefined) ?? noop()
 }
 
 export function getTowerContext(): TowerContextProvider {
-  return _towerContext!
+  return provider()
 }
 
-export const towerContext = _towerContext!
+/** Installs the execution-context implementation for the current runtime. */
+export function setTowerContextProvider(contextProvider: TowerContextProvider): void {
+  ;(globalThis as any)[GLOBAL_KEY] = contextProvider
+}
+
+/**
+ * Runtime-neutral context facade.
+ *
+ * The core intentionally has no Node imports. Node framework adapters install
+ * the AsyncLocalStorage implementation from `@towerjs/tower/runtime/node`;
+ * Edge code can use explicit per-request module instances.
+ */
+export const towerContext: TowerContextProvider = {
+  run<T>(data: Record<string, unknown>, handler: () => Promise<T>): Promise<T> {
+    return provider().run(data, handler)
+  },
+  get<T = unknown>(key: string): T | undefined {
+    return provider().get<T>(key)
+  },
+}
 
 export interface RequestContext {
   headers: Headers

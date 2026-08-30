@@ -27,7 +27,7 @@ export function defineTower(config: TowerConfig): TowerConfig {
   return config
 }
 
-export { towerContext } from '../foundation/context/index.js'
+export { towerContext, setTowerContextProvider } from '../foundation/context/index.js'
 export { env } from './env.js'
 
 export type { TowerConfig, TowerModule, TowerContext, TowerInitContext, ServiceRegistry } from '../foundation/types.js'

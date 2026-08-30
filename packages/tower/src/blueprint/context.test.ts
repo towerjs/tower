@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import { installNodeContext } from '../runtime-node.js'
 import { towerContext } from './index.js'
+
+installNodeContext()
 
 describe('towerContext (ALS provider)', () => {
   it('stores data and retrieves it within the handler', async () => {
