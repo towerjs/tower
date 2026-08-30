@@ -10,11 +10,13 @@ Authentication answers _who you are_; authorization answers _what you can do_. G
 A policy is an object of action handlers. Each handler receives the authenticated Tower user and the resource — it never fetches the user itself, so policies unit-test without a request context:
 
 ```ts filename="src/policies/project.ts"
-import { definePolicy, policies } from '@towerjs/gatehouse'
+import { definePolicy, definePolicyRegistration } from '@towerjs/gatehouse'
 
-interface Project {
-  id: string
-  ownerId: string
+export class Project {
+  constructor(
+    readonly id: string,
+    readonly ownerId: string
+  ) {}
 }
 
 export const projectPolicy = definePolicy<Project>({
@@ -22,19 +24,32 @@ export const projectPolicy = definePolicy<Project>({
   update: (user, project) => project.ownerId === user.id,
 })
 
-policies.register('project', projectPolicy)
+export const projectPolicyRegistration = definePolicyRegistration(Project, projectPolicy)
 ```
 
-Register against a class (`policies.register(Project, projectPolicy)`) or a string key, as above.
+Policies are part of the application blueprint rather than process-global state:
+
+```ts filename="tower.config.ts"
+import { gatehouse } from '@towerjs/gatehouse'
+
+import { projectPolicyRegistration } from './src/policies/project'
+
+gatehouse({
+  provider: 'better-auth',
+  policies: [projectPolicyRegistration],
+})
+```
 
 ## `can()` and `authorize()`
 
 `can()` returns a boolean for the current user; `authorize()` throws instead — `AuthenticationError` when nobody is signed in, `AuthorizationError` when the policy denies:
 
 ```ts
+import { Project } from '@/policies/project'
+
 import { gatehouse } from '@towerjs/gatehouse'
 
-const project = { id: 'prj_123', ownerId: 'usr_123' }
+const project = new Project('prj_123', 'usr_123')
 
 if (await gatehouse.can(project, 'update')) {
   // ...

@@ -42,7 +42,7 @@ describe('templates', () => {
     const { file, content } = policyTemplate('Project')
     expect(file).toBe(join('src', 'policies', 'project.ts'))
     expect(content).toContain('definePolicy<ProjectRecord>')
-    expect(content).toContain("policies.register('project', ProjectPolicy)")
+    expect(content).toContain("definePolicyRegistration('project', ProjectPolicy)")
   })
 
   it('factory template imports the sibling model', () => {

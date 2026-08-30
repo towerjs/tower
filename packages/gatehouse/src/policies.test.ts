@@ -1,6 +1,11 @@
+import { type TowerModule, createTowerApp, towerContext } from '@towerjs/tower'
+import { installNodeContext } from '@towerjs/tower/runtime/node'
+
 import { describe, expect, it } from 'vitest'
 
-import { PolicyRegistry, definePolicy } from './policies.js'
+import { gatehouse } from './index.js'
+import { PolicyRegistry, definePolicy, definePolicyRegistration } from './policies.js'
+import { TestProvider } from './providers/test-provider.js'
 import { AuthenticationError, AuthorizationError, type GatehouseUser } from './types.js'
 
 function makeUser(id = 'u1'): GatehouseUser {
@@ -127,5 +132,37 @@ describe('PolicyRegistry', () => {
     class Unregistered {}
     await expect(registry.can(makeUser(), new Unregistered(), 'view')).rejects.toThrow('No policy registered')
     await expect(registry.can(makeUser(), new Project('u1'), 'nonexistent')).rejects.toThrow('not defined')
+  })
+})
+
+describe('application policy composition', () => {
+  it('keeps policies inside the application container', async () => {
+    installNodeContext()
+    const vault: TowerModule = {
+      name: 'vault',
+      register(ctx) {
+        ctx.services.register('vault', {})
+      },
+    }
+    const auth = gatehouse({
+      provider: new TestProvider(),
+      policies: [definePolicyRegistration(Project, projectPolicy)],
+    })
+    const app = await createTowerApp({ modules: [vault, auth] })
+    const service = app.container.get<any>('gatehouse')
+    const user = makeUser('u1')
+    const requestGatehouse = {
+      session: async () => ({
+        user,
+        session: { id: 's1', userId: user.id, token: 'token', expiresAt: new Date(Date.now() + 60_000) },
+      }),
+    }
+
+    await towerContext.run({ gatehouse: requestGatehouse }, async () => {
+      await expect(service.can(new Project('u1'), 'update')).resolves.toBe(true)
+      await expect(service.can(new Project('u2'), 'update')).resolves.toBe(false)
+    })
+
+    await app.shutdown()
   })
 })

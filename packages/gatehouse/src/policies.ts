@@ -21,7 +21,7 @@ import { AuthenticationError, AuthorizationError } from './types.js'
  *   }
  * }
  *
- * policies.register(Project, new ProjectPolicy())
+ * const projectPolicy = definePolicyRegistration(Project, new ProjectPolicy())
  *
  * await gatehouse.can(project, 'update')        // boolean
  * await gatehouse.authorize(project, 'update')  // throws when denied
@@ -40,6 +40,12 @@ export interface Policy<TResource = any, TUser extends GatehouseUser = Gatehouse
 }
 
 type AnyPolicy = Policy<any, any>
+
+/** A policy and its resource identity, ready for application composition. */
+export interface PolicyRegistration<TResource = any> {
+  target: object | string
+  policy: Policy<TResource>
+}
 
 function resolvePolicyFor(registry: PolicyRegistry, resource: object | string): AnyPolicy | undefined {
   if (typeof resource === 'string') {
@@ -97,7 +103,7 @@ export class PolicyRegistry {
     if (!policy) {
       throw new Error(
         `No policy registered for ${typeof resource === 'string' ? `"${resource}"` : resource.constructor?.name}. ` +
-          `Register one with policies.register(...) before authorizing.`
+          `Add it to the Gatehouse policies configuration before authorizing.`
       )
     }
     const handler = policy[action]
@@ -128,10 +134,15 @@ export class PolicyRegistry {
   }
 }
 
-/** The application-wide default policy registry backing gatehouse.can/authorize. */
-export const policies = new PolicyRegistry()
-
 /** Type helper for declaring a policy for a specific resource shape. */
 export function definePolicy<TResource>(policy: Policy<TResource>): Policy<TResource> {
   return policy
+}
+
+/** Declares a policy registration for `gatehouse({ policies: [...] })`. */
+export function definePolicyRegistration<TResource>(
+  target: object | string,
+  policy: Policy<TResource>
+): PolicyRegistration<TResource> {
+  return { target, policy }
 }

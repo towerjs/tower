@@ -72,16 +72,15 @@ export function policyTemplate(rawName: string): { file: string; content: string
   const Name = pascal(rawName)
   return {
     file: join('src', 'policies', `${kebab(Name)}.ts`),
-    content: `import { definePolicy } from '@towerjs/gatehouse'
+    content: `import { definePolicy, definePolicyRegistration } from '@towerjs/gatehouse'
 
 /**
  * Authorization logic for ${Name}. Actions receive the authenticated
  * Gatehouse user and the resource being authorized — never fetch the user
  * yourself, so the policy stays unit-testable.
  *
- * Register it so gatehouse.can()/authorize() can find it:
- *   import { policies } from '@towerjs/gatehouse'
- *   policies.register('${kebab(Name)}', ${Name}Policy)
+ * Add ${Name}PolicyRegistration to gatehouse({ policies: [...] }) in
+ * tower.config.ts so gatehouse.can()/authorize() can find it.
  */
 export type ${Name}Record = {
   ownerId: string
@@ -92,6 +91,8 @@ export const ${Name}Policy = definePolicy<${Name}Record>({
   update: (user, record) => record.ownerId === user.id,
   destroy: (user, record) => record.ownerId === user.id,
 })
+
+export const ${Name}PolicyRegistration = definePolicyRegistration('${kebab(Name)}', ${Name}Policy)
 `,
   }
 }

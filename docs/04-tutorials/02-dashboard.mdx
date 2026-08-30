@@ -146,27 +146,36 @@ The active organization is used for session-scoped operations.
 
 ## 7. Permissions
 
-```ts filename="src/actions/organizations.ts"
-import { definePolicy, gatehouse, policies } from '@towerjs/gatehouse'
-import { action } from '@towerjs/gatehouse/next'
+```ts filename="src/policies/project.ts"
+import { definePolicy, definePolicyRegistration } from '@towerjs/gatehouse'
 
-interface Project {
-  id: string
-  organizationId: string
-  ownerId: string
+export class Project {
+  constructor(
+    readonly id: string,
+    readonly organizationId: string,
+    readonly ownerId: string
+  ) {}
 }
 
-policies.register(
-  'project',
-  definePolicy<Project>({
-    delete: (user, project) => project.ownerId === user.id,
-  })
-)
+export const projectPolicy = definePolicy<Project>({
+  delete: (user, project) => project.ownerId === user.id,
+})
+
+export const projectPolicyRegistration = definePolicyRegistration(Project, projectPolicy)
+```
+
+Add `projectPolicyRegistration` to the `policies` array in your `gatehouse({ ... })` configuration, then authorize at the application boundary:
+
+```ts filename="src/actions/organizations.ts"
+import { Project } from '@/policies/project'
+
+import { gatehouse } from '@towerjs/gatehouse'
+import { action } from '@towerjs/gatehouse/next'
 
 export const deleteProject = action(async (formData: FormData) => {
   const projectId = formData.get('projectId') as string
   const orgId = formData.get('orgId') as string
-  const project: Project = { id: projectId, organizationId: orgId, ownerId: 'usr_123' }
+  const project = new Project(projectId, orgId, 'usr_123')
 
   await gatehouse.authorize(project, 'delete') // throws when denied
   // ... delete project
