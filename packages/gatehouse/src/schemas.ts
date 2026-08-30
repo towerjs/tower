@@ -23,6 +23,17 @@ export const gatehouseConfigSchema = z
           typeof (v as { name?: unknown }).name === 'string'
       ),
     ]),
+    policies: z
+      .array(
+        z.object({
+          target: z.union([
+            z.string(),
+            z.custom<object>((value) => typeof value === 'object' || typeof value === 'function'),
+          ]),
+          policy: z.record(z.string(), z.function()),
+        })
+      )
+      .optional(),
 
     credentials: z.union([z.boolean(), z.record(z.string(), z.unknown())]).optional(),
 

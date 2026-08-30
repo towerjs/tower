@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
   let alsStore: Record<string, any> = {}
+  let runtimeService: any
   const mockBetterAuth = vi.fn()
   const mockToNextJsHandler = vi.fn()
   const mockSignInEmail = vi.fn()
@@ -16,6 +17,7 @@ const mocks = vi.hoisted(() => {
 
   function reset() {
     alsStore = {}
+    runtimeService = undefined
     vi.clearAllMocks()
   }
 
@@ -30,6 +32,10 @@ const mocks = vi.hoisted(() => {
     mockListSessions,
     mockCreateOrganization,
     mockListOrganizations,
+    getRuntimeService: () => runtimeService,
+    setRuntimeService: (service: any) => {
+      runtimeService = service
+    },
     mockGetMigrations: vi.fn(() => ({
       runMigrations: vi.fn().mockResolvedValue(undefined),
     })),
@@ -115,6 +121,16 @@ vi.mock('@towerjs/tower/runtime', async (importOriginal) => {
       config: { modules: [] },
       runtime: { name: 'node-server', isServerless: false },
     }),
+    getTowerService: vi.fn(() => {
+      const service = mocks.getRuntimeService()
+      if (!service) throw new Error('Gatehouse not initialized')
+      return service
+    }),
+    resolveTowerService: vi.fn(async () => {
+      const service = mocks.getRuntimeService()
+      if (!service) throw new Error('Gatehouse not initialized')
+      return service
+    }),
     initTower: vi.fn(),
   }
 })
@@ -167,7 +183,9 @@ const mockServices = () => {
   const db = { selectFrom: vi.fn() }
   return {
     get: vi.fn((_key: string) => ({ db })) as any,
-    register: vi.fn(),
+    register: vi.fn((key: string, service: unknown) => {
+      if (key === 'gatehouse') mocks.setRuntimeService(service)
+    }),
     registerFactory: vi.fn(),
     has: vi.fn(),
   }
@@ -526,8 +544,12 @@ describe('gatehouse combined proxy', () => {
     await initModule()
     const { gatehouse, ContextRequiredError } = await import('./index.js')
     await expect((gatehouse as any).session()).resolves.toBeNull()
-    expect(() => (gatehouse as any).signIn).toThrow(ContextRequiredError)
-    expect(() => (gatehouse as any).signUp).toThrow(ContextRequiredError)
+    await expect((gatehouse as any).signIn.email({ email: 'a@b.com', password: 'pw' })).rejects.toThrow(
+      ContextRequiredError
+    )
+    await expect(
+      (gatehouse as any).signUp.email({ name: 'A', email: 'a@b.com', password: 'password123' })
+    ).rejects.toThrow(ContextRequiredError)
   })
 
   it('exposes module-level methods without request context', async () => {
@@ -566,7 +588,7 @@ describe('gatehouse combined proxy', () => {
 
     mocks.mockGetSession.mockResolvedValue(null)
     await expect(result.handler(new Request('https://example.com/protected'))).rejects.toThrow(
-      'Gatehouse proxy could not initialize'
+      'Gatehouse not initialized'
     )
 
     await initModule()
@@ -611,10 +633,9 @@ describe('gatehouse combined proxy', () => {
   })
 
   it('throws when uninitialized', async () => {
-    const { gatehouse, _ContextRequiredError } = await import('./index.js')
-    // from/migrate return functions that throw Error when called (not ContextRequiredError)
-    expect(() => (gatehouse as any).from()).toThrow('gatehouse.from() called before Gatehouse was initialized')
-    expect(() => (gatehouse as any).migrate()).toThrow('gatehouse.migrate() called before Gatehouse was initialized')
+    const { gatehouse } = await import('./index.js')
+    await expect((gatehouse as any).from()).rejects.toThrow('Gatehouse not initialized')
+    await expect((gatehouse as any).migrate()).rejects.toThrow('Gatehouse not initialized')
     expect(typeof (gatehouse as any).proxy).toBe('function')
     const result = (gatehouse as any).proxy()
     expect(result).toHaveProperty('handler')
@@ -765,23 +786,23 @@ describe('defineGatehouse', () => {
   })
 })
 
-// ─── getAuth / getRoutes ──────────────────────────────────────
+// ─── getProvider / getRoutes ──────────────────────────────────
 
-describe('getAuth / getRoutes', () => {
+describe('getProvider / getRoutes', () => {
   beforeEach(() => {
     vi.resetModules()
     setupBetterAuthApi()
   })
 
-  it('getAuth throws when uninitialized', async () => {
-    const { getAuth } = await import('./index.js')
-    expect(() => getAuth()).toThrow('Gatehouse not initialized')
+  it('getProvider throws when uninitialized', async () => {
+    const { getProvider } = await import('./index.js')
+    expect(() => getProvider()).toThrow('Gatehouse not initialized')
   })
 
-  it('getAuth returns adapter when initialized', async () => {
-    const { defineGatehouse, getAuth } = await import('./index.js')
+  it('getProvider returns the Tower provider when initialized', async () => {
+    const { defineGatehouse, getProvider } = await import('./index.js')
     await defineGatehouse({ provider: 'better-auth' } as any).initialize!(mockCtx())
-    const auth = getAuth()
+    const auth = getProvider()
     expect(typeof auth.getSession).toBe('function')
   })
 

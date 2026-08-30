@@ -46,6 +46,12 @@ vi.mock('next/headers', () => {
 vi.mock('next/headers.js', () => {
   throw new Error('BOUNDARY VIOLATION: next/headers imported by Gatehouse contract')
 })
+vi.mock('node:module', () => {
+  throw new Error('BOUNDARY VIOLATION: node:module imported by Gatehouse public API')
+})
+vi.mock('node:async_hooks', () => {
+  throw new Error('BOUNDARY VIOLATION: node:async_hooks imported by Gatehouse public API')
+})
 
 describe('Gatehouse runtime boundary (Edge compatibility of the contract)', () => {
   it('loads the provider contract without any Node-only or provider module', async () => {
@@ -55,6 +61,13 @@ describe('Gatehouse runtime boundary (Edge compatibility of the contract)', () =
     const provider = new TestProvider()
     await provider.init()
     expect(provider.capabilities.runtime.edge).toBe(true)
+  })
+
+  it('loads the actual Tower and Gatehouse public entrypoints without Node built-ins', async () => {
+    vi.resetModules()
+    const [tower, gatehouse] = await Promise.all([import('@towerjs/tower'), import('./index.js')])
+    expect(tower.defineTower).toBeTypeOf('function')
+    expect(gatehouse.gatehouse).toBeTypeOf('function')
   })
 
   it('runs the full application API against an edge-capable provider', async () => {

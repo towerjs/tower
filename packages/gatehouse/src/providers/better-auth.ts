@@ -1,3 +1,4 @@
+import type { BetterAuthPlugin } from 'better-auth'
 import type { EmailOTPOptions } from 'better-auth/plugins'
 import { type Kysely, sql } from 'kysely'
 
@@ -128,7 +129,8 @@ export class BetterAuthAdapter {
       creds.requireEmailVerification = emailVerification.required
     }
 
-    const allPlugins = [...(config.plugins || [])]
+    const providerPlugins = Array.isArray(config.passThrough?.plugins) ? config.passThrough.plugins : []
+    const allPlugins = [...providerPlugins] as BetterAuthPlugin[]
 
     if (config.magicLinks) {
       const sendMagicLink =
@@ -222,6 +224,7 @@ export class BetterAuthAdapter {
     }
     if (config.passThrough) {
       for (const [k, v] of Object.entries(config.passThrough)) {
+        if (k === 'plugins') continue
         baOptions[k] = v
       }
     }
@@ -442,6 +445,11 @@ export class BetterAuthAdapter {
       return false
     }
   }
+}
+
+/** Creates the curated Better Auth adapter from its provider-specific subpath. */
+export function betterAuthProvider(config: GatehouseConfig, db: unknown): import('../provider.js').GatehouseProvider {
+  return new BetterAuthAdapter(config, db as Kysely<any>)
 }
 
 function env(key: string): string | undefined {

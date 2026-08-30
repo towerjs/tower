@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 // surface can't be exercised without a live server. This contract test verifies
 // the parts that CAN be checked in isolation: public exports exist, the proxy
 // contract holds, error types are correct, and the type/runtime parity for the
-// methods we recently changed (requireUser, getApiKeys, getAuth).
+// methods we recently changed (requireUser, getApiKeys, getProvider).
 
 describe('Gatehouse public API contract', () => {
   describe('public exports exist', () => {
@@ -35,9 +35,9 @@ describe('Gatehouse public API contract', () => {
       expect(typeof Gatehouse.migrate).toBe('function')
     })
 
-    it('exports getAuth and getRoutes', async () => {
-      const { getAuth, getRoutes } = await import('@towerjs/gatehouse')
-      expect(typeof getAuth).toBe('function')
+    it('exports getProvider and getRoutes', async () => {
+      const { getProvider, getRoutes } = await import('@towerjs/gatehouse')
+      expect(typeof getProvider).toBe('function')
       expect(typeof getRoutes).toBe('function')
     })
 
@@ -77,15 +77,10 @@ describe('Gatehouse public API contract', () => {
     })
   })
 
-  describe('getAuth return type', () => {
-    it('returns the adapter (not a narrowed shape)', async () => {
-      // getAuth is typed as returning BetterAuthAdapter. Before the fix it was
-      // typed as `{ getSession() }` which lied about the actual return value.
-      // We can't call it without an init adapter, but we can verify the type
-      // exports BetterAuthAdapter.
+  describe('getProvider return type', () => {
+    it('returns the Tower provider contract', async () => {
       const gatehouse = await import('@towerjs/gatehouse')
-      // The function exists and is exported
-      expect(typeof gatehouse.getAuth).toBe('function')
+      expect(typeof gatehouse.getProvider).toBe('function')
     })
   })
 
@@ -98,8 +93,18 @@ describe('Gatehouse public API contract', () => {
     })
 
     it('gatehouse.getSession returns null outside request context', async () => {
-      const { gatehouse } = await import('@towerjs/gatehouse')
+      const { gatehouse, TestProvider } = await import('@towerjs/gatehouse')
+      const { initTower, resetTowerApp } = await import('@towerjs/tower/runtime')
+      const vault = {
+        name: 'vault',
+        register(ctx: any) {
+          ctx.services.register('vault', {})
+        },
+      }
+      const auth = gatehouse({ provider: new TestProvider() })
+      await initTower([vault, auth], { modules: [vault, auth] })
       await expect(gatehouse.getSession()).resolves.toBeNull()
+      await resetTowerApp()
     })
   })
 

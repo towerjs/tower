@@ -1,5 +1,7 @@
+import type { TowerBlueprint } from '@towerjs/tower'
 import { setRequestContextResolver } from '@towerjs/tower/foundation'
-import { createLazyModule } from '@towerjs/tower/runtime'
+import { createLazyModule, initTower } from '@towerjs/tower/runtime'
+import { installNodeContext } from '@towerjs/tower/runtime/node'
 
 import type { GatehouseInstance, GatehouseModule } from '../index.js'
 import type { ApiKeyInfo, GatehouseSession, GatehouseUser, Organization, OrganizationFull, Session } from '../types.js'
@@ -17,6 +19,8 @@ type GatehouseApiMethods = {
 
 type GatehouseAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
 
+installNodeContext()
+
 setRequestContextResolver(async () => {
   const { headers } = await import('next/headers.js')
   const h = await headers()
@@ -30,17 +34,18 @@ setRequestContextResolver(async () => {
  * DynamicServerError which makes Next.js treat the route as dynamic,
  * so the tower app (and its DB connection) is never initialized at build time.
  */
-async function markDynamicAndInit(): Promise<any> {
+async function markDynamicAndInit(config?: TowerBlueprint): Promise<any> {
   const { headers } = await import('next/headers.js')
   await headers()
+  if (config) await initTower(config.modules, config)
   // The lazy module will trigger initialization via getTowerApp()
   return gatehouseReactServer
 }
 
-function createDeepCall(path: string[]) {
+function createDeepCall(path: string[], config?: TowerBlueprint) {
   return new Proxy(
     (...args: any[]) =>
-      markDynamicAndInit().then((r) => {
+      markDynamicAndInit(config).then((r) => {
         let v = r
         for (const p of path) v = v[p]
         if (typeof v === 'function') return v(...args)
@@ -49,7 +54,7 @@ function createDeepCall(path: string[]) {
     {
       get(_, subProp) {
         if (typeof subProp === 'symbol' || subProp === 'then') return undefined
-        return createDeepCall([...path, String(subProp)])
+        return createDeepCall([...path, String(subProp)], config)
       },
     }
   )
@@ -57,9 +62,15 @@ function createDeepCall(path: string[]) {
 
 const gatehouseReactServer = createLazyModule<GatehouseAPI>('gatehouse')
 
-export const gatehouse: GatehouseAPI = new Proxy({} as GatehouseAPI, {
-  get(_target, prop) {
-    if (typeof prop === 'symbol' || prop === 'then') return undefined
-    return createDeepCall([String(prop)])
-  },
-}) as GatehouseAPI
+/** Creates a React Server Component facade bound to an imported blueprint. */
+export function createGatehouse(config?: TowerBlueprint): GatehouseAPI {
+  return new Proxy({} as GatehouseAPI, {
+    get(_target, prop) {
+      if (typeof prop === 'symbol' || prop === 'then') return undefined
+      return createDeepCall([String(prop)], config)
+    },
+  }) as GatehouseAPI
+}
+
+/** Discovery-backed facade for traditional Node deployments. */
+export const gatehouse: GatehouseAPI = createGatehouse()

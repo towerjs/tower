@@ -1,10 +1,10 @@
 import type { TowerContext, TowerModule } from '@towerjs/tower/foundation'
 import { getRequestContextResolver, towerContext } from '@towerjs/tower/foundation'
-import { createLazyModule } from '@towerjs/tower/runtime'
+import { getTowerService } from '@towerjs/tower/runtime'
 
 import { ContextRequiredError } from './context.js'
-import { policies } from './policies.js'
-import type { BetterAuthAdapter } from './providers/better-auth.js'
+import { PolicyRegistry } from './policies.js'
+import type { GatehouseProvider } from './provider.js'
 import { parseGatehouseConfig } from './schemas.js'
 import type {
   AccessToken,
@@ -94,8 +94,8 @@ export { UnsupportedCapabilityError, requireCapability } from './provider.js'
 export { TestProvider } from './providers/test-provider.js'
 
 // Policies (S7): provider-independent application authorization.
-export { policies, definePolicy, PolicyRegistry } from './policies.js'
-export type { Policy, PolicyDecision } from './policies.js'
+export { definePolicy, definePolicyRegistration, PolicyRegistry } from './policies.js'
+export type { Policy, PolicyDecision, PolicyRegistration } from './policies.js'
 
 // Social identity (S7): provider-independent OAuth/OIDC contract.
 export { SocialProviderError, SocialStateMismatchError, mergeScopes } from './social.js'
@@ -172,28 +172,20 @@ export type {
 }
 export { AuthenticationError, AuthorizationError, ContextRequiredError }
 
-const GLOBAL_ADAPTER_KEY = '___tower_gatehouse_adapter___'
-let _localAdapter: BetterAuthAdapter | undefined
-
-function getAdapter(): BetterAuthAdapter | undefined {
-  return _localAdapter ?? (globalThis as any)[GLOBAL_ADAPTER_KEY]
+function runtimeService(): GatehouseRuntimeAPI {
+  return getTowerService<GatehouseRuntimeAPI>('gatehouse')
 }
 
-function setAdapter(adapter: BetterAuthAdapter | undefined) {
-  _localAdapter = adapter
-  ;(globalThis as any)[GLOBAL_ADAPTER_KEY] = adapter
-}
-
-/** Returns the adapter's getSession method. Useful for server-side session checks. */
-export function getAuth(): BetterAuthAdapter {
-  if (!getAdapter()) throw new Error('Gatehouse not initialized')
-  return getAdapter()!
+/** Returns the configured Tower Gatehouse provider. */
+export function getProvider(): GatehouseProvider {
+  return runtimeService().provider
 }
 
 /** Returns the adapter's route handlers for the auth API. */
 export function getRoutes(): { GET: (req: Request) => Promise<Response>; POST: (req: Request) => Promise<Response> } {
-  if (!getAdapter()) throw new Error('Gatehouse not initialized')
-  return getAdapter()!.routes
+  const provider = getProvider()
+  if (!provider.routes) throw new Error(`The "${provider.name}" Gatehouse provider does not expose auth routes.`)
+  return provider.routes
 }
 
 /**
@@ -204,8 +196,7 @@ export function getRoutes(): { GET: (req: Request) => Promise<Response>; POST: (
  */
 export const Gatehouse = {
   from(request: Request | { headers: Headers }): Promise<GatehouseInstance> {
-    if (!getAdapter()) throw new Error('Gatehouse not initialized')
-    return getAdapter()!.from(request)
+    return runtimeService().from(request)
   },
 
   /**
@@ -226,13 +217,11 @@ export const Gatehouse = {
    * ```
    */
   fromHeaders(headers: Headers): Promise<GatehouseInstance> {
-    if (!getAdapter()) throw new Error('Gatehouse not initialized')
-    return getAdapter()!.from({ headers })
+    return runtimeService().fromHeaders(headers)
   },
 
   migrate(): Promise<void> {
-    if (!getAdapter()) throw new Error('Gatehouse not initialized')
-    return getAdapter()!.migrate()
+    return runtimeService().migrate()
   },
 }
 
@@ -241,7 +230,7 @@ export const Gatehouse = {
  * request context. Returns null if no session exists or no adapter is registered.
  */
 export async function getSession(): Promise<Session | null> {
-  return requestGetSession()
+  return runtimeService().getSession()
 }
 
 /**
@@ -249,15 +238,14 @@ export async function getSession(): Promise<Session | null> {
  * request context. Returns null if not authenticated.
  */
 export async function user(): Promise<GatehouseUser | null> {
-  const s = await requestGetSession()
-  return s?.user ?? null
+  return runtimeService().user()
 }
 
 /**
  * Returns the current user or throws AuthenticationError.
  */
 export async function requireUser(): Promise<GatehouseUser> {
-  return requestRequireUser()
+  return runtimeService().requireUser()
 }
 
 /**
@@ -266,8 +254,7 @@ export async function requireUser(): Promise<GatehouseUser> {
  * registered. See {@link policies} for registration.
  */
 export async function can(resource: object | string, action: string, ...args: unknown[]): Promise<boolean> {
-  const s = await requestGetSession()
-  return policies.can(s?.user, resource, action, ...args)
+  return runtimeService().can(resource, action, ...args)
 }
 
 /**
@@ -275,39 +262,35 @@ export async function can(resource: object | string, action: string, ...args: un
  * AuthenticationError, denied requests throw AuthorizationError.
  */
 export async function authorize(resource: object | string, action: string, ...args: unknown[]): Promise<void> {
-  const s = await requestGetSession()
-  await policies.authorize(s?.user, resource, action, ...args)
+  await runtimeService().authorize(resource, action, ...args)
 }
 
 /**
  * Lists all sessions for the current user.
  */
 export async function getUserSessions(): Promise<GatehouseSession[]> {
-  return withRequestContext((instance) => instance.sessions.list())
+  return runtimeService().getUserSessions()
 }
 
 /**
  * Lists API keys for a given user.
  */
 export async function getApiKeys(userId: string, options?: ApiKeyListOptions): Promise<ApiKeyInfo[]> {
-  return withRequestContext(async (instance) => {
-    const { keys } = await instance.apiKeys.list(userId, options)
-    return keys
-  })
+  return runtimeService().getApiKeys(userId, options)
 }
 
 /**
  * Lists organizations the current user belongs to.
  */
 export async function getOrganizations(): Promise<Organization[]> {
-  return withRequestContext((instance) => instance.organizations.list())
+  return runtimeService().getOrganizations()
 }
 
 /**
  * Gets a single organization by ID. Returns null if not found.
  */
 export async function getOrganization(id: string): Promise<OrganizationFull | null> {
-  return withRequestContext((instance) => instance.organizations.getFull(id))
+  return runtimeService().getOrganization(id)
 }
 
 /** Runs a handler within a request-scoped gatehouse context. */
@@ -315,8 +298,7 @@ export async function runWithRequest<T>(
   request: Request | { headers: Headers },
   handler: () => Promise<T>
 ): Promise<T> {
-  if (!getAdapter()) throw new Error('Gatehouse not initialized')
-  const instance = await getAdapter()!.from(request)
+  const instance = await getProvider().from(request)
   return towerContext.run({ gatehouse: instance }, handler)
 }
 
@@ -324,8 +306,7 @@ async function withRequestContext<T>(fn: (instance: GatehouseInstance) => Promis
   const resolver = getRequestContextResolver()
   if (!resolver) throw new ContextRequiredError('No request context available.')
   const rc = await resolver()
-  if (!getAdapter()) throw new Error('Gatehouse not initialized')
-  const instance = await getAdapter()!.from(rc)
+  const instance = await getProvider().from(rc)
   return fn(instance)
 }
 
@@ -349,14 +330,12 @@ type GatehouseApiMethods = {
   can(resource: object | string, action: string, ...args: unknown[]): Promise<boolean>
   authorize(resource: object | string, action: string, ...args: unknown[]): Promise<void>
   getUserSessions(): Promise<GatehouseSession[]>
-  getApiKeys(userId: string): Promise<ApiKeyInfo[]>
+  getApiKeys(userId: string, options?: ApiKeyListOptions): Promise<ApiKeyInfo[]>
   getOrganizations(): Promise<Organization[]>
   getOrganization(id: string): Promise<OrganizationFull | null>
 }
 
 type GatehouseRuntimeAPI = GatehouseModule & Omit<GatehouseInstance, keyof GatehouseApiMethods> & GatehouseApiMethods
-
-const gatehouseRuntime = createLazyModule<GatehouseRuntimeAPI>('gatehouse')
 
 /**
  * Creates a Tower module definition for Gatehouse.
@@ -383,13 +362,35 @@ const gatehouseRuntime = createLazyModule<GatehouseRuntimeAPI>('gatehouse')
  * resolve the request-scoped GatehouseInstance at call time, so server
  * actions and route handlers always see the caller's headers/cookies.
  */
-function createRuntimeService(): GatehouseRuntimeAPI {
+function createRuntimeService(
+  provider: GatehouseProvider,
+  policyRegistry: PolicyRegistry,
+  social: GatehouseModule['social']
+): GatehouseRuntimeAPI {
   async function resolveInstance(): Promise<GatehouseInstance> {
     const ctxVal = towerContext.get('gatehouse') as GatehouseInstance | undefined
     if (ctxVal) return ctxVal
     const resolver = getRequestContextResolver()
-    const rc = resolver ? await resolver() : { headers: new Headers() }
-    return getAdapter()!.from(rc as { headers: Headers })
+    if (!resolver) throw new ContextRequiredError('No request context available.')
+    return provider.from(await resolver())
+  }
+
+  async function resolveSession(): Promise<Session | null> {
+    const contextInstance = towerContext.get('gatehouse') as GatehouseInstance | undefined
+    if (contextInstance) return contextInstance.session()
+    const resolver = getRequestContextResolver()
+    if (!resolver) return null
+    return (await resolveInstance()).session()
+  }
+
+  async function resolveUser(): Promise<GatehouseUser | null> {
+    return (await resolveSession())?.user ?? null
+  }
+
+  async function resolveRequiredUser(): Promise<GatehouseUser> {
+    const current = await resolveUser()
+    if (!current) throw new AuthenticationError('Authentication required')
+    return current
   }
 
   function pathProxy(path: string[]): any {
@@ -409,20 +410,38 @@ function createRuntimeService(): GatehouseRuntimeAPI {
   }
 
   const base: GatehouseRuntimeAPI = {
-    getSession: () => requestGetSession(),
-    session: () => requestGetSession(),
-    user: () => withRequestContext((instance) => instance.user()),
-    requireUser: () => requestRequireUser(),
-    can: (resource: object | string, action: string, ...args: unknown[]) => can(resource, action, ...args),
-    authorize: (resource: object | string, action: string, ...args: unknown[]) => authorize(resource, action, ...args),
-    getUserSessions: () => withRequestContext((instance) => instance.sessions.list()),
+    provider,
+    capabilities: provider.capabilities,
+    get routes() {
+      if (!provider.routes) throw new Error(`The "${provider.name}" Gatehouse provider does not expose auth routes.`)
+      return provider.routes
+    },
+    from: (request: Request | { headers: Headers }) => provider.from(request),
+    fromHeaders: (headers: Headers) => provider.from({ headers }),
+    proxy: (options?: ProxyOptions) => {
+      if (!provider.createProxy) {
+        throw new Error(`The "${provider.name}" Gatehouse provider does not support route proxying.`)
+      }
+      return provider.createProxy(options)
+    },
+    migrate: () => provider.migrate(),
+    social,
+    getSession: resolveSession,
+    session: resolveSession,
+    user: resolveUser,
+    requireUser: resolveRequiredUser,
+    can: async (resource: object | string, action: string, ...args: unknown[]) =>
+      policyRegistry.can(await resolveUser(), resource, action, ...args),
+    authorize: async (resource: object | string, action: string, ...args: unknown[]) =>
+      policyRegistry.authorize(await resolveUser(), resource, action, ...args),
+    getUserSessions: () => resolveInstance().then((instance) => instance.sessions.list()),
     getApiKeys: (userId: string, options?: ApiKeyListOptions) =>
-      withRequestContext(async (instance) => {
+      resolveInstance().then(async (instance) => {
         const { keys } = await instance.apiKeys.list(userId, options)
         return keys
       }),
-    getOrganizations: () => withRequestContext((instance) => instance.organizations.list()),
-    getOrganization: (id: string) => withRequestContext((instance) => instance.organizations.getFull(id)),
+    getOrganizations: () => resolveInstance().then((instance) => instance.organizations.list()),
+    getOrganization: (id: string) => resolveInstance().then((instance) => instance.organizations.getFull(id)),
   } as unknown as GatehouseRuntimeAPI
 
   return new Proxy(base, {
@@ -455,14 +474,12 @@ function createDeferredProxy(options?: ProxyOptions): ProxyResult {
   return {
     config: proxyConfig(options),
     async handler(request) {
-      if (!getAdapter()) {
-        const { getTowerApp } = await import('@towerjs/tower/runtime')
-        await getTowerApp()
-      }
+      const { getTowerApp } = await import('@towerjs/tower/runtime')
+      await getTowerApp()
+      const adapter = getProvider()
 
-      const adapter = getAdapter()
-      if (!adapter) {
-        throw new Error('Gatehouse proxy could not initialize the configured authentication provider.')
+      if (!adapter.createProxy) {
+        throw new Error(`The "${adapter.name}" Gatehouse provider does not support route proxying.`)
       }
 
       const providerProxy = adapter.createProxy(options)
@@ -473,23 +490,26 @@ function createDeferredProxy(options?: ProxyOptions): ProxyResult {
 
 function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule & GatehouseModule {
   parseGatehouseConfig(config as unknown as Record<string, unknown>)
+  let provider: GatehouseProvider | undefined
+  const policyRegistry = new PolicyRegistry()
+  const socialState: SocialRuntimeState = {}
+  const social = createSocialService(socialState)
+
+  for (const registration of config.policies ?? []) {
+    policyRegistry.register(registration.target, registration.policy)
+  }
 
   const doInit = async (ctx: TowerContext) => {
     const vaultProxy = ctx.services.get<any>('vault')
     const vault = vaultProxy?._kysely ?? vaultProxy
     const courier = ctx.services.has('courier') ? ctx.services.get<CourierLike>('courier') : undefined
 
-    let provider: import('./provider.js').GatehouseProvider
     if (typeof config.provider === 'object' && config.provider !== null) {
       // A GatehouseProvider instance — curated custom or test providers.
       provider = config.provider
-      if (!getAdapter()) {
-        setAdapter(provider as unknown as BetterAuthAdapter)
-      }
     } else {
       const { BetterAuthAdapter: BaAdapter } = await import('./providers/better-auth.js')
-      provider = new (BaAdapter as any)(withCourierTransport(config, courier), vault) as BetterAuthAdapter
-      setAdapter(provider as unknown as BetterAuthAdapter)
+      provider = new (BaAdapter as any)(withCourierTransport(config, courier), vault) as GatehouseProvider
     }
 
     if (ctx.runtime.name === 'edge' && !provider.capabilities.runtime.edge) {
@@ -516,57 +536,62 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
       const store = new KyselySocialIdentityStore(vault)
       await store.ensureSchema()
       const { SocialIdentityLifecycle } = await import('./social-lifecycle.js')
-      socialLifecycleInstance = new SocialIdentityLifecycle(store, {
-        issueSession: (userId) => provider.createSessionForUser!(userId),
+      socialState.lifecycle = new SocialIdentityLifecycle(store, {
+        issueSession: (userId) => provider!.createSessionForUser!(userId),
         resolveByEmail: false,
       })
-      socialProvidersById = new Map(socialProviders.map((p) => [p.id, p]))
+      socialState.providers = new Map(socialProviders.map((socialProvider) => [socialProvider.id, socialProvider]))
     }
 
-    // Replace the lazy placeholder with the real runtime API so container
-    // lookups resolve to a usable service (mirrors vault's initialize).
-    ctx.services.register('gatehouse', createRuntimeService())
+    ctx.services.register('gatehouse', createRuntimeService(provider, policyRegistry, social))
   }
 
   return {
     name: 'gatehouse',
-    dependsOn: ['vault', 'courier'],
-
-    register(ctx: TowerContext) {
-      ctx.services.register('gatehouse', gatehouseRuntime)
-    },
+    dependsOn: ['vault'],
 
     initialize: doInit,
 
     get provider() {
-      return getAdapter()!.provider
+      if (!provider) throw new Error('Gatehouse not initialized')
+      return provider
     },
 
     get capabilities() {
-      return getAdapter()!.capabilities
+      if (!provider) throw new Error('Gatehouse not initialized')
+      return provider.capabilities
     },
 
     get routes() {
-      return getAdapter()!.routes
+      if (!provider) throw new Error('Gatehouse not initialized')
+      if (!provider.routes) throw new Error(`The "${provider.name}" Gatehouse provider does not expose auth routes.`)
+      return provider.routes
     },
 
     async from(request: Request | { headers: Headers }) {
-      return getAdapter()!.from(request)
+      if (!provider) throw new Error('Gatehouse not initialized')
+      return provider.from(request)
     },
 
     async fromHeaders(headers: Headers) {
-      return getAdapter()!.from({ headers })
+      if (!provider) throw new Error('Gatehouse not initialized')
+      return provider.from({ headers })
     },
 
     proxy(options?: ProxyOptions) {
-      return getAdapter()!.createProxy(options)
+      if (!provider) throw new Error('Gatehouse not initialized')
+      if (!provider.createProxy) {
+        throw new Error(`The "${provider.name}" Gatehouse provider does not support route proxying.`)
+      }
+      return provider.createProxy(options)
     },
 
     async migrate() {
-      return getAdapter()!.migrate()
+      if (!provider) throw new Error('Gatehouse not initialized')
+      return provider.migrate()
     },
 
-    social: socialService,
+    social,
   } as TowerModule & GatehouseModule
 }
 
@@ -588,13 +613,10 @@ function createGatehouseModuleDefinition(config: GatehouseConfig): TowerModule &
  * ```
  */
 
-// Immediately invoke async function to trigger dynamic rendering in Next.js
-// During static prerendering, awaiting `headers()` throws a
-// DynamicServerError which makes Next.js treat the route as dynamic.
-// Social lifecycle state, populated during doInit when social providers
-// are configured. Module-scoped like the adapter singleton.
-let socialLifecycleInstance: import('./social-lifecycle.js').SocialIdentityLifecycle | undefined
-let socialProvidersById: Map<string, import('./social.js').SocialProvider> | undefined
+interface SocialRuntimeState {
+  lifecycle?: import('./social-lifecycle.js').SocialIdentityLifecycle
+  providers?: Map<string, import('./social.js').SocialProvider>
+}
 
 /**
  * The Tower-owned social sign-in / linking API (#83).
@@ -622,197 +644,43 @@ let socialProvidersById: Map<string, import('./social.js').SocialProvider> | und
  * const result = await gatehouse.social.authenticate({ provider: 'acme', code })
  * ```
  */
-const socialService = {
-  async redirect(providerId: string, options?: import('./social.js').SocialRedirectOptions) {
-    const provider = socialProvidersById?.get(providerId)
-    if (!provider) throw new Error(`Unknown social provider "${providerId}". Is it configured in socialProviders?`)
-    return provider.redirect(options)
-  },
+function createSocialService(state: SocialRuntimeState): GatehouseModule['social'] {
+  return {
+    async redirect(providerId, options) {
+      const provider = state.providers?.get(providerId)
+      if (!provider) throw new Error(`Unknown social provider "${providerId}". Is it configured in socialProviders?`)
+      return provider.redirect(options)
+    },
 
-  /** Social sign-in: identity -> resolve/create user -> link -> session. */
-  async authenticate(params: { provider: string; code: string }) {
-    if (!socialLifecycleInstance || !socialProvidersById) {
-      throw new Error('Gatehouse social sign-in is not configured. Add socialProviders to your gatehouse config.')
-    }
-    const provider = socialProvidersById.get(params.provider)
-    if (!provider) throw new Error(`Unknown social provider "${params.provider}".`)
-    const identity = await provider.callback({ code: params.code })
-    return socialLifecycleInstance.signIn(identity)
-  },
-
-  /** Links an identity to the CURRENT user (request context required). */
-  async linkCurrent(params: { provider: string; code: string }) {
-    if (!socialLifecycleInstance || !socialProvidersById) {
-      throw new Error('Gatehouse social linking is not configured. Add socialProviders to your gatehouse config.')
-    }
-    const user = await requestRequireUser()
-    const provider = socialProvidersById.get(params.provider)
-    if (!provider) throw new Error(`Unknown social provider "${params.provider}".`)
-    const identity = await provider.callback({ code: params.code })
-    return socialLifecycleInstance.link(user.id, identity)
-  },
-}
-
-let initPromise: Promise<void> | undefined
-;(async () => {
-  try {
-    const { headers } = await import('next/headers.js')
-    await headers()
-    // Initialize the app so services are registered
-    const { getTowerApp } = await import('@towerjs/tower/runtime')
-    await getTowerApp()
-  } catch {
-    // Ignore all errors here — module not found in non-Next.js envs and
-    // `headers() was called outside a request scope` during hermetic tests
-    // both mean "not in a Next.js request" and should not become unhandled rejections
-  }
-})()
-
-// Marks the route as dynamic before initializing the app.
-// During static prerendering, awaiting `headers()` throws a
-// DynamicServerError which makes Next.js treat the route as dynamic,
-// so the tower app (and its DB connection) is never initialized at build time.
-async function markDynamicAndInit(): Promise<any> {
-  const isVitest = typeof process !== 'undefined' && !!process.env.VITEST
-  if (isVitest) {
-    // In Vitest, headers() always throws outside a request and there is no
-    // tower.config.ts — return a runtime that works via the global adapter
-    // without needing a full Tower app (tests init gatehouse directly via defineGatehouse)
-    return new Proxy(
-      {
-        get provider() {
-          return getAdapter()?.provider
-        },
-        get routes() {
-          return getAdapter()?.routes
-        },
-        from: (req: any) => {
-          if (!getAdapter()) throw new Error('gatehouse.from() called before Gatehouse was initialized')
-          return getAdapter()!.from(req)
-        },
-        fromHeaders: (h: any) => {
-          if (!getAdapter()) throw new Error('gatehouse.fromHeaders() called before Gatehouse was initialized')
-          return getAdapter()!.from({ headers: h })
-        },
-        proxy: (opts: any) => createDeferredProxy(opts),
-        migrate: () => {
-          if (!getAdapter()) throw new Error('gatehouse.migrate() called before Gatehouse was initialized')
-          return getAdapter()!.migrate()
-        },
-        // runtime API that works via adapter / request context
-        getSession,
-        session: getSession,
-        user,
-        requireUser,
-        getUserSessions,
-        getApiKeys,
-        getOrganizations,
-        getOrganization,
-      } as any,
-      {
-        get(target, prop) {
-          if (prop in target) return (target as any)[prop]
-          if (typeof prop === 'symbol' || prop === 'then') return undefined
-          // Any other GatehouseInstance method accessed outside a request should throw ContextRequiredError
-          // (e.g. gatehouse.signIn, gatehouse.signUp, gatehouse.sessions, etc)
-          const contextMethods = [
-            'signIn',
-            'signUp',
-            'sessions',
-            'account',
-            'password',
-            'email',
-            'phone',
-            'users',
-            'roles',
-            'passkeys',
-            'admin',
-            'apiKeys',
-            'identities',
-            'totp',
-            'backupCodes',
-            'organizations',
-            'can',
-          ]
-          if (contextMethods.includes(String(prop))) {
-            const hasContext = towerContext.get('gatehouse') || getRequestContextResolver()
-            if (!hasContext) throw new ContextRequiredError('No request context available.')
-            const adapter = getAdapter()
-            if (!adapter) throw new Error('Gatehouse not initialized')
-            if (prop === 'can') {
-              return async (...args: any[]) => {
-                const resolver = getRequestContextResolver()
-                const rc = resolver ? await resolver() : { headers: new Headers() }
-                const ctxVal = towerContext.get('gatehouse') as GatehouseInstance | undefined
-                const instance = (ctxVal as GatehouseInstance) ?? (await adapter.from(rc as any))
-                return (instance as any).can(...args)
-              }
-            }
-            // Return a Proxy for the instance object (e.g. signIn) that handles sub-methods like email
-            return new Proxy(
-              {},
-              {
-                get(_, subProp) {
-                  if (typeof subProp === 'symbol' || subProp === 'then') return undefined
-                  return async (...args: any[]) => {
-                    const resolver = getRequestContextResolver()
-                    const rc = resolver ? await resolver() : { headers: new Headers() }
-                    const ctxVal = towerContext.get('gatehouse') as GatehouseInstance | undefined
-                    const instance = (ctxVal as GatehouseInstance) ?? (await adapter.from(rc as any))
-                    const obj = (instance as any)[prop]
-                    const fn = obj?.[subProp] ?? obj?.[String(subProp)]
-                    if (typeof fn === 'function') return fn(...args)
-                    if (obj && typeof obj === 'object' && subProp in obj) return (obj as any)[subProp]
-                    return undefined
-                  }
-                },
-              }
-            )
-          }
-          return undefined
-        },
+    async authenticate(params) {
+      if (!state.lifecycle || !state.providers) {
+        throw new Error('Gatehouse social sign-in is not configured. Add socialProviders to your gatehouse config.')
       }
-    )
-  }
-  if (!initPromise) {
-    initPromise = (async () => {
-      try {
-        const { headers } = await import('next/headers.js')
-        await headers()
-        // Initialize the app so services are registered
-        const { getTowerApp } = await import('@towerjs/tower/runtime')
-        await getTowerApp()
-      } catch (e: any) {
-        // Only ignore module resolution errors (non-Next.js environments)
-        // Let DynamicServerError and other errors propagate
-        const isModuleNotFound =
-          e.code === 'MODULE_NOT_FOUND' ||
-          e.message?.includes('Cannot find module') ||
-          e.message?.includes('next/headers')
-        if (!isModuleNotFound) throw e
+      const provider = state.providers.get(params.provider)
+      if (!provider) throw new Error(`Unknown social provider "${params.provider}".`)
+      return state.lifecycle.signIn(await provider.callback({ code: params.code }))
+    },
+
+    async linkCurrent(params) {
+      if (!state.lifecycle || !state.providers) {
+        throw new Error('Gatehouse social linking is not configured. Add socialProviders to your gatehouse config.')
       }
-    })()
+      const currentUser = await runtimeService().requireUser()
+      const provider = state.providers.get(params.provider)
+      if (!provider) throw new Error(`Unknown social provider "${params.provider}".`)
+      return state.lifecycle.link(currentUser.id, await provider.callback({ code: params.code }))
+    },
   }
-  await initPromise
-  // The lazy module will trigger initialization via getTowerApp()
-  return gatehouseRuntime
 }
 
 function createDeepCall(path: string[]) {
   return new Proxy(
-    (...args: any[]) => {
-      if (!getAdapter() && (path[0] === 'from' || path[0] === 'fromHeaders' || path[0] === 'migrate')) {
-        throw new Error(`gatehouse.${path[0]}() called before Gatehouse was initialized`)
-      }
-      if (path[0] === 'proxy') {
-        return createDeferredProxy(args[0])
-      }
-      return markDynamicAndInit().then((r) => {
-        let v = r
-        for (const p of path) v = v[p]
-        if (typeof v === 'function') return v(...args)
-        return v
-      })
+    async (...args: any[]) => {
+      const { resolveTowerService } = await import('@towerjs/tower/runtime')
+      let value: any = await resolveTowerService<GatehouseRuntimeAPI>('gatehouse')
+      for (const segment of path) value = value[segment]
+      if (typeof value === 'function') return value(...args)
+      return value
     },
     {
       get(_, subProp) {
@@ -830,29 +698,9 @@ export const gatehouse = new Proxy(gatehouseTarget, {
   get(_target, prop) {
     if (typeof prop === 'symbol' || prop === 'then') return undefined
     const propStr = String(prop)
-    // For hermetic tests, signIn etc should throw ContextRequiredError on property access when not in request
-    const contextThrowOnAccess = [
-      'signIn',
-      'signUp',
-      'sessions',
-      'account',
-      'password',
-      'email',
-      'phone',
-      'users',
-      'roles',
-      'passkeys',
-      'admin',
-      'apiKeys',
-      'identities',
-      'totp',
-      'backupCodes',
-      'organizations',
-      'can',
-    ]
-    if (contextThrowOnAccess.includes(propStr)) {
-      const hasContext = (towerContext as any).get?.('gatehouse') || getRequestContextResolver?.()
-      if (!hasContext) throw new ContextRequiredError('No request context available.')
+    if (propStr === 'proxy') return (options?: ProxyOptions) => createDeferredProxy(options)
+    if (propStr === 'provider' || propStr === 'capabilities' || propStr === 'routes') {
+      return (runtimeService() as any)[propStr]
     }
     return createDeepCall([propStr])
   },
@@ -864,16 +712,6 @@ export const gatehouse = new Proxy(gatehouseTarget, {
 // Legacy aliases for hermetic tests — internal, not part of public contract
 export const defineGatehouse = createGatehouseModuleDefinition
 export const createGatehouseModule = createGatehouseModuleDefinition
-
-/**
- * The Better Auth provider adapter — the reference implementation of the
- * GatehouseProvider contract. Exported so curated providers and integration
- * tests can construct it directly.
- */
-export async function betterAuthProvider(config: GatehouseConfig, db: unknown) {
-  const { BetterAuthAdapter } = await import('./providers/better-auth.js')
-  return new (BetterAuthAdapter as any)(config, db) as import('./provider.js').GatehouseProvider
-}
 
 function withCourierTransport(config: GatehouseConfig, courier?: CourierLike): GatehouseConfig {
   if (!courier) return config

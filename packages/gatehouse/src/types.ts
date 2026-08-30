@@ -447,6 +447,9 @@ export interface GatehouseConfig {
    */
   socialProviders?: import('./social.js').SocialProvider[]
 
+  /** Application policies registered as part of the Gatehouse composition. */
+  policies?: import('./policies.js').PolicyRegistration[]
+
   credentials?:
     | boolean
     | {
@@ -496,7 +499,6 @@ export interface GatehouseConfig {
 
   appName?: string
   trustedOrigins?: string[]
-  plugins?: import('better-auth').BetterAuthPlugin[]
 
   user?: {
     modelName?: string
@@ -622,7 +624,7 @@ export interface GatehouseInstance {
    * Escape hatch only — not part of the stable contract. Accessing provider
    * internals bypasses Gatehouse's Tower-owned semantics.
    */
-  readonly provider: any
+  readonly provider: unknown
 
   /**
    * Returns the current session or throws AuthenticationError.
@@ -802,7 +804,7 @@ export interface GatehouseModule {
    * Escape hatch only — not part of the stable contract. Accessing provider
    * internals bypasses Gatehouse's Tower-owned semantics.
    */
-  provider: any
+  provider: import('./provider.js').GatehouseProvider
 
   /** Gatehouse-owned social sign-in / linking API (#83). */
   social: {

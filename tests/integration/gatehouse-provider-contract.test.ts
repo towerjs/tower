@@ -1,5 +1,5 @@
-import { betterAuthProvider } from '@towerjs/gatehouse'
 import type { GatehouseProvider } from '@towerjs/gatehouse'
+import { betterAuthProvider } from '@towerjs/gatehouse/providers/better-auth'
 import { defineGatehouseProviderContract } from '@towerjs/gatehouse/testing'
 import { createTowerApp } from '@towerjs/tower/foundation'
 import { vault } from '@towerjs/vault'

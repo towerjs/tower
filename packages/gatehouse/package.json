@@ -27,6 +27,10 @@
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"
+    },
+    "./providers/better-auth": {
+      "types": "./dist/providers/better-auth.d.ts",
+      "default": "./dist/providers/better-auth.js"
     }
   },
   "files": [

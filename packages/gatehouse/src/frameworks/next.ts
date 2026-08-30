@@ -1,6 +1,12 @@
+import type { TowerBlueprint } from '@towerjs/tower'
 import { setRequestContextResolver, towerContext } from '@towerjs/tower/foundation'
+import { getTowerApp, initTower } from '@towerjs/tower/runtime'
+import { installNodeContext } from '@towerjs/tower/runtime/node'
 
-import { Gatehouse, getRoutes } from '../index.js'
+import { Gatehouse, getProvider, getRoutes } from '../index.js'
+import type { ProxyOptions, ProxyResult } from '../types.js'
+
+installNodeContext()
 
 setRequestContextResolver(async () => {
   const { unstable_noStore } = await import('next/cache.js')
@@ -17,14 +23,24 @@ type NextRouteContext = {
 export type ActionResult = { error?: string; ok?: true }
 
 function withGatehouseContext<TResult, TArgs extends unknown[]>(
-  handler: (...args: TArgs) => Promise<TResult>
+  handler: (...args: TArgs) => Promise<TResult>,
+  initialize: () => Promise<unknown> = getTowerApp
 ): (...args: TArgs) => Promise<TResult> {
   return async (...args: TArgs): Promise<TResult> => {
+    await initialize()
     const { headers } = await import('next/headers.js')
     const h = await headers()
     const gh = await Gatehouse.from({ headers: h })
     return towerContext.run({ gatehouse: gh }, () => handler(...args))
   }
+}
+
+/** Creates a server action bound to a statically imported Tower blueprint. */
+export function createGatehouseAction<TResult, TArgs extends unknown[]>(
+  config: TowerBlueprint,
+  handler: (...args: TArgs) => Promise<TResult>
+): (...args: TArgs) => Promise<TResult> {
+  return withGatehouseContext(handler, () => initTower(config.modules, config))
 }
 
 /**
@@ -97,6 +113,7 @@ export function withGatehouse<T extends Response>(
   handler: (request: Request, context: NextRouteContext) => Promise<T>
 ): (request: Request, context: NextRouteContext) => Promise<T> {
   return async (request, context) => {
+    await getTowerApp()
     const gh = await Gatehouse.from({ headers: request.headers })
     return towerContext.run({ gatehouse: gh }, () => handler(request, context))
   }
@@ -105,7 +122,10 @@ export function withGatehouse<T extends Response>(
 // ─── Route handler (lazily resolved) ───
 
 function lazy(method: 'GET' | 'POST'): (req: Request) => Promise<Response> {
-  return (req: Request) => getRoutes()[method](req)
+  return async (req: Request) => {
+    await getTowerApp()
+    return getRoutes()[method](req)
+  }
 }
 
 /**
@@ -119,3 +139,49 @@ export const GET = lazy('GET') as (req: Request) => Promise<Response>
  * Imported by `app/api/auth/[...all]/route.ts` in user projects.
  */
 export const POST = lazy('POST') as (req: Request) => Promise<Response>
+
+/**
+ * Creates auth route handlers with a statically imported Tower blueprint.
+ *
+ * Prefer this in deployed Next.js applications: importing the blueprint from
+ * the route makes the composition root part of the serverless bundle instead
+ * of relying on runtime filesystem discovery.
+ */
+export function createGatehouseHandlers(config: TowerBlueprint): {
+  GET: (request: Request) => Promise<Response>
+  POST: (request: Request) => Promise<Response>
+} {
+  const initialize = () => initTower(config.modules, config)
+  return {
+    async GET(request) {
+      await initialize()
+      return getRoutes().GET(request)
+    },
+    async POST(request) {
+      await initialize()
+      return getRoutes().POST(request)
+    },
+  }
+}
+
+/**
+ * Creates a cold-start-safe Next.js proxy from a statically imported
+ * blueprint. The returned matcher remains available for non-Next adapters;
+ * Next.js applications should continue exporting a literal `config.matcher`
+ * so the framework can analyze it at build time.
+ */
+export function createGatehouseProxy(config: TowerBlueprint, options?: ProxyOptions): ProxyResult {
+  return {
+    config: {
+      matcher: [...(options?.public ?? []), ...(options?.redirectIfAuthenticated ?? [])],
+    },
+    async handler(request) {
+      await initTower(config.modules, config)
+      const provider = getProvider()
+      if (!provider.createProxy) {
+        throw new Error(`The "${provider.name}" Gatehouse provider does not support route proxying.`)
+      }
+      return provider.createProxy(options).handler(request)
+    },
+  }
+}
