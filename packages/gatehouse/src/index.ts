@@ -19,6 +19,7 @@ import type {
   ApiKeyListOptions,
   ApiKeyUpdateParams,
   ApiKeyVerifyParams,
+  ApiKeyVerifyResult,
   EmailOtpConfirmParams,
   GatehouseConfig,
   GatehouseInstance,
@@ -151,6 +152,7 @@ export type {
   ApiKeyUpdateParams,
   ApiKeyListOptions,
   ApiKeyVerifyParams,
+  ApiKeyVerifyResult,
   TwoFactorInfo,
   TwoFactorVerifyResult,
   Organization,
@@ -302,24 +304,13 @@ export async function runWithRequest<T>(
   return towerContext.run({ gatehouse: instance }, handler)
 }
 
+// oxlint-disable-next-line no-unused-vars -- retained for request-scoped helpers
 async function withRequestContext<T>(fn: (instance: GatehouseInstance) => Promise<T>): Promise<T> {
   const resolver = getRequestContextResolver()
   if (!resolver) throw new ContextRequiredError('No request context available.')
   const rc = await resolver()
   const instance = await getProvider().from(rc)
   return fn(instance)
-}
-
-async function requestGetSession(): Promise<Session | null> {
-  const resolver = getRequestContextResolver()
-  if (!resolver) return null
-  return withRequestContext((instance) => instance.session())
-}
-
-async function requestRequireUser(): Promise<GatehouseUser> {
-  const s = await requestGetSession()
-  if (!s) throw new AuthenticationError('Authentication required')
-  return s.user
 }
 
 type GatehouseApiMethods = {

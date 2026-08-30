@@ -52,11 +52,6 @@ function resetMockApp() {
   }
 }
 
-vi.mock('@towerjs/foundation', () => ({
-  createTowerApp: vi.fn(() => Promise.resolve(mockApp)),
-  detectRuntime: vi.fn(() => ({ name: 'node', isServerless: false })),
-}))
-
 vi.mock('@towerjs/tower/foundation', () => ({
   createTowerApp: vi.fn(() => Promise.resolve(mockApp)),
   detectRuntime: vi.fn(() => ({ name: 'node', isServerless: false })),

@@ -115,4 +115,19 @@ describe('Gatehouse public API contract', () => {
       expect(mod.name).toBe('gatehouse')
     })
   })
+
+  describe('apiKeys.verify shape (regression for #121)', () => {
+    it('ApiKeyVerifyResult has valid, error, key', async () => {
+      // type-level shape is verified by the api-builder contract; here we assert the
+      // provider contract does not return the old ApiKeyInfo | null
+      const { buildApi } = await import('@towerjs/gatehouse/src/providers/better-auth/api-builder.js')
+      const headers = new Headers()
+      const verifyApiKey = async () => ({ valid: false, error: { message: 'Invalid', code: 'INVALID' }, key: null })
+      const gh: any = buildApi({ verifyApiKey } as any, headers)
+      const result = await gh.apiKeys.verify({ key: 'tower_live_123' })
+      expect(result).toHaveProperty('valid')
+      expect(result).toHaveProperty('error')
+      expect(result).toHaveProperty('key')
+    })
+  })
 })

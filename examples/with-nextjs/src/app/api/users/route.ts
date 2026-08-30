@@ -1,5 +1,5 @@
-import { vault } from '@towerjs/vault'
 import type { VaultModule } from '@towerjs/vault'
+import { vault } from '@towerjs/vault'
 
 interface Project {
   id: string
@@ -9,10 +9,13 @@ interface Project {
   updated_at: Date
 }
 
-const typedVault = vault as VaultModule<{ projects: Project }>
+type Database = {
+  projects: Project
+}
 
 export async function GET() {
-  const projects = await typedVault.selectFrom('projects').selectAll().execute()
+  const db = vault as unknown as VaultModule<Database>
+  const projects = await db.selectFrom('projects').selectAll().execute()
 
   return Response.json({ projects })
 }

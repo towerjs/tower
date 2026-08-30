@@ -237,6 +237,14 @@ export interface ApiKeyListOptions {
 
 export interface ApiKeyVerifyParams {
   key: string
+  permissions?: Record<string, string[]>
+  configId?: string
+}
+
+export interface ApiKeyVerifyResult {
+  valid: boolean
+  error: { message: string; code: string } | null
+  key: Omit<ApiKeyInfo, 'key'> | null
 }
 
 /** Thrown when authentication is required but the user is not logged in. */
@@ -732,7 +740,7 @@ export interface GatehouseInstance {
     get(keyId: string): Promise<ApiKeyInfo | null>
     update(id: string, params: ApiKeyUpdateParams): Promise<ApiKeyInfo>
     delete(id: string): Promise<void>
-    verify(params: ApiKeyVerifyParams): Promise<ApiKeyInfo | null>
+    verify(params: ApiKeyVerifyParams): Promise<ApiKeyVerifyResult>
   }
 
   identities: {

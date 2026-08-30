@@ -25,21 +25,43 @@ export default defineTower({
 
 ## Typing your schema
 
-`vault` is a Kysely instance. Describe your tables once and hand that type to `vault`, and every query is checked against it — table names, column names, and result shapes:
+`vault` is a Kysely instance. Describe your tables once and every query is checked — table names, column names, and result shapes. Use `Generated<T>` for columns the database fills in (`id`, `created_at`, etc.) — optional on insert, present on select:
+
+```ts filename="tower.config.ts"
+import { defineTower } from '@towerjs/tower/blueprint'
+import { type Generated, vault } from '@towerjs/vault'
+
+type Database = {
+  users: {
+    id: Generated<string>
+    name: string
+    email: string
+    created_at: Generated<Date>
+  }
+}
+
+export default defineTower({
+  modules: [vault<Database>({ connectionString: process.env.DATABASE_URL })],
+})
+```
+
+In application code, bind the schema with a cast:
 
 ```ts filename="src/vault/db.ts"
 import type { VaultModule } from '@towerjs/vault'
 import { vault } from '@towerjs/vault'
 
-export interface Database {
-  users: { id: string; name: string; email: string }
-  profiles: { id: string; userId: string; bio: string }
+export type Database = {
+  users: { id: Generated<string>; name: string; email: string; created_at: Generated<Date> }
+  profiles: { id: Generated<string>; userId: string; bio: string }
 }
 
 export const db = vault as VaultModule<Database>
 ```
 
 Import `db` wherever you query. The examples below repeat a trimmed-down version of that file so each one stands alone.
+
+`Generated<T>` and `sql` are re-exported from `@towerjs/vault` so you don't need to add `kysely` directly.
 
 ## Querying
 

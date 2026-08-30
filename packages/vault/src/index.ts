@@ -27,6 +27,25 @@ export async function runSeeds(db: Vault, config: VaultSeedConfig, name?: string
  */
 export { sql } from 'kysely'
 
+/**
+ * Kysely's Generated<T> helper, re-exported for schema typing.
+ *
+ * Use this to mark database-generated columns (id, created_at, updated_at)
+ * as optional on insert and present on select.
+ *
+ * @example
+ * ```ts
+ * type Database = {
+ *   users: {
+ *     id: Generated<string>
+ *     name: string
+ *     created_at: Generated<Date>
+ *   }
+ * }
+ * ```
+ */
+export type { Generated } from 'kysely'
+
 // Provider abstraction — consumers can name the provider types (closes #93)
 export type { VaultProvider, VaultProviderName, VaultProviderDef, VaultPoolConfig, VaultMigrator } from './types.js'
 export { resolveProviderName, resolveVaultProvider, pgProvider, neonProvider } from './providers.js'
@@ -150,9 +169,9 @@ async function buildProxyForRuntime(
  * })
  * ```
  */
-function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
+function createVaultModuleDefinition<TSchema = unknown>(options?: VaultConfig): TowerModule {
   parseVaultConfig(options)
-  let service = buildProxyUnconfigured()
+  let service: VaultModule = buildProxyUnconfigured()
   let pool: { end(): Promise<void> } | undefined
 
   const initialize = async (ctx: TowerContext) => {
@@ -197,7 +216,7 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
     ;(db as any)._kysely = db
 
     service = await buildProxyForRuntime(db, effectivePool, isEdge, options)
-    ctx.services.register('vault', service)
+    ctx.services.register('vault', service as VaultModule<TSchema>)
   }
 
   return {
@@ -205,7 +224,7 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
     dependsOn: [],
 
     register(ctx: TowerContext) {
-      ctx.services.register('vault', service)
+      ctx.services.register('vault', service as VaultModule<TSchema>)
     },
 
     initialize,
@@ -232,6 +251,23 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
  * import { vault } from '@towerjs/vault'
  * const users = await vault.selectFrom('users').selectAll().execute()
  * ```
+ *
+ * ```ts
+ * // With typed schema
+ * import { vault, Generated } from '@towerjs/vault'
+ *
+ * type Database = {
+ *   users: {
+ *     id: Generated<string>
+ *     name: string
+ *     created_at: Generated<Date>
+ *   }
+ * }
+ *
+ * export default defineTower({
+ *   modules: [vault<Database>({ connectionString: process.env.DATABASE_URL })],
+ * })
+ * ```
  */
 export const vault = new Proxy(createVaultModuleDefinition, {
   get(_target, prop) {
@@ -253,7 +289,7 @@ export const vault = new Proxy(createVaultModuleDefinition, {
   apply(_target, _thisArg, args) {
     return _target(...args)
   },
-}) as ((options?: VaultConfig) => TowerModule) & VaultModule
+}) as <TSchema = unknown>(options?: VaultConfig) => TowerModule & VaultModule<TSchema>
 
 // Legacy aliases for hermetic tests — internal, not part of public contract
 export const createVaultModule = createVaultModuleDefinition

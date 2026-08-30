@@ -36,16 +36,25 @@ Action: `createApiKey` (`name`, `expiresIn`) — returns `{ ok: true }` or `{ er
 
 ## Verify
 
-Verify on every programmatic request:
+Verify on every programmatic request — the provider returns a verification result:
 
 ```ts
 import { gatehouse } from '@towerjs/gatehouse'
 
-const key = await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
-// ApiKeyInfo — id, name, prefix, permissions, expiresAt, ... — or null
+const { valid, error, key } = await gatehouse.apiKeys.verify({ key: 'tower_live_...' })
+if (!valid) return Response.json({ error: error?.message ?? 'Invalid key' }, { status: 401 })
+// key is Omit<ApiKeyInfo, 'key'> | null — available only when valid
 ```
 
-Invalid, expired, and revoked keys verify to `null`.
+`permissions` and `configId` can be passed to enforce scoped verification:
+
+```ts
+const result = await gatehouse.apiKeys.verify({
+  key: 'tower_live_...',
+  permissions: { project: ['deploy'] },
+})
+if (!result.valid) return Response.json({ error: 'Forbidden' }, { status: 403 })
+```
 
 Route-handler guard:
 
@@ -54,8 +63,8 @@ import { gatehouse } from '@towerjs/gatehouse'
 
 export async function POST(request: Request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
-  const key = await gatehouse.apiKeys.verify({ key: token })
-  if (!key) return Response.json({ error: 'Invalid key' }, { status: 401 })
+  const { valid, error, key } = await gatehouse.apiKeys.verify({ key: token })
+  if (!valid || !key) return Response.json({ error: error?.message ?? 'Invalid key' }, { status: 401 })
   if (!key.permissions?.['project']?.includes('deploy')) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -77,7 +86,7 @@ await gatehouse.apiKeys.update(keyId, { name: 'CI deploy', expiresIn: 30 * 86400
 await gatehouse.apiKeys.delete(keyId)
 ```
 
-Actions: `updateApiKey` (`id`, `name`), `deleteApiKey` (`id`), `verifyApiKey` (`key`).
+Actions: `updateApiKey` (`id`, `name`), `deleteApiKey` (`id`), `verifyApiKey` (`key`, `permissions?`, `configId?`) — returns `{ valid, error, key }`.
 
 ## Key properties
 

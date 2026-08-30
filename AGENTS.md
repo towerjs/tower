@@ -19,14 +19,13 @@ Tower is a **composable monolithic stack** for JavaScript applications. The proj
 ```
 tower/
 ├── packages/
-│   ├── foundation/       # Core runtime: lifecycle, DI, config discovery, runtime detection
-│   ├── blueprint/        # App definition, module registration, context
-│   ├── vault/            # Database ORM (Kysely), migrations, seeds
+│   ├── tower/            # Core: Foundation + Blueprint (DI, config, lifecycle, app definition)
+│   │   ├── src/foundation/ # Internal runtime layer
+│   │   └── src/blueprint/  # Internal app-definition layer
+│   ├── vault/            # Database ORM (Kysely), migrations, seeds, models
 │   ├── gatehouse/        # Auth: social, magic links, OTP, passkeys, 2FA, orgs, API keys
 │   │   └── frameworks/   # Framework adapters (next.ts, etc.)
 │   ├── courier/          # Multi-channel communication: email, SMS, push
-│   ├── tower/           # Meta-package that bundles all modules for convenient access
-│   │   └── gatehouse/    # Re-exports for gatehouse subpaths (actions, next, client)
 │   ├── edge/             # Edge runtime integration (Vercel Edge, etc.)
 │   ├── scribe/           # CLI: scaffolding (create), migrations and seeding (migrate/seed)
 │   └── create-tower/     # `pnpm create tower` entry point
@@ -40,17 +39,15 @@ tower/
 
 These rules are enforced by `tests/dependency-rules.test.ts`:
 
-| Package      | Can depend on                                                   | Cannot depend on                        |
-| ------------ | --------------------------------------------------------------- | --------------------------------------- |
-| `foundation` | (nothing)                                                       | any `@towerjs/*`                        |
-| `blueprint`  | `@towerjs/foundation`                                           | vault, gatehouse, courier, edge, scribe |
-| `vault`      | `@towerjs/blueprint`, `@towerjs/foundation`                     | gatehouse, courier                      |
-| `courier`    | `@towerjs/blueprint`, `@towerjs/foundation`                     | vault, gatehouse                        |
-| `gatehouse`  | `@towerjs/blueprint`, `@towerjs/foundation`, `@towerjs/courier` | vault                                   |
+| Package     | Can depend on                        | Cannot depend on   |
+| ----------- | ------------------------------------ | ------------------ |
+| `vault`     | `@towerjs/tower`                     | gatehouse, courier |
+| `courier`   | `@towerjs/tower`                     | vault, gatehouse   |
+| `gatehouse` | `@towerjs/tower`, `@towerjs/courier` | vault              |
 
-The `@towerjs/tower` meta-package re-exports from all others and can depend on anything. It also owns the composition root: the module-factory registry (`MODULE_DEFS`), the app singleton (`getTowerApp`/`initTower`), and the lazy-initialization orchestration (`runtime.ts`). Per-module feature logic stays in the individual `@towerjs/*` packages; `@towerjs/tower` wires them together.
+The `@towerjs/tower` package contains the Foundation and Blueprint layers internally and can depend on nothing. It owns the composition root: the module-factory registry (`MODULE_DEFS`), the app singleton (`getTowerApp`/`initTower`), and the lazy-initialization orchestration (`runtime.ts`). Per-module feature logic stays in the individual `@towerjs/*` packages; `@towerjs/tower` wires them together.
 
-**Never** create circular dependencies between packages. If two packages need to share types, put them in a common dependency (foundation or a new shared package).
+**Never** create circular dependencies between packages. If two packages need to share types, put them in a common dependency (Tower core or a new shared package).
 
 ## Import conventions
 
@@ -68,22 +65,22 @@ import { thing } from '../parent/file.js'
 Import from the package name (resolved by workspace references):
 
 ```ts
-import { registerModule } from '@towerjs/blueprint'
-import { towerContext } from '@towerjs/foundation'
 import { gatehouse } from '@towerjs/gatehouse'
+import { defineTower } from '@towerjs/tower/blueprint'
+import { createTowerApp } from '@towerjs/tower/foundation'
 ```
 
-### User-facing meta-package
+### User-facing core package
 
-User code in generated projects imports from `@towerjs/tower`:
+User code in generated projects imports core helpers from `@towerjs/tower` and modules from their own packages:
 
 ```ts
+import { gatehouse } from '@towerjs/gatehouse'
 import { defineTower } from '@towerjs/tower/blueprint'
-import { gatehouse } from '@towerjs/tower/gatehouse'
-import { getSession } from '@towerjs/tower/gatehouse/next'
+import { vault } from '@towerjs/vault'
 ```
 
-The `@towerjs/tower` meta-package re-exports from the individual `@towerjs/*` packages, adding lazy initialization where needed.
+Core-internal subpaths `@towerjs/tower/foundation` and `@towerjs/tower/blueprint` are the only remaining internal layers — `@towerjs/tower/<module>` subpaths no longer exist.
 
 **Exception**: The proxy middleware file (`src/proxy.ts`) imports directly from `@towerjs/gatehouse` because the proxy module is evaluated at cold-start and needs synchronous access to `gatehouse.proxy()`.
 
@@ -149,9 +146,9 @@ Tower is designed for portable application architecture across Node.js, serverle
 - **Gatehouse** works in Node.js and Vercel Serverless, but **not** in Vercel Edge or Cloudflare Workers.
 - **Vault** with Neon provider works in all runtimes (including Edge).
 - **Courier** with HTTP providers (Resend, SES, SMTP, Twilio, Web Push) works in all runtimes.
-- **Foundation**, **Blueprint**, **Scribe** (CLI), **Edge** adapter are runtime-agnostic.
+- **Tower core** (Foundation + Blueprint layers), **Scribe** (CLI), **Edge** adapter are runtime-agnostic.
 
-Edge support for Gatehouse is planned for v0.2.0 via a custom adapter that doesn't rely on Next.js runtime-specific APIs.
+Gatehouse now supports Edge via the provider boundary (`#92`); Node-only providers throw an actionable error when initialized on Edge.
 
 When writing application code, use the Tower APIs (`gatehouse.getSession()`, `vault.selectFrom()`, etc.) — the runtime/provider adapter layer handles the differences. Do not write runtime-specific branches in application code.
 
@@ -222,7 +219,7 @@ chore(deps): upgrade vitest
 docs(vault): document kysely-neon provider
 ```
 
-Scopes match package directory names: `foundation`, `blueprint`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `tower`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation — e.g. `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
+Scopes match package directory names: `tower`, `vault`, `gatehouse`, `courier`, `scribe`, `create-tower`, `edge`. Use `root` for root-level changes (config, CI, README). Use `docs` with the owner package as scope for documentation — e.g. `docs(vault)` for the vault README or module page, `docs(root)` for root-level docs.
 
 **Commit message bodies** — The subject is the commit's identity: keep it to one line, imperative, no trailing period. Add a body only when the subject can't carry the _why_ — a non-obvious fix or tradeoff, a breaking change, an issue reference. Put it one blank line below the subject, wrap at 72 characters, and explain _why_, not _what_ (the diff shows what). Skip the body when the change is self-explanatory (e.g. dependency bumps, pure formatting).
 
@@ -246,11 +243,8 @@ We use **oxlint** (not ESLint or Biome, which are incompatible with TypeScript 7
 
 Config is in `oxlint.json` at the root. Run via `pnpm lint`.
 
-## The meta-package pattern (@towerjs/tower)
+## The core pattern (@towerjs/tower)
 
-`packages/tower` is the user-facing entry point. It re-exports from all `@towerjs/*` packages and adds:
+`packages/tower` is the user-facing core. Foundation and Blueprint live inside it as internal layers (`src/foundation/`, `src/blueprint/`). Application code imports `defineTower`/`createTowerApp` from `@towerjs/tower/blueprint` and `@towerjs/tower/foundation`, and modules from their own packages (`@towerjs/vault`, `@towerjs/gatehouse`).
 
-1. **Lazy initialization** — The `@towerjs/tower` wrappers call `getTowerApp()` before delegating, ensuring the app is initialized on first use.
-2. **Bundled modules** — `@towerjs/tower` bundles all modules as dependencies, so `npm install @towerjs/tower` installs every module. Users then import via sub-path exports (`@towerjs/tower/vault`, `@towerjs/tower/gatehouse`) instead of installing individual `@towerjs/*` packages separately.
-
-The wrappers in `packages/tower/src/gatehouse.ts` and similar files use `Proxy` objects to intercept property access and add initialization logic.
+Apps compose modules explicitly: `defineTower({ modules: [vault(), gatehouse({...})] })`. There is no module registry — static imports, tree-shakeable.

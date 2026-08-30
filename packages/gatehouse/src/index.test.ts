@@ -90,11 +90,6 @@ const mockTowerContext = {
   }),
 }
 
-vi.mock('@towerjs/foundation', () => ({
-  towerContext: mockTowerContext,
-  getRequestContextResolver: vi.fn().mockReturnValue(undefined),
-}))
-
 vi.mock('@towerjs/tower/foundation', () => ({
   towerContext: mockTowerContext,
   getRequestContextResolver: vi.fn().mockReturnValue(undefined),

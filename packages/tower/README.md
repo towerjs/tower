@@ -2,31 +2,36 @@
 
 [![npm version](https://img.shields.io/npm/v/@towerjs/tower?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@towerjs/tower)
 
-Meta-package that bundles all Tower modules for convenient access. Import individual modules from subpaths — each access lazily initializes the Tower app on first use.
+Application core for Tower. `defineTower` composes your modules; the core wires them together. Modules are imported from their own packages.
 
 ## Installation
 
 ```bash
-pnpm add @towerjs/tower
+pnpm add @towerjs/tower @towerjs/vault @towerjs/gatehouse
 ```
 
 ## Usage
 
-Import the modules you need from their subpaths. First use triggers Tower initialization (and `tower.config.ts` discovery).
+```ts
+// tower.config.ts
+import { gatehouse } from '@towerjs/gatehouse'
+import { defineTower } from '@towerjs/tower/blueprint'
+import { vault } from '@towerjs/vault'
+
+export default defineTower({
+  modules: [vault(), gatehouse({ provider: 'better-auth', credentials: true })],
+})
+```
 
 ```ts
-import { courier } from '@towerjs/tower/courier'
-import { gatehouse } from '@towerjs/tower/gatehouse'
-import { vault } from '@towerjs/tower/vault'
-
-// Gatehouse — authentication
-const session = await gatehouse.getSession()
+import { gatehouse } from '@towerjs/gatehouse'
+import { vault } from '@towerjs/vault'
 
 // Vault — direct database access
 await vault.selectFrom('users').selectAll().execute()
 
-// Courier — communications
-await courier.email.send({ to: 'user@example.com', subject: 'Hello', text: 'World' })
+// Gatehouse — authentication
+const session = await gatehouse.session()
 ```
 
 Access the initialized app itself for configuration, dependency injection, and shutdown:
@@ -35,7 +40,6 @@ Access the initialized app itself for configuration, dependency injection, and s
 import { getTowerApp } from '@towerjs/tower/runtime'
 
 const app = await getTowerApp()
-await app.container.get('gatehouse').migrate()
 await app.shutdown()
 ```
 
@@ -45,34 +49,26 @@ await app.shutdown()
 | ---------------- | -------------------------------------------------- |
 | `initTower`      | Programmatic initialization (with optional config) |
 | `getTowerApp`    | Async access to the initialized `TowerApp`         |
-| `createTower`    | Initialization helper from `@towerjs/foundation`   |
-| `createTowerApp` | Low-level app builder from `@towerjs/foundation`   |
-| `defineTower`    | Configuration helper from `@towerjs/blueprint`     |
+| `createTower`    | Low-level Tower app builder                        |
+| `createTowerApp` | Foundation-level app builder                       |
+| `defineTower`    | Configuration helper                               |
 | `TowerApp`       | Type for the initialized Tower object              |
 
-Each subpath import initializes the Tower app (and its `tower.config.ts` discovery) on first use. For async initialization, await `getTowerApp()` first.
+Each module import (`@towerjs/vault`, `@towerjs/gatehouse`) resolves through the initialized Tower app. For async initialization, await `getTowerApp()` first.
 
 ## Subpaths
 
-Import individual modules directly:
+| Subpath                     | Exports                                                     |
+| --------------------------- | ----------------------------------------------------------- |
+| `@towerjs/tower/blueprint`  | `defineTower`, types                                        |
+| `@towerjs/tower/foundation` | `createTower`, `createTowerApp`, `initTower`, `getTowerApp` |
+| `@towerjs/tower/runtime`    | `initTower`, `getTowerApp`                                  |
 
-| Subpath                                 | Exports                                                        |
-| --------------------------------------- | -------------------------------------------------------------- |
-| `@towerjs/tower/blueprint`              | `defineTower`, types                                           |
-| `@towerjs/tower/foundation`             | `createTower`, `createTowerApp`, `initTower`, `getTowerApp`    |
-| `@towerjs/tower/gatehouse`              | `gatehouse` (incl. `getSession`, `user`, `requireUser`)        |
-| `@towerjs/tower/gatehouse/actions`      | Pre-built auth server actions                                  |
-| `@towerjs/tower/gatehouse/next`         | Next.js integration (`action`, `withGatehouse`, `GET`, `POST`) |
-| `@towerjs/tower/gatehouse/client`       | `gatehouseClient` for the browser                              |
-| `@towerjs/tower/gatehouse/react-server` | Gatehouse for React Server Components                          |
-| `@towerjs/tower/vault`                  | `vault` (incl. `db`, `migrate`, `seed`), types                 |
-| `@towerjs/tower/courier`                | `courier` (incl. `email`, `sms`)                               |
-| `@towerjs/tower/runtime`                | `initTower`, `getTowerApp`, `createLazyModule`                 |
+Import modules from their own packages: `@towerjs/vault`, `@towerjs/gatehouse`, `@towerjs/courier`, `@towerjs/edge`.
 
 ## What's included
 
-- `@towerjs/foundation` — Core runtime and DI
-- `@towerjs/blueprint` — Application definition
-- `@towerjs/vault` — Database ORM
-- `@towerjs/gatehouse` — Authentication
-- `@towerjs/courier` — Communications
+- Tower core runtime (Foundation and Blueprint layers — internal)
+- `@towerjs/vault` — Database ORM (separate package)
+- `@towerjs/gatehouse` — Authentication (separate package)
+- `@towerjs/courier` — Communications (separate package)

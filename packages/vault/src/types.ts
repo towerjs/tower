@@ -77,6 +77,19 @@ export type VaultSeedConfig = {
  *
  * All Kysely methods (selectFrom, insertInto, fn, schema, raw, dynamic, etc.)
  * are forwarded directly — no need for vault.db.
+ *
+ * @example
+ * ```ts
+ * type Database = {
+ *   users: {
+ *     id: Generated<string>
+ *     name: string
+ *     created_at: Generated<Date>
+ *   }
+ * }
+ *
+ * const vault = vault<Database>({ connectionString: process.env.DATABASE_URL })
+ * ```
  */
 export interface VaultModule<TSchema = unknown> extends Omit<Kysely<TSchema>, 'transaction'> {
   transaction<T>(fn: (trx: Vault<TSchema>) => Promise<T>): Promise<T>

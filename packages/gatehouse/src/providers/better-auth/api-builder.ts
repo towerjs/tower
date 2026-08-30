@@ -161,7 +161,12 @@ const MAPPINGS: Mapping[] = [
     build: (h, id, params) => body(h, { keyId: id, ...params }),
   },
   { path: 'apiKeys.delete', source: 'deleteApiKey', verb: 'POST', build: (h, id) => body(h, { keyId: id }) },
-  { path: 'apiKeys.verify', source: 'verifyApiKey', verb: 'POST' },
+  {
+    path: 'apiKeys.verify',
+    source: 'verifyApiKey',
+    verb: 'POST',
+    build: (h, params) => body(h, params),
+  },
 
   // ── Identities (social providers) ───────────────────────────────
   { path: 'identities.list', source: 'listUserAccounts', verb: 'GET' },

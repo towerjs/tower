@@ -113,4 +113,31 @@ describe('Gatehouse → Better Auth HTTP contract', () => {
       })
     })
   })
+
+  describe('apiKeys', () => {
+    it('apiKeys.verify sends POST with body {key} and returns {valid, error, key}', async () => {
+      const api = makeMockApi(['verifyApiKey'])
+      api.verifyApiKey = vi
+        .fn()
+        .mockResolvedValue({ valid: false, error: { message: 'Invalid', code: 'INVALID' }, key: null })
+      const gh = buildApi(api, headers)
+      const result = await gh.apiKeys.verify({ key: 'tower_live_123' })
+      expect(api.verifyApiKey).toHaveBeenCalledWith({
+        headers,
+        body: { key: 'tower_live_123' },
+      })
+      expect(result.valid).toBe(false)
+    })
+
+    it('apiKeys.verify forwards permissions when provided', async () => {
+      const api = makeMockApi(['verifyApiKey'])
+      api.verifyApiKey = vi.fn().mockResolvedValue({ valid: true, error: null, key: { id: 'k1' } })
+      const gh = buildApi(api, headers)
+      await gh.apiKeys.verify({ key: 'tower_live_123', permissions: { project: ['deploy'] } })
+      expect(api.verifyApiKey).toHaveBeenCalledWith({
+        headers,
+        body: { key: 'tower_live_123', permissions: { project: ['deploy'] } },
+      })
+    })
+  })
 })
