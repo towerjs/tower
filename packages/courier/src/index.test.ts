@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { courier, defineCourier } from './index.js'
+import { defineCourier } from './index.js'
 
 vi.mock('web-push', () => ({
   setVapidDetails: vi.fn(),
@@ -40,11 +40,12 @@ function initAndGetModule(config: any) {
   return { mod, ctx }
 }
 
-describe('courier singleton proxy', () => {
+describe('courier module service', () => {
   it('throws if accessed before init', () => {
-    expect(() => courier.email).toThrow('Courier not initialized')
-    expect(() => courier.sms).toThrow('Courier not initialized')
-    expect(() => courier.push).toThrow('Courier not initialized')
+    const { mod } = initAndGetModule({})
+    expect(() => mod.email).toThrow('Courier not initialized')
+    expect(() => mod.sms).toThrow('Courier not initialized')
+    expect(() => mod.push).toThrow('Courier not initialized')
   })
 
   it('forwards property access through proxy after init', async () => {
@@ -53,9 +54,9 @@ describe('courier singleton proxy', () => {
     })
     await mod.initialize?.(ctx as any)
 
-    expect(typeof courier.email.send).toBe('function')
-    expect(typeof courier.sms.send).toBe('function')
-    expect(typeof courier.push.send).toBe('function')
+    expect(typeof mod.email.send).toBe('function')
+    expect(typeof mod.sms.send).toBe('function')
+    expect(typeof mod.push.send).toBe('function')
   })
 })
 
@@ -64,9 +65,6 @@ describe('defineCourier', () => {
     const mod = defineCourier({})
     expect(mod.name).toBe('courier')
     expect(typeof mod.initialize).toBe('function')
-    expect(typeof mod.email).toBe('object')
-    expect(typeof mod.sms).toBe('object')
-    expect(typeof mod.push).toBe('object')
   })
 
   it('registers courier in the container on init', async () => {
@@ -78,7 +76,7 @@ describe('defineCourier', () => {
   it('throws unconfigured errors for email when not configured', async () => {
     const { mod, ctx } = initAndGetModule({})
     await mod.initialize?.(ctx as any)
-    await expect(courier.email.send({ to: 'a@b.com', subject: 'x', text: 'y' })).rejects.toThrow(
+    await expect(mod.email.send({ to: 'a@b.com', subject: 'x', text: 'y' })).rejects.toThrow(
       '[courier.email] Not configured'
     )
   })
@@ -86,44 +84,48 @@ describe('defineCourier', () => {
   it('throws unconfigured errors for sms when not configured', async () => {
     const { mod, ctx } = initAndGetModule({})
     await mod.initialize?.(ctx as any)
-    await expect(courier.sms.send({ to: '+1234', body: 'hello' })).rejects.toThrow('[courier.sms] Not configured')
+    await expect(mod.sms.send({ to: '+1234', body: 'hello' })).rejects.toThrow('[courier.sms] Not configured')
   })
 
   it('throws unconfigured errors for push when not configured', async () => {
     const { mod, ctx } = initAndGetModule({})
     await mod.initialize?.(ctx as any)
-    await expect(courier.push.send({ subscription: {} as any, payload: 'hi' })).rejects.toThrow(
+    await expect(mod.push.send({ subscription: {} as any, payload: 'hi' })).rejects.toThrow(
       '[courier.push] Not configured'
     )
   })
 })
 
 describe('email provider resolution', () => {
-  it('creates Resend provider from config', () => {
-    const { mod } = initAndGetModule({
+  it('creates Resend provider from config', async () => {
+    const { mod, ctx } = initAndGetModule({
       email: { provider: 'resend', apiKey: 're_key', from: 'noreply@example.com' },
     })
+    await mod.initialize?.(ctx as any)
     expect(mod.email.send).toBeDefined()
   })
 
-  it('creates SMTP provider from config', () => {
-    const { mod } = initAndGetModule({
+  it('creates SMTP provider from config', async () => {
+    const { mod, ctx } = initAndGetModule({
       email: { provider: 'smtp', host: 'smtp.example.com', port: 587 },
     })
+    await mod.initialize?.(ctx as any)
     expect(mod.email.send).toBeDefined()
   })
 
-  it('creates SES provider from config', () => {
-    const { mod } = initAndGetModule({
+  it('creates SES provider from config', async () => {
+    const { mod, ctx } = initAndGetModule({
       email: { provider: 'ses', region: 'us-east-1' },
     })
+    await mod.initialize?.(ctx as any)
     expect(mod.email.send).toBeDefined()
   })
 
-  it('creates Console provider from config', () => {
-    const { mod } = initAndGetModule({
+  it('creates Console provider from config', async () => {
+    const { mod, ctx } = initAndGetModule({
       email: { provider: 'console', from: 'test@example.com' },
     })
+    await mod.initialize?.(ctx as any)
     expect(mod.email.send).toBeDefined()
   })
 
@@ -133,10 +135,11 @@ describe('email provider resolution', () => {
 })
 
 describe('sms provider resolution', () => {
-  it('creates Twilio provider from config', () => {
-    const { mod } = initAndGetModule({
+  it('creates Twilio provider from config', async () => {
+    const { mod, ctx } = initAndGetModule({
       sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', messagingServiceSid: 'MGx' },
     })
+    await mod.initialize?.(ctx as any)
     expect(mod.sms.send).toBeDefined()
   })
 
@@ -146,10 +149,11 @@ describe('sms provider resolution', () => {
 })
 
 describe('push provider resolution', () => {
-  it('creates Web Push provider from config', () => {
-    const { mod } = initAndGetModule({
+  it('creates Web Push provider from config', async () => {
+    const { mod, ctx } = initAndGetModule({
       push: { provider: 'web-push', vapid: { subject: 'mailto:x@y.com', publicKey: 'pub', privateKey: 'priv' } },
     })
+    await mod.initialize?.(ctx as any)
     expect(mod.push.send).toBeDefined()
   })
 
@@ -167,8 +171,8 @@ describe('multiple channels', () => {
     })
     await mod.initialize?.(ctx as any)
 
-    expect(typeof courier.email.send).toBe('function')
-    expect(typeof courier.sms.send).toBe('function')
-    expect(typeof courier.push.send).toBe('function')
+    expect(typeof mod.email.send).toBe('function')
+    expect(typeof mod.sms.send).toBe('function')
+    expect(typeof mod.push.send).toBe('function')
   })
 })

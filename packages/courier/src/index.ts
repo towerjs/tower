@@ -1,5 +1,5 @@
 import type { TowerContext, TowerModule } from '@towerjs/tower/foundation'
-import { createLazyModule } from '@towerjs/tower/runtime'
+import { getTowerService } from '@towerjs/tower/runtime'
 
 import { z } from 'zod'
 
@@ -45,9 +45,6 @@ export type {
   WebPushConfig,
 } from './types.js'
 
-/** @internal Singleton courier instance, set during tower init. */
-let _courier: CourierModule | undefined
-
 /**
  * Creates a Tower module definition for Courier.
  *
@@ -69,26 +66,32 @@ let _courier: CourierModule | undefined
  */
 function createCourierModuleDefinition(config: CourierConfig = {}): TowerModule & CourierModule {
   parseCourierConfig(config)
+  let service: CourierModule | undefined
+
+  const requireService = () => {
+    if (!service) throw new Error('Courier not initialized.')
+    return service
+  }
 
   return {
     name: 'courier',
     dependsOn: [],
 
     async initialize(ctx: TowerContext) {
-      _courier = await createCourier(config)
-      ctx.services.register('courier', courierRuntime)
+      service = await createCourier(config)
+      ctx.services.register('courier', service)
     },
 
     get email() {
-      return requireCourier().email
+      return requireService().email
     },
 
     get sms() {
-      return requireCourier().sms
+      return requireService().sms
     },
 
     get push() {
-      return requireCourier().push
+      return requireService().push
     },
   } satisfies TowerModule & CourierModule
 }
@@ -115,11 +118,6 @@ function validateChannel<T extends SendService>(channel: 'email' | 'sms' | 'push
       return service.send(parseSendParams(schema as z.ZodType<unknown>, channel, params))
     },
   } as T
-}
-
-function requireCourier(): CourierModule {
-  if (!_courier) throw new Error('Courier not initialized.')
-  return _courier
 }
 
 async function createEmailService(config: EmailConfig): Promise<EmailService> {
@@ -168,8 +166,6 @@ function unconfiguredChannel(name: 'email' | 'sms' | 'push') {
   }
 }
 
-const courierRuntime = createLazyModule<CourierModule>('courier')
-
 /**
  * Courier module - callable for config, property face for runtime API.
  *
@@ -201,13 +197,10 @@ export const courier = new Proxy(createCourierModuleDefinition, {
       prop === 'inspect'
     )
       return undefined
-    // Hermetic tests set _courier directly via the module's initialize hook
-    if (_courier) return (_courier as any)[prop]
     if (prop === 'email' || prop === 'sms' || prop === 'push') {
-      throw new Error('Courier not initialized.')
+      return (getTowerService<CourierModule>('courier') as any)[prop]
     }
-    // Property face delegates to the lazy runtime proxy
-    return (courierRuntime as any)[prop]
+    return undefined
   },
   apply(_target, _thisArg, args: unknown[]) {
     return (_target as (...args: unknown[]) => unknown)(...args)

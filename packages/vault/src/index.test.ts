@@ -128,48 +128,49 @@ beforeEach(() => {
   mocks.clearPoolArgs()
 })
 
-// ─── Unconfigured proxy (must run first — _vault is module-level) ──
+// ─── Unconfigured application facade ───────────────────────────────
 
 describe('unconfigured vault proxy', () => {
   it('throws on migrate access', () => {
-    expect(() => (vault as any).migrate).toThrow('Vault not initialized')
+    expect(() => (vault as any).migrate).toThrow('Tower has not initialized')
   })
 
   it('throws on seed access', () => {
-    expect(() => (vault as any).seed).toThrow('Vault not initialized')
+    expect(() => (vault as any).seed).toThrow('Tower has not initialized')
   })
 
   it('throws on close access', () => {
-    expect(() => (vault as any).close).toThrow('Vault not initialized')
+    expect(() => (vault as any).close).toThrow('Tower has not initialized')
   })
 })
 
 // ─── buildProxyUnconfigured (via init with no connection string) ────
 
 describe('buildProxyUnconfigured', () => {
+  let service: any
+
   beforeEach(async () => {
     vi.clearAllMocks()
-    // re-init without connection string to get the unconfigured proxy
     const mod = createVaultModule()
-    await mod.initialize!(mockCtx())
+    const ctx = mockCtx()
+    await mod.initialize!(ctx)
+    service = (ctx.services.register as any).mock.calls.at(-1)[1]
   })
 
   it('throws configured error on migrate', () => {
-    expect(() => (vault as any).migrate()).toThrow(
+    expect(() => service.migrate()).toThrow(
       'Vault not configured. Set DATABASE_URL or pass connectionString to vault().'
     )
   })
 
   it('throws configured error on migrator', () => {
-    expect(() => (vault as any).migrator).toThrow(
+    expect(() => service.migrator).toThrow(
       'Vault not configured. Set DATABASE_URL or pass connectionString to vault().'
     )
   })
 
   it('throws configured error on seed', () => {
-    expect(() => (vault as any).seed()).toThrow(
-      'Vault not configured. Set DATABASE_URL or pass connectionString to vault().'
-    )
+    expect(() => service.seed()).toThrow('Vault not configured. Set DATABASE_URL or pass connectionString to vault().')
   })
 })
 
@@ -270,46 +271,54 @@ describe('createVaultModule', () => {
 
 // ─── vault singleton proxy (after init) ────────────────────────────
 
-describe('vault singleton proxy', () => {
+describe('vault module service', () => {
+  let service: any
+
   beforeEach(async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
-    await mod.initialize!(mockCtx())
+    const ctx = mockCtx()
+    await mod.initialize!(ctx)
+    service = (ctx.services.register as any).mock.calls.at(-1)[1]
   })
 
   it('forwards Kysely methods', () => {
-    expect(typeof (vault as any).selectFrom).toBe('function')
+    expect(typeof service.selectFrom).toBe('function')
   })
 })
 
 // ─── Proxy methods ─────────────────────────────────────────────────
 
 describe('vault proxy methods', () => {
+  let service: any
+
   beforeEach(async () => {
     mocks.mockConnect.mockResolvedValueOnce({
       query: vi.fn().mockResolvedValueOnce(undefined),
       release: vi.fn(),
     })
     const mod = createVaultModule({ connectionString: 'postgres://u:p@localhost:5432/db' })
-    await mod.initialize!(mockCtx())
+    const ctx = mockCtx()
+    await mod.initialize!(ctx)
+    service = (ctx.services.register as any).mock.calls.at(-1)[1]
   })
 
   it('migrate calls migrateToLatest', async () => {
     mocks.mockMigrateToLatest.mockResolvedValueOnce({ error: null, results: [] })
-    await (vault as any).migrate()
+    await service.migrate()
     expect(mocks.mockMigrateToLatest).toHaveBeenCalled()
   })
 
   it('migrate throws on migration error', async () => {
     mocks.mockMigrateToLatest.mockRejectedValueOnce(new Error('fail'))
-    await expect((vault as any).migrate()).rejects.toThrow('fail')
+    await expect(service.migrate()).rejects.toThrow('fail')
   })
 
   it('seed calls runSeeds', async () => {
-    await (vault as any).seed()
+    await service.seed()
     expect(mocks.mockRunSeeds).toHaveBeenCalledWith(
       expect.any(Object),
       { folder: expect.stringContaining('seeds') },
@@ -318,7 +327,7 @@ describe('vault proxy methods', () => {
   })
 
   it('seed passes optional name filter', async () => {
-    await (vault as any).seed('users')
+    await service.seed('users')
     expect(mocks.mockRunSeeds).toHaveBeenCalledWith(
       expect.any(Object),
       { folder: expect.stringContaining('seeds') },
@@ -327,20 +336,20 @@ describe('vault proxy methods', () => {
   })
 
   it('close drains pool', async () => {
-    await (vault as any).close()
+    await service.close()
     expect(mocks.mockEnd).toHaveBeenCalled()
   })
 
   it('transaction delegates to Kysely', async () => {
     const trxFn = vi.fn().mockResolvedValue('ok')
-    const result = await (vault as any).transaction(trxFn)
+    const result = await service.transaction(trxFn)
     expect(result).toBe('ok')
     expect(trxFn).toHaveBeenCalled()
   })
 
   it('exposes migrator', () => {
-    expect((vault as any).migrator).toBeDefined()
-    expect(typeof (vault as any).migrator.migrateToLatest).toBe('function')
+    expect(service.migrator).toBeDefined()
+    expect(typeof service.migrator.migrateToLatest).toBe('function')
   })
 })
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { courier, defineCourier } from './index.js'
+import { defineCourier } from './index.js'
 
 vi.mock('web-push', () => ({
   setVapidDetails: vi.fn(),
@@ -30,6 +30,7 @@ function mockCtx() {
 async function initConsoleCourier() {
   const mod = defineCourier({ email: { provider: 'console' } })
   await mod.initialize!(mockCtx() as any)
+  return mod
 }
 
 beforeEach(() => {
@@ -70,14 +71,14 @@ describe('courier config validation', () => {
 
 describe('email send param validation', () => {
   it('accepts valid email params', async () => {
-    await initConsoleCourier()
+    const courier = await initConsoleCourier()
     await expect(
       courier.email.send({ to: 'user@example.com', subject: 'Welcome', text: 'Hello' })
     ).resolves.toBeDefined()
   })
 
   it('accepts attachments', async () => {
-    await initConsoleCourier()
+    const courier = await initConsoleCourier()
     await expect(
       courier.email.send({
         to: ['a@b.com', 'c@d.com'],
@@ -89,7 +90,7 @@ describe('email send param validation', () => {
   })
 
   it('rejects email without content', async () => {
-    await initConsoleCourier()
+    const courier = await initConsoleCourier()
     await expect(courier.email.send({ to: 'user@example.com', subject: 'Welcome' })).rejects.toThrow(
       /\[courier\.email\] Invalid send params/
     )
@@ -99,14 +100,14 @@ describe('email send param validation', () => {
   })
 
   it('rejects a non-string recipient', async () => {
-    await initConsoleCourier()
+    const courier = await initConsoleCourier()
     await expect(courier.email.send({ to: 42 as any, subject: 'x', text: 'y' })).rejects.toThrow(
       /\[courier\.email\] Invalid send params — to:/
     )
   })
 
   it('rejects a non-string subject', async () => {
-    await initConsoleCourier()
+    const courier = await initConsoleCourier()
     await expect(courier.email.send({ to: 'a@b.com', subject: 42 as any, text: 'y' })).rejects.toThrow(
       /\[courier\.email\] Invalid send params — subject:/
     )
@@ -119,7 +120,7 @@ describe('sms send param validation', () => {
       sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' },
     })
     await mod.initialize!(mockCtx() as any)
-    await expect(courier.sms.send({ to: '+1234567890', body: 'hello' })).resolves.toBeDefined()
+    await expect(mod.sms.send({ to: '+1234567890', body: 'hello' })).resolves.toBeDefined()
   })
 
   it('rejects sms without a body', async () => {
@@ -127,7 +128,7 @@ describe('sms send param validation', () => {
       sms: { provider: 'twilio', accountSid: 'ACx', authToken: 'tok', from: '+15551234567' },
     })
     await mod.initialize!(mockCtx() as any)
-    await expect(courier.sms.send({ to: '+1234567890' } as any)).rejects.toThrow(
+    await expect(mod.sms.send({ to: '+1234567890' } as any)).rejects.toThrow(
       /\[courier\.sms\] Invalid send params — body:/
     )
   })
@@ -140,7 +141,7 @@ describe('push send param validation', () => {
     })
     await mod.initialize!(mockCtx() as any)
     await expect(
-      courier.push.send({
+      mod.push.send({
         subscription: { endpoint: 'https://push.example.com', keys: { p256dh: 'a', auth: 'b' } },
         title: 'Hi',
         body: 'Hello',
@@ -154,7 +155,7 @@ describe('push send param validation', () => {
     })
     await mod.initialize!(mockCtx() as any)
     await expect(
-      courier.push.send({
+      mod.push.send({
         subscription: { endpoint: 'https://push.example.com', keys: { p256dh: 'a', auth: 'b' } },
         payload: 'hi',
         urgency: 'urgent' as any,
@@ -168,7 +169,7 @@ describe('push send param validation', () => {
     })
     await mod.initialize!(mockCtx() as any)
     await expect(
-      courier.push.send({ subscription: { endpoint: 'https://push.example.com' } as any, payload: 'hi' })
+      mod.push.send({ subscription: { endpoint: 'https://push.example.com' } as any, payload: 'hi' })
     ).rejects.toThrow(/\[courier\.push\] Invalid send params — subscription\.keys:/)
   })
 })

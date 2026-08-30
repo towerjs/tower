@@ -1,5 +1,5 @@
 import type { TowerContext, TowerModule } from '@towerjs/tower/foundation'
-import { createLazyModule } from '@towerjs/tower/runtime'
+import { getTowerService } from '@towerjs/tower/runtime'
 
 import { parseVaultConfig } from './schemas.js'
 import type { Vault, VaultConfig, VaultMigrationConfig, VaultMigrator, VaultModule, VaultSeedConfig } from './types.js'
@@ -31,9 +31,6 @@ export { sql } from 'kysely'
 export type { VaultProvider, VaultProviderName, VaultProviderDef, VaultPoolConfig, VaultMigrator } from './types.js'
 export { resolveProviderName, resolveVaultProvider, pgProvider, neonProvider } from './providers.js'
 
-let _vault: VaultModule | undefined
-let _pool: { end(): Promise<void> } | undefined
-
 const NOOP_POOL: { end(): Promise<void> } = { end: async () => {} }
 
 function resolveConnectionString(config?: VaultConfig): string {
@@ -64,15 +61,6 @@ function resolveConnectionError(err: unknown): string {
   }
   return String(err)
 }
-
-/**
- * Proxy singleton that dispatches to the initialized vault module.
- *
- * Throws if accessed before Tower has started. Use `vault.selectFrom()`,
- * `vault.insertInto()`, etc. for queries. All Kysely methods (fn, schema,
- * raw, dynamic, etc.) are forwarded directly — no vault.db needed.
- */
-const vaultRuntime = createLazyModule<VaultModule>('vault')
 
 function buildProxyUnconfigured(): VaultModule {
   return new Proxy({} as VaultModule, {
@@ -164,13 +152,14 @@ async function buildProxyForRuntime(
  */
 function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
   parseVaultConfig(options)
+  let service = buildProxyUnconfigured()
+  let pool: { end(): Promise<void> } | undefined
 
   const initialize = async (ctx: TowerContext) => {
     const connectionString = resolveConnectionString(options)
 
     if (!connectionString) {
-      _vault = buildProxyUnconfigured()
-      ctx.services.register('vault', vaultRuntime)
+      ctx.services.register('vault', service)
       return
     }
 
@@ -178,7 +167,7 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
     const providerName = resolveProviderName({ provider: options?.provider, connectionString }, connectionString)
     const provider = await resolveVaultProvider(providerName)
     const isEdge = ctx.runtime.name === 'edge'
-    await _pool?.end().catch(() => {})
+    await pool?.end().catch(() => {})
 
     // Provider abstraction: dialect creation is owned by the provider.
     // Application code (queries, migrations, transactions) stays provider-agnostic.
@@ -190,7 +179,7 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
 
     const extractedPool = getPoolFromDialect(dialect as any) as any
     const effectivePool: { end(): Promise<void> } = extractedPool ?? NOOP_POOL
-    _pool = effectivePool
+    pool = effectivePool
 
     if (extractedPool && !isEdge) {
       try {
@@ -207,9 +196,8 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
     // Set _kysely on the Kysely instance itself so it's accessible through the proxy
     ;(db as any)._kysely = db
 
-    _vault = await buildProxyForRuntime(db, effectivePool, isEdge, options)
-
-    ctx.services.register('vault', _vault)
+    service = await buildProxyForRuntime(db, effectivePool, isEdge, options)
+    ctx.services.register('vault', service)
   }
 
   return {
@@ -217,11 +205,15 @@ function createVaultModuleDefinition(options?: VaultConfig): TowerModule {
     dependsOn: [],
 
     register(ctx: TowerContext) {
-      _vault = buildProxyUnconfigured()
-      ctx.services.register('vault', vaultRuntime)
+      ctx.services.register('vault', service)
     },
 
     initialize,
+
+    async shutdown() {
+      await pool?.end()
+      pool = undefined
+    },
   } as TowerModule
 }
 
@@ -247,8 +239,6 @@ export const vault = new Proxy(createVaultModuleDefinition, {
     if (prop === 'apply' || prop === 'name' || prop === 'length') {
       return (_target as any)[prop]
     }
-    // Hermetic tests set _vault directly via the module's initialize hook
-    if (_vault) return (_vault as any)[prop]
     if (
       prop === 'then' ||
       typeof prop === 'symbol' ||
@@ -258,7 +248,7 @@ export const vault = new Proxy(createVaultModuleDefinition, {
       prop === 'inspect'
     )
       return undefined
-    throw new Error('Vault not initialized')
+    return (getTowerService<VaultModule>('vault') as any)[prop]
   },
   apply(_target, _thisArg, args) {
     return _target(...args)
