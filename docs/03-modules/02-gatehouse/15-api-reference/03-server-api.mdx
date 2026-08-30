@@ -242,8 +242,8 @@ export async function GET(request: Request) {
 ## Raw access
 
 ```ts
-import { getAuth, getRoutes } from '@towerjs/gatehouse'
+import { getProvider, getRoutes } from '@towerjs/gatehouse'
 
-const auth = getAuth() // { getSession(request) }
+const provider = getProvider() // Tower's GatehouseProvider contract
 const routes = getRoutes() // { GET, POST } — the mounted auth API
 ```

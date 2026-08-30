@@ -225,7 +225,7 @@ export async function loadConfig(configPath: string): Promise<TowerConfig> {
 export async function loadApp(configPath?: string): Promise<TowerApp> {
   if (!configPath) configPath = findConfig()
   const resolvedConfig = await loadConfig(configPath)
-  const modules = await createModuleDefinitions(resolvedConfig.modules)
+  const modules = createModuleDefinitions(resolvedConfig.modules)
   const { initTower } = await import('@towerjs/tower/runtime')
   return initTower(modules, resolvedConfig)
 }
