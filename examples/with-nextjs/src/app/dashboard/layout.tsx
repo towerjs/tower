@@ -1,6 +1,5 @@
 import { SignOutButton } from '@/components/sign-out-button'
-
-import { gatehouse } from '@towerjs/gatehouse'
+import { gatehouse } from '@/lib/gatehouse'
 
 import Link from 'next/link'
 import { redirect } from 'next/navigation'

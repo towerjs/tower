@@ -1,6 +1,8 @@
-import { gatehouse } from '@towerjs/gatehouse'
+import { createGatehouseProxy } from '@towerjs/gatehouse/next'
 
-const { handler } = gatehouse.proxy({
+import tower from '../tower.config'
+
+const { handler } = createGatehouseProxy(tower, {
   public: ['/', '/sign-in', '/sign-up'],
   redirectIfAuthenticated: ['/sign-in', '/sign-up'],
   redirectTo: '/sign-in',

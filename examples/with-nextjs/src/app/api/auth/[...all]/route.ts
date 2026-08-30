@@ -1,1 +1,5 @@
-export { GET, POST } from '@towerjs/gatehouse/next'
+import { createGatehouseHandlers } from '@towerjs/gatehouse/next'
+
+import tower from '../../../../../tower.config'
+
+export const { GET, POST } = createGatehouseHandlers(tower)

@@ -5,12 +5,23 @@ import { join } from 'node:path'
 
 import { execa } from 'execa'
 
-import { type PackageManager, addCommand, detectPackageManager, nextAppFlag } from '../package-manager.js'
+import { type PackageManager, detectPackageManager, nextAppFlag } from '../package-manager.js'
 import type { ProjectState } from '../state.js'
 import type { FrameworkAdapter } from './adapter.js'
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+async function runQuiet(command: string, args: string[], cwd: string): Promise<void> {
+  try {
+    await execa(command, args, { cwd, stdio: 'pipe' })
+  } catch (error) {
+    const result = error as { stdout?: string; stderr?: string }
+    const output = [result.stdout, result.stderr].filter(Boolean).join('\n')
+    if (output) process.stderr.write(`${output}\n`)
+    throw error
+  }
 }
 
 export const nextAdapter: FrameworkAdapter = {
@@ -42,16 +53,11 @@ export const nextAdapter: FrameworkAdapter = {
       flags.push('--no-tailwind')
     }
 
-    // TOWER_SKIP_INSTALL means tooling drives every install itself, so
-    // create-next-app must not run one either.
-    if (process.env.TOWER_SKIP_INSTALL === '1') {
-      flags.push('--skip-install')
-    }
+    // Tower owns dependency installation so the entire generated dependency
+    // graph is installed once, after package.json is complete.
+    flags.push('--skip-install')
 
-    await execa('npx', ['create-next-app@latest', ...flags], {
-      cwd: targetDir,
-      stdio: 'inherit',
-    })
+    await runQuiet('npx', ['create-next-app@latest', ...flags], targetDir)
 
     const projectDir = join(targetDir, state.projectName)
 
@@ -105,6 +111,12 @@ export const nextAdapter: FrameworkAdapter = {
       await writeFile(join(authDir, useTypeScript ? 'route.ts' : 'route.js'), authRoute())
 
       await writeFile(join(projectDir, useTypeScript ? 'src/proxy.ts' : 'src/proxy.js'), proxyFile())
+      const actionsDir = join(projectDir, 'src', 'actions')
+      await mkdir(actionsDir, { recursive: true })
+      await writeFile(
+        join(actionsDir, useTypeScript ? 'gatehouse.ts' : 'gatehouse.js'),
+        gatehouseActions(useTypeScript)
+      )
     }
 
     if (state.modules.vault) {
@@ -143,66 +155,43 @@ export const nextAdapter: FrameworkAdapter = {
       await applyUiPreview({ ...state, previewUi: true }, projectDir, useTypeScript)
     }
 
-    /** pnpm add args for installs; -w when running inside an ancestor workspace. */
-    const localAddArgs = (names: string[], dev = false): string[] => {
-      const args = addCommand(pm, dev).slice(1)
-      if (pm === 'pnpm' && process.env.TOWER_PACK_DIR) args.push('-w')
-      return [...args, ...names.map((name) => towerSpec(pm, name))]
+    // Write the complete dependency graph first, then install once. This
+    // avoids create-next-app plus multiple package-manager passes and ensures
+    // devDependencies are present even when NODE_ENV=production is inherited.
+    const packageSpec = (name: string) => {
+      const linked = towerSpec(pm, name)
+      return linked === name ? 'latest' : linked
     }
-
-    // Install tower core + selected modules. Tooling can skip this step
-    // (TOWER_SKIP_INSTALL=1) and drive installs itself.
-    if (process.env.TOWER_SKIP_INSTALL === '1') {
-      // Write dependency specs directly so tooling can run one `pnpm install`.
-      const pkgPath = join(projectDir, 'package.json')
-      const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as {
-        dependencies: Record<string, string>
-        devDependencies?: Record<string, string>
-      }
-      // A bare package name is not a valid version spec in package.json,
-      // so without TOWER_PACK_DIR the specs fall back to the registry.
-      const spec = (name: string) => {
-        const linked = towerSpec(pm, name)
-        return linked === name ? 'latest' : linked
-      }
-      pkg.dependencies ??= {}
-      pkg.dependencies['@towerjs/tower'] = spec('@towerjs/tower')
-      for (const moduleName of ['vault', 'gatehouse', 'courier']) {
-        if (state.modules[moduleName]) pkg.dependencies[`@towerjs/${moduleName}`] = spec(`@towerjs/${moduleName}`)
-      }
-      pkg.devDependencies ??= {}
-      pkg.devDependencies['@towerjs/scribe'] = spec('@towerjs/scribe')
-      if ((state.runtime ?? 'node') === 'edge') pkg.devDependencies['@towerjs/edge'] = spec('@towerjs/edge')
-      await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
-      return
+    const completePackage = JSON.parse(await readFile(pkgPath, 'utf8')) as {
+      dependencies?: Record<string, string>
+      devDependencies?: Record<string, string>
     }
-    const towerDeps: string[] = ['@towerjs/tower']
+    completePackage.dependencies ??= {}
+    completePackage.dependencies['@towerjs/tower'] = packageSpec('@towerjs/tower')
     for (const moduleName of ['vault', 'gatehouse', 'courier']) {
-      if (state.modules[moduleName]) towerDeps.push(`@towerjs/${moduleName}`)
+      if (state.modules[moduleName]) {
+        completePackage.dependencies[`@towerjs/${moduleName}`] = packageSpec(`@towerjs/${moduleName}`)
+      }
     }
-    await execa(pm, [...localAddArgs(towerDeps)], {
-      cwd: projectDir,
-      stdio: 'inherit',
-    })
-
-    const cliDevDeps: string[] = ['@towerjs/scribe']
-    await execa(pm, [...localAddArgs(cliDevDeps, true)], {
-      cwd: projectDir,
-      stdio: 'inherit',
-    })
-
-    if (isEdge) {
-      await execa(pm, [...localAddArgs(['@towerjs/edge'], true)], {
-        cwd: projectDir,
-        stdio: 'inherit',
-      })
-    }
-
+    completePackage.devDependencies ??= {}
+    completePackage.devDependencies['@towerjs/scribe'] = packageSpec('@towerjs/scribe')
+    if (isEdge) completePackage.devDependencies['@towerjs/edge'] = packageSpec('@towerjs/edge')
     const prettierDeps: string[] = ['prettier', 'prettier-plugin-organize-imports']
     if (useTailwind) {
       prettierDeps.push('prettier-plugin-tailwindcss', 'prettier-plugin-tailwindcss-canonical-classes')
     }
-    await execa(pm, [...addCommand(pm, true).slice(1), ...prettierDeps], { cwd: projectDir, stdio: 'inherit' })
+    for (const dependency of prettierDeps) completePackage.devDependencies[dependency] = 'latest'
+    await writeFile(pkgPath, JSON.stringify(completePackage, null, 2) + '\n')
+
+    if (process.env.TOWER_SKIP_INSTALL === '1') return
+
+    const installArgs =
+      pm === 'pnpm'
+        ? ['install', '--prod=false', '--reporter=silent']
+        : pm === 'npm'
+          ? ['install', '--include=dev', '--silent']
+          : ['install', '--silent']
+    await runQuiet(pm, installArgs, projectDir)
   },
 }
 
@@ -586,7 +575,11 @@ function homePage(state: ProjectState): string {
 }
 
 function authRoute(): string {
-  return `export { GET, POST } from "@towerjs/gatehouse/next";
+  return `import { createGatehouseHandlers } from "@towerjs/gatehouse/next";
+
+import tower from "../../../../../tower.config";
+
+export const { GET, POST } = createGatehouseHandlers(tower);
 `
 }
 
@@ -691,7 +684,7 @@ export default function DashboardPage() {
 }
 `
   }
-  const imports = state.modules.gatehouse ? `import { signOut } from '@towerjs/gatehouse/actions'\n` : ''
+  const imports = state.modules.gatehouse ? `import { signOut } from '@/actions/gatehouse'\n` : ''
   return `import { Project } from '@/models/project'
 ${imports}
 export const dynamic = 'force-dynamic'
@@ -761,7 +754,7 @@ function signInPage(state: ProjectState): string {
   const magic = state.frameworkAnswers.magicLinks === true
   return `'use client'
 
-import { requestMagicLink, signIn } from '@towerjs/gatehouse/actions'
+import { requestMagicLink, signIn } from '@/actions/gatehouse'
 import type { ActionResult } from '@towerjs/gatehouse/next'
 
 import { Button } from '@/components/button'
@@ -853,7 +846,7 @@ ${''}
 function signUpPage(_state: ProjectState): string {
   return `'use client'
 
-import { signUp } from '@towerjs/gatehouse/actions'
+import { signUp } from '@/actions/gatehouse'
 import type { ActionResult } from '@towerjs/gatehouse/next'
 
 import { Button } from '@/components/button'
@@ -929,9 +922,11 @@ export default withTowerEdge({});
 }
 
 function proxyFile(): string {
-  return `import { gatehouse } from "@towerjs/gatehouse";
+  return `import { createGatehouseProxy } from "@towerjs/gatehouse/next";
 
-const { handler } = gatehouse.proxy({
+import tower from "../tower.config";
+
+const { handler } = createGatehouseProxy(tower, {
   public: ["/", "/sign-in", "/sign-up"],
 });
 
@@ -940,6 +935,48 @@ export const proxy = handler;
 export const config = {
   matcher: ["/((?!_next/static|favicon.ico|api/auth).*)"],
 };
+`
+}
+
+function gatehouseActions(useTypeScript: boolean): string {
+  return `'use server'
+
+import * as gatehouseActions from '@towerjs/gatehouse/actions'
+import { initTower } from '@towerjs/tower/runtime'
+
+import tower from '../../tower.config'
+
+function configured${useTypeScript ? '<T extends (...args: any[]) => Promise<any>>(action: T): T' : '(action)'} {
+  return (async (...args${useTypeScript ? ': Parameters<T>' : ''}) => {
+    await initTower(tower.modules, tower)
+    return action(...args)
+  })${useTypeScript ? ' as T' : ''}
+}
+
+export const banUser = configured(gatehouseActions.banUser)
+export const cancelInvitation = configured(gatehouseActions.cancelInvitation)
+export const changePassword = configured(gatehouseActions.changePassword)
+export const createOrganization = configured(gatehouseActions.createOrganization)
+export const deleteOrganization = configured(gatehouseActions.deleteOrganization)
+export const disableTwoFactor = configured(gatehouseActions.disableTwoFactor)
+export const enableTwoFactor = configured(gatehouseActions.enableTwoFactor)
+export const generateBackupCodes = configured(gatehouseActions.generateBackupCodes)
+export const inviteMember = configured(gatehouseActions.inviteMember)
+export const rejectInvitation = configured(gatehouseActions.rejectInvitation)
+export const removeMember = configured(gatehouseActions.removeMember)
+export const requestMagicLink = configured(gatehouseActions.requestMagicLink)
+export const revokeOtherSessions = configured(gatehouseActions.revokeOtherSessions)
+export const revokeSession = configured(gatehouseActions.revokeSession)
+export const sendVerificationOTP = configured(gatehouseActions.sendVerificationOTP)
+export const setActiveOrganization = configured(gatehouseActions.setActiveOrganization)
+export const signIn = configured(gatehouseActions.signIn)
+export const signInWithOTP = configured(gatehouseActions.signInWithOTP)
+export const signOut = configured(gatehouseActions.signOut)
+export const signUp = configured(gatehouseActions.signUp)
+export const updateMemberRole = configured(gatehouseActions.updateMemberRole)
+export const updateOrganization = configured(gatehouseActions.updateOrganization)
+export const updateProfile = configured(gatehouseActions.updateProfile)
+export const verifyTwoFactor = configured(gatehouseActions.verifyTwoFactor)
 `
 }
 

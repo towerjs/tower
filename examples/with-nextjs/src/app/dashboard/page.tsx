@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-
-import { gatehouse } from '@towerjs/gatehouse'
+import { gatehouse } from '@/lib/gatehouse'
 
 import Link from 'next/link'
 
