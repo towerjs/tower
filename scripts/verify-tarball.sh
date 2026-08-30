@@ -27,18 +27,13 @@ cleanup() {
 trap cleanup EXIT
 
 # Expected public subpaths (must match packages/tower/package.json exports)
+# v0.2: tower is the core only; modules are separate packages
 SUBPATHS=(
   "."
   "./blueprint"
   "./foundation"
-  "./gatehouse"
-  "./gatehouse/react-server"
-  "./gatehouse/next"
-  "./gatehouse/client"
-  "./vault"
-  "./next"
-  "./courier"
   "./runtime"
+  "./runtime/node"
 )
 
 echo "=== Packing @towerjs/tower ==="
