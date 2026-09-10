@@ -19,7 +19,7 @@
     "@aws-sdk/client-sesv2": "^3.1106.0",
     "@react-email/render": "^2.1.0",
     "@towerjs/tower": "workspace:*",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^9.1.1",
     "react": "^19.2.8",
     "resend": "^6.18.1",
     "twilio": "^6.0.2",
