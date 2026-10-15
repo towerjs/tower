@@ -15,7 +15,7 @@
     "@towerjs/gatehouse": "workspace:*",
     "@towerjs/tower": "workspace:*",
     "@towerjs/vault": "workspace:*",
-    "next": "16.3.0",
+    "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
