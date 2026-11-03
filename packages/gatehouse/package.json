@@ -45,7 +45,7 @@
     "@towerjs/tower": "workspace:*",
     "better-auth": "^1.6.26",
     "kysely": "^0.29.5",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "peerDependencies": {
     "next": "^16"
